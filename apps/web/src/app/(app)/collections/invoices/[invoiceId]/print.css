@@ -12,15 +12,17 @@
   body:has([data-print='invoice']),
   body:has([data-print='invoice']) main,
   [data-print='invoice'] {
-    --ground: var(--qr-paper);
+    --bg: var(--qr-paper);
+    --bg-subtle: var(--qr-paper);
     --surface: var(--qr-paper);
-    --surface-2: var(--qr-paper);
-    --ink: var(--qr-ink);
-    --ink-2: var(--qr-ink);
-    --ink-muted: var(--qr-ink);
-    --rule: color-mix(in oklch, var(--qr-ink) 25%, var(--qr-paper));
-    /* html sets its color from its own theme's --ink, so text without a color class would keep the dark theme's light ink. */
-    color: var(--ink);
+    --surface-raised: var(--qr-paper);
+    --text: var(--qr-ink);
+    --text-secondary: var(--qr-ink);
+    --text-muted: var(--qr-ink);
+    --border: color-mix(in oklch, var(--qr-ink) 25%, var(--qr-paper));
+    --border-strong: var(--border);
+    /* html sets its color from its own theme's --text, so text without a color class would keep the dark theme's light ink. */
+    color: var(--text);
     background: var(--qr-paper);
     padding: 0;
     font-size: 12pt;

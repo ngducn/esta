@@ -20,16 +20,16 @@ export function DuplicateDialog({ title, onContinue, onCancel }: { title: string
       aria-labelledby={`${id}-title`}
       aria-describedby={`${id}-body`}
       data-testid="duplicate-dialog"
-      className="flex flex-col gap-3 rounded-md border border-due bg-due-fill p-4"
+      className="flex flex-col gap-3 rounded-md border border-warning-text bg-warning-bg p-4"
     >
-      <h3 id={`${id}-title`} className="text-body font-semibold text-ink">
+      <h3 id={`${id}-title`} className="text-body font-semibold text-text">
         {t('duplicateTitle')}
       </h3>
-      <p id={`${id}-body`} className="text-body break-words text-ink-2">
+      <p id={`${id}-body`} className="text-body break-words text-text-secondary">
         {t('duplicateBody', { title })}
       </p>
       <FormActions>
-        <Button ref={cancel} type="button" variant="outline" onClick={onCancel}>
+        <Button ref={cancel} type="button" variant="secondary" onClick={onCancel}>
           {t('cancel')}
         </Button>
         <Button type="button" variant="primary" onClick={onContinue}>

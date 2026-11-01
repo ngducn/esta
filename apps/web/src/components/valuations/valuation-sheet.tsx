@@ -104,18 +104,18 @@ function ValuationSheet({ scope, open, onOpenChange, finalFocus }: SheetProps) {
             <SheetTitle ref={title} tabIndex={-1} className="outline-none">
               {t('add')}
             </SheetTitle>
-            <SheetDescription className="font-medium break-words text-ink">{scope.nickname}</SheetDescription>
+            <SheetDescription className="font-medium break-words text-text">{scope.nickname}</SheetDescription>
           </div>
 
           <MoneyInput label={t('value')} onTextChange={typed(setValue, 'value')} disabled={pending} error={valueError()} large />
 
           <fieldset className="flex flex-col gap-2" aria-describedby={`${fieldId}-method`}>
-            <legend className="mb-2 text-body font-medium text-ink">{t('methodLabel')}</legend>
+            <legend className="mb-2 text-body font-medium text-text">{t('methodLabel')}</legend>
             <div className="flex flex-wrap gap-2" data-testid="valuation-methods">
               {VALUATION_METHODS.map((option) => (
                 <label
                   key={option}
-                  className="flex min-h-touch cursor-pointer items-center gap-1.5 rounded-full border border-field bg-surface px-4 text-body font-medium text-ink hover:border-ink-muted has-checked:border-ink has-checked:bg-ink has-checked:text-surface has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent"
+                  className="flex min-h-touch cursor-pointer items-center gap-1.5 rounded-full border border-border-field bg-surface px-4 text-body font-medium text-text hover:border-border-field has-checked:border-accent-border has-checked:bg-accent-subtle has-checked:text-accent-text has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus-ring"
                 >
                   <input
                     type="radio"

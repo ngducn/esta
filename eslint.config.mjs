@@ -18,6 +18,8 @@ export default defineConfig(
     'test-results/',
     'supabase/.slots/',
     'apps/web/src/lib/cn-tables.ts',
+    // The design system's own preview script, copied from Ryan's artifact as a record, not app code.
+    'docs/design/',
   ]),
   js.configs.recommended,
   tseslint.configs.strict,

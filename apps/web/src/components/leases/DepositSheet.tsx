@@ -134,11 +134,11 @@ export default function DepositSheet({
 
           {kind === 'applied' ? (
             <fieldset className="flex flex-col gap-1">
-              <legend className="mb-2 text-body font-medium text-ink">{t('invoiceLegend')}</legend>
+              <legend className="mb-2 text-body font-medium text-text">{t('invoiceLegend')}</legend>
               {offer.openInvoices.map((candidate) => (
                 <label
                   key={candidate.id}
-                  className="flex min-h-touch cursor-pointer items-center gap-3 rounded-md border border-field bg-surface px-3 py-2.5 text-body text-ink has-checked:border-ink has-checked:bg-surface-2 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent"
+                  className="flex min-h-touch cursor-pointer items-center gap-3 rounded-md border border-border-field bg-surface px-3 py-2.5 text-body text-text has-checked:border-accent has-checked:bg-accent-subtle has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus-ring"
                 >
                   <input
                     type="radio"
@@ -154,8 +154,8 @@ export default function DepositSheet({
                     className="size-5 shrink-0 accent-accent"
                   />
                   <span className="flex min-w-0 flex-1 flex-wrap justify-between gap-x-3">
-                    <span className="figures">{t('invoiceOption', { start: formatDate(candidate.periodStart, locale), end: formatDate(candidate.periodEnd, locale) })}</span>
-                    <span className="figures text-ink-2">{t('invoiceOwed', { amount: money(candidate.outstandingVnd) })}</span>
+                    <span className="num">{t('invoiceOption', { start: formatDate(candidate.periodStart, locale), end: formatDate(candidate.periodEnd, locale) })}</span>
+                    <span className="num text-text-secondary">{t('invoiceOwed', { amount: money(candidate.outstandingVnd) })}</span>
                   </span>
                 </label>
               ))}
@@ -164,17 +164,17 @@ export default function DepositSheet({
 
           <MoneyInput key={invoiceId ?? kind} label={t('amountLabel', { kind })} defaultText={amount} onTextChange={setAmount} disabled={pending} large />
 
-          <div data-testid="deposit-preview" aria-live="polite" className="flex flex-col gap-0.5 rounded-md border border-rule bg-surface-2 px-4 py-3 text-body">
-            <span className="text-ink-2 figures">{t('previewNow', { amount: money(state.heldVnd) })}</span>
+          <div data-testid="deposit-preview" aria-live="polite" className="flex flex-col gap-0.5 rounded-md border border-border bg-bg-subtle px-4 py-3 text-body">
+            <span className="text-text-secondary num">{t('previewNow', { amount: money(state.heldVnd) })}</span>
             {preview?.ok === true ? (
-              <span data-testid="deposit-held-after" className="font-medium text-ink figures">
+              <span data-testid="deposit-held-after" className="font-medium text-text num">
                 {t('previewAfter', { amount: money(preview.heldVnd) })}
               </span>
             ) : null}
             {overdraw === null ? null : (
-              <span data-testid="deposit-overdraw" data-reason={overdraw.reason} className="flex items-start gap-2 font-medium text-overdue">
+              <span data-testid="deposit-overdraw" data-reason={overdraw.reason} className="flex items-start gap-2 font-medium text-danger-text">
                 <StatusShape status="overdue" className="mt-1 size-4" />
-                <span className="figures">{t(`errors.${OVERDRAW_ERRORS[overdraw.reason]}`, { amount: money(overdraw.limitVnd) })}</span>
+                <span className="num">{t(`errors.${OVERDRAW_ERRORS[overdraw.reason]}`, { amount: money(overdraw.limitVnd) })}</span>
               </span>
             )}
           </div>
@@ -195,10 +195,10 @@ export default function DepositSheet({
           />
         </div>
 
-        <div className="sticky bottom-0 mt-auto flex flex-col gap-3 border-t border-rule bg-surface px-5 pt-4 pb-[max(--spacing(5),env(safe-area-inset-bottom))] sm:px-6">
+        <div className="sticky bottom-0 mt-auto flex flex-col gap-3 border-t border-border bg-surface px-5 pt-4 pb-[max(--spacing(5),env(safe-area-inset-bottom))] sm:px-6">
           <FormAlert message={error === null || error === 'noteRequired' ? null : t(`errors.${error}`)} data-testid="deposit-error" data-reason={error} />
           <div className="flex gap-2">
-            <SheetClose className={cn(buttonVariants({ variant: 'outline' }), 'flex-1')}>{t('cancel')}</SheetClose>
+            <SheetClose className={cn(buttonVariants({ variant: 'secondary' }), 'flex-1')}>{t('cancel')}</SheetClose>
             <button
               type="button"
               data-testid="deposit-save"

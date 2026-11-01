@@ -11,7 +11,7 @@ export function AnswerView({ shown, labels, children, ref }: { shown: ShownAnswe
     <div ref={ref} data-testid="answer" data-status={shown.status} aria-busy={shown.status === 'streaming'} className="flex flex-col gap-3">
       {shown.content === '' ? null : children}
       {line === null ? null : (
-        <p role="status" data-testid="answer-line" className="text-body text-ink-muted">
+        <p role="status" data-testid="answer-line" className="text-body text-text-muted">
           {line}
         </p>
       )}

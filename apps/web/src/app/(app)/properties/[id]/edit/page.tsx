@@ -38,18 +38,18 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
   return (
     <div className="flex flex-col gap-5">
       <BackLink href={detailHref} label={property.nickname} />
-      <h1 className="text-h2 break-words text-balance lg:text-h1">{t('editTitle', { nickname: property.nickname })}</h1>
+      <h1 className="text-title-2 break-words text-balance lg:text-title-1">{t('editTitle', { nickname: property.nickname })}</h1>
       <PropertyIntl locale={intl.locale} messages={intl.messages}>
         <section
           id="cover-photo"
           aria-labelledby="cover-photo-title"
-          className="flex max-w-3xl flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6"
+          className="flex max-w-3xl flex-col gap-4 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6"
         >
           <div className="flex flex-col gap-1">
-            <h2 id="cover-photo-title" className="text-lead font-semibold text-ink">
+            <h2 id="cover-photo-title" className="text-headline font-semibold text-text">
               {t('photoGroup')}
             </h2>
-            <p className="text-small text-ink-muted">{t('photoHint')}</p>
+            <p className="text-body-sm text-text-muted">{t('photoHint')}</p>
           </div>
           <CoverPhotoInput
             propertyId={property.id}
@@ -65,11 +65,11 @@ export default async function EditPropertyPage({ params }: { params: Promise<{ i
           otherCodes={codes}
           cancelHref={detailHref}
         />
-        <section aria-labelledby="archive-title" className="flex max-w-3xl flex-col gap-3 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
-          <h2 id="archive-title" className="text-lead font-semibold text-ink">
+        <section aria-labelledby="archive-title" className="flex max-w-3xl flex-col gap-3 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
+          <h2 id="archive-title" className="text-headline font-semibold text-text">
             {t('archiveTitle')}
           </h2>
-          <p className="text-body text-ink-2">{t('archiveHint')}</p>
+          <p className="text-body text-text-secondary">{t('archiveHint')}</p>
           <ArchiveButton propertyId={property.id} />
         </section>
       </PropertyIntl>

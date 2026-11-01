@@ -19,19 +19,19 @@ export async function ExpenseList({ rows, canEdit }: { rows: readonly ExpenseRow
         const body = (
           <>
             <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-              <span data-testid="expense-category" className="text-body font-medium text-ink">
+              <span data-testid="expense-category" className="text-body font-medium text-text">
                 {category}
               </span>
               {row.vendor === null ? null : (
-                <span data-testid="expense-vendor-name" className="text-small break-words text-ink-2">
+                <span data-testid="expense-vendor-name" className="text-body-sm break-words text-text-secondary">
                   {row.vendor.name}
                 </span>
               )}
-              <span data-testid="expense-date" className="text-small text-ink-muted figures">
+              <span data-testid="expense-date" className="text-body-sm text-text-muted num">
                 {date}
               </span>
             </span>
-            <span data-testid="expense-amount" className="shrink-0 text-right text-body font-medium text-ink figures">
+            <span data-testid="expense-amount" className="shrink-0 text-right text-body font-medium text-text num">
               {amount}
             </span>
           </>
@@ -41,7 +41,7 @@ export async function ExpenseList({ rows, canEdit }: { rows: readonly ExpenseRow
             key={row.id}
             data-testid="expense-row"
             data-expense-id={row.id}
-            className="flex flex-col border-b border-rule last:border-b-0 sm:flex-row sm:items-center sm:gap-2"
+            className="flex flex-col border-b border-border last:border-b-0 sm:flex-row sm:items-center sm:gap-2"
           >
             {canEdit ? (
               <ExpenseRowButton expense={row} label={t('editRow', { category, amount, date })}>
@@ -55,7 +55,7 @@ export async function ExpenseList({ rows, canEdit }: { rows: readonly ExpenseRow
                 href={`/documents/${row.documentId}`}
                 data-testid="expense-receipt-link"
                 aria-label={t('receiptOf', { category, date })}
-                className={cn(buttonVariants({ variant: 'quiet' }), '-mt-2 mb-1 shrink-0 self-start px-0 sm:my-0 sm:self-center sm:px-2')}
+                className={cn(buttonVariants({ variant: 'ghost' }), '-mt-2 mb-1 shrink-0 self-start px-0 sm:my-0 sm:self-center sm:px-2')}
               >
                 <FileText aria-hidden="true" />
                 {t('receipt')}

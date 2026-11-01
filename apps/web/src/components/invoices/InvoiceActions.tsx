@@ -39,7 +39,7 @@ export function InvoiceActions({ invoiceId, status, labels }: { invoiceId: strin
           {pending ? labels.issuing : labels.issue}
         </Button>
       ) : (
-        <Button type="button" variant="outline" data-testid="invoice-void" {...dialog.triggerProps}>
+        <Button type="button" variant="secondary" data-testid="invoice-void" {...dialog.triggerProps}>
           {labels.voidAction}
         </Button>
       )}

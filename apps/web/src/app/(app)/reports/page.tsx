@@ -26,17 +26,17 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
 
   return (
     <div className="flex flex-col gap-5">
-      <h1 className="text-h2 break-words lg:text-h1">{nav('reports')}</h1>
+      <h1 className="text-title-2 break-words lg:text-title-1">{nav('reports')}</h1>
       <ReportPicker current={kind} />
-      <section aria-labelledby="report-title" data-testid="report" data-report={kind} className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
+      <section aria-labelledby="report-title" data-testid="report" data-report={kind} className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
         <div className="flex flex-col gap-1">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <h2 id="report-title" className="text-h3 text-ink">
+            <h2 id="report-title" className="text-title-3 text-text">
               {view.title}
             </h2>
             {view.estimate === null ? null : <EstimatePill label={view.estimate} />}
           </div>
-          <p className="text-body text-ink-2">{view.basis}</p>
+          <p className="text-body text-text-secondary">{view.basis}</p>
         </div>
         <ChoiceLinks
           label={t('years')}
@@ -55,7 +55,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
             />
           </>
         ) : (
-          <p data-testid="report-empty" className="text-body font-medium text-ink">
+          <p data-testid="report-empty" className="text-body font-medium text-text">
             {view.empty}
           </p>
         )}

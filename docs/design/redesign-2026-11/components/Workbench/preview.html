@@ -1,0 +1,111 @@
+<!-- @dsCard group="Patterns" page height=2600 width=1200 subtitle="The rent screen as a workbench: page head, summary strip, filter bar, table with totals; the same markup becomes Mẹ's phone list" -->
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><title>Workbench</title></head>
+<body>
+<div id="src">
+  <p class="ds-why"><b>A workbench, not a showroom.</b> Every working screen in Esta is the same four parts in the same order: what this is, the numbers that matter, how to narrow the list, and the list itself with its total. Premium here means exact alignment and nothing extra: one typeface, hairlines for structure, blue only for the one action, selection and the current page.</p>
+  <div class="es-workbench">
+    <header class="es-page-head">
+      <div class="es-page-head__text"><h1 class="es-page-head__title">Thu tiền tháng 10</h1><p class="es-page-head__meta">Kỳ 01/10 – 31/10/2026 · 14 phòng, 3 nhà</p></div>
+      <div class="es-page-head__actions"><button class="es-btn es-btn--secondary" type="button"><i data-icon="qr-code"></i>Gửi mã QR</button><button class="es-btn es-btn--primary" type="button"><i data-icon="plus"></i>Ghi nhận tiền</button></div>
+    </header>
+    <section class="es-stat-strip" aria-label="Tóm tắt tháng 10"><div class="es-stat-strip__grid" style="--cols: 4">
+      <div class="es-stat"><div class="es-stat__head"><span class="es-stat__label">Đã thu</span></div><p class="es-stat__value"><span class="es-num">42.500.000 ₫</span></p><div class="es-meter" role="meter" aria-label="Đã thu" aria-valuemin="0" aria-valuemax="100" aria-valuenow="88" style="--value: 88%"><span class="es-meter__fill"></span></div><p class="es-stat__sub">88% của 48.300.000 ₫</p></div>
+      <div class="es-stat"><div class="es-stat__head"><span class="es-stat__label">Còn thiếu</span></div><p class="es-stat__value"><span class="es-num">5.800.000 ₫</span></p><p class="es-stat__sub">3 phòng</p></div>
+      <div class="es-stat"><div class="es-stat__head"><span class="es-stat__label">Quá hạn</span><span class="es-badge es-badge--overdue"><i data-icon="triangle-alert"></i>2</span></div><p class="es-stat__value">2 phòng</p><p class="es-stat__sub"><span class="es-num">6.700.000 ₫</span>, lâu nhất 12 ngày</p></div>
+      <div class="es-stat"><div class="es-stat__head"><span class="es-stat__label">Đến hạn 7 ngày tới</span></div><p class="es-stat__value">1 phòng</p><p class="es-stat__sub">Nhà phố Demo Gò Vấp, 25/11</p></div>
+    </div></section>
+    <div class="es-workbench__bar">
+      <div class="es-filter" role="group" aria-label="Lọc theo trạng thái">
+        <button class="es-filter__opt" type="button" aria-pressed="true">Tất cả <span class="es-filter__n">14</span></button>
+        <button class="es-filter__opt" type="button" aria-pressed="false">Quá hạn <span class="es-filter__n">2</span></button>
+        <button class="es-filter__opt" type="button" aria-pressed="false">Đến hạn <span class="es-filter__n">1</span></button>
+        <button class="es-filter__opt" type="button" aria-pressed="false">Đã thu <span class="es-filter__n">10</span></button>
+        <button class="es-filter__opt" type="button" aria-pressed="false">Trống <span class="es-filter__n">1</span></button>
+      </div>
+      <div class="es-input-group es-table-search"><i data-icon="search"></i><input class="es-input" type="search" aria-label="Tìm phòng hoặc người thuê" placeholder="Tìm phòng, người thuê"></div>
+      <button class="es-btn es-btn--secondary" type="button"><i data-icon="download"></i>Xuất Excel</button>
+    </div>
+    <div class="es-table-wrap">
+      <div class="es-bulkbar" hidden><span class="es-bulkbar__count">Đã chọn <span data-es-count>0</span> phòng</span><button class="es-btn es-btn--secondary es-btn--sm" type="button"><i data-icon="send"></i>Gửi lời nhắc</button><button class="es-btn es-btn--ghost es-btn--sm" type="button">Bỏ chọn</button></div>
+      <div class="es-table-scroll">
+        <table class="es-table" data-es-sortable data-es-selectable>
+          <caption class="es-sr-only">Thu tiền tháng 10, 14 phòng</caption>
+          <thead><tr><th class="es-table__select" scope="col"><label class="es-check"><input class="es-check__input" type="checkbox" data-es-select-all><span class="es-check__box"><i data-icon="check" class="es-check__tick"></i><i data-icon="minus" class="es-check__dash"></i></span><span class="es-sr-only">Chọn tất cả</span></label></th><th scope="col" aria-sort="none"><button class="es-table__sort" type="button" data-es-sort>Phòng<i data-icon="arrow-up-down" class="es-sort-none"></i><i data-icon="arrow-up" class="es-sort-asc"></i><i data-icon="arrow-down" class="es-sort-desc"></i></button></th><th scope="col">Người thuê</th><th scope="col" class="es-table__num" aria-sort="none"><button class="es-table__sort" type="button" data-es-sort>Số tiền<i data-icon="arrow-up-down" class="es-sort-none"></i><i data-icon="arrow-up" class="es-sort-asc"></i><i data-icon="arrow-down" class="es-sort-desc"></i></button></th><th scope="col" aria-sort="ascending"><button class="es-table__sort" type="button" data-es-sort>Hạn<i data-icon="arrow-up-down" class="es-sort-none"></i><i data-icon="arrow-up" class="es-sort-asc"></i><i data-icon="arrow-down" class="es-sort-desc"></i></button></th><th scope="col">Trạng thái</th><th scope="col" class="es-table__action"><span class="es-sr-only">Thao tác</span></th></tr></thead>
+          <tbody>
+          <tr class="is-selected">
+            <td class="es-c-select es-table__select"><label class="es-check"><input class="es-check__input" type="checkbox" data-es-select checked><span class="es-check__box"><i data-icon="check" class="es-check__tick"></i><i data-icon="minus" class="es-check__dash"></i></span><span class="es-sr-only">Chọn Phòng 5</span></label></td>
+            <td class="es-c-title" data-v="Phòng 5"><div class="es-table__title"><span class="es-table__primary">Phòng 5</span><span class="es-table__secondary">Dãy trọ Demo Dĩ An</span></div></td>
+            <td class="es-c-tenant"><span class="es-table__tenant" title="Trần Demo Minh">Trần Demo Minh</span></td>
+            <td class="es-c-amount es-table__num" data-v="3500000"><span class="es-num es-table__amount">3.500.000 ₫</span></td>
+            <td class="es-c-due" data-v="20261005"><span class="es-table__inline-label">Hạn </span><span class="es-num">05/10/2026</span></td>
+            <td class="es-c-status"><span class="es-badge es-badge--overdue"><i data-icon="triangle-alert"></i>Quá hạn 12 ngày</span></td>
+            <td class="es-c-action es-table__action"><button class="es-btn es-btn--secondary es-btn--sm" type="button">Ghi nhận</button></td>
+          </tr>
+          <tr>
+            <td class="es-c-select es-table__select"><label class="es-check"><input class="es-check__input" type="checkbox" data-es-select><span class="es-check__box"><i data-icon="check" class="es-check__tick"></i><i data-icon="minus" class="es-check__dash"></i></span><span class="es-sr-only">Chọn Phòng 3</span></label></td>
+            <td class="es-c-title" data-v="Phòng 3"><div class="es-table__title"><span class="es-table__primary">Phòng 3</span><span class="es-table__secondary">Dãy trọ Demo Dĩ An</span></div></td>
+            <td class="es-c-tenant"><span class="es-table__tenant" title="Lê Demo Ước">Lê Demo Ước</span></td>
+            <td class="es-c-amount es-table__num" data-v="3200000"><span class="es-num es-table__amount">3.200.000 ₫</span></td>
+            <td class="es-c-due" data-v="20261005"><span class="es-table__inline-label">Hạn </span><span class="es-num">05/10/2026</span></td>
+            <td class="es-c-status"><span class="es-badge es-badge--overdue"><i data-icon="triangle-alert"></i>Quá hạn 12 ngày</span></td>
+            <td class="es-c-action es-table__action"><button class="es-btn es-btn--secondary es-btn--sm" type="button">Ghi nhận</button></td>
+          </tr>
+          <tr>
+            <td class="es-c-select es-table__select"><label class="es-check"><input class="es-check__input" type="checkbox" data-es-select><span class="es-check__box"><i data-icon="check" class="es-check__tick"></i><i data-icon="minus" class="es-check__dash"></i></span><span class="es-sr-only">Chọn Nhà phố Demo Gò Vấp</span></label></td>
+            <td class="es-c-title" data-v="Nhà phố Demo Gò Vấp"><div class="es-table__title"><span class="es-table__primary">Nhà phố Demo Gò Vấp</span><span class="es-table__secondary">Nguyên căn</span></div></td>
+            <td class="es-c-tenant"><span class="es-table__tenant" title="Công ty TNHH Phát Đạt Demo">Công ty TNHH Phát Đạt Demo</span></td>
+            <td class="es-c-amount es-table__num" data-v="15000000"><span class="es-num es-table__amount">15.000.000 ₫</span></td>
+            <td class="es-c-due" data-v="20261125"><span class="es-table__inline-label">Hạn </span><span class="es-num">25/11/2026</span></td>
+            <td class="es-c-status"><span class="es-badge es-badge--due"><i data-icon="clock"></i>Còn 3 ngày</span></td>
+            <td class="es-c-action es-table__action"><button class="es-btn es-btn--secondary es-btn--sm" type="button">Gửi mã QR</button></td>
+          </tr>
+          <tr>
+            <td class="es-c-select es-table__select"><label class="es-check"><input class="es-check__input" type="checkbox" data-es-select><span class="es-check__box"><i data-icon="check" class="es-check__tick"></i><i data-icon="minus" class="es-check__dash"></i></span><span class="es-sr-only">Chọn Phòng 2</span></label></td>
+            <td class="es-c-title" data-v="Phòng 2"><div class="es-table__title"><span class="es-table__primary">Phòng 2</span><span class="es-table__secondary">Dãy trọ Demo Dĩ An</span></div></td>
+            <td class="es-c-tenant"><span class="es-table__tenant" title="Phạm Demo Đức">Phạm Demo Đức</span></td>
+            <td class="es-c-amount es-table__num" data-v="3200000"><span class="es-num es-table__amount">3.200.000 ₫</span></td>
+            <td class="es-c-due" data-v="20261005"><span class="es-table__inline-label">Hạn </span><span class="es-num">05/10/2026</span></td>
+            <td class="es-c-status"><span class="es-badge es-badge--paid"><i data-icon="circle-check"></i>Đã thu 03/10</span></td>
+            <td class="es-c-action es-table__action"><button class="es-btn es-btn--ghost es-btn--sm" type="button">Xem phiếu</button></td>
+          </tr>
+          <tr>
+            <td class="es-c-select es-table__select"><label class="es-check"><input class="es-check__input" type="checkbox" data-es-select><span class="es-check__box"><i data-icon="check" class="es-check__tick"></i><i data-icon="minus" class="es-check__dash"></i></span><span class="es-sr-only">Chọn Căn hộ Demo 12.05</span></label></td>
+            <td class="es-c-title" data-v="Căn hộ Demo 12.05"><div class="es-table__title"><span class="es-table__primary">Căn hộ Demo 12.05</span><span class="es-table__secondary">Căn hộ Demo Thảo Điền</span></div></td>
+            <td class="es-c-tenant"><span class="es-table__tenant" title="Nguyễn Demo An">Nguyễn Demo An</span></td>
+            <td class="es-c-amount es-table__num" data-v="18000000"><span class="es-num es-table__amount">18.000.000 ₫</span></td>
+            <td class="es-c-due" data-v="20261001"><span class="es-table__inline-label">Hạn </span><span class="es-num">01/10/2026</span></td>
+            <td class="es-c-status"><span class="es-badge es-badge--paid"><i data-icon="circle-check"></i>Đã thu 01/10</span></td>
+            <td class="es-c-action es-table__action"><button class="es-btn es-btn--ghost es-btn--sm" type="button">Xem phiếu</button></td>
+          </tr>
+          <tr>
+            <td class="es-c-select es-table__select"><label class="es-check"><input class="es-check__input" type="checkbox" data-es-select><span class="es-check__box"><i data-icon="check" class="es-check__tick"></i><i data-icon="minus" class="es-check__dash"></i></span><span class="es-sr-only">Chọn Phòng 7</span></label></td>
+            <td class="es-c-title" data-v="Phòng 7"><div class="es-table__title"><span class="es-table__primary">Phòng 7</span><span class="es-table__secondary">Dãy trọ Demo Dĩ An</span></div></td>
+            <td class="es-c-tenant"><span class="es-table__tenant es-num--unknown">Chưa có người thuê</span></td>
+            <td class="es-c-amount es-table__num" data-v="0"><span class="es-num es-num--zero">0 ₫</span></td>
+            <td class="es-c-due" data-v="99999999"><span class="es-num es-num--unknown" role="img" aria-label="Chưa có số liệu">—</span></td>
+            <td class="es-c-status"><span class="es-badge es-badge--empty"><i data-icon="circle-dashed"></i>Trống từ 01/09</span></td>
+            <td class="es-c-action es-table__action"><button class="es-btn es-btn--secondary es-btn--sm" type="button">Thêm hợp đồng</button></td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="es-table-foot"><span>14 phòng · đã thu 10</span><span>Tổng <span class="es-num" style="color: var(--text); font-weight: 600">48.300.000 ₫</span> · còn phải thu <span class="es-num" style="color: var(--text); font-weight: 500">5.800.000 ₫</span></span></div>
+    </div>
+  </div>
+</div>
+<div id="src-narrow">
+  <p class="ds-why"><b>The same page on Mẹ's phone.</b> The strip folds to two columns, the filter wraps, and under 640px of its own width the table becomes a list of name, amount, due date and status. Nothing is rebuilt for mobile; the containers decide.</p>
+  <div class="ds-phone" data-narrow-slot></div>
+</div>
+<script>
+  var wb = document.querySelector('#src .es-workbench');
+  var narrow = wb.cloneNode(true);
+  narrow.querySelector('.es-table-foot').remove();
+  document.querySelector('[data-narrow-slot]').appendChild(narrow);
+  Esta.themes('#src', { stack: true });
+  Esta.themes('#src-narrow');
+</script>
+</body>
+</html>

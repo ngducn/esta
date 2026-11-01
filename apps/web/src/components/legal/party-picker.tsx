@@ -27,7 +27,7 @@ function QuickAdd({ kind, onAdded, onCancel }: { kind: 'individual' | 'bank'; on
     onAdded(kind === 'individual' ? { id, kind, full_name, id_last4: last4 === '' ? null : last4 } : { id, kind: 'organization', full_name, bank: true });
   };
   return (
-    <div data-testid={`quick-add-${kind}`} className="flex flex-col gap-3 rounded-md border border-rule bg-surface-2 p-3 sm:p-4">
+    <div data-testid={`quick-add-${kind}`} className="flex flex-col gap-3 rounded-md border border-border bg-bg-subtle p-3 sm:p-4">
       <TextField
         label={kind === 'individual' ? t('partyName') : t('partyBankName')}
         testId="quick-add-name"
@@ -43,7 +43,7 @@ function QuickAdd({ kind, onAdded, onCancel }: { kind: 'individual' | 'bank'; on
           testId="quick-add-last4"
           value={last4}
           inputMode="numeric"
-          className="max-w-32 figures"
+          className="max-w-32 num"
           error={error === 'last4' ? t('partyLast4Invalid') : null}
           onChange={(text) => setLast4(idLast4(text))}
         />
@@ -52,7 +52,7 @@ function QuickAdd({ kind, onAdded, onCancel }: { kind: 'individual' | 'bank'; on
         <Button type="button" onClick={add} data-testid="quick-add-save">
           {t('partySave')}
         </Button>
-        <Button type="button" variant="outline" onClick={onCancel}>
+        <Button type="button" variant="secondary" onClick={onCancel}>
           {t('partyCancel')}
         </Button>
       </div>
@@ -99,7 +99,7 @@ export function PartyAdder({
           }}
         />
       ) : (
-        <Button type="button" variant="outline" className="self-start" onClick={() => setAdding(true)} data-testid="add-holder">
+        <Button type="button" variant="secondary" className="self-start" onClick={() => setAdding(true)} data-testid="add-holder">
           <Plus aria-hidden="true" />
           {labels.add}
         </Button>
@@ -124,19 +124,19 @@ export function HolderPicker({
   return (
     <div className="flex flex-col gap-3">
       {selected.length === 0 ? (
-        <p className="text-body text-ink-muted">{t('noHolders')}</p>
+        <p className="text-body text-text-muted">{t('noHolders')}</p>
       ) : (
         <ul className="flex flex-wrap gap-2" data-testid="holders">
           {selected.map((id) => {
             const name = byId.get(id)?.fullName ?? id;
             return (
-              <li key={id} className="flex min-h-touch items-center gap-1 rounded-full border border-rule bg-surface-2 pr-1 pl-3 text-body text-ink">
+              <li key={id} className="flex min-h-touch items-center gap-1 rounded-full border border-border bg-bg-subtle pr-1 pl-3 text-body text-text">
                 <span className="break-words">{name}</span>
                 <button
                   type="button"
                   aria-label={t('partyRemove', { name })}
                   onClick={() => onChange(selected.filter((other) => other !== id))}
-                  className="flex size-9 items-center justify-center rounded-full text-ink-muted hover:bg-rule hover:text-ink"
+                  className="flex size-9 items-center justify-center rounded-full text-text-muted hover:bg-fill-hover hover:text-text"
                 >
                   <X className="size-4" aria-hidden="true" />
                 </button>
@@ -182,7 +182,7 @@ export function BankPicker({
         onChange={onChange}
       />
       {invalid ? (
-        <p role="alert" className="text-small text-overdue">
+        <p role="alert" className="text-body-sm text-danger-text">
           {t('bankRequired')}
         </p>
       ) : null}
@@ -197,7 +197,7 @@ export function BankPicker({
           }}
         />
       ) : (
-        <Button type="button" variant="outline" className="self-start" onClick={() => setAdding(true)}>
+        <Button type="button" variant="secondary" className="self-start" onClick={() => setAdding(true)}>
           <Plus aria-hidden="true" />
           {t('partyAddBank')}
         </Button>

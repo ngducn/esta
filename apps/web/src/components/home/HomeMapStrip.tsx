@@ -34,17 +34,17 @@ export function HomeMapStrip({ title, openLabel, map }: HomeMapStripProps) {
   const wide = useWide();
   const router = useRouter();
   return (
-    <section aria-labelledby="home-map-title" data-testid="home-map-strip" className="hidden flex-col gap-4 rounded-lg border border-rule bg-surface p-6 shadow-card lg:flex">
+    <section aria-labelledby="home-map-title" data-testid="home-map-strip" className="hidden flex-col gap-4 rounded-lg border border-border bg-surface p-6 shadow-xs lg:flex">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 id="home-map-title" className="text-h3 text-ink">
+        <h2 id="home-map-title" className="text-title-3 text-text">
           {title}
         </h2>
-        <IntentLink href="/properties?view=map" className={buttonVariants({ variant: 'outline' })}>
+        <IntentLink href="/properties?view=map" className={buttonVariants({ variant: 'secondary' })}>
           <MapIcon aria-hidden="true" />
           {openLabel}
         </IntentLink>
       </div>
-      <div data-testid="home-map" className="relative h-72 overflow-hidden rounded-md border border-rule bg-surface-2">
+      <div data-testid="home-map" className="relative h-72 overflow-hidden rounded-md border border-border bg-bg-subtle">
         {wide ? <MapIsland {...map} onSelect={(id) => (id === null ? undefined : router.push(`/properties/${id}`))} /> : null}
       </div>
     </section>

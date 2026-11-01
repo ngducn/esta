@@ -17,14 +17,14 @@ export async function StructureList({ propertyId, structures, canEdit }: { prope
         return (
           <LegalCard key={structure.id} propertyId={propertyId} kind="structures" itemId={structure.id} name={structure.kind} canEdit={canEdit} title={structure.kind}>
             {facts.length === 0 ? null : (
-              <ul className="figures flex flex-wrap gap-x-4 gap-y-1 text-body text-ink-2">
+              <ul className="num flex flex-wrap gap-x-4 gap-y-1 text-body text-text-secondary">
                 {facts.map((fact) => (
                   <li key={fact}>{fact}</li>
                 ))}
               </ul>
             )}
-            {structure.structure_text === null ? null : <p className="text-small break-words text-ink-2">{structure.structure_text}</p>}
-            {structure.certificate_id === null ? <p className="text-small text-ink-muted">{t('notOnCertificate')}</p> : null}
+            {structure.structure_text === null ? null : <p className="text-body-sm break-words text-text-secondary">{structure.structure_text}</p>}
+            {structure.certificate_id === null ? <p className="text-body-sm text-text-muted">{t('notOnCertificate')}</p> : null}
           </LegalCard>
         );
       })}

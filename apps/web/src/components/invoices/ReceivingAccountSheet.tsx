@@ -105,9 +105,9 @@ export default function ReceivingAccountSheet({
               maxLength={60}
             />
             {folded === null || refusal === 'accountName' ? null : (
-              <p className="flex flex-col text-small text-ink-2">
+              <p className="flex flex-col text-body-sm text-text-secondary">
                 <span>{labels.accountNamePreview}</span>
-                <span data-testid="account-name-preview" className="font-medium text-ink">
+                <span data-testid="account-name-preview" className="font-medium text-text">
                   {folded}
                 </span>
               </p>

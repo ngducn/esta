@@ -41,11 +41,11 @@ export async function ReportTable({
         data-testid={`report-${kind}`}
         data-key={line.key}
         aria-current={isMarked ? 'date' : undefined}
-        className={cn('max-sm:block max-sm:border-b max-sm:border-rule max-sm:py-3', (isMarked || kind === 'total') && 'max-sm:-mx-5 max-sm:px-5', isMarked && 'bg-accent-tint', kind === 'total' && 'bg-surface-2 font-medium')}
+        className={cn('max-sm:block max-sm:border-b max-sm:border-border max-sm:py-3', (isMarked || kind === 'total') && 'max-sm:-mx-5 max-sm:px-5', isMarked && 'bg-accent-subtle', kind === 'total' && 'bg-bg-subtle font-medium')}
       >
-        <TableHead scope="row" className="border-b border-rule bg-transparent align-top text-body font-medium whitespace-normal text-ink max-sm:block max-sm:border-0 max-sm:px-0 max-sm:py-1">
+        <TableHead scope="row" className="border-b border-border bg-transparent align-top text-body font-medium whitespace-normal text-text max-sm:block max-sm:border-0 max-sm:px-0 max-sm:py-1">
           {formatCell(line.cells[0], locale)}
-          {isMarked ? <span className="ml-2 text-small font-medium text-accent">{marked.label}</span> : null}
+          {isMarked ? <span className="ml-2 text-body-sm font-medium text-accent-text">{marked.label}</span> : null}
         </TableHead>
         {rest.map((column, index) => {
           const cell = line.cells[index + 1];
@@ -55,14 +55,14 @@ export async function ReportTable({
               key={column.id}
               data-column={column.id}
               className={cn(
-                'figures align-top max-sm:flex max-sm:justify-between max-sm:gap-4 max-sm:border-0 max-sm:px-0 max-sm:py-0.5',
+                'num align-top max-sm:flex max-sm:justify-between max-sm:gap-4 max-sm:border-0 max-sm:px-0 max-sm:py-0.5',
                 amount[index + 1] ? 'text-end whitespace-nowrap' : 'text-start',
-                zero ? 'text-ink-muted' : 'text-ink',
+                zero ? 'text-text-muted' : 'text-text',
                 column.id === strong && 'font-medium',
                 ((zero && optional.has(column.id)) || (cell?.kind === 'text' && cell.value === '')) && 'max-sm:hidden',
               )}
             >
-              <span aria-hidden="true" className="text-start whitespace-normal text-ink-2 sm:hidden">
+              <span aria-hidden="true" className="text-start whitespace-normal text-text-secondary sm:hidden">
                 {column.label}
               </span>
               {formatCell(cell, locale)}
@@ -74,7 +74,7 @@ export async function ReportTable({
   };
 
   return (
-    <div role="region" aria-label={caption} tabIndex={0} className="max-h-112 overflow-auto rounded-md border border-rule max-sm:max-h-none max-sm:overflow-visible max-sm:rounded-none max-sm:border-0 max-sm:border-t">
+    <div role="region" aria-label={caption} tabIndex={0} className="max-h-112 overflow-auto rounded-md border border-border max-sm:max-h-none max-sm:overflow-visible max-sm:rounded-none max-sm:border-0 max-sm:border-t">
       {marked === null ? null : <ScrollIntoView id={rowId(marked.key)} />}
       <Table className="max-sm:block">
         <caption className="sr-only">{caption}</caption>

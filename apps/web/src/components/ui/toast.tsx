@@ -43,11 +43,11 @@ function ToastList() {
       key={toast.id}
       toast={toast}
       data-slot="toast"
-      className="rounded-md bg-ink text-surface shadow-sheet transition-[translate,opacity] duration-(--duration-slow) ease-standard data-ending-style:translate-y-4 data-ending-style:opacity-0 data-limited:opacity-0 data-starting-style:translate-y-4 data-starting-style:opacity-0"
+      className="w-full max-w-toast rounded-lg bg-surface-inverse text-text-inverse shadow-md transition-[translate,opacity] duration-(--duration-base) ease-enter data-ending-style:translate-y-2 data-ending-style:opacity-0 data-ending-style:ease-exit data-limited:opacity-0 data-starting-style:translate-y-2 data-starting-style:opacity-0"
     >
-      <ToastPrimitive.Content className="flex items-center gap-2 py-1 pr-1 pl-4">
-        <ToastPrimitive.Title className="flex-1 py-2 text-body text-pretty" />
-        <ToastPrimitive.Action className="min-h-touch shrink-0 rounded-sm px-3 text-body font-medium underline decoration-surface/60 underline-offset-4 hover:decoration-surface focus-visible:outline-surface" />
+      <ToastPrimitive.Content className="flex items-center gap-3 py-3 pr-2 pl-4">
+        <ToastPrimitive.Title className="flex-1 text-body-sm text-pretty" />
+        <ToastPrimitive.Action className="-my-1.5 min-h-control-sm shrink-0 rounded-md bg-surface-inverse px-3 text-label font-semibold text-text-inverse-accent underline-offset-4 hover:underline focus-visible:-outline-offset-2 focus-visible:outline-text-inverse-accent pointer-coarse:min-h-touch" />
       </ToastPrimitive.Content>
     </ToastPrimitive.Root>
   ));

@@ -61,8 +61,8 @@ export function StepUse({
   };
 
   return (
-    <form noValidate onSubmit={submit} data-testid="wizard-use" className="flex max-w-3xl flex-col gap-5 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
-      <h2 className="text-lead font-semibold text-ink">{t('useTitle')}</h2>
+    <form noValidate onSubmit={submit} data-testid="wizard-use" className="flex max-w-3xl flex-col gap-5 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
+      <h2 className="text-headline font-semibold text-text">{t('useTitle')}</h2>
       <FormSelect
         label={tf('useMode')}
         testId="use-mode"
@@ -79,18 +79,18 @@ export function StepUse({
             value={count}
             maxLength={2}
             inputMode="numeric"
-            className="figures w-32"
+            className="num w-32"
             error={invalid ? t('roomInvalid') : null}
             onChange={setCount}
           />
-          {rooms > 0 ? <p className="text-small text-ink-muted">{t('roomsExisting', { count: rooms })}</p> : null}
+          {rooms > 0 ? <p className="text-body-sm text-text-muted">{t('roomsExisting', { count: rooms })}</p> : null}
         </div>
       ) : null}
-      <div className="flex items-start gap-3 rounded-md bg-surface-2 px-4 py-3">
-        <FileSignature className="mt-0.5 size-5 shrink-0 text-ink-2" strokeWidth={1.8} aria-hidden="true" />
+      <div className="flex items-start gap-3 rounded-md bg-bg-subtle px-4 py-3">
+        <FileSignature className="mt-0.5 size-5 shrink-0 text-text-secondary" strokeWidth={1.8} aria-hidden="true" />
         <div className="flex min-w-0 flex-col gap-0.5">
-          <p className="text-body font-medium text-ink">{t('leasesLater')}</p>
-          <p className="text-small text-ink-2">{t('leasesHelp')}</p>
+          <p className="text-body font-medium text-text">{t('leasesLater')}</p>
+          <p className="text-body-sm text-text-secondary">{t('leasesHelp')}</p>
         </div>
       </div>
       <FormAlert message={failed ? t('saveFailed') : null} data-testid="wizard-error" />
@@ -98,7 +98,7 @@ export function StepUse({
         <Button type="submit" disabled={pending} data-testid="save-use">
           {t('saveAndContinue')}
         </Button>
-        <Link href={back} className={buttonVariants({ variant: 'outline' })}>
+        <Link href={back} className={buttonVariants({ variant: 'secondary' })}>
           {t('back')}
         </Link>
       </div>

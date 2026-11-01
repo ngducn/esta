@@ -32,7 +32,7 @@ export function ArchiveButton({ propertyId }: { propertyId: string }) {
     <div className="flex flex-col items-start gap-1">
       <Button
         type="button"
-        variant="outline"
+        variant="secondary"
         disabled={pending}
         data-testid="archive-property"
         onClick={() => write(() => archiveProperty(propertyId), () => router.push(`/properties?${ARCHIVED_PARAM}=${propertyId}`))}
@@ -76,7 +76,7 @@ export function RestoreButton({ propertyId, label }: { propertyId: string; label
   const { pending, error, write } = useWrite();
   return (
     <div className="flex flex-col items-end gap-1">
-      <Button type="button" variant="outline" disabled={pending} data-testid="restore-property" onClick={() => write(() => restoreProperty(propertyId), () => router.refresh())}>
+      <Button type="button" variant="secondary" disabled={pending} data-testid="restore-property" onClick={() => write(() => restoreProperty(propertyId), () => router.refresh())}>
         <ArchiveRestore aria-hidden="true" />
         {label}
       </Button>

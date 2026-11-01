@@ -4,6 +4,7 @@ import { workerStatus } from '@esta/core/agent';
 import { formatDateLong } from '@esta/core/format';
 import { WorkerStatusLine } from '@/components/assistant/worker-status-line';
 import { BrandMark } from '@/components/brand-mark';
+import { givenInitial } from '@/components/ui/avatar';
 import { AccountTrigger, AvatarMenu } from '@/components/shell/avatar-menu';
 import { accountSections, operatorSections, primarySections, type NavItem } from '@/components/shell/nav';
 import { PrefetchTabs } from '@/components/shell/prefetch-tabs';
@@ -13,12 +14,6 @@ import { getWorkerHeartbeat } from '@/server/assistant';
 import { getClock } from '@/server/clock';
 import { env } from '@/server/env';
 import { requireMember } from '@/server/member';
-
-/** Vietnamese names put the given name last, so the monogram takes its first letter. */
-function monogram(displayName: string | null): string | null {
-  const given = displayName?.trim().split(/\s+/).at(-1);
-  return given ? given.charAt(0).toLocaleUpperCase('vi') : null;
-}
 
 export default async function AppLayout({ children }: Readonly<{ children: ReactNode }>) {
   const [member, clock, heartbeat, locale, nav, shell, language, onboarding, app] = await Promise.all([
@@ -41,7 +36,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
   const more = accountSections.map(toItem);
   const menu = member.isOperator ? [...more, ...operatorSections.map(toItem)] : more;
   const name = member.displayName ?? shell('account');
-  const initial = monogram(member.displayName);
+  const initial = givenInitial(member.displayName);
   const role = onboarding(`roles.${member.role}`);
 
   return (
@@ -54,21 +49,21 @@ export default async function AppLayout({ children }: Readonly<{ children: React
         header={
           <>
             <BrandMark name={app('name')} className="px-2 pt-1" />
-            <p className="rounded-md border border-rule bg-surface-2 px-3 py-2.5 font-medium break-words text-ink">{member.household.name}</p>
+            <p className="rounded-md border border-border bg-bg-subtle px-3 py-2.5 font-medium break-words text-text">{member.household.name}</p>
           </>
         }
         footer={<AccountTrigger initial={initial} label={name} detail={role} accessibleName={shell('accountOf', { name })} className="w-full" />}
       />
       <div className="flex min-h-dvh min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between gap-4 px-4 pt-3 lg:px-8 lg:pt-6">
-          <p data-testid="date-line" className="text-small font-medium text-ink-muted">
+        <header className="flex items-center justify-between gap-4 px-4 pt-3 lg:px-stack lg:pt-6">
+          <p data-testid="date-line" className="text-body-sm font-medium text-text-muted">
             {formatDateLong(clock.today(), locale)}
           </p>
           <div className="lg:hidden">
             <AccountTrigger initial={initial} label={shell('account')} accessibleName={shell('account')} compact />
           </div>
         </header>
-        <main className="w-full max-w-content flex-1 px-4 pt-3 pb-10 lg:px-8 lg:pt-4">
+        <main className="w-full max-w-dashboard flex-1 px-4 pt-3 pb-10 lg:px-stack lg:pt-4">
           {worker.kind === 'offline' || worker.kind === 'paused' ? (
             <div className="mb-5">
               <WorkerStatusLine status={worker} />

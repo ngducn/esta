@@ -35,11 +35,11 @@ export default async function CodeSignInPage() {
   return (
     <AuthFrame brand={app('name')} photoAlt={app('heroAlt')} aside={<LanguageSwitch />}>
       <div className="flex flex-col gap-1">
-        <h1 className="text-h2 lg:text-h1">{t('codeTitle')}</h1>
-        <p className="text-ink-muted">{app('tagline')}</p>
+        <h1 className="text-title-2 lg:text-title-1">{t('codeTitle')}</h1>
+        <p className="text-text-muted">{app('tagline')}</p>
       </div>
       <SignInForm copy={copy} />
-      <p className="flex justify-center border-t border-rule pt-4">
+      <p className="flex justify-center border-t border-border pt-4">
         <Link href="/sign-in" className={linkClass}>
           {t('usePassword')}
         </Link>

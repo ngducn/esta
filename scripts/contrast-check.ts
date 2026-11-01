@@ -1,11 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
-import { contrastRatio, inSrgbGamut, mixOklch, oklchToSrgb255 } from '../apps/web/src/design/contrast.ts';
+import { blendHex, contrastRatio } from '../apps/web/src/design/contrast.ts';
 import { colorPairs, grounds, minimumRatio, type ColorPair } from '../apps/web/src/design/text-pairs.ts';
-import { colors, type ColorToken, type Oklch, type Theme } from '../apps/web/src/design/tokens.ts';
-import { findUnlistedPairs } from './used-color-pairs.ts';
+import { colors, type ColorToken, type Hex, type Theme } from '../apps/web/src/design/tokens.ts';
+import { findRetiredNames, findUnlistedPairs } from './used-color-pairs.ts';
 
-export type Palette = Record<ColorToken, Record<Theme, Oklch>>;
+export type Palette = Record<ColorToken, Record<Theme, Hex>>;
 
 export type PairResult = ColorPair & { theme: Theme; ratio: number; minimum: number; ok: boolean };
 
@@ -16,7 +16,7 @@ function pairRatio(palette: Palette, pair: ColorPair, theme: Theme): number {
   const foreground = palette[pair.foreground][theme];
   if (pair.opacity === undefined) return contrastRatio(foreground, palette[pair.background][theme]);
   const share = pair.opacity / 100;
-  return Math.min(...grounds.map((ground) => contrastRatio(foreground, mixOklch(palette[pair.background][theme], palette[ground][theme], share))));
+  return Math.min(...grounds.map((ground) => contrastRatio(foreground, blendHex(palette[pair.background][theme], palette[ground][theme], share))));
 }
 
 export function checkPairs(palette: Palette, pairs: readonly ColorPair[]): PairResult[] {
@@ -29,37 +29,33 @@ export function checkPairs(palette: Palette, pairs: readonly ColorPair[]): PairR
   );
 }
 
-export type Selection = { foreground: ColorToken; mix: ColorToken; percent: number; into: ColorToken };
+export type Selection = { foreground: ColorToken; background: ColorToken };
 
-const selectionRule =
-  /::selection\s*\{\s*background-color:\s*color-mix\(in oklch, var\(--([\w-]+)\) (\d+)%, var\(--([\w-]+)\)\);\s*color:\s*var\(--([\w-]+)\);/;
+const selectionRule = /::selection\s*\{\s*background-color:\s*var\(--([\w-]+)\);\s*color:\s*var\(--([\w-]+)\);/;
 
 export function readSelection(css = readFileSync(new URL('../apps/web/src/app/globals.css', import.meta.url), 'utf8')): Selection {
-  const [, mix = '', percent = '', into = '', foreground = ''] = selectionRule.exec(css) ?? [];
+  const [, background = '', foreground = ''] = selectionRule.exec(css) ?? [];
   const token = (name: string): ColorToken => {
     if (name in colors) return name as ColorToken;
-    throw new Error('globals.css ::selection must set color-mix(in oklch, var(--<token>) N%, var(--<token>)) and color: var(--<token>)');
+    throw new Error('globals.css ::selection must set background-color: var(--<token>) and color: var(--<token>)');
   };
-  return { mix: token(mix), percent: Number(percent), into: token(into), foreground: token(foreground) };
+  return { background: token(background), foreground: token(foreground) };
 }
 
 export function checkSelection(palette: Palette, selection: Selection = readSelection()) {
   return themes.map((theme) => {
-    const ground = mixOklch(palette[selection.mix][theme], palette[selection.into][theme], selection.percent / 100);
-    const ratio = contrastRatio(palette[selection.foreground][theme], ground);
+    const ratio = contrastRatio(palette[selection.foreground][theme], palette[selection.background][theme]);
     return { theme, ratio, ok: ratio >= minimumRatio.text };
   });
 }
 
+/** Never pure black (01-foundations); white is allowed, for cards and inputs. */
 export function findBannedTokenColors(palette: Palette): string[] {
   return Object.entries(palette).flatMap(([token, byTheme]) =>
     themes.flatMap((theme) => {
       const color = byTheme[theme];
-      const rgb = oklchToSrgb255(color).join(', ');
-      const problems: string[] = [];
-      if (!inSrgbGamut(color)) problems.push(`${token} (${theme}) is outside sRGB`);
-      if (rgb === '0, 0, 0' || rgb === '255, 255, 255') problems.push(`${token} (${theme}) renders as rgb(${rgb})`);
-      return problems;
+      if (!/^#[0-9a-f]{6}$/.test(color)) return [`${token} (${theme}) is not a lowercase #rrggbb hex`];
+      return color === '#000000' ? [`${token} (${theme}) is pure black`] : [];
     }),
   );
 }
@@ -87,12 +83,14 @@ function main(): void {
   for (const problem of tokenProblems) console.log(`FAIL ${problem}`);
   const unlisted = findUnlistedPairs();
   for (const pair of unlisted) console.log(`FAIL ${pair} is drawn but not listed in text-pairs.ts`);
+  const retired = findRetiredNames();
+  for (const name of retired) console.log(`FAIL ${name} is a retired 2026-10 name; rerun the RD-1 codemod or use the role token`);
   const failed = results.filter((r) => !r.ok).length;
   const selectionFailed = selection.some((r) => !r.ok);
   console.log(
-    `contrast: ${results.length - failed}/${results.length} pairs pass, ${tokenProblems.length} token problems, ${unlisted.length} unlisted pairs`,
+    `contrast: ${results.length - failed}/${results.length} pairs pass, ${tokenProblems.length} token problems, ${unlisted.length} unlisted pairs, ${retired.length} retired names`,
   );
-  if (failed > 0 || selectionFailed || tokenProblems.length > 0 || unlisted.length > 0) process.exit(1);
+  if (failed > 0 || selectionFailed || tokenProblems.length > 0 || unlisted.length > 0 || retired.length > 0) process.exit(1);
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) main();

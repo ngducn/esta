@@ -34,7 +34,7 @@ export function HeldChoices({
       <legend className="sr-only">{t('handLegend', { line: line.index })}</legend>
       {line.hands.map((hand) => {
         return (
-          <label key={hand.paymentId} className="flex min-h-touch items-center gap-3 text-small text-ink">
+          <label key={hand.paymentId} className="flex min-h-touch items-center gap-3 text-body-sm text-text">
             <input
               type="radio"
               name={`hand-${line.id}`}
@@ -42,15 +42,15 @@ export function HeldChoices({
               checked={pick === hand.paymentId}
               disabled={disabled}
               onChange={() => onPick(hand.paymentId)}
-              className="size-5 shrink-0 accent-ink"
+              className="size-5 shrink-0 accent-accent"
             />
-            <span className="figures min-w-0 break-words">
+            <span className="num min-w-0 break-words">
               {t('handOption', { amount: formatVnd(hand.amount, locale), date: formatDate(hand.receivedOn, locale), bills: hand.bills.join(', ') })}
             </span>
           </label>
         );
       })}
-      <Button type="button" variant="outline" disabled={disabled || pick === undefined} onClick={onLink} data-testid="statement-link" className="mt-1 w-fit">
+      <Button type="button" variant="secondary" disabled={disabled || pick === undefined} onClick={onLink} data-testid="statement-link" className="mt-1 w-fit">
         {t('linkByHand')}
       </Button>
     </fieldset>

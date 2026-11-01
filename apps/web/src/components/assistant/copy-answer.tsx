@@ -35,7 +35,7 @@ export function CopyAnswer({ text, labels, children }: { text: string; labels: C
         disabled={!hydrated}
         aria-label={labels.copyLabel}
         data-testid="answer-copy"
-        className={buttonVariants({ variant: 'outline', className: 'self-start' })}
+        className={buttonVariants({ variant: 'secondary', className: 'self-start' })}
       >
         <Copy aria-hidden="true" />
         {labels.copy}

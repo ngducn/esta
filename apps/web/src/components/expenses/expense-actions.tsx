@@ -23,15 +23,15 @@ export function ExpenseActions({ labels, primary = false }: { labels: { add: str
         onPointerDown={warmExpenseSheet}
         disabled={!hydrated}
         onClick={() => open({ kind: 'new', receipt: null })}
-        className={buttonVariants({ variant: primary ? 'primary' : 'outline' })}
+        className={buttonVariants({ variant: primary ? 'primary' : 'secondary' })}
       >
         <Plus aria-hidden="true" />
         {labels.add}
       </button>
       <label
         className={buttonVariants({
-          variant: 'outline',
-          className: 'relative cursor-pointer has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus',
+          variant: 'secondary',
+          className: 'relative cursor-pointer has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus-ring',
         })}
         onPointerDown={warmExpenseSheet}
       >

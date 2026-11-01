@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import type { ExtractionStatus } from '@/server/documents/extraction-status';
 import type { VaultTile } from '@/server/documents/list';
-import { StatusShape, statusMarks, type MarkStatus } from '@/components/status-shape';
+import { StatusShape, statusBadge, statusMarks, type MarkStatus } from '@/components/status-shape';
 import { cn } from '@/lib/utils';
 import type { CoverPhotoPriority } from '@/components/properties/cover-photo';
 
@@ -55,13 +55,13 @@ export function ExtractionPill({
         <Link
           href={`/documents/${documentId}/review`}
           data-testid="review-link"
-          className={cn('inline-flex min-h-touch items-center gap-1.5 rounded-full px-3 py-1 text-small font-medium underline-offset-4 hover:underline', statusMarks[pill.mark].pill)}
+          className={cn(statusBadge, 'min-h-touch underline-offset-4 hover:underline', statusMarks[pill.mark].pill)}
         >
           <StatusShape status={pill.mark} className="size-4" />
           <span>{t(pill.label)}</span>
         </Link>
       ) : (
-        <span className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-small font-medium', statusMarks[pill.mark].pill)}>
+        <span className={cn(statusBadge, statusMarks[pill.mark].pill)}>
           <StatusShape status={pill.mark} className="size-4" />
           <span>{t(pill.label)}</span>
         </span>
@@ -95,12 +95,12 @@ export function DocumentTile({
 }) {
   const t = useTranslations('documents');
   return (
-    <li data-testid="document-tile" data-document-id={document.id} className="flex min-w-0 flex-col overflow-hidden rounded-lg border border-rule bg-surface shadow-card">
-      <div className="relative aspect-[4/3] bg-surface-2">
+    <li data-testid="document-tile" data-document-id={document.id} className="flex min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-xs">
+      <div className="relative aspect-[4/3] bg-bg-subtle">
         {document.thumbUrl === null ? (
-          <div className="flex size-full flex-col items-center justify-center gap-2 text-ink-muted">
+          <div className="flex size-full flex-col items-center justify-center gap-2 text-text-muted">
             <FileText className="size-8" aria-hidden="true" />
-            <span className="text-small">{t('noPreview')}</span>
+            <span className="text-body-sm">{t('noPreview')}</span>
           </div>
         ) : (
           // eslint-disable-next-line @next/next/no-img-element -- a signed Storage URL that expires; the optimizer would cache it
@@ -115,23 +115,23 @@ export function DocumentTile({
         )}
       </div>
       <div className="flex min-w-0 flex-col gap-1 p-4">
-        <p className="text-small font-medium text-ink-muted">{document.categoryLabel}</p>
+        <p className="text-body-sm font-medium text-text-muted">{document.categoryLabel}</p>
         <ExtractionPill documentId={document.id} status={extraction} workerOffline={workerOffline} />
         <Link
           href={`/documents/${document.id}`}
           prefetch={false}
           data-testid="document-link"
-          className="text-body font-medium break-words text-ink underline-offset-4 hover:underline"
+          className="text-body font-medium break-words text-text underline-offset-4 hover:underline"
         >
           {document.title}
         </Link>
         {showProperty ? (
-          <p data-testid="document-property-name" className="text-small break-words text-ink-2">
+          <p data-testid="document-property-name" className="text-body-sm break-words text-text-secondary">
             {document.propertyName ?? t('noProperty')}
           </p>
         ) : null}
         {document.expiry === null ? null : (
-          <p data-testid="document-expiry" className={cn('text-small font-medium', document.expiry.expired ? 'text-overdue' : 'text-due')}>
+          <p data-testid="document-expiry" className={cn('text-body-sm font-medium', document.expiry.expired ? 'text-danger-text' : 'text-warning-text')}>
             {document.expiry.text}
           </p>
         )}

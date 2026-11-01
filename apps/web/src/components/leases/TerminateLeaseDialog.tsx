@@ -20,9 +20,9 @@ import type { IssuedBill } from './LeaseActions';
 function BlockingBill({ bill }: { bill: IssuedBill }) {
   const t = useTranslations('leases');
   return (
-    <div data-testid="terminate-blocked-by" className="flex flex-col gap-2 text-body text-ink">
+    <div data-testid="terminate-blocked-by" className="flex flex-col gap-2 text-body text-text">
       <p>{t('terminateBlockedBy', { number: bill.number })}</p>
-      <IntentLink href={`/collections/invoices/${bill.id}`} className="self-start font-medium text-accent underline underline-offset-4">
+      <IntentLink href={`/collections/invoices/${bill.id}`} className="self-start font-medium text-accent-text underline underline-offset-4">
         {t('terminateOpenBill', { number: bill.number })}
       </IntentLink>
     </div>

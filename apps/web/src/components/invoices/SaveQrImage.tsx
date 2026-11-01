@@ -59,12 +59,12 @@ export function SaveQrImage({ qr, number, matrix, labels }: { qr: PayableQr; num
   }
   return (
     <div className="flex flex-col gap-2">
-      <button type="button" data-testid="qr-save" onClick={() => void save()} className={buttonVariants({ variant: 'outline' })}>
+      <button type="button" data-testid="qr-save" onClick={() => void save()} className={buttonVariants({ variant: 'secondary' })}>
         <Download aria-hidden="true" />
         {labels.save}
       </button>
       {failed ? (
-        <p role="alert" className="text-small text-overdue">
+        <p role="alert" className="text-body-sm text-danger-text">
           {labels.failed}
         </p>
       ) : null}

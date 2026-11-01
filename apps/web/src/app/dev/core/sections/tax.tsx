@@ -56,12 +56,12 @@ export async function TaxSection({ taxYear }: { taxYear?: string | undefined }) 
 
   return (
     <section aria-labelledby="tax-heading" data-section="tax" id="tax" className="flex flex-col gap-4">
-      <h2 id="tax-heading" className="text-lead font-semibold">
+      <h2 id="tax-heading" className="text-headline font-semibold">
         {t('title')}
       </h2>
-      <p className="text-small text-ink-muted">{t('intro')}</p>
+      <p className="text-body-sm text-text-muted">{t('intro')}</p>
 
-      <div data-testid="tax-rule" data-year={year} data-state={selected?.kind ?? 'unavailable'} className="flex flex-col gap-1 text-small">
+      <div data-testid="tax-rule" data-year={year} data-state={selected?.kind ?? 'unavailable'} className="flex flex-col gap-1 text-body-sm">
         <h3 className="font-medium">{t('ruleFor', { year })}</h3>
         {!loaded.ok && <p>{t('ruleUnavailable', { reason: loaded.reason })}</p>}
         {selected?.kind === 'no_rule' && <p data-testid="tax-no-rule">{notes('noRule', { year })}</p>}
@@ -74,7 +74,7 @@ export async function TaxSection({ taxYear }: { taxYear?: string | undefined }) 
         )}
       </div>
 
-      <table className="w-full text-left text-small max-sm:block">
+      <table className="w-full text-left text-body-sm max-sm:block">
         <thead className="max-sm:sr-only">
           <tr className="border-b">
             {[t('example'), t('inputs'), t('revenue'), t('thresholdTotal'), t('vat'), t('pit'), t('notes'), t('result')].map((label) => (
@@ -119,7 +119,7 @@ export async function TaxSection({ taxYear }: { taxYear?: string | undefined }) 
               >
                 {cells.map(([cell, label, lines]) => (
                   <td key={cell} className={`py-1 pr-4 wrap-anywhere max-sm:contents ${cell === 'result' && !matches ? 'font-medium underline' : ''}`}>
-                    <span aria-hidden="true" className="font-sans font-normal text-meta sm:hidden">
+                    <span aria-hidden="true" className="font-sans font-normal text-caption sm:hidden">
                       {label}
                     </span>
                     <span data-cell={cell} className="flex flex-col">

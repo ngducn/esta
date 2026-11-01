@@ -4,7 +4,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { compile } from 'tailwindcss';
 import { describe, expect, it } from 'vitest';
-import { densities, typeScale, typefaces } from '@/design/tokens';
+import { densities, typeStyles, typefaces } from '@/design/tokens';
 
 const globalsPath = fileURLToPath(new URL('./globals.css', import.meta.url));
 const require = createRequire(import.meta.url);
@@ -30,23 +30,31 @@ const rulesFor = (css: string, className: string) => {
 
 describe('globals.css', () => {
   it('ties dark: utilities to data-theme="dark", which the esta_theme cookie sets', async () => {
-    const [chosen] = rulesFor(await build(['dark:bg-ink']), 'dark:bg-ink');
-    expect(chosen).toMatch(/^\.dark\\:bg-ink:where\(\[data-theme="dark"\], \[data-theme="dark"\] \*\) \{/);
+    const [chosen] = rulesFor(await build(['dark:bg-surface']), 'dark:bg-surface');
+    expect(chosen).toMatch(/^\.dark\\:bg-surface:where\(\[data-theme="dark"\], \[data-theme="dark"\] \*\) \{/);
   });
 
   it('never follows the system dark setting, so light stays the default', async () => {
-    const css = await build(['dark:bg-ink']);
+    const css = await build(['dark:bg-surface']);
     expect(css).not.toContain('prefers-color-scheme: dark');
   });
 
-  it('lets compact density retune every spacing utility through one variable and leaves type alone', async () => {
-    const css = await build(['p-4', 'gap-2', 'text-small', 'text-body']);
-    expect(rulesFor(css, 'p-4').join('')).toContain('padding: calc(var(--spacing) * 4)');
-    expect(rulesFor(css, 'gap-2').join('')).toContain('gap: calc(var(--spacing) * 2)');
-    expect(css).toMatch(/:root\[data-density="compact"\] \{\s*--spacing: 0\.1875rem;/);
-    expect(densities.compact.unitPx).toBeLessThan(densities.comfortable.unitPx);
-    expect([...rulesFor(css, 'text-small'), ...rulesFor(css, 'text-body')].join('')).not.toContain('--spacing');
-    expect(typeScale.small.px, 'the compact density floor').toBeGreaterThanOrEqual(15);
+  it('lets Gọn retune the component variables and leaves type and the spacing unit alone', async () => {
+    const css = await build(['min-h-control-h', 'p-card-pad', 'gap-stack', 'p-4', 'text-body-sm', 'text-body']);
+    expect(rulesFor(css, 'min-h-control-h').join('')).toContain('min-height: var(--control-h)');
+    expect(rulesFor(css, 'p-card-pad').join('')).toContain('padding: var(--card-pad)');
+    expect(css).toMatch(/:root\[data-density="compact"\] \{\s*--control-h: 2\.5rem;/);
+    expect(css).not.toMatch(/data-density="compact"\] \{[^}]*--spacing/);
+    expect(css).toMatch(/@media \(pointer: coarse\) \{\s*:root\[data-density="compact"\] \{\s*--control-h: 2\.75rem;/);
+    expect(densities.compact['control-h']).toBeLessThan(densities.comfortable['control-h']);
+    expect([...rulesFor(css, 'text-body-sm'), ...rulesFor(css, 'text-body')].join('')).not.toMatch(/--(control-h|card-pad|stack|spacing)/);
+    expect(typeStyles['body-sm'].px, 'the smallest reading size').toBeGreaterThanOrEqual(15);
+  });
+
+  it('keeps a 400 type style from setting a weight, so a semibold heading keeps its weight', async () => {
+    const css = await build(['text-body', 'text-headline']);
+    expect(rulesFor(css, 'text-body').join('')).not.toContain('font-weight');
+    expect(rulesFor(css, 'text-headline').join('')).toContain('font-weight: var(--tw-font-weight, 600)');
   });
 
   it('offers only the font weights the typefaces ship, none heavier than semibold', async () => {

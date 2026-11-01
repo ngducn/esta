@@ -207,7 +207,7 @@ export function ExpenseSheet({
                 src={preview}
                 alt={t('receiptAlt')}
                 data-testid="receipt-preview"
-                className="max-h-56 w-full rounded-md border border-rule bg-surface-2 object-contain lg:max-h-[70dvh]"
+                className="max-h-56 w-full rounded-md border border-border bg-bg-subtle object-contain lg:max-h-[70dvh]"
               />
             </figure>
           ) : null}
@@ -217,11 +217,11 @@ export function ExpenseSheet({
               <SheetTitle ref={title} tabIndex={-1} className="outline-none">
                 {editing === null ? t('titleNew') : t('titleEdit')}
               </SheetTitle>
-              <SheetDescription className="font-medium break-words text-ink">{scope.nickname}</SheetDescription>
+              <SheetDescription className="font-medium break-words text-text">{scope.nickname}</SheetDescription>
             </div>
 
             {offline ? (
-              <p role="status" data-testid="expense-offline" className="rounded-md border border-rule bg-surface-2 px-4 py-3 text-body text-ink">
+              <p role="status" data-testid="expense-offline" className="rounded-md border border-border bg-bg-subtle px-4 py-3 text-body text-text">
                 {t('offline')}
               </p>
             ) : null}
@@ -239,12 +239,12 @@ export function ExpenseSheet({
             />
 
             <fieldset className="flex flex-col gap-2" aria-describedby={`${fieldId}-category`}>
-              <legend className="mb-2 text-body font-medium text-ink">{t('category')}</legend>
+              <legend className="mb-2 text-body font-medium text-text">{t('category')}</legend>
               <div className="flex flex-wrap gap-2" data-testid="expense-categories">
                 {EXPENSE_CATEGORY_IDS.map((id) => (
                   <label
                     key={id}
-                    className="flex min-h-touch cursor-pointer items-center gap-1.5 rounded-full border border-field bg-surface px-4 text-body font-medium text-ink transition-colors duration-(--duration-fast) ease-standard hover:border-ink-muted has-checked:border-ink has-checked:bg-ink has-checked:text-surface has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent"
+                    className="flex min-h-touch cursor-pointer items-center gap-1.5 rounded-full border border-border-field bg-surface px-4 text-body font-medium text-text transition-colors duration-(--duration-fast) ease-standard hover:border-border-field has-checked:border-accent-border has-checked:bg-accent-subtle has-checked:text-accent-text has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus-ring"
                   >
                     <input
                       type="radio"
@@ -281,13 +281,13 @@ export function ExpenseSheet({
               </div>
             ) : (
               <div className="flex flex-wrap items-center justify-between gap-x-3 text-body">
-                <p className="text-ink">
+                <p className="text-text">
                   <span className="font-medium">{t('date')}</span>{' '}
-                  <span data-testid="expense-date" className="figures text-ink-2">
+                  <span data-testid="expense-date" className="num text-text-secondary">
                     {(editing?.paidOn ?? scope.today) === scope.today ? t('dateToday', { date }) : date}
                   </span>
                 </p>
-                <button type="button" data-testid="expense-change-date" onClick={() => setEditingDate(true)} className={cn(buttonVariants({ variant: 'quiet' }), 'px-0')}>
+                <button type="button" data-testid="expense-change-date" onClick={() => setEditingDate(true)} className={cn(buttonVariants({ variant: 'ghost' }), 'px-0')}>
                   {t('changeDate')}
                 </button>
               </div>
@@ -325,7 +325,7 @@ export function ExpenseSheet({
             <ReceiptField receipt={receipt} disabled={pending} onPick={() => setErrors((errors) => without(errors, 'save'))} />
 
             {editing === null ? null : (
-              <button type="button" data-testid="expense-delete" onClick={remove} disabled={pending} className={cn(buttonVariants({ variant: 'quiet' }), 'self-start px-0 text-overdue')}>
+              <button type="button" data-testid="expense-delete" onClick={remove} disabled={pending} className={cn(buttonVariants({ variant: 'ghost' }), 'self-start px-0 text-danger-text')}>
                 <Trash2 aria-hidden="true" />
                 {t('delete')}
               </button>

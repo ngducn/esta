@@ -26,9 +26,9 @@ export default async function PropertyActivityPage({ params }: { params: Promise
         event: t('event', { event, name: eventParams.name ?? '' }),
         time,
         date,
-        b: (chunks) => <strong className="font-medium text-ink">{chunks}</strong>,
+        b: (chunks) => <strong className="font-medium text-text">{chunks}</strong>,
         when: (chunks) => (
-          <time dateTime={row.at} className="text-ink-muted">
+          <time dateTime={row.at} className="text-text-muted">
             {chunks}
           </time>
         ),

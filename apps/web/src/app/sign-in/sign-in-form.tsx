@@ -46,7 +46,7 @@ export function SignInForm({ copy }: { copy: SignInCopy }) {
   if (state.step === 'email') {
     return (
       <form action={action} className="flex flex-col gap-4" noValidate>
-        <p className="text-ink-2">{copy.emailIntro}</p>
+        <p className="text-text-secondary">{copy.emailIntro}</p>
         <div className="flex flex-col gap-2">
           <label htmlFor="email" className="font-medium">
             {copy.emailLabel}
@@ -65,7 +65,7 @@ export function SignInForm({ copy }: { copy: SignInCopy }) {
             aria-describedby={error === null ? undefined : 'email-error'}
             className={fieldClass}
           />
-          <p id="email-error" role="alert" className="min-h-6 font-medium text-overdue">
+          <p id="email-error" role="alert" className="min-h-6 font-medium text-danger-text">
             {error}
           </p>
         </div>

@@ -1,0 +1,48 @@
+<!-- @dsCard group="App shell" height=920 width=1200 subtitle="Five tabs with icon and word; current is a blue pill behind the icon; at 100% and 130% text in a 390 phone" -->
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><title>Bottom nav item</title></head>
+<body>
+<div id="src">
+  <p class="ds-why"><b>Icon and word on every tab, current marked by a blue pill.</b> Mẹ navigates by the word, so labels never hide; at 130% text a label may take two lines and the bar grows rather than truncating. The bar sits above the home indicator, never under it.</p>
+
+  <div class="ds-matrix" style="--ds-cell: 96px">
+    <div class="ds-cell"><span class="ds-cap">Default</span><a class="es-tab" href="#"><span class="es-tab__icon"><i data-icon="building-2"></i></span>Tài sản</a></div>
+    <div class="ds-cell"><span class="ds-cap">Current</span><a class="es-tab" href="#" aria-current="page"><span class="es-tab__icon"><i data-icon="building-2"></i></span>Tài sản</a></div>
+    <div class="ds-cell"><span class="ds-cap">Pressed</span><a class="es-tab is-active" href="#"><span class="es-tab__icon"><i data-icon="building-2"></i></span>Tài sản</a></div>
+    <div class="ds-cell"><span class="ds-cap">Focus-visible</span><a class="es-tab is-focus" href="#"><span class="es-tab__icon"><i data-icon="building-2"></i></span>Tài sản</a></div>
+    <div class="ds-cell"><span class="ds-cap">Count</span><a class="es-tab" href="#"><span class="es-tab__icon"><i data-icon="banknote"></i><span class="es-count" aria-label="2 phòng quá hạn">2</span></span>Thu tiền</a></div>
+  </div>
+
+  <div class="ds-cell"><span class="ds-cap">100% text · 390 phone</span>
+    <div class="ds-phone" style="height: 172px">
+      <div class="ds-listrow"><div class="ds-listrow__main"><span class="ds-listrow__title">Phòng 5</span><span class="ds-listrow__sub">Trần Demo An</span></div></div>
+      <nav class="es-tabbar" aria-label="Điều hướng chính" style="position: absolute; left: 0; right: 0; bottom: 0; --tabbar-safe: var(--space-8)">
+        <a class="es-tab" href="#"><span class="es-tab__icon"><i data-icon="house"></i></span>Tổng quan</a>
+        <a class="es-tab" href="#"><span class="es-tab__icon"><i data-icon="building-2"></i></span>Tài sản</a>
+        <a class="es-tab" href="#" aria-current="page"><span class="es-tab__icon"><i data-icon="banknote"></i><span class="es-count" aria-label="2 phòng quá hạn">2</span></span>Thu tiền</a>
+        <a class="es-tab" href="#"><span class="es-tab__icon"><i data-icon="file-text"></i></span>Tài liệu</a>
+        <a class="es-tab" href="#"><span class="es-tab__icon"><i data-icon="message-square-text"></i></span>Trợ lý</a>
+      </nav>
+      <span class="ds-home"></span>
+    </div>
+  </div>
+
+  <div class="ds-cell"><span class="ds-cap">130% text · same phone; labels wrap to two lines, the bar grows</span>
+    <div class="ds-phone" style="height: 240px">
+      <div style="zoom: 1.3; width: 100%; position: absolute; left: 0; bottom: 0">
+        <nav class="es-tabbar" aria-label="Điều hướng chính" style="--tabbar-safe: calc(var(--space-8) / 1.3)">
+          <a class="es-tab" href="#"><span class="es-tab__icon"><i data-icon="house"></i></span>Tổng quan</a>
+          <a class="es-tab" href="#"><span class="es-tab__icon"><i data-icon="building-2"></i></span>Tài sản</a>
+          <a class="es-tab" href="#" aria-current="page"><span class="es-tab__icon"><i data-icon="banknote"></i><span class="es-count" aria-label="2 phòng quá hạn">2</span></span>Thu tiền</a>
+          <a class="es-tab" href="#"><span class="es-tab__icon"><i data-icon="file-text"></i></span>Tài liệu</a>
+          <a class="es-tab" href="#"><span class="es-tab__icon"><i data-icon="message-square-text"></i></span>Trợ lý</a>
+        </nav>
+      </div>
+      <span class="ds-home"></span>
+    </div>
+  </div>
+</div>
+<script>Esta.themes('#src');</script>
+</body>
+</html>

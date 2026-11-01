@@ -140,16 +140,16 @@ export function StatementUpload({ accounts, presets }: { accounts: readonly Acco
 
   const counts =
     read === null ? null : (
-      <span data-testid="statement-read" className="flex flex-col text-ink">
+      <span data-testid="statement-read" className="flex flex-col text-text">
         <span className="break-words">{t('read', { file: view?.chosen.name ?? '', count: read.rows.length })}</span>
-        {read.rejected.length === 0 ? null : <span className="text-ink-2">{t('readRefused', { count: read.rejected.length })}</span>}
+        {read.rejected.length === 0 ? null : <span className="text-text-secondary">{t('readRefused', { count: read.rejected.length })}</span>}
       </span>
     );
   const columns = view?.columns;
 
   return (
-    <form noValidate onSubmit={submit} data-testid="statement-upload" className="flex max-w-2xl flex-col gap-5 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
-      <p className="max-w-prose text-body text-ink-2">{t('intro')}</p>
+    <form noValidate onSubmit={submit} data-testid="statement-upload" className="flex max-w-2xl flex-col gap-5 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
+      <p className="max-w-prose text-body text-text-secondary">{t('intro')}</p>
       {/* Before hydration a choice would revert to the default account, so the picker waits for React. */}
       <FormSelect
         label={t('account')}
@@ -160,9 +160,9 @@ export function StatementUpload({ accounts, presets }: { accounts: readonly Acco
         disabled={!hydrated || saving}
       />
       <div className="flex flex-col gap-2">
-        <p className="text-body font-medium text-ink">{t('file')}</p>
-        <p className="text-small text-ink-muted">{t('fileHint')}</p>
-        <label className={buttonVariants({ variant: 'outline', className: 'mt-1 w-fit cursor-pointer focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent' })}>
+        <p className="text-body font-medium text-text">{t('file')}</p>
+        <p className="text-body-sm text-text-muted">{t('fileHint')}</p>
+        <label className={buttonVariants({ variant: 'secondary', className: 'mt-1 w-fit cursor-pointer focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus-ring' })}>
           <FileSpreadsheet aria-hidden="true" />
           {view === null ? t('chooseFile') : t('chooseAnother')}
           <input
@@ -175,24 +175,24 @@ export function StatementUpload({ accounts, presets }: { accounts: readonly Acco
           />
         </label>
         <FieldMessage id="statement-file-message" error={error}>
-          {reading ? <span className="text-ink-muted">{t('reading')}</span> : null}
+          {reading ? <span className="text-text-muted">{t('reading')}</span> : null}
           {earlier === null ? null : (
-            <span data-testid="statement-nothing-new" className="text-ink">
+            <span data-testid="statement-nothing-new" className="text-text">
               {t('nothingNew')}
             </span>
           )}
           {view?.picks === null && ready ? counts : null}
         </FieldMessage>
         {view?.picks === null && columns?.kind === 'preset' ? (
-          <p data-testid="statement-preset" className="flex flex-wrap items-center gap-x-3 text-body text-ink-2">
+          <p data-testid="statement-preset" className="flex flex-wrap items-center gap-x-3 text-body text-text-secondary">
             {t('presetUsed')}
-            <Button type="button" variant="quiet" data-testid="statement-preset-change" onClick={() => show(viewOf(view.chosen, presets[accountId], view.chosen.reader.picksOf(columns.header)))}>
+            <Button type="button" variant="ghost" data-testid="statement-preset-change" onClick={() => show(viewOf(view.chosen, presets[accountId], view.chosen.reader.picksOf(columns.header)))}>
               {t('presetChange')}
             </Button>
           </p>
         ) : null}
         {earlier === null ? null : (
-          <Link href={`/collections/import/${earlier}`} data-testid="statement-earlier" className={buttonVariants({ variant: 'quiet', className: 'w-fit' })}>
+          <Link href={`/collections/import/${earlier}`} data-testid="statement-earlier" className={buttonVariants({ variant: 'ghost', className: 'w-fit' })}>
             {t('openEarlier')}
           </Link>
         )}

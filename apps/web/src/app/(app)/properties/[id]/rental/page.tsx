@@ -74,36 +74,36 @@ export default async function PropertyRentalPage({ params }: { params: Promise<{
         <div className="grid gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
           <section aria-labelledby="rental-units" data-testid="rental-units" className="flex flex-col gap-3">
             <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-              <h2 id="rental-units" className="text-h3 text-ink">
+              <h2 id="rental-units" className="text-title-3 text-text">
                 {t('unitsTitle')}
               </h2>
               {total === null ? null : (
-                <p data-testid="rental-total" className="text-small text-ink-muted">
-                  {t('totalRent')} <span className="figures text-body font-medium text-ink">{formatVnd(total, locale)}</span>
+                <p data-testid="rental-total" className="text-body-sm text-text-muted">
+                  {t('totalRent')} <span className="num text-body font-medium text-text">{formatVnd(total, locale)}</span>
                 </p>
               )}
             </div>
             {metered ? (
-              <Link href={`/properties/${id}/rental/meters`} data-testid="enter-readings" className={buttonVariants({ variant: 'outline', className: 'self-start' })}>
+              <Link href={`/properties/${id}/rental/meters`} data-testid="enter-readings" className={buttonVariants({ variant: 'secondary', className: 'self-start' })}>
                 <Gauge aria-hidden="true" />
                 {t('enterReadings')}
               </Link>
             ) : null}
             {declared === null || declared === rooms ? null : (
-              <p data-testid="room-count-mismatch" className="text-body text-ink-2">
+              <p data-testid="room-count-mismatch" className="text-body text-text-secondary">
                 {t('roomCountMismatch', { declared, actual: rooms })}
               </p>
             )}
-            {onlyWhole && canEdit ? <p className="max-w-prose text-body text-ink-2">{t('wholeHint')}</p> : null}
+            {onlyWhole && canEdit ? <p className="max-w-prose text-body text-text-secondary">{t('wholeHint')}</p> : null}
             <UnitList propertyId={id} units={rental.units} leases={unitLeases(rental.units, leases, asOf)} canEdit={canEdit} roomingHouse={roomingHouse} />
           </section>
           <section aria-labelledby="rental-accounts" data-testid="rental-accounts" className="flex flex-col gap-3">
             <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
-              <h2 id="rental-accounts" className="text-h3 text-ink">
+              <h2 id="rental-accounts" className="text-title-3 text-text">
                 {t('accountsTitle')}
               </h2>
               {addAccount === null || rental.accounts.length === 0 ? null : (
-                <Link href={addAccount.href} data-testid="add-account" className={buttonVariants({ variant: 'outline' })}>
+                <Link href={addAccount.href} data-testid="add-account" className={buttonVariants({ variant: 'secondary' })}>
                   <Plus aria-hidden="true" />
                   {addAccount.label}
                 </Link>

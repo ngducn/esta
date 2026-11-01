@@ -127,16 +127,16 @@ export async function VietQrSection() {
 
   return (
     <section aria-labelledby="vietqr-heading" data-section="vietqr" className="flex flex-col gap-4">
-      <h2 id="vietqr-heading" className="text-lead font-semibold">
+      <h2 id="vietqr-heading" className="text-headline font-semibold">
         {t('title')}
       </h2>
-      <p className="text-small text-ink-muted">{t('intro')}</p>
+      <p className="text-body-sm text-text-muted">{t('intro')}</p>
 
       <div className="grid gap-6 sm:grid-cols-2">
         <figure data-testid="vietqr-canonical" data-payload={canonical.payload} className="flex flex-col gap-3">
           <figcaption className="font-medium">{t('canonical', { amount: money(ESTA_INVOICE.input.outstandingVnd) })}</figcaption>
           <VietQrScan id="vietqr-canonical" payload={canonical.payload} labels={scanLabels} />
-          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-small tabular-nums">
+          <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-body-sm tabular-nums">
             <dt>{t('bin')}</dt>
             <dd data-field="bin">{canonicalDecoded.ok ? canonicalDecoded.value.bin : ''}</dd>
             <dt>{t('account')}</dt>
@@ -154,7 +154,7 @@ export async function VietQrSection() {
               {canonical.payload}
             </dd>
           </dl>
-          <p data-testid="vietqr-crc" data-match={canonicalDecoded.ok ? 'match' : 'mismatch'} className="text-small">
+          <p data-testid="vietqr-crc" data-match={canonicalDecoded.ok ? 'match' : 'mismatch'} className="text-body-sm">
             {canonicalDecoded.ok ? t('crcMatch') : t('crcMismatch')}
           </p>
         </figure>
@@ -162,12 +162,12 @@ export async function VietQrSection() {
         <figure data-testid="vietqr-overdue" data-payload={overdue.payload} className="flex flex-col gap-3">
           <figcaption className="font-medium">{t('overdue', { amount: money(OVERDUE.outstandingVnd) })}</figcaption>
           <VietQrScan id="vietqr-overdue" payload={overdue.payload} labels={scanLabels} />
-          <p className="wrap-anywhere font-mono text-small">{overdue.payload}</p>
+          <p className="wrap-anywhere font-mono text-body-sm">{overdue.payload}</p>
         </figure>
       </div>
 
       <h3 className="font-medium">{t('examples')}</h3>
-      <table className="w-full text-left text-small max-sm:block">
+      <table className="w-full text-left text-body-sm max-sm:block">
         <thead className="max-sm:sr-only">
           <tr className="border-b">
             {columns.map((column) => (
@@ -196,7 +196,7 @@ export async function VietQrSection() {
               >
                 {cells.map(([cell, label, value]) => (
                   <td key={cell} className={`py-1 pr-4 wrap-anywhere ${cell === 'tag54' ? 'whitespace-nowrap' : ''} ${value === '' ? 'max-sm:hidden' : 'max-sm:contents'}`}>
-                    <span aria-hidden="true" className="font-sans font-normal text-meta sm:hidden">
+                    <span aria-hidden="true" className="font-sans font-normal text-caption sm:hidden">
                       {label}
                     </span>
                     <span data-cell={cell} className={cell === 'payload' ? 'font-mono' : ''}>

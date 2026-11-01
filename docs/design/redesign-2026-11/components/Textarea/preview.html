@@ -1,0 +1,45 @@
+<!-- @dsCard group="Forms" height=1500 width=1200 subtitle="Notes and reasons: grows to six lines, then scrolls; the count shows only near the limit" -->
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><title>Textarea</title></head>
+<body>
+<div id="src">
+  <p class="ds-why"><b>Room for a sentence, not a page.</b> The box opens two rows tall, grows with the text to six lines, then scrolls, so the save button never slides off a phone screen. The count is a plain caption on the right; past the limit it turns danger and the message under the box says the limit in words.</p>
+  <div class="ds-matrix" style="--ds-cell: 240px">
+    <div class="ds-cell"><span class="ds-cap">Empty</span>
+      <div class="es-field"><label class="es-field__label" for="ta-1">Ghi chú <span class="es-field__optional">(không bắt buộc)</span></label>
+        <textarea class="es-textarea" id="ta-1" rows="2" placeholder="Ví dụ: khách hẹn trả vào thứ Sáu"></textarea></div></div>
+    <div class="ds-cell"><span class="ds-cap">Filled, with count</span>
+      <div class="es-field"><label class="es-field__label" for="ta-2">Ghi chú</label>
+        <textarea class="es-textarea" id="ta-2" rows="2" aria-describedby="ta-2c">Khách trả trễ 3 ngày, đã nhắc qua điện thoại hôm 05/10.</textarea>
+        <div class="es-field__foot"><span class="es-field__count" id="ta-2c">55/500</span></div></div></div>
+    <div class="ds-cell"><span class="ds-cap">Hover</span>
+      <div class="es-field"><label class="es-field__label" for="ta-3">Ghi chú</label>
+        <textarea class="es-textarea is-hover" id="ta-3" rows="2">Khách trả trễ 3 ngày.</textarea></div></div>
+    <div class="ds-cell"><span class="ds-cap">Focus-visible</span>
+      <div class="es-field"><label class="es-field__label" for="ta-4">Ghi chú</label>
+        <textarea class="es-textarea is-focus" id="ta-4" rows="2">Khách trả trễ 3 ngày.</textarea></div></div>
+    <div class="ds-cell"><span class="ds-cap">Error (required)</span>
+      <div class="es-field is-error"><label class="es-field__label" for="ta-5">Lý do khấu trừ</label>
+        <textarea class="es-textarea" id="ta-5" rows="2" aria-invalid="true" aria-describedby="ta-5m"></textarea>
+        <p class="es-field__msg" id="ta-5m"><i data-icon="triangle-alert" data-size="16"></i><span>Ghi lý do khấu trừ.</span></p></div></div>
+    <div class="ds-cell"><span class="ds-cap">Disabled</span>
+      <div class="es-field is-disabled"><label class="es-field__label" for="ta-6">Ghi chú hợp đồng</label>
+        <textarea class="es-textarea" id="ta-6" rows="2" disabled aria-describedby="ta-6h">Thanh toán vào ngày 5 hằng tháng.</textarea>
+        <p class="es-field__hint" id="ta-6h">Hợp đồng đã kết thúc.</p></div></div>
+    <div class="ds-cell"><span class="ds-cap">Read-only</span>
+      <div class="es-field"><label class="es-field__label" for="ta-7">Ghi chú trên sổ</label>
+        <textarea class="es-textarea" id="ta-7" rows="2" readonly>Thửa đất có 20 m² thuộc hành lang an toàn đường bộ.</textarea></div></div>
+    <div class="ds-cell"><span class="ds-cap">Hint and count together</span>
+      <div class="es-field"><label class="es-field__label" for="ta-8">Lời nhắn trên hóa đơn</label>
+        <textarea class="es-textarea" id="ta-8" rows="2" aria-describedby="ta-8h ta-8c">Cảm ơn anh chị đã đóng tiền đúng hạn.</textarea>
+        <div class="es-field__foot"><p class="es-field__hint" id="ta-8h">Khách thấy dòng này dưới mã QR.</p><span class="es-field__count" id="ta-8c">37/120</span></div></div></div>
+    <div class="ds-cell" style="grid-column: 1 / -1"><span class="ds-cap">Long content, over the limit: six lines then scroll; count and message in danger</span>
+      <div class="es-field is-error is-over"><label class="es-field__label" for="ta-9">Lý do khấu trừ</label>
+        <textarea class="es-textarea" id="ta-9" rows="2" aria-invalid="true" aria-describedby="ta-9m ta-9c">Trừ 1.200.000 ₫ tiền cọc: sơn lại tường phòng ngủ bị ố 600.000 ₫, thay ổ khóa cửa chính 350.000 ₫, sửa vòi nước nhà tắm 250.000 ₫. Đã chụp ảnh lúc nhận phòng ngày 31/10/2026 và gửi khách xem trước khi trả cọc. Khách đồng ý phần sơn và vòi nước, còn ổ khóa thì khách nói đã hỏng từ lúc dọn vào nên muốn chia đôi. Hẹn gặp lại cuối tuần để nói chuyện thêm, nếu khách đồng ý chia đôi thì trả lại 175.000 ₫. Biên nhận sửa chữa để trong túi hồ sơ Phòng 3, ảnh lưu ở tab Giấy tờ của tài sản này, ghi chú lại để nhớ khi tính tiền cuối năm cho đầy đủ.</textarea>
+        <div class="es-field__foot"><p class="es-field__msg" id="ta-9m"><i data-icon="triangle-alert" data-size="16"></i><span>Tối đa 500 ký tự. Bớt 42 ký tự rồi lưu.</span></p><span class="es-field__count" id="ta-9c">542/500</span></div></div></div>
+  </div>
+</div>
+<script>Esta.themes('#src', { densities: true });</script>
+</body>
+</html>

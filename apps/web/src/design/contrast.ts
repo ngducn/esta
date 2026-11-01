@@ -1,56 +1,34 @@
-import type { Oklch } from './tokens';
+import type { Hex } from './tokens';
 
 export type Rgb = readonly [r: number, g: number, b: number];
 
-const GAMUT_EPSILON = 1e-4;
-
-function oklchToLinearSrgb([lightness, chroma, hue]: Oklch): Rgb {
-  const l = lightness / 100;
-  const a = chroma * Math.cos((hue * Math.PI) / 180);
-  const b = chroma * Math.sin((hue * Math.PI) / 180);
-  const L = (l + 0.3963377774 * a + 0.2158037573 * b) ** 3;
-  const M = (l - 0.1055613458 * a - 0.0638541728 * b) ** 3;
-  const S = (l - 0.0894841775 * a - 1.291485548 * b) ** 3;
-  return [
-    4.0767416621 * L - 3.3077115913 * M + 0.2309699292 * S,
-    -1.2684380046 * L + 2.6097574011 * M - 0.3413193965 * S,
-    -0.0041960863 * L - 0.7034186147 * M + 1.707614701 * S,
-  ];
+export function hexToRgb(color: Hex): Rgb {
+  const value = Number.parseInt(color.slice(1), 16);
+  return [(value >> 16) & 0xff, (value >> 8) & 0xff, value & 0xff];
 }
 
-export function inSrgbGamut(color: Oklch): boolean {
-  return oklchToLinearSrgb(color).every((v) => v >= -GAMUT_EPSILON && v <= 1 + GAMUT_EPSILON);
+const channelHex = (channel: number) => Math.round(channel).toString(16).padStart(2, '0');
+
+const linear = (channel: number) => {
+  const v = channel / 255;
+  return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+};
+
+function relativeLuminance(color: Hex): number {
+  const [r, g, b] = hexToRgb(color);
+  return 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b);
 }
 
-const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
-const encode = (v: number) => (v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055);
-
-export function oklchToSrgb255(color: Oklch): Rgb {
-  const [r, g, b] = oklchToLinearSrgb(color);
-  const to255 = (v: number) => Math.round(encode(clamp01(v)) * 255);
-  return [to255(r), to255(g), to255(b)];
-}
-
-/** `#rrggbb`, for the places that take a hex string: WebGL map layers, the app icons and the receipt picture. */
-export function oklchHex(color: Oklch): `#${string}` {
-  return `#${oklchToSrgb255(color)
-    .map((channel) => channel.toString(16).padStart(2, '0'))
-    .join('')}`;
-}
-
-function relativeLuminance(color: Oklch): number {
-  const [r, g, b] = oklchToLinearSrgb(color);
-  return 0.2126 * clamp01(r) + 0.7152 * clamp01(g) + 0.0722 * clamp01(b);
-}
-
-export function contrastRatio(foreground: Oklch, background: Oklch): number {
+export function contrastRatio(foreground: Hex, background: Hex): number {
   const a = relativeLuminance(foreground);
   const b = relativeLuminance(background);
   return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
 
-/** `color-mix(in oklch, a <share>, b)` for opaque colors: hue takes the shorter arc. */
-export function mixOklch(a: Oklch, b: Oklch, share: number): Oklch {
-  const hueStep = ((((a[2] - b[2]) % 360) + 540) % 360) - 180;
-  return [b[0] + (a[0] - b[0]) * share, b[1] + (a[1] - b[1]) * share, (b[2] + hueStep * share + 360) % 360];
+/** `a` at `share` opacity over `b`, as the browser composites a translucent fill (`bg-bg/85`) onto what lies under it. */
+export function blendHex(a: Hex, b: Hex, share: number): Hex {
+  const [ar, ag, ab] = hexToRgb(a);
+  const [br, bg, bb] = hexToRgb(b);
+  const mix = (over: number, under: number) => channelHex(over * share + under * (1 - share));
+  return `#${mix(ar, br)}${mix(ag, bg)}${mix(ab, bb)}`;
 }

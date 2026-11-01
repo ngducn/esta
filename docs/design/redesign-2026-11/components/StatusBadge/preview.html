@@ -1,0 +1,61 @@
+<!-- @dsCard group="Status" height=880 width=1200 subtitle="Icon + word + colour for paid, due, overdue, empty, draft and ended; a count for nav" -->
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><title>Status badge</title></head>
+<body>
+<div id="src">
+  <p class="ds-why"><b>Icon, word and colour together, never a dot.</b> Mẹ reads the word; the icon survives a grey screen or colour blindness; the colour is the third signal, not the only one.</p>
+
+  <div class="ds-matrix" style="--ds-cell: 150px">
+    <div class="ds-cell"><span class="ds-cap">Paid · success</span><span class="es-badge es-badge--paid"><i data-icon="circle-check"></i>Đã thu</span></div>
+    <div class="ds-cell"><span class="ds-cap">Due · warning</span><span class="es-badge es-badge--due"><i data-icon="clock"></i>Đến hạn hôm nay</span></div>
+    <div class="ds-cell"><span class="ds-cap">Overdue · danger</span><span class="es-badge es-badge--overdue"><i data-icon="triangle-alert"></i>Quá hạn 12 ngày</span></div>
+    <div class="ds-cell"><span class="ds-cap">Empty · neutral</span><span class="es-badge es-badge--empty"><i data-icon="circle-dashed"></i>Phòng trống</span></div>
+    <div class="ds-cell"><span class="ds-cap">Draft · info</span><span class="es-badge es-badge--draft"><i data-icon="pencil-line"></i>Bản nháp</span></div>
+    <div class="ds-cell"><span class="ds-cap">Ended · outline</span><span class="es-badge es-badge--ended"><i data-icon="archive"></i>Đã kết thúc</span></div>
+  </div>
+
+  <div class="ds-cell"><span class="ds-cap">On a card surface</span>
+    <div class="es-card ds-row">
+      <span class="es-badge es-badge--paid"><i data-icon="circle-check"></i>Đã thu</span>
+      <span class="es-badge es-badge--due"><i data-icon="clock"></i>Đến hạn sau 3 ngày</span>
+      <span class="es-badge es-badge--overdue"><i data-icon="triangle-alert"></i>Quá hạn 2 ngày</span>
+      <span class="es-badge es-badge--empty"><i data-icon="circle-dashed"></i>Trống từ 01/09</span>
+      <span class="es-badge es-badge--draft"><i data-icon="pencil-line"></i>Bản nháp</span>
+      <span class="es-badge es-badge--ended"><i data-icon="archive"></i>Đã kết thúc</span>
+    </div>
+  </div>
+
+  <div class="ds-cell"><span class="ds-cap">Large: property header and sheet title</span>
+    <div class="ds-row">
+      <span class="es-badge es-badge--lg es-badge--overdue"><i data-icon="triangle-alert"></i>Quá hạn 12 ngày</span>
+      <span class="es-badge es-badge--lg es-badge--paid"><i data-icon="circle-check"></i>Đã thu đủ tháng 10</span>
+    </div>
+  </div>
+
+  <div class="ds-matrix" style="--ds-cell: 220px">
+    <div class="ds-cell"><span class="ds-cap">Beside an amount: the number stays text-coloured</span>
+      <div class="ds-row"><span class="es-num" style="font-weight: 500">3.500.000 ₫</span><span class="es-badge es-badge--overdue"><i data-icon="triangle-alert"></i>Quá hạn 12 ngày</span></div>
+    </div>
+    <div class="ds-cell" style="max-width: 9.5rem"><span class="ds-cap">Long label at 152px: wraps, never ellipsis</span>
+      <span class="es-badge es-badge--due"><i data-icon="clock"></i>Đến hạn sau 3 ngày, ngày 10/10</span>
+    </div>
+    <div class="ds-cell"><span class="ds-cap">Count: digits only, beside a nav label</span>
+      <div class="ds-row"><span>Thu tiền</span><span class="es-count" aria-label="2 phòng quá hạn">2</span><span>Trợ lý</span><span class="es-count es-count--neutral" aria-label="12 việc">12</span></div>
+    </div>
+  </div>
+
+  <div class="ds-cell"><span class="ds-cap">Greyscale check: each status still reads by icon and word</span>
+    <div class="ds-row" style="filter: grayscale(1)">
+      <span class="es-badge es-badge--paid"><i data-icon="circle-check"></i>Đã thu</span>
+      <span class="es-badge es-badge--due"><i data-icon="clock"></i>Đến hạn hôm nay</span>
+      <span class="es-badge es-badge--overdue"><i data-icon="triangle-alert"></i>Quá hạn 12 ngày</span>
+      <span class="es-badge es-badge--empty"><i data-icon="circle-dashed"></i>Phòng trống</span>
+      <span class="es-badge es-badge--draft"><i data-icon="pencil-line"></i>Bản nháp</span>
+      <span class="es-badge es-badge--ended"><i data-icon="archive"></i>Đã kết thúc</span>
+    </div>
+  </div>
+</div>
+<script>Esta.themes('#src');</script>
+</body>
+</html>

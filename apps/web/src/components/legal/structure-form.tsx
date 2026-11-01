@@ -90,7 +90,7 @@ export function StructureForm({
             value={values.floorArea}
             maxLength={20}
             inputMode="decimal"
-            className="figures"
+            className="num"
             error={invalid === 'floorArea' ? t('areaInvalid', { reason: 'invalid' }) : null}
             onChange={set('floorArea')}
           />
@@ -100,7 +100,7 @@ export function StructureForm({
             value={values.footprint}
             maxLength={20}
             inputMode="decimal"
-            className="figures"
+            className="num"
             error={invalid === 'footprint' ? t('areaInvalid', { reason: 'invalid' }) : null}
             onChange={set('footprint')}
           />
@@ -109,7 +109,7 @@ export function StructureForm({
             value={values.floors}
             maxLength={3}
             inputMode="numeric"
-            className="figures"
+            className="num"
             error={invalid === 'floors' ? t('numberInvalid') : null}
             onChange={set('floors')}
           />
@@ -118,7 +118,7 @@ export function StructureForm({
             value={values.completedYear}
             maxLength={4}
             inputMode="numeric"
-            className="figures"
+            className="num"
             error={invalid === 'completedYear' ? t('numberInvalid') : null}
             onChange={set('completedYear')}
           />

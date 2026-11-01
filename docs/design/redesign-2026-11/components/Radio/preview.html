@@ -1,0 +1,51 @@
+<!-- @dsCard group="Forms" height=1400 width=1200 subtitle="One of a few, always in a fieldset with a legend" -->
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><title>Radio</title></head>
+<body>
+<div id="src">
+  <p class="ds-why"><b>Few choices, all visible.</b> Up to five options sit as radios so the choice is read, not hunted for in a menu; more than that becomes a select. The group always has a legend and one error for the whole group. Chosen fills blue with a white dot. When each option needs a sentence or an icon, use selection cards instead.</p>
+  <div class="ds-matrix" style="--ds-cell: 200px">
+    <div class="ds-cell"><span class="ds-cap">Unchecked</span>
+      <label class="es-radio"><input type="radio" class="es-radio__input" name="rd-1"><span class="es-radio__dot"></span><span class="es-radio__text">Hằng tháng</span></label></div>
+    <div class="ds-cell"><span class="ds-cap">Checked</span>
+      <label class="es-radio"><input type="radio" class="es-radio__input" name="rd-2" checked><span class="es-radio__dot"></span><span class="es-radio__text">Hằng tháng</span></label></div>
+    <div class="ds-cell"><span class="ds-cap">Hover</span>
+      <label class="es-radio is-hover"><input type="radio" class="es-radio__input" name="rd-3"><span class="es-radio__dot"></span><span class="es-radio__text">Hằng tháng</span></label></div>
+    <div class="ds-cell"><span class="ds-cap">Hover, checked</span>
+      <label class="es-radio is-hover"><input type="radio" class="es-radio__input" name="rd-4" checked><span class="es-radio__dot"></span><span class="es-radio__text">Hằng tháng</span></label></div>
+    <div class="ds-cell"><span class="ds-cap">Focus-visible</span>
+      <label class="es-radio is-focus"><input type="radio" class="es-radio__input" name="rd-5" checked><span class="es-radio__dot"></span><span class="es-radio__text">Hằng tháng</span></label></div>
+    <div class="ds-cell"><span class="ds-cap">Active (pressed)</span>
+      <label class="es-radio is-active"><input type="radio" class="es-radio__input" name="rd-6"><span class="es-radio__dot"></span><span class="es-radio__text">Hằng tháng</span></label></div>
+    <div class="ds-cell"><span class="ds-cap">Disabled</span>
+      <label class="es-radio is-disabled"><input type="radio" class="es-radio__input" name="rd-7" disabled><span class="es-radio__dot"></span><span class="es-radio__text">Hằng quý</span></label></div>
+    <div class="ds-cell"><span class="ds-cap">Disabled, checked</span>
+      <label class="es-radio is-disabled"><input type="radio" class="es-radio__input" name="rd-8" checked disabled><span class="es-radio__dot"></span><span class="es-radio__text">Hằng quý</span></label></div>
+  </div>
+  <div class="ds-matrix" style="--ds-cell: 240px">
+    <div class="ds-cell"><span class="ds-cap">Group</span>
+      <fieldset class="es-fieldset">
+        <legend>Kỳ thu tiền</legend>
+        <label class="es-radio"><input type="radio" class="es-radio__input" name="rd-g1" checked><span class="es-radio__dot"></span><span class="es-radio__text">Hằng tháng</span></label>
+        <label class="es-radio"><input type="radio" class="es-radio__input" name="rd-g1"><span class="es-radio__dot"></span><span class="es-radio__text">Hằng quý</span></label>
+        <label class="es-radio"><input type="radio" class="es-radio__input" name="rd-g1"><span class="es-radio__dot"></span><span class="es-radio__text">Hằng năm</span></label>
+      </fieldset></div>
+    <div class="ds-cell"><span class="ds-cap">Group error: one message for the group</span>
+      <fieldset class="es-fieldset is-error" aria-describedby="rd-em">
+        <legend>Cách nhận tiền</legend>
+        <label class="es-radio"><input type="radio" class="es-radio__input" name="rd-g2" aria-invalid="true"><span class="es-radio__dot"></span><span class="es-radio__text">Tiền mặt</span></label>
+        <label class="es-radio"><input type="radio" class="es-radio__input" name="rd-g2" aria-invalid="true"><span class="es-radio__dot"></span><span class="es-radio__text">Chuyển khoản</span></label>
+        <p class="es-field__msg" id="rd-em"><i data-icon="triangle-alert" data-size="16"></i><span>Chọn Tiền mặt hoặc Chuyển khoản.</span></p>
+      </fieldset></div>
+    <div class="ds-cell" style="grid-column: 1 / -1"><span class="ds-cap">Long content, with hints: the dot stays on the first line</span>
+      <fieldset class="es-fieldset">
+        <legend>Người đứng tên trên hợp đồng thuê</legend>
+        <label class="es-radio"><input type="radio" class="es-radio__input" name="rd-g3" checked><span class="es-radio__dot"></span><span class="es-radio__text">Nguyễn Thị Hường Demo<span class="es-radio__hint">Đứng tên trên sổ hồng, ký hợp đồng ngày 01/09/2026.</span></span></label>
+        <label class="es-radio"><input type="radio" class="es-radio__input" name="rd-g3"><span class="es-radio__dot"></span><span class="es-radio__text">Công ty TNHH Thương mại Dịch vụ Bất động sản Phú Thịnh Demo<span class="es-radio__hint">Khi khách thuê là công ty, ghi tên đúng như trên giấy phép kinh doanh.</span></span></label>
+      </fieldset></div>
+  </div>
+</div>
+<script>Esta.themes('#src', { densities: true });</script>
+</body>
+</html>

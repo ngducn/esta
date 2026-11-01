@@ -1,0 +1,108 @@
+<!-- @dsCard group="Foundations" page height=3270 width=1200 subtitle="Phone first: bottom nav and four columns, an icon rail at 840, a full sidebar at 1080, and safe areas on every phone" -->
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Layout</title>
+</head>
+<body>
+<div id="src">
+  <p class="ds-why"><b>Breakpoints are where the shell changes, not device names.</b> Phones get a bottom nav and a 4-column grid; at 840 an icon rail replaces it and tables become tables; at 1080 the sidebar gains its labels; past 1440 content stops widening and the margins grow. Drawn to one scale, 36%.</p>
+  <div class="ds-diagram" data-breakpoints></div>
+  <table class="ds-table">
+    <thead><tr><th>Breakpoint</th><th class="n">Min width</th><th>Shell</th></tr></thead>
+    <tbody>
+      <tr><td>phone</td><td class="n">0</td><td>Bottom nav (5 items), page header with date and account; 4 columns, 16 gutters, 16 page padding</td></tr>
+      <tr><td><code class="ds-code">bp-sm</code></td><td class="n">600</td><td>2-column card grids; tables still collapse to lists</td></tr>
+      <tr><td><code class="ds-code">bp-md</code></td><td class="n">840</td><td>Icon rail sidebar; tables become tables; 8 columns, 24 gutters, 32 padding</td></tr>
+      <tr><td><code class="ds-code">bp-lg</code></td><td class="n">1080</td><td>Full 256px sidebar with labels; 12 columns, 24 gutters</td></tr>
+      <tr><td><code class="ds-code">bp-xl</code></td><td class="n">1440</td><td>Content stops widening; margins grow</td></tr>
+    </tbody>
+  </table>
+
+  <div class="ds-grid2" style="align-items: start">
+    <div class="ds-box">
+      <p class="ds-sub">Maximum content width by page type</p>
+      <p class="ds-why"><b>Reading stays narrow, data gets room.</b> A form wider than 640 makes Mẹ's eyes travel; a rent table narrower than 1120 truncates names.</p>
+      <div class="ds-widths" data-widths></div>
+      <span class="ds-meta">Track = a 1440px window</span>
+    </div>
+    <div class="ds-box">
+      <p class="ds-sub">Safe areas on phones</p>
+      <p class="ds-why"><b>Nothing interactive lives in the home-indicator zone.</b> The bottom nav is 64 plus the inset; page content pads its bottom by that sum plus 16; toasts and a sheet's sticky footer sit above both.</p>
+      <div class="ds-diagram" data-safe></div>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  var S = 0.36, GAP = 52, TOP = 8, H = 324;
+  function r(x, y, w, h, cls, rx) { return '<rect class="' + cls + '" x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + h.toFixed(1) + '"' + (rx ? ' rx="' + rx + '"' : '') + '/>'; }
+  function t(x, y, s, cls, anchor) { return '<text x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '"' + (cls ? ' class="' + cls + '"' : '') + (anchor ? ' text-anchor="' + anchor + '"' : '') + '>' + s + '</text>'; }
+  function cols(x, y, w, h, n, gutter) {
+    var cw = (w - gutter * (n - 1)) / n, out = '';
+    for (var i = 0; i < n; i++) out += r(x + i * (cw + gutter), y, cw, h, 'f-col');
+    return out;
+  }
+  var shells = [
+    { name: 'Phone · 390', spec: '4 cols · 16 gutter · 16 padding', w: 390, h: 844, side: 0, pad: 16, gutter: 16, n: 4, header: 56, nav: 64 + 34 },
+    { name: 'bp-md · 840', spec: 'Icon rail · 8 cols · 24 gutter · 32 padding', w: 840, h: 900, side: 72, pad: 32, gutter: 24, n: 8, header: 64, nav: 0 },
+    { name: 'bp-lg and up · shown at 1440', spec: '256 sidebar · 12 cols · 24 gutter · 1120 content', w: 1440, h: 900, side: 256, pad: 32, gutter: 24, n: 12, header: 64, nav: 0 },
+  ];
+  var x = 4, svg = '';
+  shells.forEach(function (sh) {
+    var w = sh.w * S, h = Math.min(sh.h * S, H), y = TOP;
+    svg += r(x, y, w, h, 'f-bg', 6);
+    if (sh.side) {
+      svg += r(x, y, sh.side * S, h, 'f-surface');
+      var items = sh.side > 100 ? 6 : 6;
+      for (var i = 0; i < items; i++) svg += sh.side > 100 ? r(x + 12 * S * 2, y + (90 + i * 44) * S, (sh.side - 48) * S, 14 * S * 1.4, 'f-line', 2) : r(x + (sh.side * S) / 2 - 7, y + (90 + i * 44) * S, 14, 14 * S * 1.4, 'f-line', 2);
+    }
+    var cx = x + (sh.side + sh.pad) * S, cw = (sh.w - sh.side - sh.pad * 2) * S, top = y + sh.header * S, bottom = y + h - sh.nav * S;
+    svg += r(cx, y + (sh.header * S) / 2 - 4, cw * 0.4, 8, 'f-line', 2);
+    svg += cols(cx, top + 6, cw, bottom - top - 12, sh.n, sh.gutter * S);
+    if (sh.nav) {
+      svg += r(x, bottom, w, 64 * S, 'f-nav');
+      for (var k = 0; k < 5; k++) svg += '<circle class="f-line" cx="' + (x + w / 10 + k * w / 5).toFixed(1) + '" cy="' + (bottom + 32 * S).toFixed(1) + '" r="4"/>';
+      svg += r(x, bottom + 64 * S, w, 34 * S, 'f-inset');
+    }
+    svg += t(x, y + h + 22, sh.name, 't-strong') + t(x, y + h + 40, sh.spec, 't-small');
+    x += w + GAP;
+  });
+  document.querySelector('[data-breakpoints]').innerHTML = '<svg viewBox="0 0 ' + Math.ceil(x - GAP + 8) + ' ' + (TOP + H + 50) + '" role="img" aria-label="Phone, tablet and desktop shells drawn to scale">' + svg + '</svg>';
+
+  var WIDTHS = [['width-form', 640, 'Forms, settings'], ['width-reading', 720, 'Trợ lý thread, reading'], ['width-list', 1120, 'Lists, tables'], ['width-dashboard', 1280, 'Tổng quan, property grid']];
+  document.querySelector('[data-widths]').innerHTML = WIDTHS.map(function (wd) {
+    return '<div class="ds-width-row"><div class="ds-cmatrix__rowhead"><span class="ds-sw__name">' + wd[0] + '</span><span class="ds-meta">' + wd[2] + '</span></div><div class="ds-width-track"><div class="ds-width-fill" style="width: ' + (wd[1] / 14.4).toFixed(1) + '%">' + wd[1] + '</div></div></div>';
+  }).join('');
+
+  var P = 0.5, px = 16, py = 12, pw = 390 * P, ph = 844 * P, s = '';
+  var insetTop = 47 * P, header = 56 * P, nav = 64 * P, insetBot = 34 * P;
+  var navY = py + ph - insetBot - nav, toastH = 52 * P, toastY = navY - 16 * P - toastH;
+  s += r(px, py, pw, ph, 'f-bg', 6);
+  s += r(px, py, pw, insetTop, 'f-inset');
+  s += r(px, py + insetTop, pw, header, 'f-surface');
+  s += r(px + 16 * P, py + insetTop + header / 2 - 4, 120 * P, 8, 'f-line', 2);
+  for (var j = 0; j < 3; j++) s += r(px + 16 * P, py + insetTop + header + (16 + j * 108) * P, pw - 32 * P, 92 * P, 'f-surface', 6);
+  s += r(px + 16 * P, toastY, pw - 32 * P, toastH, 'f-toast', 6);
+  s += t(px + 28 * P, toastY + toastH / 2 + 4, 'Đã lưu', 't-inverse');
+  s += r(px, navY, pw, nav, 'f-nav');
+  for (var k2 = 0; k2 < 5; k2++) s += '<circle class="f-line" cx="' + (px + pw / 10 + k2 * pw / 5).toFixed(1) + '" cy="' + (navY + nav / 2).toFixed(1) + '" r="5"/>';
+  s += r(px, navY + nav, pw, insetBot, 'f-inset');
+  s += r(px + pw / 2 - 67 * P, py + ph - 10, 134 * P, 4, 'f-home', 2);
+  var lx = px + pw + 14, notes = [
+    [py + insetTop / 2, 'safe-area-inset-top'],
+    [py + insetTop + header / 2, 'Header'],
+    [toastY + toastH / 2, 'Toast, 16 above the nav'],
+    [navY + nav / 2, 'bottom-nav-height 64'],
+    [navY + nav + insetBot / 2, 'safe-area-inset-bottom'],
+  ];
+  notes.forEach(function (n) { s += '<line class="l-dim" x1="' + (px + pw + 2) + '" y1="' + n[0].toFixed(1) + '" x2="' + (lx - 4) + '" y2="' + n[0].toFixed(1) + '"/>' + t(lx, n[0] + 4, n[1]); });
+  s += t(lx, py + insetTop + header + 60, 'Content pads its bottom by', 't-small') + t(lx, py + insetTop + header + 76, '64 + inset + 16', 't-strong');
+  document.querySelector('[data-safe]').innerHTML = '<svg viewBox="0 0 ' + (lx + 150) + ' ' + (py * 2 + ph) + '" role="img" aria-label="Phone with safe areas, header, toast and bottom nav">' + s + '</svg>';
+
+  Esta.themes('#src', { stack: true });
+})();
+</script>
+</body>
+</html>

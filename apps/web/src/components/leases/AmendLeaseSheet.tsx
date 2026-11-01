@@ -63,7 +63,7 @@ export default function AmendLeaseSheet({ leaseId, starts, open, onOpenChange, f
       error={start === undefined ? null : <ChangeRefusal reason={refusal} />}
     >
       {start === undefined ? (
-        <p data-testid="amend-no-starts" className="text-body text-ink-2">
+        <p data-testid="amend-no-starts" className="text-body text-text-secondary">
           {t('amendNoStarts')}
         </p>
       ) : (

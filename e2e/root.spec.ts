@@ -10,7 +10,7 @@ test('/ lands a signed-out visitor on the Vietnamese sign-in page', async ({ pag
   const response = await page.goto('/');
   expect(response?.status()).toBe(200);
   await expect(page).toHaveURL(/\/sign-in$/);
-  await expect(page.getByText('Esta', { exact: true })).toBeVisible();
+  await expect(page.getByRole('img', { name: 'Esta', exact: true })).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('lang', 'vi');
   expect(await seriousAxeViolations(page)).toEqual([]);
 });

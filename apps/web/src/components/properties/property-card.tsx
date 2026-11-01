@@ -38,20 +38,20 @@ export function PropertyCard({ card, priority }: { card: PropertyCardData; prior
   return (
     <article
       data-testid="property-card"
-      className="relative flex h-full flex-col overflow-hidden rounded-lg border border-rule bg-surface shadow-card transition-shadow duration-(--duration-fast) ease-standard has-[a:hover]:shadow-sheet has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-accent"
+      className="relative flex h-full flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-xs transition-shadow duration-(--duration-fast) ease-standard has-[a:hover]:shadow-lg has-[a:focus-visible]:outline-2 has-[a:focus-visible]:outline-offset-2 has-[a:focus-visible]:outline-focus-ring"
     >
-      <div data-testid="property-cover" className="relative aspect-[16/10] bg-surface-2">
+      <div data-testid="property-cover" className="relative aspect-[16/10] bg-bg-subtle">
         <CoverPhoto
           src={card.photoUrl}
           alt={card.nickname}
           priority={priority}
           fallback={
-            <div data-testid="property-icon-tile" className="flex size-full items-center justify-center text-ink-muted">
+            <div data-testid="property-icon-tile" className="flex size-full items-center justify-center text-text-muted">
               <KindIcon className="size-12" strokeWidth={1.5} aria-hidden="true" />
             </div>
           }
         />
-        <span className="absolute top-3 left-3 rounded-full bg-surface px-2.5 py-1 text-small font-medium text-ink shadow-card">
+        <span className="absolute top-3 left-3 rounded-full bg-surface px-2.5 py-1 text-body-sm font-medium text-text shadow-xs">
           {card.kindLabel}
         </span>
       </div>
@@ -63,27 +63,27 @@ export function PropertyCard({ card, priority }: { card: PropertyCardData; prior
             <StatusPill key={pill.label} status={pill.status} label={pill.label} />
           ))}
         </div>
-        <h2 className="text-lead font-semibold break-words text-ink">
+        <h2 className="text-headline font-semibold break-words text-text">
           <IntentLink href={`/properties/${card.id}`} className="outline-none after:absolute after:inset-0">
             {card.nickname}
           </IntentLink>
         </h2>
-        <div className="flex flex-col gap-0.5 text-small">
-          <p className="flex items-start gap-1.5 break-words text-ink-2">
-            <MapPin className="mt-0.5 size-4 shrink-0 text-ink-muted" strokeWidth={2} aria-hidden="true" />
+        <div className="flex flex-col gap-0.5 text-body-sm">
+          <p className="flex items-start gap-1.5 break-words text-text-secondary">
+            <MapPin className="mt-0.5 size-4 shrink-0 text-text-muted" strokeWidth={2} aria-hidden="true" />
             <span className="min-w-0">{card.address}</span>
           </p>
           {card.certificateLine === null ? null : (
-            <p data-testid="certificate-line" className="pl-5.5 break-words text-ink-muted">
+            <p data-testid="certificate-line" className="pl-5.5 break-words text-text-muted">
               {card.certificateLine}
             </p>
           )}
         </div>
         <div className="mt-auto flex flex-wrap items-center justify-between gap-x-4 gap-y-2 pt-1">
           {card.rent === null ? null : (
-            <p data-testid="property-rent" className="flex flex-wrap items-baseline gap-x-2 text-small text-ink-muted">
+            <p data-testid="property-rent" className="flex flex-wrap items-baseline gap-x-2 text-body-sm text-text-muted">
               {card.rent.label}
-              <span className="figures text-lead font-medium text-ink">{card.rent.amount}</span>
+              <span className="num text-headline font-medium text-text">{card.rent.amount}</span>
             </p>
           )}
           <CompletenessRingView {...card.completeness} />

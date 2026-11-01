@@ -7,9 +7,9 @@ import { Input } from '@/components/ui/input';
 export function Group({ id, title, aside, children }: { id?: string; title: string; aside?: ReactNode; children: ReactNode }) {
   const headingId = useId();
   return (
-    <section id={id} aria-labelledby={headingId} className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
+    <section id={id} aria-labelledby={headingId} className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2 id={headingId} className="text-lead font-semibold text-ink">
+        <h2 id={headingId} className="text-headline font-semibold text-text">
           {title}
         </h2>
         {aside}
@@ -47,12 +47,12 @@ export function TextField({
   const generated = useId();
   const id = inputId ?? generated;
   return (
-    <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-body font-medium text-ink">
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={id} className="text-label text-text">
         {label}
       </label>
       {hint === undefined ? null : (
-        <p id={`${id}-hint`} className="text-small text-ink-muted">
+        <p id={`${id}-hint`} className="text-body-sm text-text-muted">
           {hint}
         </p>
       )}
@@ -91,9 +91,9 @@ export function NoteField({
 }) {
   const id = useId();
   return (
-    <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-body font-medium text-ink">
-        {labels.note} <span className="font-normal text-ink-muted">({labels.optional})</span>
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={id} className="text-label text-text">
+        {labels.note} <span className="font-normal text-text-muted">({labels.optional})</span>
       </label>
       <textarea
         id={id}
@@ -103,7 +103,7 @@ export function NoteField({
         maxLength={maxLength}
         disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
-        className="mt-1 min-h-touch w-full rounded-md border border-field bg-surface px-3.5 py-2.5 text-body text-ink hover:border-ink-muted disabled:cursor-not-allowed disabled:border-rule disabled:bg-surface-2 disabled:text-ink-muted"
+        className="mt-1 min-h-control-h w-full rounded-md border border-border-field bg-surface px-3.5 py-2.5 text-body text-text hover:border-text-muted disabled:cursor-not-allowed disabled:border-border disabled:bg-fill-disabled disabled:text-text-disabled"
       />
     </div>
   );

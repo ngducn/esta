@@ -17,7 +17,7 @@ export function CompletenessRingView({ percent, label, srLabel }: { percent: num
   return (
     <span data-testid="completeness-ring" data-percent={filled} className="inline-flex items-center gap-2">
       <svg viewBox="0 0 24 24" className="size-6 shrink-0 -rotate-90" fill="none" strokeWidth={3} aria-hidden="true">
-        <circle cx="12" cy="12" r="9.5" className="stroke-rule" />
+        <circle cx="12" cy="12" r="9.5" className="stroke-border" />
         {filled > 0 ? (
           <circle
             cx="12"
@@ -26,12 +26,12 @@ export function CompletenessRingView({ percent, label, srLabel }: { percent: num
             pathLength={100}
             strokeDasharray={`${filled} 100`}
             strokeLinecap={filled === 100 ? 'butt' : 'round'}
-            className={filled === 100 ? 'stroke-paid' : 'stroke-accent'}
+            className={filled === 100 ? 'stroke-success-text' : 'stroke-accent'}
           />
         ) : null}
       </svg>
       {srLabel === undefined ? null : <span className="sr-only">{srLabel}</span>}
-      <span className="text-body text-ink">{label}</span>
+      <span className="text-body text-text">{label}</span>
     </span>
   );
 }

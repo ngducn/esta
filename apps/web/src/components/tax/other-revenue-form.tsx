@@ -31,11 +31,11 @@ export function OtherRevenueForm({ partyId, year, savedVnd, canEdit }: { partyId
     );
 
   return (
-    <section aria-labelledby="tax-other-title" data-testid="tax-other-revenue" className="flex flex-col gap-3 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
-      <h2 id="tax-other-title" className="text-lead font-semibold text-ink">
+    <section aria-labelledby="tax-other-title" data-testid="tax-other-revenue" className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
+      <h2 id="tax-other-title" className="text-headline font-semibold text-text">
         {t('otherRevenue')}
       </h2>
-      <p className="text-body text-ink-2">{t('otherRevenueBody', { year })}</p>
+      <p className="text-body text-text-secondary">{t('otherRevenueBody', { year })}</p>
       {canEdit ? (
         <form
           className="flex flex-col gap-3"
@@ -57,9 +57,9 @@ export function OtherRevenueForm({ partyId, year, savedVnd, canEdit }: { partyId
             {pending ? t('saving') : t('save')}
           </button>
           <p aria-live="polite" data-testid="tax-other-status" data-status={status} className="min-h-6 text-body">
-            {status === 'saved' ? <span className="text-ink">{t('saved')}</span> : null}
+            {status === 'saved' ? <span className="text-text">{t('saved')}</span> : null}
             {status !== 'idle' && status !== 'saved' ? (
-              <span role="alert" className="flex items-start gap-2 text-overdue">
+              <span role="alert" className="flex items-start gap-2 text-danger-text">
                 <StatusShape status="overdue" className="mt-1 size-4 shrink-0" />
                 {t(ERRORS[status])}
               </span>
@@ -67,7 +67,7 @@ export function OtherRevenueForm({ partyId, year, savedVnd, canEdit }: { partyId
           </p>
         </form>
       ) : (
-        <p data-testid="tax-other-readonly" className="text-body font-medium text-ink figures">
+        <p data-testid="tax-other-readonly" className="text-body font-medium text-text num">
           {formatVnd(savedVnd, locale)}
         </p>
       )}

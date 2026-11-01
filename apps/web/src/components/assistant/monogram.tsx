@@ -4,7 +4,7 @@ import { getTranslations } from 'next-intl/server';
 export async function AssistantMonogram() {
   const t = await getTranslations('assistant');
   return (
-    <span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-full border-2 border-accent text-small font-semibold text-accent">
+    <span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-full border-2 border-accent text-body-sm font-semibold text-accent-text">
       {t('monogram')}
     </span>
   );

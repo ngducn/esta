@@ -28,10 +28,10 @@ export function AddressLookup() {
 
   return (
     <section aria-labelledby={`${inputId}-heading`} className="flex flex-col gap-2" data-testid="address-lookup">
-      <h2 id={`${inputId}-heading`} className="text-lead font-semibold">
+      <h2 id={`${inputId}-heading`} className="text-headline font-semibold">
         Live suggest_current_unit
       </h2>
-      <label htmlFor={inputId} className="text-small">
+      <label htmlFor={inputId} className="text-body-sm">
         Old address
       </label>
       <input
@@ -64,8 +64,8 @@ export function AddressLookup() {
                 <p>
                   {row.province_name} ({row.province_code}) · {row.merge_kind}
                 </p>
-                <p className="text-small">Matched {row.matched_legacy_name}</p>
-                <p className="text-small wrap-anywhere" data-testid="address-suggestion-source">
+                <p className="text-body-sm">Matched {row.matched_legacy_name}</p>
+                <p className="text-body-sm wrap-anywhere" data-testid="address-suggestion-source">
                   Source {row.source}
                 </p>
               </li>

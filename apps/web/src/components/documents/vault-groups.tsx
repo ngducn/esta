@@ -56,10 +56,10 @@ export function VaultGroups({
   return (
     <section aria-labelledby="vault-groups-title" data-testid="vault-groups" className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 id="vault-groups-title" className="text-h3 text-ink">
+        <h2 id="vault-groups-title" className="text-title-3 text-text">
           {t('allDocuments', { count: tiles.length })}
         </h2>
-        <div role="group" aria-label={t('groupBy')} className="flex rounded-md border border-rule-strong bg-surface p-1">
+        <div role="group" aria-label={t('groupBy')} className="flex rounded-md border border-border-strong bg-surface p-1">
           {(['property', 'category'] as const).map((option) => (
             <button
               key={option}
@@ -68,8 +68,8 @@ export function VaultGroups({
               data-testid={`group-by-${option}`}
               onClick={() => setBy(option)}
               className={cn(
-                'flex min-h-touch flex-1 items-center justify-center rounded-sm px-4 text-body font-medium whitespace-nowrap transition-colors duration-(--duration-fast) ease-standard',
-                by === option ? 'bg-ink text-surface' : 'text-ink-2 hover:bg-surface-2',
+                'flex min-h-touch flex-1 items-center justify-center rounded-md px-4 text-body font-medium whitespace-nowrap transition-colors duration-(--duration-fast) ease-standard',
+                by === option ? 'bg-accent-subtle text-accent-text' : 'text-text-secondary hover:bg-fill-hover',
               )}
             >
               {t(option === 'property' ? 'byProperty' : 'byCategory')}
@@ -82,9 +82,9 @@ export function VaultGroups({
       ) : (
         groups.map((group, groupIndex) => (
           <section key={group.key} data-testid="vault-group" data-group={group.key} aria-labelledby={`group-${group.key}`} className="flex flex-col gap-3">
-            <h3 id={`group-${group.key}`} className="flex flex-wrap items-baseline gap-x-2 text-lead font-semibold break-words text-ink">
+            <h3 id={`group-${group.key}`} className="flex flex-wrap items-baseline gap-x-2 text-headline font-semibold break-words text-text">
               <span data-testid="group-label">{group.label}</span>
-              <span data-testid="group-count" className="text-small font-normal text-ink-muted">
+              <span data-testid="group-count" className="text-body-sm font-normal text-text-muted">
                 {t('groupCount', { count: group.tiles.length })}
               </span>
             </h3>

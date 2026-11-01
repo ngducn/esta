@@ -11,10 +11,10 @@ export function LiveParse() {
 
   return (
     <section aria-labelledby={`${inputId}-heading`} className="flex flex-col gap-2">
-      <h2 id={`${inputId}-heading`} className="text-lead font-semibold">
+      <h2 id={`${inputId}-heading`} className="text-headline font-semibold">
         Live parseVndInput
       </h2>
-      <label htmlFor={inputId} className="text-small">
+      <label htmlFor={inputId} className="text-body-sm">
         Amount as typed
       </label>
       <input

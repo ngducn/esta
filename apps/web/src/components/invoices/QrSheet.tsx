@@ -40,7 +40,7 @@ export default function QrSheet({
         <QrPanel qr={qr} matrix={matrix} labels={labels} />
         <div className="flex flex-wrap items-center justify-between gap-2">
           {invoiceHref === null ? null : (
-            <Link href={invoiceHref} data-testid="qr-open-invoice" className={buttonVariants({ variant: 'quiet', className: '-ml-2' })}>
+            <Link href={invoiceHref} data-testid="qr-open-invoice" className={buttonVariants({ variant: 'ghost', className: '-ml-2' })}>
               {labels.openInvoice}
             </Link>
           )}

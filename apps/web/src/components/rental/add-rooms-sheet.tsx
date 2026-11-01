@@ -78,13 +78,13 @@ export default function AddRoomsSheet({ propertyId, existing: current, open, onO
         value={countText}
         maxLength={2}
         inputMode="numeric"
-        className="figures max-w-32"
+        className="num max-w-32"
         error={invalid === 'count' ? t('roomCountInvalid') : null}
         onChange={setCountText}
       />
       <MoneyInput label={t('roomRentField')} onTextChange={setRentText} />
       {labels.length === 0 ? null : (
-        <p data-testid="room-labels" className="text-body text-ink-2">
+        <p data-testid="room-labels" className="text-body text-text-secondary">
           {t('addRoomsPreview', { labels: labels.join(', ') })}
         </p>
       )}

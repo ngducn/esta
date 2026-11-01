@@ -8,13 +8,13 @@ export type LocationCardLabels = { title: string; edit: string; set: string; non
 /** `id="location"` lets a link land on the card. `locateHref` is null for a member who cannot set the location. */
 export function LocationCard({ map, locateHref, labels }: { map: LocationMapProps | null; locateHref: string | null; labels: LocationCardLabels }) {
   return (
-    <section id="location" aria-labelledby="location-title" data-testid="location-card" className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card lg:p-6">
+    <section id="location" aria-labelledby="location-title" data-testid="location-card" className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5 shadow-xs lg:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 id="location-title" className="text-h3 text-ink">
+        <h2 id="location-title" className="text-title-3 text-text">
           {labels.title}
         </h2>
         {map === null || locateHref === null ? null : (
-          <IntentLink href={locateHref} className={buttonVariants({ variant: 'outline' })}>
+          <IntentLink href={locateHref} className={buttonVariants({ variant: 'secondary' })}>
             <MapPinPen aria-hidden="true" />
             {labels.edit}
           </IntentLink>
@@ -22,11 +22,11 @@ export function LocationCard({ map, locateHref, labels }: { map: LocationMapProp
       </div>
       {map === null ? (
         <div className="flex flex-col items-start gap-3">
-          <p className="flex items-center gap-2 text-body font-medium text-ink">
-            <MapPinOff className="size-5 shrink-0 text-ink-muted" strokeWidth={1.9} aria-hidden="true" />
+          <p className="flex items-center gap-2 text-body font-medium text-text">
+            <MapPinOff className="size-5 shrink-0 text-text-muted" strokeWidth={1.9} aria-hidden="true" />
             {labels.none}
           </p>
-          <p className="max-w-prose text-body text-ink-2">{labels.noneBody}</p>
+          <p className="max-w-prose text-body text-text-secondary">{labels.noneBody}</p>
           {locateHref === null ? null : (
             <IntentLink href={locateHref} className={buttonVariants({ variant: 'primary' })}>
               <MapPinPlus aria-hidden="true" />

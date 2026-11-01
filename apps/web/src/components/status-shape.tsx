@@ -1,56 +1,35 @@
+import { Archive, Calendar, CircleCheck, CircleDashed, Clock, PencilLine, TriangleAlert, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export const markStatuses = ['paid', 'due', 'upcoming', 'overdue', 'vacant', 'draft', 'ended'] as const;
 export type MarkStatus = (typeof markStatuses)[number];
 
-type Shape = { d: string; fill: boolean; dashed: boolean; stroke: number };
+const outlinePill = 'border-border-strong';
+
+const mark = (icon: LucideIcon, color: string, pill: string) => ({ icon, color, pill: `${pill} ${color}` });
 
 /**
- * Status reads as shape, then word, then color, so each status owns a distinct shape. The mark is a pill:
- * the status color draws the shape and the word on its `-fill` token (DESIGN.md Colors).
+ * Status reads as icon, then word, then color, and each status owns a distinct silhouette so it reads in grayscale.
+ * `pill` is the badge's tone; in dark a hairline in the tone's border keeps the pill's edge on a tinted ground.
  */
 export const statusMarks = {
-  paid: { shape: { d: 'M4 12.5l5 5L20 6.5', fill: false, dashed: false, stroke: 2.25 }, color: 'text-paid', pill: 'bg-paid-fill text-paid' },
-  due: {
-    shape: { d: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18zM12 7v5l3.5 2', fill: false, dashed: false, stroke: 2.25 },
-    color: 'text-due',
-    pill: 'bg-due-fill text-due',
-  },
-  upcoming: {
-    shape: { d: 'M12 4a8 8 0 1 0 0 16a8 8 0 1 0 0-16z', fill: false, dashed: false, stroke: 2.25 },
-    color: 'text-ink-muted',
-    pill: 'border border-rule bg-surface-2 text-ink-muted',
-  },
-  overdue: {
-    shape: { d: 'M12 2.5L21.5 12L12 21.5L2.5 12z', fill: true, dashed: false, stroke: 2.25 },
-    color: 'text-overdue',
-    pill: 'bg-overdue-fill text-overdue',
-  },
-  vacant: { shape: { d: 'M4.5 4.5h15v15h-15z', fill: false, dashed: false, stroke: 2.25 }, color: 'text-vacant', pill: 'bg-vacant-fill text-vacant' },
-  draft: {
-    shape: { d: 'M12 3.5a8.5 8.5 0 1 0 0 17a8.5 8.5 0 1 0 0-17z', fill: false, dashed: true, stroke: 2.25 },
-    color: 'text-ink-muted',
-    pill: 'border border-rule bg-surface-2 text-ink-muted',
-  },
-  ended: { shape: { d: 'M4 12h16', fill: false, dashed: false, stroke: 4 }, color: 'text-ink-muted', pill: 'border border-rule bg-surface-2 text-ink-muted' },
-} as const satisfies Record<MarkStatus, { shape: Shape; color: string; pill: string }>;
+  paid: mark(CircleCheck, 'text-success-text', 'bg-success-bg dark:border-success-border'),
+  due: mark(Clock, 'text-warning-text', 'bg-warning-bg dark:border-warning-border'),
+  upcoming: mark(Calendar, 'text-text-secondary', outlinePill),
+  overdue: mark(TriangleAlert, 'text-danger-text', 'bg-danger-bg dark:border-danger-border'),
+  vacant: mark(CircleDashed, 'text-neutral-text', 'bg-neutral-bg'),
+  draft: mark(PencilLine, 'text-info-text', 'bg-info-bg dark:border-info-border'),
+  ended: mark(Archive, 'text-text-secondary', outlinePill),
+} as const satisfies Record<MarkStatus, { icon: LucideIcon; color: string; pill: string }>;
+
+/** The outline badge for a fact that is not a status, such as how a property is used. */
+export const neutralPill = `${outlinePill} text-text-secondary`;
+
+/** The badge around a status icon and its word; a 14px icon keeps a 2px stroke so it holds its weight. */
+export const statusBadge =
+  'inline-flex min-h-6 max-w-full items-center gap-1.5 rounded-lg border border-transparent py-0.5 pr-2 pl-1.5 align-middle text-caption font-medium text-balance [&_svg]:size-icon-xs [&_svg]:stroke-2';
 
 export function StatusShape({ status, className }: { status: MarkStatus; className?: string }) {
-  const { shape, color } = statusMarks[status];
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className={cn('size-5 shrink-0', color, className)}
-      fill={shape.fill ? 'currentColor' : 'none'}
-      stroke="currentColor"
-      strokeWidth={shape.stroke}
-      strokeDasharray={shape.dashed ? '3.4 3' : undefined}
-      strokeLinecap={shape.dashed ? 'butt' : 'round'}
-      strokeLinejoin="round"
-      aria-hidden="true"
-      data-shape={status}
-    >
-      <path d={shape.d} />
-    </svg>
-  );
+  const { icon: Icon, color } = statusMarks[status];
+  return <Icon className={cn('size-5 shrink-0', color, className)} strokeWidth={1.75} aria-hidden="true" data-shape={status} />;
 }

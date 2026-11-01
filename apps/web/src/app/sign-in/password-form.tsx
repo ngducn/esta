@@ -78,7 +78,7 @@ export function PasswordSignInForm({ copy }: { copy: PasswordSignInCopy }) {
           {copy.forgotPassword}
         </Link>
       </div>
-      <p id="sign-in-error" role="alert" className="-mt-2 min-h-6 font-medium text-overdue">
+      <p id="sign-in-error" role="alert" className="-mt-2 min-h-6 font-medium text-danger-text">
         {error === null ? null : copy[error.copy]}
       </p>
       <button type="submit" name="intent" value="sign-in" disabled={pending} className={primaryClass}>

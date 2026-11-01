@@ -1,0 +1,69 @@
+<!-- @dsCard group="Forms" height=1700 width=1200 subtitle="Type 3tr5, see = 3.500.000 ₫ and the amount in words before saving" -->
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><title>Money input</title></head>
+<body>
+<div id="src">
+  <p class="ds-why"><b>Say it the way you would say it out loud.</b> Mẹ types <span class="ds-code">3tr5</span> or <span class="ds-code">850k</span>; the line under the box confirms the exact amount and reads it back in words, so a missing zero is caught before saving. Anything that could mean two amounts is refused with a way to write it, never guessed. Every field on this page is live.</p>
+
+  <div class="ds-cell"><span class="ds-cap">Large, for the record-payment sheet (figure-lg)</span>
+    <div class="es-field es-money es-money--lg" style="max-width: 360px">
+      <label class="es-field__label" for="mi-lg">Số tiền đã nhận</label>
+      <div class="es-input-group"><input class="es-input" id="mi-lg" data-es-money inputmode="text" autocomplete="off" value="3tr5" aria-describedby="mi-lg-o"><span class="es-affix">₫</span></div>
+      <p class="es-money__out"><i data-icon="triangle-alert" data-size="16"></i><span id="mi-lg-o" data-es-money-out data-empty="Nhập 3tr5, 850k hoặc 3.500.000" aria-live="polite"></span></p>
+      <p class="es-money__words" data-es-money-words></p>
+    </div>
+  </div>
+
+  <div class="ds-matrix" style="--ds-cell: 240px">
+    <div class="ds-cell"><span class="ds-cap">Empty: the hint shows the shorthand</span>
+      <div class="es-field es-money"><label class="es-field__label" for="mi-1">Tiền thuê mỗi tháng</label>
+        <div class="es-input-group"><input class="es-input" id="mi-1" data-es-money inputmode="text" autocomplete="off" aria-describedby="mi-1o"><span class="es-affix">₫</span></div>
+        <p class="es-money__out"><i data-icon="triangle-alert" data-size="16"></i><span id="mi-1o" data-es-money-out data-empty="Nhập 3tr5, 850k hoặc 3.500.000" aria-live="polite"></span></p>
+        <p class="es-money__words" data-es-money-words></p></div></div>
+    <div class="ds-cell"><span class="ds-cap">3tr5</span>
+      <div class="es-field es-money"><label class="es-field__label" for="mi-2">Tiền thuê mỗi tháng</label>
+        <div class="es-input-group"><input class="es-input" id="mi-2" data-es-money inputmode="text" autocomplete="off" value="3tr5" aria-describedby="mi-2o"><span class="es-affix">₫</span></div>
+        <p class="es-money__out"><i data-icon="triangle-alert" data-size="16"></i><span id="mi-2o" data-es-money-out data-empty="Nhập 3tr5, 850k hoặc 3.500.000" aria-live="polite"></span></p>
+        <p class="es-money__words" data-es-money-words></p></div></div>
+    <div class="ds-cell"><span class="ds-cap">1ty2 · hover</span>
+      <div class="es-field es-money"><label class="es-field__label" for="mi-3">Giá mua</label>
+        <div class="es-input-group is-hover"><input class="es-input" id="mi-3" data-es-money inputmode="text" autocomplete="off" value="1ty2" aria-describedby="mi-3o"><span class="es-affix">₫</span></div>
+        <p class="es-money__out"><i data-icon="triangle-alert" data-size="16"></i><span id="mi-3o" data-es-money-out data-empty="Nhập 3tr5, 850k hoặc 3.500.000" aria-live="polite"></span></p>
+        <p class="es-money__words" data-es-money-words></p></div></div>
+    <div class="ds-cell"><span class="ds-cap">850k · focus-visible</span>
+      <div class="es-field es-money"><label class="es-field__label" for="mi-4">Tiền điện tháng 10</label>
+        <div class="es-input-group is-focus"><input class="es-input" id="mi-4" data-es-money inputmode="text" autocomplete="off" value="850k" aria-describedby="mi-4o"><span class="es-affix">₫</span></div>
+        <p class="es-money__out"><i data-icon="triangle-alert" data-size="16"></i><span id="mi-4o" data-es-money-out data-empty="Nhập 3tr5, 850k hoặc 3.500.000" aria-live="polite"></span></p>
+        <p class="es-money__words" data-es-money-words></p></div></div>
+    <div class="ds-cell"><span class="ds-cap">3,5 · refused (no fractions of a đồng)</span>
+      <div class="es-field es-money"><label class="es-field__label" for="mi-5">Tiền thuê mỗi tháng</label>
+        <div class="es-input-group"><input class="es-input" id="mi-5" data-es-money inputmode="text" autocomplete="off" value="3,5" aria-describedby="mi-5o"><span class="es-affix">₫</span></div>
+        <p class="es-money__out"><i data-icon="triangle-alert" data-size="16"></i><span id="mi-5o" data-es-money-out data-empty="Nhập 3tr5, 850k hoặc 3.500.000" aria-live="polite"></span></p>
+        <p class="es-money__words" data-es-money-words></p></div></div>
+    <div class="ds-cell"><span class="ds-cap">1.500,000 · refused (mixed separators)</span>
+      <div class="es-field es-money"><label class="es-field__label" for="mi-6">Tiền cọc</label>
+        <div class="es-input-group"><input class="es-input" id="mi-6" data-es-money inputmode="text" autocomplete="off" value="1.500,000" aria-describedby="mi-6o"><span class="es-affix">₫</span></div>
+        <p class="es-money__out"><i data-icon="triangle-alert" data-size="16"></i><span id="mi-6o" data-es-money-out data-empty="Nhập 3tr5, 850k hoặc 3.500.000" aria-live="polite"></span></p>
+        <p class="es-money__words" data-es-money-words></p></div></div>
+    <div class="ds-cell"><span class="ds-cap">Long content: 12.500.000.000</span>
+      <div class="es-field es-money"><label class="es-field__label" for="mi-7">Giá trị ước tính</label>
+        <div class="es-input-group"><input class="es-input" id="mi-7" data-es-money inputmode="text" autocomplete="off" value="12.500.000.000" aria-describedby="mi-7o"><span class="es-affix">₫</span></div>
+        <p class="es-money__out"><i data-icon="triangle-alert" data-size="16"></i><span id="mi-7o" data-es-money-out data-empty="Nhập 3tr5, 850k hoặc 3.500.000" aria-live="polite"></span></p>
+        <p class="es-money__words" data-es-money-words></p></div></div>
+    <div class="ds-cell"><span class="ds-cap">Loading (filling from the lease)</span>
+      <div class="es-field es-money"><label class="es-field__label" for="mi-8">Tiền thuê mỗi tháng</label>
+        <div class="es-input-group"><input class="es-input" id="mi-8" inputmode="text" autocomplete="off" aria-describedby="mi-8o" aria-busy="true"><i data-icon="loader-circle" class="es-spinner"></i><span class="es-affix">₫</span></div>
+        <p class="es-field__hint" id="mi-8o" aria-live="polite">Đang lấy số tiền từ hợp đồng.</p></div></div>
+    <div class="ds-cell"><span class="ds-cap">Disabled</span>
+      <div class="es-field es-money is-disabled"><label class="es-field__label" for="mi-9">Tiền cọc</label>
+        <div class="es-input-group is-disabled"><input class="es-input" id="mi-9" inputmode="text" value="7.000.000" disabled aria-describedby="mi-9h"><span class="es-affix">₫</span></div>
+        <p class="es-field__hint" id="mi-9h">Tiền cọc đã trả lại, không sửa được.</p></div></div>
+    <div class="ds-cell"><span class="ds-cap">Read-only</span>
+      <div class="es-field es-money"><label class="es-field__label" for="mi-10">Còn phải thu</label>
+        <div class="es-input-group is-readonly"><input class="es-input" id="mi-10" inputmode="text" value="1.200.000" readonly><span class="es-affix">₫</span></div></div></div>
+  </div>
+</div>
+<script>Esta.themes('#src', { densities: true });</script>
+</body>
+</html>

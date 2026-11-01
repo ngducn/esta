@@ -51,16 +51,17 @@ export function usedColorPairs(source: string): ColorPair[] {
   });
 }
 
-function webSources(dir = webSrc): { path: string; source: string }[] {
+function webSources(extensions = /\.tsx?$/, dir = webSrc): { path: string; source: string }[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const path = join(dir, entry.name);
-    if (entry.isDirectory()) return webSources(path);
-    if (!/\.tsx?$/.test(entry.name) || /\.test\.tsx?$/.test(entry.name)) return [];
+    if (entry.isDirectory()) return webSources(extensions, path);
+    if (!extensions.test(entry.name) || /\.test\.tsx?$/.test(entry.name)) return [];
     return [{ path: relative(repo, path), source: readFileSync(path, 'utf8') }];
   });
 }
 
-const keyOf = (pair: ColorPair) => `${pair.foreground} ${pair.kind} on ${pair.background}${pair.opacity === undefined ? '' : `/${pair.opacity}`}`;
+/** The listed kind sets the minimum, which the source cannot tell, so a drawn pair matches a listed one of any kind. */
+const keyOf = (pair: ColorPair) => `${pair.foreground} on ${pair.background}${pair.opacity === undefined ? '' : `/${pair.opacity}`}`;
 
 /** Names each pair the web app draws that `text-pairs.ts` leaves out of the contrast check. */
 export function findUnlistedPairs(files = webSources()): string[] {
@@ -68,4 +69,27 @@ export function findUnlistedPairs(files = webSources()): string[] {
   return files.flatMap(({ path, source }) => [
     ...new Set(usedColorPairs(source).map(keyOf).filter((key) => !listed.has(key)).map((key) => `${path}: ${key}`)),
   ]);
+}
+
+const RETIRED_COLORS = ['ground', 'surface-2', 'ink', 'ink-2', 'ink-muted', 'rule', 'rule-strong', 'field', 'accent-tint', 'paid', 'due', 'overdue', 'vacant'];
+const COLOR_UTILITIES = 'bg|text|border(?:-[trblxyse])?|ring(?:-offset)?|outline|divide|decoration|fill|stroke|accent|caret|placeholder|from|via|to';
+const retiredClass = new RegExp(
+  `^(?:\\S*:)?!?(?:(?:${COLOR_UTILITIES})-(?:${RETIRED_COLORS.join('|')})(?:-fill)?(?:/\\d+)?|text-(?:accent|surface|meta|small|lead|h[123]|hero|hero-xl)|(?:outline|ring)-(?:accent|focus)|figures|shadow-(?:card|sheet)|max-w-content)$`,
+);
+const retiredVar = new RegExp(`var\\(--(?:${RETIRED_COLORS.join('|')})(?:-fill)?\\)|--(?:${RETIRED_COLORS.join('|')})(?:-fill)?(?=\\s*:)`, 'g');
+
+/**
+ * Names each class or variable still in the 2026-10 vocabulary that the 2026-11 redesign retired. Tailwind drops an
+ * unknown class without a word, so a stray `text-ink` would draw in the inherited colour and no check would notice.
+ */
+export function findRetiredNames(
+  files = webSources(/\.(?:tsx?|css)$/).filter(({ path }) => !path.startsWith('apps/web/src/design/')),
+): string[] {
+  return files.flatMap(({ path, source }) => {
+    const classes = [...source.matchAll(stringLiteral)].flatMap((match) =>
+      (match[1] ?? match[2] ?? match[3] ?? '').split(/\s+/).filter((className) => retiredClass.test(className)),
+    );
+    const vars = [...source.matchAll(retiredVar)].map((match) => match[0]);
+    return [...new Set([...classes, ...vars])].map((name) => `${path}: ${name}`);
+  });
 }

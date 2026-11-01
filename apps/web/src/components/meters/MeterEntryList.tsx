@@ -91,8 +91,8 @@ export function MeterEntryList({ propertyId, month, monthLabel, rooms, canEdit }
 
   return (
     <form noValidate onSubmit={submit} data-testid="meter-form" className="flex flex-col gap-4">
-      <div className="rounded-lg border border-rule bg-surface shadow-card">
-        <div aria-hidden="true" className="hidden border-b border-rule px-6 py-3 text-small font-medium text-ink-muted lg:grid lg:grid-cols-[12rem_minmax(0,1fr)_minmax(0,1fr)] lg:gap-6">
+      <div className="rounded-lg border border-border bg-surface shadow-xs">
+        <div aria-hidden="true" className="hidden border-b border-border px-6 py-3 text-body-sm font-medium text-text-muted lg:grid lg:grid-cols-[12rem_minmax(0,1fr)_minmax(0,1fr)] lg:gap-6">
           <span>{t('roomColumn')}</span>
           {KINDS.map((kind) => (
             <span key={kind}>{t('kind', { kind })}</span>
@@ -108,14 +108,14 @@ export function MeterEntryList({ propertyId, month, monthLabel, rooms, canEdit }
               key={room.unitId}
               aria-labelledby={`room-${room.unitId}`}
               data-testid="meter-room"
-              className="grid gap-4 border-b border-rule px-4 py-4 last:border-b-0 sm:px-6 lg:grid-cols-[12rem_minmax(0,1fr)_minmax(0,1fr)] lg:items-center lg:gap-6 lg:py-3"
+              className="grid gap-4 border-b border-border px-4 py-4 last:border-b-0 sm:px-6 lg:grid-cols-[12rem_minmax(0,1fr)_minmax(0,1fr)] lg:items-center lg:gap-6 lg:py-3"
             >
               <div className="flex flex-wrap items-baseline gap-x-3 lg:flex-col lg:gap-0">
-                <h2 id={`room-${room.unitId}`} className="text-lead font-semibold break-words text-ink">
+                <h2 id={`room-${room.unitId}`} className="text-headline font-semibold break-words text-text">
                   {room.label}
                 </h2>
                 {readOn === undefined ? null : (
-                  <p data-testid="meter-read-on" className="figures text-small text-ink-muted">
+                  <p data-testid="meter-read-on" className="num text-body-sm text-text-muted">
                     {t('readOn', { date: formatDate(readOn, locale) })}
                   </p>
                 )}
@@ -123,7 +123,7 @@ export function MeterEntryList({ propertyId, month, monthLabel, rooms, canEdit }
               {KINDS.map((kind) => {
                 const meter = room.meters.find((candidate) => candidate.kind === kind);
                 return meter === undefined ? (
-                  <p key={kind} className="hidden text-small text-ink-muted lg:block">
+                  <p key={kind} className="hidden text-body-sm text-text-muted lg:block">
                     {t('noMeter')}
                   </p>
                 ) : (

@@ -1,0 +1,44 @@
+<!-- @dsCard group="Forms" height=1400 width=1200 subtitle="A 20px box on a 44px row; the whole row is the hit area" -->
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><title>Checkbox</title></head>
+<body>
+<div id="src">
+  <p class="ds-why"><b>The row is the target, not the box.</b> The box is 20px so it reads as a box; the row around it is at least 44px tall and the label is part of the tap. Checked fills blue with a white tick; indeterminate shows a dash for “some of these”. A checkbox waits for Lưu; for a setting that applies at once, use a switch.</p>
+  <div class="ds-matrix" style="--ds-cell: 200px">
+    <div class="ds-cell"><span class="ds-cap">Unchecked</span>
+      <label class="es-check"><input type="checkbox" class="es-check__input"><span class="es-check__box"><i data-icon="check" data-size="14" class="es-check__tick"></i><i data-icon="minus" data-size="14" class="es-check__dash"></i></span><span class="es-check__text">Có sổ hồng</span></label></div>
+    <div class="ds-cell"><span class="ds-cap">Checked</span>
+      <label class="es-check"><input type="checkbox" class="es-check__input" checked><span class="es-check__box"><i data-icon="check" data-size="14" class="es-check__tick"></i><i data-icon="minus" data-size="14" class="es-check__dash"></i></span><span class="es-check__text">Có sổ hồng</span></label></div>
+    <div class="ds-cell"><span class="ds-cap">Indeterminate</span>
+      <label class="es-check is-indeterminate"><input type="checkbox" class="es-check__input" aria-checked="mixed"><span class="es-check__box"><i data-icon="check" data-size="14" class="es-check__tick"></i><i data-icon="minus" data-size="14" class="es-check__dash"></i></span><span class="es-check__text">Chọn cả 5 phòng</span></label></div>
+    <div class="ds-cell"><span class="ds-cap">Hover</span>
+      <label class="es-check is-hover"><input type="checkbox" class="es-check__input"><span class="es-check__box"><i data-icon="check" data-size="14" class="es-check__tick"></i><i data-icon="minus" data-size="14" class="es-check__dash"></i></span><span class="es-check__text">Có sổ hồng</span></label></div>
+    <div class="ds-cell"><span class="ds-cap">Hover, checked</span>
+      <label class="es-check is-hover"><input type="checkbox" class="es-check__input" checked><span class="es-check__box"><i data-icon="check" data-size="14" class="es-check__tick"></i><i data-icon="minus" data-size="14" class="es-check__dash"></i></span><span class="es-check__text">Có sổ hồng</span></label></div>
+    <div class="ds-cell"><span class="ds-cap">Focus-visible</span>
+      <label class="es-check is-focus"><input type="checkbox" class="es-check__input" checked><span class="es-check__box"><i data-icon="check" data-size="14" class="es-check__tick"></i><i data-icon="minus" data-size="14" class="es-check__dash"></i></span><span class="es-check__text">Có sổ hồng</span></label></div>
+    <div class="ds-cell"><span class="ds-cap">Active (pressed)</span>
+      <label class="es-check is-active"><input type="checkbox" class="es-check__input"><span class="es-check__box"><i data-icon="check" data-size="14" class="es-check__tick"></i><i data-icon="minus" data-size="14" class="es-check__dash"></i></span><span class="es-check__text">Có sổ hồng</span></label></div>
+    <div class="ds-cell"><span class="ds-cap">Disabled</span>
+      <label class="es-check is-disabled"><input type="checkbox" class="es-check__input" disabled><span class="es-check__box"><i data-icon="check" data-size="14" class="es-check__tick"></i><i data-icon="minus" data-size="14" class="es-check__dash"></i></span><span class="es-check__text">Có sổ hồng</span></label></div>
+    <div class="ds-cell"><span class="ds-cap">Disabled, checked</span>
+      <label class="es-check is-disabled"><input type="checkbox" class="es-check__input" checked disabled><span class="es-check__box"><i data-icon="check" data-size="14" class="es-check__tick"></i><i data-icon="minus" data-size="14" class="es-check__dash"></i></span><span class="es-check__text">Có sổ hồng</span></label></div>
+    <div class="ds-cell"><span class="ds-cap">Error</span>
+      <div><label class="es-check is-error"><input type="checkbox" class="es-check__input" aria-invalid="true" aria-describedby="cb-em"><span class="es-check__box"><i data-icon="check" data-size="14" class="es-check__tick"></i><i data-icon="minus" data-size="14" class="es-check__dash"></i></span><span class="es-check__text">Đã đối chiếu số tiền</span></label>
+      <p class="es-field__msg" id="cb-em"><i data-icon="triangle-alert" data-size="16"></i><span>Đối chiếu với biên nhận rồi đánh dấu.</span></p></div></div>
+    <div class="ds-cell" style="grid-column: span 2"><span class="ds-cap">Long content, with hint: the box stays on the first line</span>
+      <label class="es-check"><input type="checkbox" class="es-check__input" checked><span class="es-check__box"><i data-icon="check" data-size="14" class="es-check__tick"></i><i data-icon="minus" data-size="14" class="es-check__dash"></i></span><span class="es-check__text">Ghi luôn tiền điện nước vào hóa đơn tháng 10 của Nhà phố 3 tầng Nguyễn Thị Minh Khai Demo<span class="es-check__hint">Số điện nước lấy từ lần ghi ngày 30/09/2026.</span></span></label></div>
+  </div>
+  <div class="ds-cell"><span class="ds-cap">Group: fieldset with legend</span>
+    <fieldset class="es-fieldset" style="max-width: 420px">
+      <legend>Giấy tờ đã có</legend>
+      <label class="es-check"><input type="checkbox" class="es-check__input" checked><span class="es-check__box"><i data-icon="check" data-size="14" class="es-check__tick"></i><i data-icon="minus" data-size="14" class="es-check__dash"></i></span><span class="es-check__text">Sổ hồng (bản gốc)</span></label>
+      <label class="es-check"><input type="checkbox" class="es-check__input" checked><span class="es-check__box"><i data-icon="check" data-size="14" class="es-check__tick"></i><i data-icon="minus" data-size="14" class="es-check__dash"></i></span><span class="es-check__text">Hợp đồng mua bán có công chứng</span></label>
+      <label class="es-check"><input type="checkbox" class="es-check__input"><span class="es-check__box"><i data-icon="check" data-size="14" class="es-check__tick"></i><i data-icon="minus" data-size="14" class="es-check__dash"></i></span><span class="es-check__text">Biên lai thuế trước bạ</span></label>
+    </fieldset>
+  </div>
+</div>
+<script>Esta.themes('#src', { densities: true });</script>
+</body>
+</html>

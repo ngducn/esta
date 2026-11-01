@@ -166,7 +166,7 @@ export function PropertyForm({
           title={t('groupBasics')}
           aside={
             hydrated ? null : (
-              <p role="status" data-testid="form-loading" className="text-body text-ink-muted">
+              <p role="status" data-testid="form-loading" className="text-body text-text-muted">
                 {t('formLoading')}
               </p>
             )
@@ -214,7 +214,7 @@ export function PropertyForm({
             testId="code"
             value={code}
             maxLength={8}
-            className="max-w-48 uppercase figures"
+            className="max-w-48 uppercase num"
             error={invalid?.field === 'code' ? (error?.kind === 'code_taken' ? t('errorCodeTaken', { code: error.code, nickname: error.takenBy }) : t('codeInvalid')) : null}
             onChange={(text) => {
               setCodeEdited(true);
@@ -269,7 +269,7 @@ export function PropertyForm({
             <Button type="submit" disabled={pending} data-testid="save-property">
               {pending ? t('saving') : wizardNext !== null ? t('saveAndContinue') : propertyId === null ? t('save') : t('saveChanges')}
             </Button>
-            <Link href={wizardNext ?? cancelHref} className={buttonVariants({ variant: 'outline' })} data-testid={wizardNext === null ? undefined : 'skip-step'}>
+            <Link href={wizardNext ?? cancelHref} className={buttonVariants({ variant: 'secondary' })} data-testid={wizardNext === null ? undefined : 'skip-step'}>
               {wizardNext === null ? t('cancel') : t('later')}
             </Link>
           </div>
@@ -283,7 +283,7 @@ function NotesField({ label, value, onChange }: { label: string; value: string; 
   const id = useId();
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-body font-medium text-ink">
+      <label htmlFor={id} className="text-body font-medium text-text">
         {label}
       </label>
       <textarea
@@ -292,7 +292,7 @@ function NotesField({ label, value, onChange }: { label: string; value: string; 
         rows={3}
         maxLength={4000}
         onChange={(event) => onChange(event.target.value)}
-        className="mt-1 min-h-touch w-full rounded-md border border-field bg-surface px-3.5 py-2.5 text-body text-ink hover:border-ink-muted disabled:cursor-not-allowed disabled:border-rule disabled:bg-surface-2 disabled:text-ink-muted"
+        className="mt-1 min-h-touch w-full rounded-md border border-border-field bg-surface px-3.5 py-2.5 text-body text-text hover:border-border-field disabled:cursor-not-allowed disabled:border-border disabled:bg-fill-disabled disabled:text-text-muted"
       />
     </div>
   );

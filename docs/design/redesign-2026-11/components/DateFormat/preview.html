@@ -1,0 +1,100 @@
+<!-- @dsCard group="Money & data" page height=2090 width=1200 subtitle="dd/mm/yyyy with leading zeros, the weekday when it matters, and relative due dates beside the real one" -->
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Date format</title>
+</head>
+<body>
+<div id="src">
+  <p class="ds-why"><b>Always dd/mm/yyyy with leading zeros, in Asia/Ho_Chi_Minh.</b> Relative words sit next to the date, never instead of it in a record. Examples below are computed live against today, <span data-today></span>.</p>
+
+  <table class="ds-table">
+    <thead><tr><th>Form</th><th>Example</th></tr></thead>
+    <tbody data-forms></tbody>
+  </table>
+
+  <div class="ds-sec">
+    <h3 class="ds-h">Due dates</h3>
+    <p class="ds-why"><b>Count the days only while they matter.</b> Past due and the next seven days get a relative phrase; anything further shows its date.</p>
+    <table class="ds-table">
+      <thead><tr><th>Due</th><th>Shows</th><th>Badge</th></tr></thead>
+      <tbody data-due></tbody>
+    </table>
+    <div class="ds-specimen">
+      <p class="body">Phòng 5 <span data-mid></span>, còn thiếu 3.500.000 ₫.</p>
+      <p class="caption ds-c3">Sentence case at the start of a badge, lower case mid-sentence.</p>
+    </div>
+  </div>
+
+  <div class="ds-sec">
+    <h3 class="ds-h">Activity time</h3>
+    <p class="ds-why"><b>24-hour, two digits, with the day in words only for today and yesterday.</b></p>
+    <table class="ds-table">
+      <thead><tr><th>Happened</th><th>Shows</th></tr></thead>
+      <tbody data-activity></tbody>
+    </table>
+  </div>
+
+  <div class="ds-sec">
+    <h3 class="ds-h">Weekdays</h3>
+    <p class="ds-why"><b>Capitalised, written out.</b> The long form names the day so Mẹ can check it against a calendar on the wall.</p>
+    <div class="ds-col" style="gap: var(--space-1)" data-week></div>
+  </div>
+
+  <div class="ds-sec">
+    <h3 class="ds-h">Typing a date</h3>
+    <p class="ds-why"><b>Accept the ways people write dates, confirm with the weekday.</b></p>
+    <table class="ds-table">
+      <thead><tr><th>Typed</th><th>Reads as</th></tr></thead>
+      <tbody data-parse></tbody>
+    </table>
+  </div>
+</div>
+<script>
+(function () {
+  var TODAY = '2026-10-07';
+  function addDays(iso, n) { var d = new Date(Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10) + n)); return d.toISOString().slice(0, 10); }
+  function due(iso) {
+    var d = Esta.daysBetween(TODAY, iso), text = Esta.formatRelativeDue(iso, TODAY), badge = Esta.formatDueBadge(iso, TODAY) || '';
+    if (d > 7) return { text: text, badge: badge, tone: 'text-secondary', icon: 'calendar' };
+    return d < 0 ? { text: text, badge: badge, tone: 'danger-text', icon: 'triangle-alert' } : { text: text, badge: badge, tone: 'warning-text', icon: 'clock' };
+  }
+  function row(cells) { return '<tr>' + cells.map(function (c) { return '<td>' + c + '</td>'; }).join('') + '</tr>'; }
+  function meta(main, sub) { return main + '<div class="ds-meta">' + sub + '</div>'; }
+
+  document.querySelector('[data-today]').textContent = Esta.formatDateLong(TODAY);
+  document.querySelector('[data-forms]').innerHTML = [
+    [meta('Date', 'formatDate · tables, forms, receipts'), Esta.formatDate(TODAY)],
+    [meta('Long, with weekday', 'formatDateLong · page header, sheets, confirmations'), Esta.formatDateLong(TODAY)],
+    [meta('Day and month', 'formatDayMonth · inside the current year: Trống từ 01/09'), Esta.formatDayMonth(TODAY, TODAY)],
+    [meta('Month', 'formatMonth · period pickers and titles'), Esta.formatMonth(TODAY)],
+    [meta('Range', 'formatDateRange · billing periods; en dash with spaces'), Esta.formatDateRange('2026-09-25', '2026-10-24')],
+    [meta('Time', '24-hour, two digits'), '07:00'],
+  ].map(function (r) { return row([r[0], '<span class="body-strong es-num">' + r[1] + '</span>']); }).join('');
+
+  document.querySelector('[data-due]').innerHTML = ['2026-09-25', '2026-10-06', '2026-10-07', '2026-10-10', '2026-10-14', '2026-11-25'].map(function (iso) {
+    var r = due(iso);
+    return row([Esta.formatDate(iso), '<span class="ds-status" style="color: var(--' + r.tone + ')">' + Esta.icon(r.icon, { size: 16 }) + r.text + '</span>', r.badge ? r.badge : '<span class="ds-c3">No badge</span>']);
+  }).join('');
+  document.querySelector('[data-mid]').textContent = Esta.formatRelativeDue('2026-09-25', TODAY).replace(/^Q/, 'đã q');
+
+  document.querySelector('[data-activity]').innerHTML = [['2026-10-07', '09:00'], ['2026-10-06', '18:30'], ['2026-10-05', '14:20'], ['2025-12-28', '10:15']].map(function (a) {
+    return row([meta(Esta.formatDate(a[0]), a[1]), '<span class="es-num">' + Esta.formatActivity(a[0], a[1], TODAY) + '</span>']);
+  }).join('');
+
+  var week = '';
+  for (var i = 0; i < 7; i++) week += '<span class="body es-num">' + Esta.formatDateLong(addDays('2026-10-05', i)) + '</span>';
+  document.querySelector('[data-week]').innerHTML = week;
+
+  var WHY = { no_such_day: 'Refused: no such day', invalid: 'Not a date', empty: 'Empty' };
+  document.querySelector('[data-parse]').innerHTML = ['07/10/2026', '7/10/26', '07-10-2026', '31/02/2026', '7 tháng 10'].map(function (t) {
+    var r = Esta.parseDate(t);
+    return row(['<span class="ds-mono">' + t + '</span>', r.ok ? '= ' + Esta.formatDateLong(r.iso) : '<span class="ds-grade ds-grade--fail">' + Esta.icon('circle-alert', { size: 14 }) + (WHY[r.reason] || r.reason) + '</span>']);
+  }).join('');
+
+  Esta.themes('#src');
+})();
+</script>
+</body>
+</html>

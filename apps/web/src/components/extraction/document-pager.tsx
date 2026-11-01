@@ -152,8 +152,8 @@ export function DocumentPager({
                 data-testid="page-tab"
                 onClick={() => onPage(number)}
                 className={cn(
-                  'min-h-touch rounded-sm border px-3 text-small font-medium',
-                  number === shown ? 'border-ink bg-ink text-surface' : 'border-rule-strong bg-surface text-ink hover:bg-surface-2',
+                  'min-h-touch rounded-md border px-3 text-body-sm font-medium',
+                  number === shown ? 'border-accent-border bg-accent-subtle text-accent-text' : 'border-border-strong bg-surface text-text hover:bg-fill-hover',
                 )}
               >
                 {t('page', { page: number })}
@@ -164,20 +164,20 @@ export function DocumentPager({
           <span />
         )}
         <div className="flex gap-2">
-          <Button type="button" variant="outline" disabled={zoom === 0} onClick={() => setZoom((step) => Math.max(0, step - 1))}>
+          <Button type="button" variant="secondary" disabled={zoom === 0} onClick={() => setZoom((step) => Math.max(0, step - 1))}>
             <ZoomOut aria-hidden="true" />
             {t('zoomOut')}
           </Button>
-          <Button type="button" variant="outline" data-testid="zoom-in" disabled={zoom === ZOOMS.length - 1} onClick={() => setZoom((step) => Math.min(ZOOMS.length - 1, step + 1))}>
+          <Button type="button" variant="secondary" data-testid="zoom-in" disabled={zoom === ZOOMS.length - 1} onClick={() => setZoom((step) => Math.min(ZOOMS.length - 1, step + 1))}>
             <ZoomIn aria-hidden="true" />
             {t('zoomIn')}
           </Button>
         </div>
       </div>
-      <div tabIndex={0} aria-label={label} className="max-h-[70vh] overflow-auto rounded-md border border-rule bg-surface-2 lg:max-h-[calc(100vh-12rem)]">
+      <div tabIndex={0} aria-label={label} className="max-h-[70vh] overflow-auto rounded-md border border-border bg-bg-subtle lg:max-h-[calc(100vh-12rem)]">
         <div className="relative aspect-[5/7]" style={{ width: `${(ZOOMS[zoom] ?? 1) * 100}%` }}>
           {failed || fileUrl === null ? (
-            <p role="alert" className="p-4 text-body text-overdue">
+            <p role="alert" className="p-4 text-body text-danger-text">
               {t('documentUnavailable')}
             </p>
           ) : isPdf && pdf === null && shown === 1 && reviewUrl !== null ? (
@@ -189,7 +189,7 @@ export function DocumentPager({
                 <img src={backdrop} alt="" className={LAYER} />
               ) : null}
               {pdf === null ? (
-                <p role="status" className="relative p-4 text-body text-ink-muted">
+                <p role="status" className="relative p-4 text-body text-text-muted">
                   {t('pageLoading', { page: shown })}
                 </p>
               ) : (

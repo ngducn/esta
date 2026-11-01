@@ -1,0 +1,51 @@
+<!-- @dsCard group="Forms" height=1500 width=1200 subtitle="A radio with room for an icon and a sentence; one signal for chosen: the mark fills" -->
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><title>Selection card</title></head>
+<body>
+<div id="src">
+  <p class="ds-why"><b>One signal, never three.</b> When a card is chosen only its round mark changes: it fills blue with a white tick. The border and the fill stay as they were, so a hover edge or a focus ring is never mistaken for “chosen”. Use cards for two or three choices that each need a sentence; plain choices stay radios.</p>
+  <div class="ds-matrix" style="--ds-cell: 240px">
+    <div class="ds-cell"><span class="ds-cap">Default</span>
+      <label class="es-choice"><input type="radio" class="es-choice__input" name="sc-1"><span class="es-choice__body"><i data-icon="banknote"></i><span class="es-choice__text"><span class="es-choice__title">Tiền mặt</span><span class="es-choice__desc">Ghi lại khi cầm tiền trên tay.</span></span></span><span class="es-choice__mark"><i data-icon="check" data-size="14"></i></span></label></div>
+    <div class="ds-cell"><span class="ds-cap">Selected</span>
+      <label class="es-choice"><input type="radio" class="es-choice__input" name="sc-2" checked><span class="es-choice__body"><i data-icon="banknote"></i><span class="es-choice__text"><span class="es-choice__title">Tiền mặt</span><span class="es-choice__desc">Ghi lại khi cầm tiền trên tay.</span></span></span><span class="es-choice__mark"><i data-icon="check" data-size="14"></i></span></label></div>
+    <div class="ds-cell"><span class="ds-cap">Hover</span>
+      <label class="es-choice is-hover"><input type="radio" class="es-choice__input" name="sc-3"><span class="es-choice__body"><i data-icon="banknote"></i><span class="es-choice__text"><span class="es-choice__title">Tiền mặt</span><span class="es-choice__desc">Ghi lại khi cầm tiền trên tay.</span></span></span><span class="es-choice__mark"><i data-icon="check" data-size="14"></i></span></label></div>
+    <div class="ds-cell"><span class="ds-cap">Hover, selected</span>
+      <label class="es-choice is-hover"><input type="radio" class="es-choice__input" name="sc-4" checked><span class="es-choice__body"><i data-icon="banknote"></i><span class="es-choice__text"><span class="es-choice__title">Tiền mặt</span><span class="es-choice__desc">Ghi lại khi cầm tiền trên tay.</span></span></span><span class="es-choice__mark"><i data-icon="check" data-size="14"></i></span></label></div>
+    <div class="ds-cell"><span class="ds-cap">Focus-visible</span>
+      <label class="es-choice is-focus"><input type="radio" class="es-choice__input" name="sc-5"><span class="es-choice__body"><i data-icon="banknote"></i><span class="es-choice__text"><span class="es-choice__title">Tiền mặt</span><span class="es-choice__desc">Ghi lại khi cầm tiền trên tay.</span></span></span><span class="es-choice__mark"><i data-icon="check" data-size="14"></i></span></label></div>
+    <div class="ds-cell"><span class="ds-cap">Active (pressed)</span>
+      <label class="es-choice is-active"><input type="radio" class="es-choice__input" name="sc-6"><span class="es-choice__body"><i data-icon="banknote"></i><span class="es-choice__text"><span class="es-choice__title">Tiền mặt</span><span class="es-choice__desc">Ghi lại khi cầm tiền trên tay.</span></span></span><span class="es-choice__mark"><i data-icon="check" data-size="14"></i></span></label></div>
+    <div class="ds-cell"><span class="ds-cap">Disabled, with its reason</span>
+      <label class="es-choice is-disabled"><input type="radio" class="es-choice__input" name="sc-7" disabled><span class="es-choice__body"><i data-icon="qr-code"></i><span class="es-choice__text"><span class="es-choice__title">Chuyển khoản</span><span class="es-choice__desc">Thêm tài khoản nhận tiền ở Cài đặt để dùng cách này.</span></span></span><span class="es-choice__mark"><i data-icon="check" data-size="14"></i></span></label></div>
+    <div class="ds-cell"><span class="ds-cap">Long content</span>
+      <label class="es-choice"><input type="radio" class="es-choice__input" name="sc-8" checked><span class="es-choice__body"><i data-icon="store"></i><span class="es-choice__text"><span class="es-choice__title">Mặt bằng kinh doanh tầng trệt, cho thuê theo năm</span><span class="es-choice__desc">Tiền thuê thu một lần mỗi năm; hóa đơn ghi tên công ty khách thuê và mã số thuế.</span></span></span><span class="es-choice__mark"><i data-icon="check" data-size="14"></i></span></label></div>
+  </div>
+
+  <div class="ds-cell"><span class="ds-cap">Group of two, as on the record-payment sheet</span>
+    <fieldset class="es-fieldset">
+      <legend>Cách nhận tiền</legend>
+      <div class="es-choice-group">
+        <label class="es-choice"><input type="radio" class="es-choice__input" name="sc-g1"><span class="es-choice__body"><i data-icon="banknote"></i><span class="es-choice__text"><span class="es-choice__title">Tiền mặt</span><span class="es-choice__desc">Ghi lại khi cầm tiền trên tay.</span></span></span><span class="es-choice__mark"><i data-icon="check" data-size="14"></i></span></label>
+        <label class="es-choice"><input type="radio" class="es-choice__input" name="sc-g1" checked><span class="es-choice__body"><i data-icon="qr-code"></i><span class="es-choice__text"><span class="es-choice__title">Chuyển khoản</span><span class="es-choice__desc">Vào tài khoản Vietcombank ••• 4821.</span></span></span><span class="es-choice__mark"><i data-icon="check" data-size="14"></i></span></label>
+      </div>
+    </fieldset>
+  </div>
+
+  <div class="ds-cell"><span class="ds-cap">Group of three, with the group error</span>
+    <fieldset class="es-fieldset is-error" aria-describedby="sc-em">
+      <legend>Cách cho thuê</legend>
+      <div class="es-choice-group">
+        <label class="es-choice"><input type="radio" class="es-choice__input" name="sc-g2" aria-invalid="true"><span class="es-choice__body"><i data-icon="house"></i><span class="es-choice__text"><span class="es-choice__title">Nguyên căn</span><span class="es-choice__desc">Một hợp đồng cho cả nhà.</span></span></span><span class="es-choice__mark"><i data-icon="check" data-size="14"></i></span></label>
+        <label class="es-choice"><input type="radio" class="es-choice__input" name="sc-g2" aria-invalid="true"><span class="es-choice__body"><i data-icon="layout-grid"></i><span class="es-choice__text"><span class="es-choice__title">Từng phòng</span><span class="es-choice__desc">Mỗi phòng một hợp đồng.</span></span></span><span class="es-choice__mark"><i data-icon="check" data-size="14"></i></span></label>
+        <label class="es-choice"><input type="radio" class="es-choice__input" name="sc-g2" aria-invalid="true"><span class="es-choice__body"><i data-icon="store"></i><span class="es-choice__text"><span class="es-choice__title">Mặt bằng</span><span class="es-choice__desc">Cho kinh doanh, thu theo năm.</span></span></span><span class="es-choice__mark"><i data-icon="check" data-size="14"></i></span></label>
+      </div>
+      <p class="es-field__msg" id="sc-em"><i data-icon="triangle-alert" data-size="16"></i><span>Chọn một cách cho thuê.</span></p>
+    </fieldset>
+  </div>
+</div>
+<script>Esta.themes('#src', { densities: true });</script>
+</body>
+</html>

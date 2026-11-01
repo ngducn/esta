@@ -24,37 +24,37 @@ export async function UtilityAccountList({ propertyId, accounts, units, canEdit 
     <div data-testid="account-groups" className="flex flex-col gap-5">
       {groupAccounts(accounts, units, t('wholeProperty')).map((group) => (
         <section key={group.id} aria-labelledby={`accounts-${group.id}`} data-testid="account-group" className="flex flex-col gap-2">
-          <h3 id={`accounts-${group.id}`} className="text-body font-medium text-ink-2">
+          <h3 id={`accounts-${group.id}`} className="text-body font-medium text-text-secondary">
             {group.title}
           </h3>
-          <ul className="flex flex-col overflow-hidden rounded-lg border border-rule bg-surface shadow-card">
+          <ul className="flex flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-xs">
             {group.accounts.map((account) => {
               const Icon = kindIcons[account.kind];
               const name = t('accountName', { kind: account.kind });
               return (
-                <li key={account.id} data-testid="account-row" data-kind={account.kind} className="flex flex-col gap-3 border-b border-rule p-4 last:border-b-0 sm:flex-row sm:items-start sm:justify-between sm:px-5">
+                <li key={account.id} data-testid="account-row" data-kind={account.kind} className="flex flex-col gap-3 border-b border-border p-4 last:border-b-0 sm:flex-row sm:items-start sm:justify-between sm:px-5">
                   <div className="flex min-w-0 items-start gap-3">
-                    <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-surface-2 text-ink-2">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-bg-subtle text-text-secondary">
                       <Icon className="size-5" strokeWidth={1.8} aria-hidden="true" />
                     </span>
                     <div className="flex min-w-0 flex-col gap-0.5">
-                      <p className="text-body font-medium text-ink">
+                      <p className="text-body font-medium text-text">
                         {t('utilityKind', { kind: account.kind })}
-                        {account.provider === null ? null : <span className="font-normal text-ink-2">{` · ${account.provider}`}</span>}
+                        {account.provider === null ? null : <span className="font-normal text-text-secondary">{` · ${account.provider}`}</span>}
                       </p>
                       {account.customer_code === null ? (
-                        <p className="text-small text-ink-muted">{t('noCode')}</p>
+                        <p className="text-body-sm text-text-muted">{t('noCode')}</p>
                       ) : (
-                        <p className="text-small text-ink-muted">
-                          {t('customerCode')} <span data-testid="customer-code" className="figures inline-block font-medium break-all text-ink select-all">{account.customer_code}</span>
+                        <p className="text-body-sm text-text-muted">
+                          {t('customerCode')} <span data-testid="customer-code" className="num inline-block font-medium break-all text-text select-all">{account.customer_code}</span>
                         </p>
                       )}
                       {account.holder_name === null ? null : (
-                        <p className="text-small break-words text-ink-muted">
-                          {t('holder')} <span className="text-ink-2">{account.holder_name}</span>
+                        <p className="text-body-sm break-words text-text-muted">
+                          {t('holder')} <span className="text-text-secondary">{account.holder_name}</span>
                         </p>
                       )}
-                      {account.note === null ? null : <p className="text-small break-words text-ink-2">{account.note}</p>}
+                      {account.note === null ? null : <p className="text-body-sm break-words text-text-secondary">{account.note}</p>}
                     </div>
                   </div>
                   {canEdit ? (

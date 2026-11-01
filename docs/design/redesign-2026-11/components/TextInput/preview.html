@@ -1,0 +1,35 @@
+<!-- @dsCard group="Forms" height=1500 width=1200 subtitle="Label above, example as placeholder, words under the field when something is wrong" -->
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><title>Text input</title></head>
+<body>
+<div id="src">
+  <p class="ds-why"><b>The label never disappears.</b> It sits above the field, so a half-filled form still says what each box is; the placeholder only shows an example. Errors are words with an icon under the field, never a red edge alone.</p>
+  <div class="ds-matrix" style="--ds-cell: 240px">
+    <div class="ds-cell"><span class="ds-cap">Default (empty)</span>
+      <div class="es-field"><label class="es-field__label" for="ti-1">Tên gọi</label><input class="es-input" id="ti-1" type="text" placeholder="Ví dụ: Dãy trọ Dĩ An" aria-describedby="ti-1h"><p class="es-field__hint" id="ti-1h">Tên cả nhà hay gọi.</p></div></div>
+    <div class="ds-cell"><span class="ds-cap">Filled</span>
+      <div class="es-field"><label class="es-field__label" for="ti-2">Tên gọi</label><input class="es-input" id="ti-2" type="text" value="Dãy trọ Dĩ An Demo"></div></div>
+    <div class="ds-cell"><span class="ds-cap">Hover</span>
+      <div class="es-field"><label class="es-field__label" for="ti-3">Tên gọi</label><input class="es-input is-hover" id="ti-3" type="text" value="Dãy trọ Dĩ An Demo"></div></div>
+    <div class="ds-cell"><span class="ds-cap">Focus-visible</span>
+      <div class="es-field"><label class="es-field__label" for="ti-4">Tên gọi</label><input class="es-input is-focus" id="ti-4" type="text" value="Dãy trọ Dĩ An"></div></div>
+    <div class="ds-cell"><span class="ds-cap">Error</span>
+      <div class="es-field is-error"><label class="es-field__label" for="ti-5">Mã tài sản</label><input class="es-input" id="ti-5" type="text" value="DA01" aria-invalid="true" aria-describedby="ti-5m"><p class="es-field__msg" id="ti-5m"><i data-icon="triangle-alert" data-size="16"></i><span>Mã DA01 đã dùng cho Dãy trọ Dĩ An Demo.</span></p></div></div>
+    <div class="ds-cell"><span class="ds-cap">Loading (checking)</span>
+      <div class="es-field"><label class="es-field__label" for="ti-6">Mã tài sản</label><div class="es-input-group"><input class="es-input" id="ti-6" type="text" value="GV02" aria-describedby="ti-6h"><i data-icon="loader-circle" class="es-spinner"></i></div><p class="es-field__hint" id="ti-6h" aria-live="polite">Đang kiểm tra mã.</p></div></div>
+    <div class="ds-cell"><span class="ds-cap">Disabled</span>
+      <div class="es-field is-disabled"><label class="es-field__label" for="ti-7">Người đứng tên</label><input class="es-input" id="ti-7" type="text" value="Nguyễn Thị Hường Demo" disabled aria-describedby="ti-7h"><p class="es-field__hint" id="ti-7h">Sửa ở tab Pháp lý.</p></div></div>
+    <div class="ds-cell"><span class="ds-cap">Read-only</span>
+      <div class="es-field"><label class="es-field__label" for="ti-8">Số phát hành sổ</label><input class="es-input" id="ti-8" type="text" value="CS 123456" readonly></div></div>
+    <div class="ds-cell"><span class="ds-cap">With icon (search)</span>
+      <div class="es-field"><label class="es-field__label" for="ti-9">Tìm tài sản</label><div class="es-input-group"><i data-icon="search"></i><input class="es-input" id="ti-9" type="search" placeholder="Tên hoặc địa chỉ"></div></div></div>
+    <div class="ds-cell"><span class="ds-cap">Optional, with unit</span>
+      <div class="es-field"><label class="es-field__label" for="ti-10">Diện tích sàn <span class="es-field__optional">(không bắt buộc)</span></label><div class="es-input-group"><input class="es-input" id="ti-10" type="text" inputmode="decimal" value="180,5"><span class="es-affix">m²</span></div></div></div>
+    <div class="ds-cell" style="grid-column: span 2"><span class="ds-cap">Long content: the text scrolls inside; the field never grows sideways</span>
+      <div class="es-field"><label class="es-field__label" for="ti-11">Địa chỉ hiện nay</label><input class="es-input" id="ti-11" type="text" value="Thửa 1234, tờ bản đồ 56, Ấp Trường Thọ, Xã Đức Hòa Thượng, Tỉnh Tây Ninh"><p class="es-field__msg" id="ti-11m"><i data-icon="triangle-alert" data-size="16"></i><span>Địa chỉ này chưa có trong danh mục 2025. Kiểm tra lại tên xã sau sáp nhập rồi lưu.</span></p></div></div>
+  </div>
+</div>
+<script>Esta.themes('#src', { densities: true });</script>
+</body>
+</html>

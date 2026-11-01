@@ -9,11 +9,11 @@ export function ReceiptLinks({ invoiceId, labels }: { invoiceId: string; labels:
   const href = `/api/invoices/${invoiceId}/receipt`;
   return (
     <>
-      <a data-testid="receipt-pdf" href={`${href}?format=pdf`} target="_blank" rel="noopener" className={buttonVariants({ variant: 'outline' })}>
+      <a data-testid="receipt-pdf" href={`${href}?format=pdf`} target="_blank" rel="noopener" className={buttonVariants({ variant: 'secondary' })}>
         <FileText aria-hidden="true" />
         {labels.pdf}
       </a>
-      <a data-testid="receipt-png" href={`${href}?format=png`} download className={buttonVariants({ variant: 'outline' })}>
+      <a data-testid="receipt-png" href={`${href}?format=png`} download className={buttonVariants({ variant: 'secondary' })}>
         <ImageDown aria-hidden="true" />
         {labels.png}
       </a>

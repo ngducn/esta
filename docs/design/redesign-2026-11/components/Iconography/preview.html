@@ -1,0 +1,95 @@
+<!-- @dsCard group="Foundations" page height=3050 width=1200 subtitle="Lucide outline icons: size follows the text beside them, 1.75 stroke, 2 at 14px, optically aligned" -->
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Iconography</title>
+</head>
+<body>
+<div id="src">
+  <p class="ds-why"><b>Lucide, outline only, the set the app already imports.</b> Never mix in filled or duotone icons, emoji or Unicode symbols. Icons take <code class="ds-code">currentColor</code>, so in a nav item or badge they match the word beside them.</p>
+  <div class="ds-icongrid" data-icons></div>
+
+  <div class="ds-grid2">
+    <div class="ds-box">
+      <p class="ds-sub">Size follows the text</p>
+      <p class="ds-why"><b>Pick the icon size from the type style, never on its own.</b></p>
+      <div class="ds-col">
+        <div class="ds-ladder" style="gap: var(--space-1\.5)"><i data-icon="clock" data-size="14"></i><span class="caption">Cập nhật lúc 09:00</span></div>
+        <span class="ds-meta">icon-xs 14 · caption, badges · gap 6</span>
+        <div class="ds-ladder"><i data-icon="banknote" data-size="16"></i><span class="label">Ghi nhận tiền</span></div>
+        <span class="ds-meta">icon-sm 16 · label, body-sm · gap 8</span>
+        <div class="ds-ladder"><i data-icon="triangle-alert" data-size="20"></i><span class="body">Phòng 5 đã quá hạn 12 ngày</span></div>
+        <span class="ds-meta">icon-md 20 · body, headline · gap 8</span>
+        <div class="ds-ladder"><i data-icon="house" data-size="24"></i><span class="label">Tổng quan</span></div>
+        <span class="ds-meta">icon-lg 24 · bottom nav, empty states · gap 8</span>
+      </div>
+    </div>
+
+    <div class="ds-box">
+      <p class="ds-sub">Stroke 1.75, and 2 at 14px</p>
+      <p class="ds-why"><b>A 14px glyph at 1.75 thins out to grey; 2 keeps its weight next to 14px caption text.</b></p>
+      <div class="ds-strokes" data-strokes></div>
+    </div>
+  </div>
+
+  <div class="ds-grid2">
+    <div class="ds-box">
+      <p class="ds-sub">Optical alignment</p>
+      <p class="ds-why"><b>Centre the icon on the first line, not on the block.</b> One line: <code class="ds-code">align-items: center</code>. Several lines: <code class="ds-code">margin-top: calc((line-height − icon) / 2)</code>.</p>
+      <div class="ds-grid2">
+        <div class="ds-col">
+          <span class="ds-do"><i data-icon="check" data-size="14"></i>Do · one line, centred</span>
+          <div class="ds-align ds-align--mid body"><i data-icon="circle-check" data-size="20" class="ds-c1"></i><span>Đã thu tiền tháng 10</span></div>
+        </div>
+        <div class="ds-col">
+          <span class="ds-dont"><i data-icon="x" data-size="14"></i>Don't · sitting on the baseline</span>
+          <div class="ds-align ds-align--base body"><i data-icon="circle-check" data-size="20" class="ds-c1"></i><span>Đã thu tiền tháng 10</span></div>
+        </div>
+        <div class="ds-col">
+          <span class="ds-do"><i data-icon="check" data-size="14"></i>Do · two lines, on the first</span>
+          <div class="ds-align ds-align--first body"><i data-icon="triangle-alert" data-size="20"></i><span>Phòng 5 đã quá hạn 12 ngày, còn thiếu 3.500.000 ₫.</span></div>
+        </div>
+        <div class="ds-col">
+          <span class="ds-dont"><i data-icon="x" data-size="14"></i>Don't · centred on the block</span>
+          <div class="ds-align ds-align--mid body"><i data-icon="triangle-alert" data-size="20"></i><span>Phòng 5 đã quá hạn 12 ngày, còn thiếu 3.500.000 ₫.</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ds-box">
+      <p class="ds-sub">Status icons</p>
+      <p class="ds-why"><b>Six silhouettes that differ in shape, so status reads in grayscale too.</b> Always with the word.</p>
+      <div class="ds-statusgrid" data-status></div>
+      <span class="ds-cap">Same set in grayscale</span>
+      <div class="ds-statusgrid ds-gray" data-status></div>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  var STATUS = [['circle-check', 'success-text', 'Đã thu', 'paid'], ['clock', 'warning-text', 'Sắp đến hạn', 'due soon'], ['triangle-alert', 'danger-text', 'Quá hạn', 'overdue'], ['circle-dashed', 'neutral-text', 'Trống', 'empty'], ['pencil-line', 'info-text', 'Nháp', 'draft'], ['archive', 'neutral-text', 'Đã kết thúc', 'ended']];
+  var STROKE = ['circle-check', 'clock', 'calendar', 'map-pin'];
+  document.querySelector('[data-icons]').innerHTML = Object.keys(Esta.icons).map(function (n) {
+    return '<div class="ds-iconcell"><i data-icon="' + n + '" data-size="24"></i><span>' + n + '</span></div>';
+  }).join('');
+  document.querySelectorAll('[data-status]').forEach(function (el) {
+    el.innerHTML = STATUS.map(function (s) {
+      return '<div class="ds-col" style="gap: var(--space-0\\.5)"><span class="ds-status" style="color: var(--' + s[1] + ')"><i data-icon="' + s[0] + '" data-size="16"></i>' + s[2] + '</span><span class="ds-meta">' + s[3] + ' · ' + s[0] + '</span></div>';
+    }).join('');
+  });
+  var strokes = '<span></span><span class="ds-cap">1.75</span><span class="ds-cap">2 (used at 14px)</span>';
+  [[14, 'Actual 14px'], [42, 'Magnified 3×']].forEach(function (z) {
+    strokes += '<span class="ds-meta">' + z[1] + '</span>' + [1.75, 2].map(function (w) {
+      return '<span class="ds-row" style="gap: var(--space-2)">' + STROKE.map(function (n) { return Esta.icon(n, { size: z[0], stroke: w }); }).join('') + '</span>';
+    }).join('');
+  });
+  strokes += '<span class="ds-meta">Beside text</span>' + [1.75, 2].map(function (w) {
+    return '<span class="ds-row caption" style="gap: var(--space-1\\.5)">' + Esta.icon('clock', { size: 14, stroke: w }) + 'Còn 3 ngày</span>';
+  }).join('');
+  document.querySelector('[data-strokes]').innerHTML = strokes;
+  Esta.themes('#src', { stack: true });
+})();
+</script>
+</body>
+</html>

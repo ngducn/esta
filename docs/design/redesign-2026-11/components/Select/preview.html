@@ -1,0 +1,55 @@
+<!-- @dsCard group="Forms" height=1600 width=1200 subtitle="A native select, styled; the open list for desktop pickers that need a second line" -->
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><title>Select</title></head>
+<body>
+<div id="src">
+  <p class="ds-why"><b>Native on phones.</b> The box is a real <span class="ds-code">&lt;select&gt;</span>, so Android opens its own full-screen picker with large rows Mẹ already knows. On desktop, where a choice needs a second line (an address, why an option is unavailable), the same field opens the listbox below. Long names end in an ellipsis inside the box and show in full in the list.</p>
+
+  <div class="ds-matrix" style="--ds-cell: 240px">
+    <div class="ds-cell"><span class="ds-cap">Placeholder (nothing chosen)</span>
+      <div class="es-field"><label class="es-field__label" for="se-1">Tài sản</label>
+        <div class="es-select"><select class="es-select__native is-placeholder" id="se-1" required><option value="" selected disabled hidden>Chọn tài sản</option><option>Dãy trọ Dĩ An Demo</option></select><i data-icon="chevron-down" class="es-select__chevron"></i></div></div></div>
+    <div class="ds-cell"><span class="ds-cap">Chosen</span>
+      <div class="es-field"><label class="es-field__label" for="se-2">Tài sản</label>
+        <div class="es-select"><select class="es-select__native" id="se-2"><option selected>Dãy trọ Dĩ An Demo</option></select><i data-icon="chevron-down" class="es-select__chevron"></i></div></div></div>
+    <div class="ds-cell"><span class="ds-cap">Hover</span>
+      <div class="es-field"><label class="es-field__label" for="se-3">Kỳ thu</label>
+        <div class="es-select is-hover"><select class="es-select__native" id="se-3"><option selected>Hằng tháng</option></select><i data-icon="chevron-down" class="es-select__chevron"></i></div></div></div>
+    <div class="ds-cell"><span class="ds-cap">Focus-visible</span>
+      <div class="es-field"><label class="es-field__label" for="se-4">Kỳ thu</label>
+        <div class="es-select is-focus"><select class="es-select__native" id="se-4"><option selected>Hằng tháng</option></select><i data-icon="chevron-down" class="es-select__chevron"></i></div></div></div>
+    <div class="ds-cell"><span class="ds-cap">Error</span>
+      <div class="es-field is-error"><label class="es-field__label" for="se-5">Cách nhận tiền</label>
+        <div class="es-select"><select class="es-select__native is-placeholder" id="se-5" required aria-invalid="true" aria-describedby="se-5m"><option value="" selected disabled hidden>Chọn cách nhận</option><option>Tiền mặt</option><option>Chuyển khoản</option></select><i data-icon="chevron-down" class="es-select__chevron"></i></div>
+        <p class="es-field__msg" id="se-5m"><i data-icon="triangle-alert" data-size="16"></i><span>Chọn Tiền mặt hoặc Chuyển khoản.</span></p></div></div>
+    <div class="ds-cell"><span class="ds-cap">Loading (options on the way)</span>
+      <div class="es-field"><label class="es-field__label" for="se-6">Phòng</label>
+        <div class="es-select is-loading"><select class="es-select__native is-placeholder" id="se-6" aria-busy="true"><option selected>Đang tải danh sách phòng</option></select><i data-icon="chevron-down" class="es-select__chevron"></i><i data-icon="loader-circle" class="es-spinner"></i></div></div></div>
+    <div class="ds-cell"><span class="ds-cap">Disabled</span>
+      <div class="es-field is-disabled"><label class="es-field__label" for="se-7">Phòng</label>
+        <div class="es-select"><select class="es-select__native" id="se-7" disabled aria-describedby="se-7h"><option selected>Chọn tài sản trước</option></select><i data-icon="chevron-down" class="es-select__chevron"></i></div>
+        <p class="es-field__hint" id="se-7h">Chọn tài sản để thấy các phòng.</p></div></div>
+    <div class="ds-cell"><span class="ds-cap">Long content: ellipsis in the box</span>
+      <div class="es-field"><label class="es-field__label" for="se-8">Tài sản</label>
+        <div class="es-select"><select class="es-select__native" id="se-8"><option selected>Nhà phố 3 tầng mặt tiền đường Nguyễn Thị Minh Khai Demo</option></select><i data-icon="chevron-down" class="es-select__chevron"></i></div></div></div>
+  </div>
+
+  <div class="ds-cell"><span class="ds-cap">Open (desktop listbox): grouped, chosen marked with a tick, one option unavailable with its reason</span>
+    <div class="es-popover-anchor" style="max-width: 400px">
+      <div class="es-field"><label class="es-field__label" for="se-open">Tài sản</label>
+        <div class="es-select is-open"><select class="es-select__native" id="se-open" aria-expanded="true" aria-controls="se-list"><option selected>Dãy trọ Dĩ An Demo</option></select><i data-icon="chevron-down" class="es-select__chevron"></i></div></div>
+      <ul class="es-listbox" id="se-list" role="listbox" aria-label="Tài sản">
+        <li class="es-listbox__group" role="presentation">Bình Dương</li>
+        <li class="es-listbox__option" role="option" aria-selected="true"><span class="es-listbox__text">Dãy trọ Dĩ An Demo<span class="es-listbox__meta">12 phòng · Phường Dĩ An</span></span><i data-icon="check" class="es-listbox__check"></i></li>
+        <li class="es-listbox__option is-active" role="option" aria-selected="false"><span class="es-listbox__text">Nhà phố 3 tầng mặt tiền đường Nguyễn Thị Minh Khai Demo<span class="es-listbox__meta">Cho thuê nguyên căn · Phường Thủ Dầu Một</span></span><i data-icon="check" class="es-listbox__check"></i></li>
+        <li class="es-listbox__group" role="presentation">TP. Hồ Chí Minh</li>
+        <li class="es-listbox__option" role="option" aria-selected="false"><span class="es-listbox__text">Căn hộ Gò Vấp Demo<span class="es-listbox__meta">Đang trống · Phường Gò Vấp</span></span><i data-icon="check" class="es-listbox__check"></i></li>
+        <li class="es-listbox__option" role="option" aria-selected="false" aria-disabled="true"><span class="es-listbox__text">Đất nông nghiệp Củ Chi Demo<span class="es-listbox__meta">Không cho thuê được: đất trồng lúa</span></span><i data-icon="check" class="es-listbox__check"></i></li>
+      </ul>
+    </div>
+  </div>
+</div>
+<script>Esta.themes('#src', { densities: true });</script>
+</body>
+</html>

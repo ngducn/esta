@@ -65,7 +65,7 @@ export function PurposeRows({
     <div className="flex flex-col gap-3">
       <ol className="flex flex-col gap-3">
         {drafts.map((draft, index) => (
-          <li key={draft.key} data-testid="purpose-row" aria-label={t('purposeRow', { index: index + 1 })} className="flex flex-col gap-3 rounded-md border border-rule p-3 sm:p-4">
+          <li key={draft.key} data-testid="purpose-row" aria-label={t('purposeRow', { index: index + 1 })} className="flex flex-col gap-3 rounded-md border border-border p-3 sm:p-4">
             <div className="grid gap-3 sm:grid-cols-2">
               <LandUseCodePicker
                 value={draft.code}
@@ -81,7 +81,7 @@ export function PurposeRows({
                 value={draft.areaText}
                 maxLength={20}
                 inputMode="decimal"
-                className="figures"
+                className="num"
                 error={invalid?.key === draft.key && invalid.field === 'area' ? t('areaInvalid', { reason: 'invalid' }) : null}
                 onChange={(areaText) => update(draft.key, { areaText })}
               />
@@ -103,7 +103,7 @@ export function PurposeRows({
             </div>
             <Button
               type="button"
-              variant="quiet"
+              variant="ghost"
               className="self-start"
               onClick={() => onChange(drafts.filter((other) => other.key !== draft.key))}
             >
@@ -113,7 +113,7 @@ export function PurposeRows({
           </li>
         ))}
       </ol>
-      <Button type="button" variant="outline" className="self-start" onClick={onAdd} data-testid="add-purpose">
+      <Button type="button" variant="secondary" className="self-start" onClick={onAdd} data-testid="add-purpose">
         <Plus aria-hidden="true" />
         {t('addPurpose')}
       </Button>

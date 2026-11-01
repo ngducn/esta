@@ -29,10 +29,10 @@ export default async function TaxCardPage({ searchParams }: { searchParams: Prom
 
   return (
     <div className="flex flex-col gap-5">
-      <h1 className="text-h2 break-words lg:text-h1">{t('title')}</h1>
+      <h1 className="text-title-2 break-words lg:text-title-1">{t('title')}</h1>
       <ReportPicker current="tax" />
       {owner === undefined ? (
-        <p data-testid="tax-no-owners" className="rounded-lg border border-rule bg-surface p-5 text-body text-ink shadow-card sm:p-6">
+        <p data-testid="tax-no-owners" className="rounded-lg border border-border bg-surface p-5 text-body text-text shadow-xs sm:p-6">
           {t('noOwners')}
         </p>
       ) : (
@@ -42,7 +42,7 @@ export default async function TaxCardPage({ searchParams }: { searchParams: Prom
         </div>
       )}
       {card?.kind === 'no_rule' ? (
-        <p data-testid="tax-no-rule" className="rounded-lg border border-rule bg-surface p-5 text-body font-medium text-ink shadow-card sm:p-6">
+        <p data-testid="tax-no-rule" className="rounded-lg border border-border bg-surface p-5 text-body font-medium text-text shadow-xs sm:p-6">
           {notes('noRule', { year })}
         </p>
       ) : null}

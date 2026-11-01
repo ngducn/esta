@@ -11,9 +11,9 @@ export async function LanguageSwitch() {
       <button
         type="submit"
         lang={next}
-        className="inline-flex min-h-touch items-center gap-2 rounded-sm border border-rule-strong bg-surface px-3 text-small font-medium text-ink transition-colors duration-(--duration-fast) ease-standard hover:bg-surface-2"
+        className="inline-flex min-h-touch items-center gap-2 rounded-md border border-border-strong bg-surface px-3 text-body-sm font-medium text-text transition-colors duration-(--duration-fast) ease-standard hover:bg-fill-hover"
       >
-        <Languages className="size-4.5 text-ink-muted" strokeWidth={1.8} aria-hidden="true" />
+        <Languages className="size-4.5 text-text-muted" strokeWidth={1.8} aria-hidden="true" />
         {t('switchTo')}
       </button>
     </form>

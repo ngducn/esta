@@ -27,7 +27,7 @@ function DetailInput({
   const id = useId();
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-body font-medium text-ink">
+      <label htmlFor={id} className="text-body font-medium text-text">
         {label}
       </label>
       <Input
@@ -39,7 +39,7 @@ function DetailInput({
         aria-invalid={error !== null}
         aria-describedby={input === 'text' ? undefined : `${id}-message`}
         onChange={(event) => onChange(event.target.value)}
-        className={input === 'text' ? 'mt-1' : 'mt-1 max-w-48 figures'}
+        className={input === 'text' ? 'mt-1' : 'mt-1 max-w-48 num'}
       />
       {input === 'text' ? null : <FieldMessage id={`${id}-message`} error={error} />}
     </div>

@@ -32,11 +32,11 @@ export default async function DocumentReviewPage({ params }: { params: Promise<{
 
   return (
     <div className="flex flex-col gap-5">
-      <Link href={back} className="-ml-2 flex min-h-touch w-fit items-center gap-1 rounded-sm px-2 text-body font-medium text-ink-2 hover:text-ink">
+      <Link href={back} className="-ml-2 flex min-h-touch w-fit items-center gap-1 rounded-md px-2 text-body font-medium text-text-secondary hover:text-text">
         <ChevronLeft className="size-5 shrink-0" strokeWidth={2} aria-hidden="true" />
         {t('back')}
       </Link>
-      <h1 className="text-h2 break-words lg:text-h1">{t('pageTitle', { title: document.title })}</h1>
+      <h1 className="text-title-2 break-words lg:text-title-1">{t('pageTitle', { title: document.title })}</h1>
       <PropertyIntl locale={locale} messages={{ extraction: messages.extraction, propertyLegal: { purposeCodeHint, unknownCode }, components: { date, money, confirm } }}>
         <ReviewPanel
           documentId={document.id}

@@ -150,15 +150,15 @@ export default function RecordPaymentSheet({ open, onOpenChange, finalFocus, tar
               {t('title')}
             </SheetTitle>
             <SheetDescription className="flex flex-col">
-              <span data-testid="payment-place" className="font-medium break-words text-ink">
+              <span data-testid="payment-place" className="font-medium break-words text-text">
                 {target.place}
               </span>
-              {target.tenantName === null ? null : <span className="break-words text-ink-2">{target.tenantName}</span>}
+              {target.tenantName === null ? null : <span className="break-words text-text-secondary">{target.tenantName}</span>}
             </SheetDescription>
           </div>
 
           {offline ? (
-            <p role="status" data-testid="payment-offline" className="rounded-md border border-rule bg-surface-2 px-4 py-3 text-body text-ink">
+            <p role="status" data-testid="payment-offline" className="rounded-md border border-border bg-bg-subtle px-4 py-3 text-body text-text">
               {t('offline')}
             </p>
           ) : null}
@@ -167,14 +167,14 @@ export default function RecordPaymentSheet({ open, onOpenChange, finalFocus, tar
 
           {plan?.ok === true ? (
             <div data-testid="payment-allocation" className="flex flex-col gap-1 text-body">
-              <p className="font-medium text-ink">{t('allocation')}</p>
+              <p className="font-medium text-text">{t('allocation')}</p>
               <ul className="flex flex-col gap-0.5">
                 {plan.value.allocations.map((allocation) => {
                   const invoice = byId.get(allocation.invoiceId);
                   if (invoice === undefined) return null;
                   const rest = invoice.outstandingVnd - allocation.amountVnd;
                   return (
-                    <li key={allocation.invoiceId} className={cn('figures', rest > 0 ? 'font-medium text-due' : 'text-ink-2')}>
+                    <li key={allocation.invoiceId} className={cn('num', rest > 0 ? 'font-medium text-warning-text' : 'text-text-secondary')}>
                       {rest > 0
                         ? t('allocationShort', { month: month(invoice), amount: money(allocation.amountVnd), rest: money(vnd(rest)) })
                         : t('allocationSettled', { month: month(invoice), amount: money(allocation.amountVnd) })}
@@ -183,8 +183,8 @@ export default function RecordPaymentSheet({ open, onOpenChange, finalFocus, tar
                 })}
               </ul>
               {plan.value.creditVnd > 0 ? (
-                <p data-testid="payment-credit" className="flex items-start gap-2 font-medium text-ink">
-                  <PiggyBank aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-ink-muted" />
+                <p data-testid="payment-credit" className="flex items-start gap-2 font-medium text-text">
+                  <PiggyBank aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-text-muted" />
                   {target.tenantName === null
                     ? t('creditNoTenant', { amount: money(plan.value.creditVnd) })
                     : t('credit', { amount: money(plan.value.creditVnd), tenant: target.tenantName })}
@@ -200,15 +200,15 @@ export default function RecordPaymentSheet({ open, onOpenChange, finalFocus, tar
                 data-testid="payment-choose"
                 aria-expanded={choosing}
                 onClick={() => setChoosing((value) => !value)}
-                className={cn(buttonVariants({ variant: 'quiet' }), 'self-start px-0')}
+                className={cn(buttonVariants({ variant: 'ghost' }), 'self-start px-0')}
               >
                 {choosing ? t('chooseDone') : t('choose')}
               </button>
               {choosing ? (
                 <fieldset className="flex flex-col gap-1">
-                  <legend className="text-small text-ink-muted">{t('chooseHint')}</legend>
+                  <legend className="text-body-sm text-text-muted">{t('chooseHint')}</legend>
                   {openInvoices.map((invoice) => (
-                    <label key={invoice.id} className="flex min-h-touch items-center gap-2 text-body text-ink">
+                    <label key={invoice.id} className="flex min-h-touch items-center gap-2 text-body text-text">
                       <Checkbox
                         checked={chosen === null || chosen.includes(invoice.id)}
                         onCheckedChange={(checked) => toggle(invoice.id, checked)}
@@ -216,7 +216,7 @@ export default function RecordPaymentSheet({ open, onOpenChange, finalFocus, tar
                       />
                       <span className="flex min-w-0 flex-1 flex-wrap justify-between gap-x-3">
                         <span>{t('invoiceOption', { month: month(invoice), date: formatDate(invoice.dueDate, locale) })}</span>
-                        <span className="figures text-ink-2">{t('invoiceOwed', { amount: money(invoice.outstandingVnd) })}</span>
+                        <span className="num text-text-secondary">{t('invoiceOwed', { amount: money(invoice.outstandingVnd) })}</span>
                       </span>
                     </label>
                   ))}
@@ -226,12 +226,12 @@ export default function RecordPaymentSheet({ open, onOpenChange, finalFocus, tar
           ) : null}
 
           <fieldset className="flex flex-col gap-2">
-            <legend className="mb-2 text-body font-medium text-ink">{t('method')}</legend>
+            <legend className="mb-2 text-body font-medium text-text">{t('method')}</legend>
             <div className="grid grid-cols-[repeat(auto-fit,minmax(9rem,1fr))] gap-2">
               {METHODS.map(({ value, label, Icon }) => (
                 <label
                   key={value}
-                  className="flex min-h-touch cursor-pointer items-center gap-2 rounded-md border border-field bg-surface px-3 py-2.5 text-body font-medium text-ink transition-colors duration-(--duration-fast) ease-standard hover:border-ink-muted has-checked:border-ink has-checked:bg-surface-2 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent"
+                  className="flex min-h-touch cursor-pointer items-center gap-2 rounded-md border border-border-field bg-surface px-3 py-2.5 text-body font-medium text-text transition-colors duration-(--duration-fast) ease-standard hover:border-border-field has-checked:border-accent has-checked:bg-accent-subtle has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus-ring"
                 >
                   <input
                     type="radio"
@@ -242,13 +242,13 @@ export default function RecordPaymentSheet({ open, onOpenChange, finalFocus, tar
                     disabled={pending}
                     className="size-5 shrink-0 accent-accent"
                   />
-                  <Icon aria-hidden="true" className="size-5 shrink-0 text-ink-muted" />
+                  <Icon aria-hidden="true" className="size-5 shrink-0 text-text-muted" />
                   <span className="min-w-0 break-words">{t(label)}</span>
                 </label>
               ))}
             </div>
             {method === 'bank_transfer' && target.account !== null ? (
-              <p data-testid="payment-account" className="figures text-body text-ink-2">
+              <p data-testid="payment-account" className="num text-body text-text-secondary">
                 {t('transferTo', { bank: target.account.bankName, accountNo: target.account.accountNo })}
               </p>
             ) : null}
@@ -258,13 +258,13 @@ export default function RecordPaymentSheet({ open, onOpenChange, finalFocus, tar
             <DateInput label={t('date')} defaultValue={target.today} onTextChange={setDate} disabled={pending} />
           ) : (
             <div className="flex flex-wrap items-center justify-between gap-x-3 text-body">
-              <p className="text-ink">
+              <p className="text-text">
                 <span className="font-medium">{t('date')}</span>{' '}
-                <span data-testid="payment-date" className="figures text-ink-2">
+                <span data-testid="payment-date" className="num text-text-secondary">
                   {t('dateToday', { date: formatDate(target.today, locale) })}
                 </span>
               </p>
-              <button type="button" data-testid="payment-change-date" onClick={() => setEditingDate(true)} className={cn(buttonVariants({ variant: 'quiet' }), 'px-0')}>
+              <button type="button" data-testid="payment-change-date" onClick={() => setEditingDate(true)} className={cn(buttonVariants({ variant: 'ghost' }), 'px-0')}>
                 {t('changeDate')}
               </button>
             </div>

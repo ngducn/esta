@@ -50,30 +50,30 @@ export function DepositLedger({ rows, held, contractVnd, offer }: { rows: readon
   const actions = offer === null ? [] : depositActionsOn(offer, rows, held);
 
   return (
-    <section aria-labelledby="lease-deposit-ledger" data-testid="deposit-ledger" className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
-      <h2 id="lease-deposit-ledger" className="text-lead font-semibold text-ink">
+    <section aria-labelledby="lease-deposit-ledger" data-testid="deposit-ledger" className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
+      <h2 id="lease-deposit-ledger" className="text-headline font-semibold text-text">
         {t('title')}
       </h2>
       {rows.length === 0 ? (
         <div className="flex flex-col items-start gap-3">
-          <p className="flex items-center gap-3 text-body font-medium text-ink">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-accent-tint text-accent">
+          <p className="flex items-center gap-3 text-body font-medium text-text">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-accent-subtle text-accent-text">
               <PiggyBank className="size-5" strokeWidth={1.8} aria-hidden="true" />
             </span>
             {t('empty')}
           </p>
-          <p className="max-w-prose text-body text-pretty text-ink-2">{offer === null ? t('viewerEmpty') : t('emptyBody')}</p>
+          <p className="max-w-prose text-body text-pretty text-text-secondary">{offer === null ? t('viewerEmpty') : t('emptyBody')}</p>
         </div>
       ) : (
         <>
           <div className="flex flex-col gap-1">
-            <span className="text-small text-ink-muted">{t('heldLabel')}</span>
+            <span className="text-body-sm text-text-muted">{t('heldLabel')}</span>
             <span data-testid="deposit-held">
-              <MoneyDisplay amount={held} variant="large" className="text-start text-ink" />
+              <MoneyDisplay amount={held} variant="large" className="text-start text-text" />
             </span>
-            {held === 0 ? <p className="text-body text-ink-2">{t('heldNone')}</p> : null}
+            {held === 0 ? <p className="text-body text-text-secondary">{t('heldNone')}</p> : null}
             {contractVnd === null || held === 0 || contractVnd === held ? null : (
-              <p data-testid="deposit-contract" className="text-small text-ink-2 figures">
+              <p data-testid="deposit-contract" className="text-body-sm text-text-secondary num">
                 {t('contract', { amount: formatVnd(contractVnd, locale) })}
               </p>
             )}
@@ -84,16 +84,16 @@ export function DepositLedger({ rows, held, contractVnd, offer }: { rows: readon
                 key={row.id}
                 data-testid="deposit-entry"
                 data-kind={row.kind}
-                className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-0.5 border-b border-rule py-3 last:border-b-0"
+                className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-0.5 border-b border-border py-3 last:border-b-0"
               >
-                <span className="text-body font-medium text-ink">{t('kind', { kind: row.kind })}</span>
-                <MoneyDisplay amount={vnd(row.kind === 'received' ? row.amountVnd : -row.amountVnd)} variant="signed" className="text-body font-medium text-ink" />
-                <span className="text-small text-ink-muted figures">{formatDate(row.onDate, locale)}</span>
-                <span className="text-end text-small text-ink-muted figures">{t('heldAfter', { amount: formatVnd(row.heldVnd, locale) })}</span>
+                <span className="text-body font-medium text-text">{t('kind', { kind: row.kind })}</span>
+                <MoneyDisplay amount={vnd(row.kind === 'received' ? row.amountVnd : -row.amountVnd)} variant="signed" className="text-body font-medium text-text" />
+                <span className="text-body-sm text-text-muted num">{formatDate(row.onDate, locale)}</span>
+                <span className="text-end text-body-sm text-text-muted num">{t('heldAfter', { amount: formatVnd(row.heldVnd, locale) })}</span>
                 {row.invoicePeriodStart === null ? null : (
-                  <span className="col-span-2 text-small text-ink-2 figures">{t('appliedTo', { date: formatDate(row.invoicePeriodStart, locale) })}</span>
+                  <span className="col-span-2 text-body-sm text-text-secondary num">{t('appliedTo', { date: formatDate(row.invoicePeriodStart, locale) })}</span>
                 )}
-                {row.note === null ? null : <span className="col-span-2 text-small break-words text-ink-2">{row.note}</span>}
+                {row.note === null ? null : <span className="col-span-2 text-body-sm break-words text-text-secondary">{row.note}</span>}
               </li>
             ))}
           </ol>
@@ -105,7 +105,7 @@ export function DepositLedger({ rows, held, contractVnd, offer }: { rows: readon
             <Button
               key={action.kind}
               type="button"
-              variant="outline"
+              variant="secondary"
               data-testid={`deposit-${action.kind}`}
               aria-haspopup="dialog"
               aria-expanded={open && opening?.kind === action.kind}

@@ -16,8 +16,8 @@ async function Citations({ citations, locale }: { citations: InboxNote['citation
   const t = await getTranslations('assistant');
   const dated = (source: InboxNote['citations'][number]) => (source.publishedOn === null ? source.sourceName : t('market.source', { name: source.sourceName, date: formatDate(source.publishedOn, locale) }));
   return (
-    <div className="flex flex-col gap-2 border-t border-rule pt-3">
-      <p className="text-small font-medium text-ink-2">{t('sources')}</p>
+    <div className="flex flex-col gap-2 border-t border-border pt-3">
+      <p className="text-body-sm font-medium text-text-secondary">{t('sources')}</p>
       <ul className="flex flex-wrap gap-2">
         {citations.map((source, index) => (
           <li key={source.url} className="max-w-full">
@@ -35,22 +35,22 @@ async function Citations({ citations, locale }: { citations: InboxNote['citation
 async function Diagnostics({ diagnostics }: { diagnostics: NoteDiagnostics }) {
   const t = await getTranslations('assistant');
   return (
-    <dl data-testid="note-diagnostics" className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 border-t border-rule pt-3 text-small text-ink-2">
-      <dt className="text-ink-muted">{t('diagnosticsKind')}</dt>
+    <dl data-testid="note-diagnostics" className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 border-t border-border pt-3 text-body-sm text-text-secondary">
+      <dt className="text-text-muted">{t('diagnosticsKind')}</dt>
       <dd>{t('diagnosticsKindValue', { kind: diagnostics.kind, severity: diagnostics.severity, audience: diagnostics.audience })}</dd>
-      <dt className="text-ink-muted">{t('diagnosticsDedupe')}</dt>
+      <dt className="text-text-muted">{t('diagnosticsDedupe')}</dt>
       <dd data-testid="note-dedupe" className="wrap-anywhere">
         {diagnostics.dedupeKey}
       </dd>
       {diagnostics.links.length === 0 ? null : (
         <>
-          <dt className="text-ink-muted">{t('diagnosticsLinks')}</dt>
+          <dt className="text-text-muted">{t('diagnosticsLinks')}</dt>
           <dd>
             <ul className="flex flex-col gap-1">
               {diagnostics.links.map((link) => (
                 <li key={link.href} data-testid="note-link" data-ok={link.ok} className="flex flex-wrap gap-x-2">
                   <span className="wrap-anywhere">{link.href}</span>
-                  <span className={cn('font-medium', link.ok ? 'text-ink' : 'text-overdue')}>{t(link.ok ? 'linkOk' : 'linkMissing')}</span>
+                  <span className={cn('font-medium', link.ok ? 'text-text' : 'text-danger-text')}>{t(link.ok ? 'linkOk' : 'linkMissing')}</span>
                 </li>
               ))}
             </ul>
@@ -66,45 +66,45 @@ export async function AssistantNote({ note, time, actions }: { note: InboxNote; 
   const unread = note.status === 'new';
   const label = KIND_LABEL[note.kind];
   return (
-    <article data-testid="inbox-item" data-status={note.status} data-kind={note.kind === 'note' ? undefined : note.kind} className="flex flex-col gap-3 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
+    <article data-testid="inbox-item" data-status={note.status} data-kind={note.kind === 'note' ? undefined : note.kind} className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
       <header className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <AssistantMonogram />
-        <span className="text-small font-medium text-ink">{t('author')}</span>
-        {label === null ? null : <span className="text-small text-ink-2">{t(label)}</span>}
-        <time dateTime={note.createdAt} className="text-small text-ink-muted figures">
+        <span className="text-body-sm font-medium text-text">{t('author')}</span>
+        {label === null ? null : <span className="text-body-sm text-text-secondary">{t(label)}</span>}
+        <time dateTime={note.createdAt} className="text-body-sm text-text-muted num">
           {time}
         </time>
         {unread ? (
-          <span data-testid="note-unread" className="inline-flex items-center gap-1.5 text-small font-medium text-ink">
-            <span aria-hidden="true" className="size-2 rounded-full bg-ink" />
+          <span data-testid="note-unread" className="inline-flex items-center gap-1.5 text-body-sm font-medium text-text">
+            <span aria-hidden="true" className="size-2 rounded-full bg-text" />
             {t('unread')}
           </span>
         ) : null}
         {note.operatorOnly ? (
-          <span data-testid="note-operator" className="rounded-full border border-rule bg-surface-2 px-3 py-0.5 text-small font-medium text-ink-2">
+          <span data-testid="note-operator" className="rounded-full border border-border bg-bg-subtle px-3 py-0.5 text-body-sm font-medium text-text-secondary">
             {t('operatorOnly')}
           </span>
         ) : null}
       </header>
-      <h3 className={cn('text-lead break-words text-ink', unread ? 'font-semibold' : 'font-medium')}>{note.title}</h3>
+      <h3 className={cn('text-headline break-words text-text', unread ? 'font-semibold' : 'font-medium')}>{note.title}</h3>
       {note.bodyMd === null ? null : <SafeMarkdown className="max-w-prose">{note.bodyMd}</SafeMarkdown>}
       {note.proposal?.dueOn == null ? null : (
-        <p data-testid="proposal-due" className="text-body text-ink-2 figures">
+        <p data-testid="proposal-due" className="text-body text-text-secondary num">
           {t('proposalDue', { date: formatDate(note.proposal.dueOn, locale) })}
         </p>
       )}
       {note.retry === null || (note.retry === 'self' && note.reviewHref === null) ? null : (
-        <p className="text-body break-words text-ink-2">{t(note.retry === 'self' ? 'retrySelf' : note.reviewHref === null ? 'retryAskJob' : 'retryAsk')}</p>
+        <p className="text-body break-words text-text-secondary">{t(note.retry === 'self' ? 'retrySelf' : note.reviewHref === null ? 'retryAskJob' : 'retryAsk')}</p>
       )}
       {note.reviewHref === null ? null : (
-        <Link href={note.reviewHref} data-testid="item-review" className="w-fit text-body font-medium text-ink underline underline-offset-4 hover:decoration-2">
+        <Link href={note.reviewHref} data-testid="item-review" className="w-fit text-body font-medium text-text underline underline-offset-4 hover:decoration-2">
           {note.retry === null ? review('reviewLink') : review('manualLink')}
         </Link>
       )}
       {note.citations.length === 0 ? null : <Citations citations={note.citations} locale={locale} />}
       {note.diagnostics === null ? null : <Diagnostics diagnostics={note.diagnostics} />}
       {actions}
-      <Link href={`/assistant?reply=${note.id}`} aria-label={t('replyLabel', { title: note.title })} data-testid="note-reply" className={cn(buttonVariants({ variant: 'quiet' }), 'self-start px-0')}>
+      <Link href={`/assistant?reply=${note.id}`} aria-label={t('replyLabel', { title: note.title })} data-testid="note-reply" className={cn(buttonVariants({ variant: 'ghost' }), 'self-start px-0')}>
         <Reply aria-hidden="true" />
         {t('reply')}
       </Link>

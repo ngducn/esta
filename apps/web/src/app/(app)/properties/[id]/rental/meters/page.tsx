@@ -11,7 +11,7 @@ import { EmptyState } from '@/components/empty-state';
 import { MeterEntryList } from '@/components/meters/MeterEntryList';
 import { BackLink } from '@/components/properties/back-link';
 import { PropertyIntl } from '@/components/properties/property-intl';
-import { StatusShape, statusMarks } from '@/components/status-shape';
+import { StatusShape, statusBadge, statusMarks } from '@/components/status-shape';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { cn } from '@/lib/utils';
 import { getClock } from '@/server/clock';
@@ -49,7 +49,7 @@ export default async function MeterEntryPage({ params, searchParams }: { params:
       <Link
         href={`/properties/${id}/rental/meters?month=${boardMonthParam(target)}`}
         data-testid={offset < 0 ? 'meter-month-previous' : 'meter-month-next'}
-        className={buttonVariants({ variant: 'outline', className: 'px-3' })}
+        className={buttonVariants({ variant: 'secondary', className: 'px-3' })}
       >
         {offset < 0 ? <ChevronLeft aria-hidden="true" /> : null}
         {label}
@@ -62,24 +62,24 @@ export default async function MeterEntryPage({ params, searchParams }: { params:
     <div className="flex flex-col gap-5">
       <BackLink href={`/properties/${id}/rental`} label={property.nickname} />
       <div className="flex flex-col gap-3">
-        <h1 className="text-h2 break-words text-balance lg:text-h1">{t('title')}</h1>
+        <h1 className="text-title-2 break-words text-balance lg:text-title-1">{t('title')}</h1>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
           <nav aria-label={t('monthNav')} className="flex w-full flex-wrap items-center justify-between gap-2 sm:w-auto sm:justify-start">
             {monthLink(-1)}
-            <p data-testid="meter-month" aria-current="page" className="figures order-first basis-full text-lead font-semibold text-ink sm:order-none sm:basis-auto sm:px-1">
+            <p data-testid="meter-month" aria-current="page" className="num order-first basis-full text-headline font-semibold text-text sm:order-none sm:basis-auto sm:px-1">
               {t('monthHeading', { month: monthLabel })}
             </p>
             {month < latest ? monthLink(1) : null}
           </nav>
           {rooms.length === 0 ? null : (
-            <p data-testid="meter-remaining" data-status={status} className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-small font-medium', statusMarks[status].pill)}>
+            <p data-testid="meter-remaining" data-status={status} className={cn(statusBadge, statusMarks[status].pill)}>
               <StatusShape status={status} className="size-4" />
               {remaining === 0 ? t('complete', { count: rooms.length }) : t('remaining', { count: remaining })}
             </p>
           )}
         </div>
         {member.role === 'viewer' ? (
-          <p data-testid="meter-viewer-note" className="text-body text-ink-2">
+          <p data-testid="meter-viewer-note" className="text-body text-text-secondary">
             {t('viewerNote')}
           </p>
         ) : null}
@@ -91,7 +91,7 @@ export default async function MeterEntryPage({ params, searchParams }: { params:
           <MeterEntryList key={month} propertyId={id} month={month} monthLabel={monthLabel} rooms={rooms} canEdit={member.role !== 'viewer'} />
         </PropertyIntl>
       )}
-      <p data-testid="meter-price-note" className="max-w-prose text-small text-ink-muted">
+      <p data-testid="meter-price-note" className="max-w-prose text-body-sm text-text-muted">
         {t('priceNote')}
       </p>
     </div>

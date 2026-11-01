@@ -1,0 +1,45 @@
+<!-- @dsCard group="App shell" height=1060 width=1200 subtitle="Who is signed in, and the four display settings Mẹ actually changes: text size, theme, density, language" -->
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><title>Account menu</title></head>
+<body>
+<div id="src">
+  <p class="ds-why"><b>Display settings live one tap from anywhere.</b> Text size, theme, density and language apply the moment they are tapped, so each is a segmented control showing every option, not a setting buried in a form. On a phone the same list opens as a bottom sheet from the header avatar.</p>
+
+  <div class="ds-matrix" style="--ds-cell: 240px">
+      <div class="ds-cell"><span class="ds-cap">Trigger · sidebar member block</span>
+        <button class="es-member" type="button" aria-haspopup="menu" aria-expanded="false"><span class="es-avatar" aria-hidden="true">H</span><span class="es-member__text"><span class="es-member__name">Nguyễn Demo Hường</span><span class="es-member__role">Quản trị</span></span></button>
+      </div>
+      <div class="ds-cell"><span class="ds-cap">Hover</span>
+        <button class="es-member is-hover" type="button" aria-haspopup="menu" aria-expanded="false"><span class="es-avatar" aria-hidden="true">H</span><span class="es-member__text"><span class="es-member__name">Nguyễn Demo Hường</span><span class="es-member__role">Quản trị</span></span></button>
+      </div>
+      <div class="ds-cell"><span class="ds-cap">Focus-visible</span>
+        <button class="es-member is-focus" type="button" aria-haspopup="menu" aria-expanded="false"><span class="es-avatar" aria-hidden="true">H</span><span class="es-member__text"><span class="es-member__name">Nguyễn Demo Hường</span><span class="es-member__role">Quản trị</span></span></button>
+      </div>
+      <div class="ds-cell"><span class="ds-cap">Phone header avatar</span>
+        <button class="es-avatar" type="button" aria-label="Nguyễn Demo Hường, tài khoản" aria-haspopup="menu">H</button>
+      </div>
+  </div>
+  <div class="ds-cell"><span class="ds-cap">Open from the sidebar member block · item hover and focus shown</span>
+      <div class="es-menu es-menu--wide" role="menu" aria-label="Tài khoản">
+        <div class="es-menu__head"><span class="es-avatar es-avatar--lg" aria-hidden="true">H</span><div class="es-menu__head-text"><span class="es-menu__head-name">Nguyễn Demo Hường</span><span class="es-menu__head-sub">Quản trị · huong.demo@example.com</span></div></div>
+        <hr class="es-menu__sep">
+        <div class="es-menu__setting" role="group" aria-labelledby="fs"><span class="es-menu__setting-label" id="fs"><i data-icon="type"></i>Cỡ chữ</span>
+          <div class="es-segmented"><label class="es-segmented__opt"><input type="radio" name="fs" checked><span>100%</span></label><label class="es-segmented__opt"><input type="radio" name="fs"><span>115%</span></label><label class="es-segmented__opt"><input type="radio" name="fs"><span>130%</span></label></div></div>
+        <div class="es-menu__setting" role="group" aria-labelledby="th"><span class="es-menu__setting-label" id="th"><i data-icon="sun"></i>Giao diện</span>
+          <div class="es-segmented"><label class="es-segmented__opt"><input type="radio" name="th" checked><span><i data-icon="sun"></i>Sáng</span></label><label class="es-segmented__opt"><input type="radio" name="th"><span><i data-icon="moon"></i>Tối</span></label></div></div>
+        <div class="es-menu__setting" role="group" aria-labelledby="dn"><span class="es-menu__setting-label" id="dn"><i data-icon="rows-3"></i>Mật độ</span>
+          <div class="es-segmented"><label class="es-segmented__opt"><input type="radio" name="dn" checked><span>Thoáng</span></label><label class="es-segmented__opt is-hover"><input type="radio" name="dn"><span>Gọn</span></label></div></div>
+        <div class="es-menu__setting" role="group" aria-labelledby="lg"><span class="es-menu__setting-label" id="lg"><i data-icon="languages"></i>Ngôn ngữ</span>
+          <div class="es-segmented"><label class="es-segmented__opt"><input type="radio" name="lg" checked><span lang="vi">Tiếng Việt</span></label><label class="es-segmented__opt is-focus"><input type="radio" name="lg"><span lang="en">English</span></label></div></div>
+        <hr class="es-menu__sep">
+        <a class="es-menu__item is-hover" role="menuitem" href="#"><i data-icon="chart-column"></i><span class="es-menu__item-text">Báo cáo</span></a>
+        <a class="es-menu__item is-focus" role="menuitem" href="#"><i data-icon="settings"></i><span class="es-menu__item-text">Cài đặt</span></a>
+        <hr class="es-menu__sep">
+        <button class="es-menu__item" role="menuitem" type="button"><i data-icon="log-out"></i><span class="es-menu__item-text">Đăng xuất</span></button>
+      </div>
+    </div>
+</div>
+<script>Esta.themes('#src');</script>
+</body>
+</html>

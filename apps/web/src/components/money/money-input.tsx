@@ -38,10 +38,10 @@ export function MoneyInput({ label, defaultText = '', onValueChange, onTextChang
 
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-body font-medium text-ink">
+      <label htmlFor={id} className="text-body font-medium text-text">
         {label}
       </label>
-      <p id={`${id}-hint`} className="text-small text-ink-muted">
+      <p id={`${id}-hint`} className="text-body-sm text-text-muted">
         {t('examples')}
       </p>
       <Input
@@ -62,16 +62,16 @@ export function MoneyInput({ label, defaultText = '', onValueChange, onTextChang
         enterKeyHint="done"
         aria-invalid={error !== null}
         aria-describedby={`${id}-hint ${id}-message`}
-        className={cn('mt-1', large && 'min-h-16 text-h2 font-semibold figures')}
+        className={cn('mt-1', large && 'min-h-16 text-title-2 font-semibold num')}
       />
       {name === undefined ? null : <input type="hidden" name={name} value={result.ok ? result.value : ''} />}
       <FieldMessage id={`${id}-message`} error={error}>
         {result.ok ? (
           <>
-            <span aria-hidden="true" className="text-ink-muted">
+            <span aria-hidden="true" className="text-text-muted">
               =
             </span>
-            <data value={result.value} data-testid="money-preview" className="text-lead text-ink figures">
+            <data value={result.value} data-testid="money-preview" className="text-headline text-text num">
               {formatVnd(result.value, locale)}
             </data>
           </>

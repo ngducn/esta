@@ -33,17 +33,17 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
   return (
     <AuthFrame brand={app('name')} photoAlt={app('heroAlt')} aside={<LanguageSwitch />}>
       <div className="flex flex-col gap-1">
-        <h1 className="text-h2 lg:text-h1">{t('title')}</h1>
-        <p className="text-ink-muted">{app('tagline')}</p>
+        <h1 className="text-title-2 lg:text-title-1">{t('title')}</h1>
+        <p className="text-text-muted">{app('tagline')}</p>
       </div>
       {google && error === 'google' && (
-        <p role="alert" className="font-medium text-overdue">
+        <p role="alert" className="font-medium text-danger-text">
           {t('googleFailed')}
         </p>
       )}
       <PasswordSignInForm copy={copy} />
       <div className="flex flex-col gap-4">
-        <p className="text-center text-ink-muted">{t('or')}</p>
+        <p className="text-center text-text-muted">{t('or')}</p>
         <Link href="/sign-in/code" className={outlineClass}>
           {t('useCode')}
         </Link>
@@ -55,7 +55,7 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
           </form>
         )}
       </div>
-      <p className="flex flex-wrap items-center justify-center gap-x-2 border-t border-rule pt-4 text-ink-2">
+      <p className="flex flex-wrap items-center justify-center gap-x-2 border-t border-border pt-4 text-text-secondary">
         {t('noAccount')}
         <Link href="/sign-up" className={linkClass}>
           {t('createAccount')}

@@ -1,0 +1,86 @@
+<!-- @dsCard group="Data display" height=1540 width=1200 subtitle="One summary figure per card in compact form, the exact amount on hover; unknown, loading and estimate states" -->
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><title>Stat card</title></head>
+<body>
+<div id="src">
+  <p class="ds-why"><b>One figure, said the way people say it.</b> A home-screen total is read as a size, so it shows as <q>42,5 tr</q>; the exact amount is one hover or tap away. When a figure is unknown the card says so and offers the fix, never a false zero.</p>
+
+  <div class="ds-matrix" style="--ds-cell: 220px">
+    <a class="es-stat" href="#">
+      <div class="es-stat__head"><span class="es-stat__label">Đã thu tháng 10</span></div>
+      <p class="es-stat__value"><span class="es-num" data-vnd="42500000"></span><span class="es-stat__of">/ <span class="es-num" data-vnd="54000000"></span></span></p>
+      <div class="es-meter" role="meter" aria-label="Đã thu tháng 10" aria-valuemin="0" aria-valuemax="100" aria-valuenow="79" style="--value: 79%"><span class="es-meter__fill"></span></div>
+      <p class="es-stat__sub">Còn 4 phòng chưa đóng</p>
+    </a>
+    <a class="es-stat is-hover" href="#">
+      <div class="es-stat__head"><span class="es-stat__label">Quá hạn</span><span class="es-badge es-badge--overdue"><i data-icon="triangle-alert"></i>2 phòng</span></div>
+      <p class="es-stat__value"><span class="es-num" data-vnd="6700000"></span></p>
+      <p class="es-stat__sub">Lâu nhất 12 ngày, Phòng 1 Dãy trọ Demo</p>
+    </a>
+    <a class="es-stat is-focus" href="#">
+      <div class="es-stat__head"><span class="es-stat__label">Tiền cọc đang giữ</span></div>
+      <p class="es-stat__value"><span class="es-num" data-vnd="87000000"></span></p>
+      <p class="es-stat__sub">Của 11 hợp đồng</p>
+    </a>
+    <div class="es-stat">
+      <div class="es-stat__head"><span class="es-stat__label">Thuế quý 4 dự tính</span></div>
+      <p class="es-stat__value es-stat__value--unknown"><span class="es-num" role="img" aria-label="Chưa có số liệu">—</span></p>
+      <p class="es-stat__sub">Chưa có số liệu. <a class="es-link" href="#">Thêm hợp đồng Phòng 2</a> để tính.</p>
+    </div>
+    <div class="es-stat" aria-busy="true">
+      <div class="es-stat__head"><span class="es-stat__label">Đã thu tháng 10</span></div>
+      <span class="es-skel es-skel--figure"></span>
+      <span class="es-skel es-skel--text" style="width: 70%"></span>
+    </div>
+    <div class="es-stat">
+      <div class="es-stat__head"><span class="es-stat__label">Chênh lệch so với tháng 9</span></div>
+      <p class="es-stat__value"><span class="es-num" data-vnd="-1200000"></span></p>
+      <p class="es-stat__sub">Phòng 5 trả phòng ngày 30/09</p>
+    </div>
+    <div class="es-stat es-stat--hero" style="grid-column: 1 / -1">
+      <div class="es-stat__head"><span class="es-stat__label">Giá trị ước tính, 6 tài sản</span></div>
+      <p class="es-stat__value"><span class="es-num" data-vnd="12500000000"></span></p>
+      <p class="es-stat__sub">Ước tính theo giá tham khảo ngày 01/10/2026. Không dùng để khai thuế.</p>
+    </div>
+    <div class="es-stat">
+      <div class="es-stat__head"><span class="es-stat__label">Đã thu cả năm 2026</span></div>
+      <p class="es-stat__value"><span class="es-num" data-vnd="999999999"></span></p>
+      <div class="es-meter" role="meter" aria-label="Đã thu cả năm 2026" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100" style="--value: 100%"><span class="es-meter__fill es-meter__fill--success"></span></div>
+      <p class="es-stat__sub">Đủ theo kế hoạch năm</p>
+    </div>
+    <div class="ds-cell" style="max-width: 12.5rem"><span class="ds-cap">At 200px: label wraps, figure stays on one line</span>
+      <div class="es-stat">
+        <div class="es-stat__head"><span class="es-stat__label">Tiền điện nước đã thu hộ tháng 10</span></div>
+        <p class="es-stat__value"><span class="es-num" data-vnd="128450000"></span></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="src-gon" data-density="gon">
+  <p class="ds-why"><b>Gọn</b> trims the card padding from 24px to 16px; the figure keeps its size.</p>
+  <div class="ds-matrix" style="--ds-cell: 220px">
+    <div class="es-stat">
+      <div class="es-stat__head"><span class="es-stat__label">Đã thu tháng 10</span></div>
+      <p class="es-stat__value"><span class="es-num" data-vnd="42500000"></span><span class="es-stat__of">/ <span class="es-num" data-vnd="54000000"></span></span></p>
+      <div class="es-meter" role="meter" aria-label="Đã thu tháng 10" aria-valuemin="0" aria-valuemax="100" aria-valuenow="79" style="--value: 79%"><span class="es-meter__fill"></span></div>
+    </div>
+    <div class="es-stat">
+      <div class="es-stat__head"><span class="es-stat__label">Quá hạn</span><span class="es-badge es-badge--overdue"><i data-icon="triangle-alert"></i>2 phòng</span></div>
+      <p class="es-stat__value"><span class="es-num" data-vnd="6700000"></span></p>
+    </div>
+  </div>
+</div>
+<script>
+  document.querySelectorAll('[data-vnd]').forEach(function (el) {
+    var v = +el.getAttribute('data-vnd');
+    el.textContent = Esta.formatVndCompact(v);
+    el.title = Esta.formatVnd(v);
+    el.setAttribute('aria-label', Esta.formatVnd(v));
+  });
+  Esta.themes('#src');
+  Esta.themes('#src-gon');
+</script>
+</body>
+</html>

@@ -8,7 +8,7 @@ const viewIcons = { list: List, map: MapIcon } as const satisfies Record<Propert
 /** Links, not buttons, so the choice lives in the URL with the filters and works before any script runs. */
 export function ViewToggle({ filters, label, optionLabel }: { filters: PropertyFilters; label: string; optionLabel: (view: PropertyView) => string }) {
   return (
-    <nav aria-label={label} className="flex shrink-0 rounded-md border border-rule-strong bg-surface p-1">
+    <nav aria-label={label} className="flex shrink-0 rounded-md border border-border-strong bg-surface p-1">
       {PROPERTY_VIEWS.map((view) => {
         const Icon = viewIcons[view];
         const active = filters.view === view;
@@ -19,8 +19,8 @@ export function ViewToggle({ filters, label, optionLabel }: { filters: PropertyF
             aria-current={active ? 'page' : undefined}
             scroll={false}
             className={cn(
-              'flex min-h-touch flex-1 items-center justify-center gap-2 rounded-sm px-4 text-body font-medium whitespace-nowrap transition-colors duration-(--duration-fast) ease-standard [&_svg]:size-5',
-              active ? 'bg-ink text-surface' : 'text-ink-2 hover:bg-surface-2',
+              'flex min-h-touch flex-1 items-center justify-center gap-2 rounded-md px-4 text-body font-medium whitespace-nowrap transition-colors duration-(--duration-fast) ease-standard [&_svg]:size-5',
+              active ? 'bg-accent-subtle text-accent-text' : 'text-text-secondary hover:bg-fill-hover',
             )}
           >
             <Icon aria-hidden="true" />

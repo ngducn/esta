@@ -1,0 +1,62 @@
+<!-- @dsCard group="Data display" height=2380 width=1200 subtitle="First use, filtered, no search match and could-not-load: each says what is true and offers the next step" -->
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><title>Empty state</title></head>
+<body>
+<div id="src">
+  <p class="ds-why"><b>An action, never an apology.</b> An empty screen says what is true in one line and puts the next step under it. No illustration, no <q>Rất tiếc</q>, no promise of features to come.</p>
+
+  <div class="ds-cell"><span class="ds-cap">First use: a page with nothing yet</span>
+    <section class="es-empty es-empty--card">
+      <h3 class="es-empty__title"><i data-icon="house-plus"></i>Chưa có tài sản nào</h3>
+      <p class="es-empty__body">Chụp ảnh sổ để Trợ lý điền sẵn thông tin, hoặc nhập tay.</p>
+      <div class="es-empty__actions"><button class="es-btn es-btn--primary" type="button"><i data-icon="camera"></i>Chụp ảnh sổ</button><button class="es-btn es-btn--secondary" type="button">Nhập tay</button></div>
+    </section>
+  </div>
+
+  <div class="ds-matrix" style="--ds-cell: 240px">
+    <div class="ds-cell"><span class="ds-cap">Filtered: good news</span>
+      <section class="es-empty es-empty--card">
+        <h3 class="es-empty__title"><i data-icon="circle-check" class="es-empty__icon--good"></i>Tháng 10 không có phòng nào quá hạn</h3>
+        <div class="es-empty__actions"><button class="es-btn es-btn--secondary" type="button">Xem tất cả</button></div>
+      </section>
+    </div>
+    <div class="ds-cell"><span class="ds-cap">No search match</span>
+      <section class="es-empty es-empty--card">
+        <h3 class="es-empty__title"><i data-icon="search"></i>Không có kết quả cho “Gò Vấp”</h3>
+        <p class="es-empty__body">Tìm theo tên tài sản, số phòng hoặc tên người thuê.</p>
+        <div class="es-empty__actions"><button class="es-btn es-btn--secondary" type="button"><i data-icon="x"></i>Xoá tìm kiếm</button></div>
+      </section>
+    </div>
+  </div>
+
+  <div class="ds-matrix" style="--ds-cell: 240px">
+    <div class="ds-cell"><span class="ds-cap">Could not load</span>
+      <section class="es-empty es-empty--card" role="status">
+        <h3 class="es-empty__title"><i data-icon="wifi-off"></i>Chưa tải được bảng thu tiền</h3>
+        <p class="es-empty__body">Kiểm tra mạng rồi thử lại. Các khoản đã ghi nhận vẫn được lưu.</p>
+        <div class="es-empty__actions"><button class="es-btn es-btn--secondary" type="button"><i data-icon="refresh-cw"></i>Thử lại</button></div>
+      </section>
+    </div>
+    <div class="ds-cell"><span class="ds-cap">Retrying</span>
+      <section class="es-empty es-empty--card" role="status">
+        <h3 class="es-empty__title"><i data-icon="wifi-off"></i>Chưa tải được bảng thu tiền</h3>
+        <p class="es-empty__body">Kiểm tra mạng rồi thử lại. Các khoản đã ghi nhận vẫn được lưu.</p>
+        <div class="es-empty__actions"><button class="es-btn es-btn--secondary is-loading" type="button" aria-busy="true"><i data-icon="loader-circle" class="es-spinner"></i>Đang thử lại</button></div>
+      </section>
+    </div>
+  </div>
+
+  <div class="ds-cell"><span class="ds-cap">Inline, inside a section: no card, same shape</span>
+    <div class="es-card">
+      <h3 class="ds-h">Hợp đồng</h3>
+      <div class="es-empty es-empty--inline" style="margin-top: var(--space-3)">
+        <p class="es-empty__body">Phòng 4 chưa có hợp đồng. Thêm hợp đồng để Esta lập hoá đơn hằng tháng.</p>
+        <div class="es-empty__actions"><button class="es-btn es-btn--secondary es-btn--sm" type="button"><i data-icon="plus"></i>Thêm hợp đồng</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>Esta.themes('#src', { densities: true });</script>
+</body>
+</html>

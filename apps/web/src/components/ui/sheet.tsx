@@ -6,20 +6,21 @@ import { cn } from '@/lib/utils';
 const Sheet = SheetPrimitive.Root;
 const SheetClose = SheetPrimitive.Close;
 
-/** Slides up from the bottom on a phone and in from the right on a wide screen. */
+/** The design system's `es-sheet` on a phone, sliding up over the scrim, and its `es-modal` from 600 px. */
 function SheetContent({ className, children, ...props }: SheetPrimitive.Popup.Props) {
   return (
     <SheetPrimitive.Portal>
       <SheetPrimitive.Backdrop
         data-slot="sheet-backdrop"
-        className="fixed inset-0 z-50 min-h-dvh bg-ground/85 transition-opacity duration-(--duration-slow) ease-standard data-ending-style:opacity-0 data-starting-style:opacity-0"
+        className="fixed inset-0 z-50 min-h-dvh bg-scrim transition-opacity duration-(--duration-base) ease-standard data-ending-style:opacity-0 data-starting-style:opacity-0"
       />
       <SheetPrimitive.Popup
         data-slot="sheet-content"
         className={cn(
-          'fixed inset-x-0 bottom-0 z-50 flex max-h-[90dvh] flex-col gap-6 overflow-y-auto rounded-t-lg border-t border-rule bg-surface p-6 pb-[max(--spacing(6),env(safe-area-inset-bottom))] text-ink shadow-sheet',
-          'transition-[translate,opacity] duration-(--duration-slow) ease-standard data-ending-style:translate-y-8 data-ending-style:opacity-0 data-starting-style:translate-y-8 data-starting-style:opacity-0',
-          'sm:inset-y-0 sm:right-0 sm:left-auto sm:max-h-none sm:w-[28rem] sm:rounded-none sm:border-t-0 sm:border-l sm:data-ending-style:translate-x-8 sm:data-ending-style:translate-y-0 sm:data-starting-style:translate-x-8 sm:data-starting-style:translate-y-0',
+          'fixed inset-x-0 bottom-0 z-50 flex max-h-[92dvh] flex-col gap-6 overflow-y-auto rounded-t-2xl border-t border-border bg-surface-raised p-5 pb-[max(--spacing(5),env(safe-area-inset-bottom))] text-text shadow-lg',
+          'transition-[translate,scale,opacity] duration-(--duration-sheet) ease-enter data-ending-style:translate-y-full data-ending-style:duration-(--duration-base) data-ending-style:ease-exit data-starting-style:translate-y-full',
+          'sm:inset-auto sm:top-1/2 sm:left-1/2 sm:max-h-[calc(100dvh-3rem)] sm:w-dialog sm:max-w-[calc(100vw-3rem)] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-xl sm:border sm:p-6 sm:duration-(--duration-slow)',
+          'sm:data-ending-style:-translate-y-1/2 sm:data-ending-style:scale-98 sm:data-ending-style:opacity-0 sm:data-starting-style:-translate-y-1/2 sm:data-starting-style:scale-98 sm:data-starting-style:opacity-0',
           className,
         )}
         {...props}
@@ -31,11 +32,11 @@ function SheetContent({ className, children, ...props }: SheetPrimitive.Popup.Pr
 }
 
 function SheetTitle({ className, ...props }: SheetPrimitive.Title.Props) {
-  return <SheetPrimitive.Title className={cn('text-h3 font-semibold text-ink', className)} {...props} />;
+  return <SheetPrimitive.Title className={cn('text-title-3 text-text', className)} {...props} />;
 }
 
 function SheetDescription({ className, ...props }: SheetPrimitive.Description.Props) {
-  return <SheetPrimitive.Description className={cn('text-body text-ink-2', className)} {...props} />;
+  return <SheetPrimitive.Description className={cn('text-body text-text-secondary', className)} {...props} />;
 }
 
 export { Sheet, SheetClose, SheetContent, SheetDescription, SheetTitle };

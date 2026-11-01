@@ -1,0 +1,59 @@
+<!-- @dsCard group="Feedback" height=1820 width=1200 subtitle="Desktop dialogs over a scrim: a short form, a destructive confirm that names the object, long content with a sticky foot" -->
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><title>Modal</title></head>
+<body>
+<div id="src">
+  <p class="ds-why"><b>Desktop only, and only when the task must finish before the page makes sense again.</b> On a phone the same content opens as a bottom sheet. The foot reads left to right as "the safe way out, then the action", right-aligned where the eye ends.</p>
+
+  <div class="ds-cell"><span class="ds-cap">Form · 480 · focus starts on the first field, Esc and the close button cancel</span>
+    <div class="ds-stage" style="min-height: 500px">
+      <div class="ds-stage__page" aria-hidden="true"><span class="es-skel es-skel--title" style="width: 40%; animation: none"></span><span class="es-skel es-skel--text" style="animation: none"></span><span class="es-skel es-skel--text" style="width: 70%; animation: none"></span></div>
+      <div class="es-scrim">
+        <div class="es-modal" role="dialog" aria-modal="true" aria-labelledby="m1">
+          <div class="es-modal__head"><h2 class="es-modal__title" id="m1">Đổi tên tài sản</h2><button class="es-btn es-btn--ghost es-btn--icon es-btn--sm" type="button" aria-label="Đóng"><i data-icon="x"></i></button></div>
+          <div class="es-modal__body">
+            <div class="es-field"><label class="es-field__label" for="n1">Tên gọi trong nhà</label><input class="es-input is-focus" id="n1" value="Nhà Dĩ An Demo"><p class="es-field__hint">Chỉ cả nhà thấy tên này. Địa chỉ theo sổ không đổi.</p></div>
+          </div>
+          <div class="es-modal__foot"><button class="es-btn es-btn--secondary" type="button">Huỷ</button><button class="es-btn es-btn--primary" type="button">Lưu tên</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ds-cell"><span class="ds-cap">Destructive confirm · names the object and the date · focus starts on Giữ lại</span>
+    <div class="ds-stage" style="min-height: 420px">
+      <div class="ds-stage__page" aria-hidden="true"><span class="es-skel es-skel--title" style="width: 40%; animation: none"></span><span class="es-skel es-skel--text" style="animation: none"></span></div>
+      <div class="es-scrim">
+        <div class="es-modal" role="alertdialog" aria-modal="true" aria-labelledby="m2" aria-describedby="m2d">
+          <div class="es-modal__head"><div class="es-modal__lead" style="flex: 1"><i data-icon="triangle-alert"></i><h2 class="es-modal__title" id="m2">Kết thúc hợp đồng Phòng 3 từ 31/10/2026?</h2></div></div>
+          <div class="es-modal__body"><p id="m2d">Tiền cọc <span class="es-num">7.000.000&nbsp;₫</span> vẫn được giữ cho đến khi trả lại. Hoá đơn tháng 11 sẽ không được tạo.</p></div>
+          <div class="es-modal__foot"><button class="es-btn es-btn--secondary is-focus" type="button">Giữ lại</button><button class="es-btn es-btn--danger" type="button">Kết thúc hợp đồng</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ds-cell"><span class="ds-cap">Long content · the body scrolls, head and foot stay; foot gains a top hairline</span>
+    <div class="ds-stage" style="height: 560px; min-height: 0">
+      <div class="ds-stage__page" aria-hidden="true"><span class="es-skel es-skel--title" style="width: 40%; animation: none"></span></div>
+      <div class="es-scrim">
+        <div class="es-modal es-modal--wide es-modal--scroll" role="dialog" aria-modal="true" aria-labelledby="m3">
+          <div class="es-modal__head"><h2 class="es-modal__title" id="m3">Điều khoản hợp đồng Phòng 3</h2><button class="es-btn es-btn--ghost es-btn--icon es-btn--sm" type="button" aria-label="Đóng"><i data-icon="x"></i></button></div>
+          <div class="es-modal__body" tabindex="0">
+            <p>1. Bên thuê trả tiền thuê <span class="es-num">3.500.000&nbsp;₫</span> mỗi tháng, trước ngày 05, bằng tiền mặt hoặc chuyển khoản theo mã QR trên hoá đơn.</p>
+            <p>2. Tiền cọc <span class="es-num">7.000.000&nbsp;₫</span> được trả lại trong 7 ngày sau khi bàn giao phòng, trừ các khoản hư hỏng có biên bản.</p>
+            <p>3. Điện tính theo công tơ riêng, nước tính theo đầu người. Chỉ số được chụp ảnh vào ngày 25 hằng tháng.</p>
+            <p>4. Bên thuê báo trước 30 ngày nếu muốn kết thúc hợp đồng sớm. Không báo trước thì tiền cọc được dùng thay cho tháng báo trước.</p>
+            <p>5. Không nuôi thú cưng lớn, không kinh doanh trong phòng, không sửa chữa kết cấu khi chưa có đồng ý bằng văn bản.</p>
+            <p>6. Hợp đồng tự gia hạn 12 tháng nếu hai bên không có ý kiến khác trước ngày hết hạn 30 ngày.</p>
+          </div>
+          <div class="es-modal__foot"><button class="es-btn es-btn--secondary" type="button">Đóng</button><button class="es-btn es-btn--primary" type="button"><i data-icon="download"></i>Tải PDF</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>Esta.themes('#src');</script>
+</body>
+</html>

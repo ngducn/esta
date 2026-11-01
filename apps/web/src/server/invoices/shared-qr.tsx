@@ -34,11 +34,11 @@ export async function loadSharedQr(token: string): Promise<SharedQr | null> {
 }
 
 const QR_PX = 720;
-const muted: CSSProperties = { color: hex('ink-muted'), fontSize: 28 };
+const muted: CSSProperties = { color: hex('text-muted'), fontSize: 28 };
 
 function Fact({ label, value, strong = false }: { label: string; value: string; strong?: boolean }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', padding: '14px 0', borderBottom: `1px solid ${hex('rule-strong')}` }}>
+    <div style={{ display: 'flex', flexDirection: 'column', padding: '14px 0', borderBottom: `1px solid ${hex('border-strong')}` }}>
       <div style={muted}>{label}</div>
       <div style={{ display: 'flex', fontWeight: strong ? 600 : 400, fontSize: strong ? 44 : 34 }}>{value}</div>
     </div>
@@ -49,10 +49,10 @@ type SharedQrT = Awaited<ReturnType<typeof getTranslations<'invoices'>>>;
 
 function SharedQrPicture({ shared, t, paid }: { shared: SharedQr; t: SharedQrT; paid: string }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', padding: 72, background: hex('surface'), color: hex('ink'), fontFamily: FAMILY, fontSize: 34, lineHeight: 1.45 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', padding: 72, background: hex('surface'), color: hex('text'), fontFamily: FAMILY, fontSize: 34, lineHeight: 1.45 }}>
       <div style={{ display: 'flex', fontWeight: 600, fontSize: 48, lineHeight: 1.3, marginBottom: 24 }}>{t('qrTitle')}</div>
       {shared.kind === 'paid' ? (
-        <div style={{ display: 'flex', color: hex('paid'), fontWeight: 600, fontSize: 40 }}>{paid}</div>
+        <div style={{ display: 'flex', color: hex('success-text'), fontWeight: 600, fontSize: 40 }}>{paid}</div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <img src={qrImage(shared.qr.payload)} width={QR_PX} height={QR_PX} alt={t('qrCode')} style={{ alignSelf: 'center' }} />
@@ -63,7 +63,7 @@ function SharedQrPicture({ shared, t, paid }: { shared: SharedQr; t: SharedQrT; 
           <Fact label={t('qrAccountNo')} value={shared.qr.accountNo} />
           <Fact label={t('qrAccountName')} value={shared.qr.accountName} />
           {shared.qr.amountWords === null ? null : (
-            <div style={{ display: 'flex', marginTop: 24, fontSize: 30, color: hex('ink-2') }}>{t('qrSplitNote', { cap: formatVnd(VIETQR_RULES.singleTransferCapVnd, 'vi') })}</div>
+            <div style={{ display: 'flex', marginTop: 24, fontSize: 30, color: hex('text-secondary') }}>{t('qrSplitNote', { cap: formatVnd(VIETQR_RULES.singleTransferCapVnd, 'vi') })}</div>
           )}
         </div>
       )}

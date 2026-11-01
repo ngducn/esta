@@ -15,7 +15,7 @@ type MonthIncome = Extract<InvariantCheck, { kind: 'monthIncome' }>;
 export async function ReportsSection() {
   const member = await getCurrentMember();
   const heading = (
-    <h2 id="reports-heading" className="text-lead font-semibold">
+    <h2 id="reports-heading" className="text-headline font-semibold">
       Report invariants (FIN-4)
     </h2>
   );
@@ -23,7 +23,7 @@ export async function ReportsSection() {
     return (
       <section aria-labelledby="reports-heading" data-section="reports" id="reports" className="flex flex-col gap-2">
         {heading}
-        <p className="text-small text-ink-muted">Sign in to check a household.</p>
+        <p className="text-body-sm text-text-muted">Sign in to check a household.</p>
       </section>
     );
   }
@@ -54,10 +54,10 @@ export async function ReportsSection() {
   return (
     <section aria-labelledby="reports-heading" data-section="reports" id="reports" className="flex flex-col gap-4">
       {heading}
-      <p data-testid="reports-summary" className="text-small">
+      <p data-testid="reports-summary" className="text-body-sm">
         {checks.length} checks from {period.from} to {period.to}, {checks.filter((check) => !holds(check)).length} failing
       </p>
-      <table className="w-full text-left text-small">
+      <table className="w-full text-left text-body-sm">
         <thead>
           <tr className="border-b">
             <th className="py-1">Month</th>
@@ -72,15 +72,15 @@ export async function ReportsSection() {
             return (
               <tr key={month} data-testid="reports-month" data-month={month.slice(0, 7)} data-matches={ok} className="border-b align-top">
                 <td className="py-1">{month.slice(0, 7)}</td>
-                <td className="py-1 text-end figures">{sum(rows.map((row) => row.expectedVnd))}</td>
-                <td className="py-1 text-end figures">{sum(rows.map((row) => row.reportedVnd))}</td>
+                <td className="py-1 text-end num">{sum(rows.map((row) => row.expectedVnd))}</td>
+                <td className="py-1 text-end num">{sum(rows.map((row) => row.reportedVnd))}</td>
                 <td className="py-1">{ok ? `pass, ${rows.length} properties` : `FAIL on ${rows.filter((row) => !holds(row)).map((row) => row.propertyId).join(', ')}`}</td>
               </tr>
             );
           })}
         </tbody>
       </table>
-      <ul className="flex flex-col gap-1 text-small">
+      <ul className="flex flex-col gap-1 text-body-sm">
         {others.map((check) => {
           const [key, name, reported, expected] =
             check.kind === 'totals'

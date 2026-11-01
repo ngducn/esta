@@ -143,12 +143,12 @@ test('lane 11: a section shows only the controls that work, so Trợ lý offers 
   await expect(main.getByTestId('composer-send')).toHaveCount(1);
 });
 
-test('lane 2: at 1440 px the sidebar is 240 px, content at most 1200 px, and no tab bar renders', async ({ page }) => {
+test('lane 2: at 1440 px the sidebar is 256 px, content at most 1200 px, and no tab bar renders', async ({ page }) => {
   onlyOn('desktop');
   await signIn(page, 'ryan.lane2@demo.esta.test');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Gia đình Demo 2');
   const sidebar = page.locator('aside');
-  expect((await sidebar.boundingBox())?.width).toBe(240);
+  expect((await sidebar.boundingBox())?.width).toBe(256);
   expect((await page.getByRole('main').boundingBox())?.width).toBeLessThanOrEqual(1200);
   await expect(page.getByRole('navigation', { name: 'Các mục chính' })).toHaveCount(1);
   const main = sidebar.getByRole('navigation', { name: 'Các mục chính' });
@@ -223,20 +223,20 @@ test('lane 5: 130% grows text on every section without overflow and survives sig
   await expect(page.getByRole('radio', { name: /^130%/ })).toBeChecked();
 });
 
-test('lane 6 and #28: compact density tightens spacing and keeps every text at 15 px or more', async ({ page, baseURL }) => {
+test('lane 6 and #28: compact density tightens spacing and keeps every text at 14 px or more', async ({ page, baseURL }) => {
   onlyOn('desktop');
   await setTheme(page, baseURL, 'dark');
   await newHousehold(page);
   const mainPadding = () => page.getByRole('main').evaluate((main) => getComputedStyle(main).paddingLeft);
-  expect(await mainPadding()).toBe('32px');
+  expect(await mainPadding()).toBe('24px');
   await saveDisplaySettings(page, { density: 'Gọn' });
   await expect(page.locator('html')).toHaveAttribute('data-density', 'compact');
-  expect(await mainPadding()).toBe('24px');
+  expect(await mainPadding()).toBe('16px');
   const smallText = await page.evaluate(() =>
     [...document.querySelectorAll('body *')]
       .filter((element) => [...element.childNodes].some((node) => node.nodeType === Node.TEXT_NODE && node.textContent?.trim()))
       .filter((element) => element.getClientRects().length > 0)
-      .filter((element) => Number.parseFloat(getComputedStyle(element).fontSize) < 15)
+      .filter((element) => Number.parseFloat(getComputedStyle(element).fontSize) < 14)
       .map((element) => element.textContent),
   );
   expect(smallText).toEqual([]);

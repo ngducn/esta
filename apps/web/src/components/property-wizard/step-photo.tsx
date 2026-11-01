@@ -36,7 +36,7 @@ type Phase =
   | { readonly step: 'failed'; readonly reason: 'network' | 'code_taken'; readonly takenBy?: string };
 
 const pickerClass =
-  'relative inline-flex min-h-touch cursor-pointer items-center justify-center gap-2 rounded-sm px-4 text-body font-medium has-[:disabled]:cursor-not-allowed has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus';
+  'relative inline-flex min-h-touch cursor-pointer items-center justify-center gap-2 rounded-md px-4 text-body font-medium has-[:disabled]:cursor-not-allowed has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus-ring';
 
 /** Step 1 (PRP-7): the certificate photo or a skip, then the nickname and kind; leaving it creates the property. */
 export function StepPhoto({ otherCodes }: { otherCodes: readonly string[] }) {
@@ -175,12 +175,12 @@ export function StepPhoto({ otherCodes }: { otherCodes: readonly string[] }) {
 
   if (capturing) {
     return (
-      <section aria-labelledby={`${fieldId}-capture`} className="flex max-w-3xl flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card">
+      <section aria-labelledby={`${fieldId}-capture`} className="flex max-w-3xl flex-col gap-4 rounded-lg border border-border bg-surface p-5 shadow-xs">
         <div className="flex flex-col gap-1">
-          <h2 id={`${fieldId}-capture`} className="text-lead font-semibold text-ink">
+          <h2 id={`${fieldId}-capture`} className="text-headline font-semibold text-text">
             {td('captureTitle')}
           </h2>
-          <p className="text-body text-ink-2">{td('captureBody')}</p>
+          <p className="text-body text-text-secondary">{td('captureBody')}</p>
         </div>
         <MultiPageCapture
           confirming={leaving}
@@ -205,32 +205,32 @@ export function StepPhoto({ otherCodes }: { otherCodes: readonly string[] }) {
   return (
     <form noValidate onSubmit={(event) => void submit(event)} className="flex max-w-3xl flex-col gap-5" data-testid="wizard-photo">
       <fieldset disabled={!hydrated || busy} className="flex min-w-0 flex-col gap-5">
-        <section aria-labelledby={`${fieldId}-question`} className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
+        <section aria-labelledby={`${fieldId}-question`} className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
           <div className="flex flex-col gap-1">
-            <h2 id={`${fieldId}-question`} className="text-lead font-semibold text-ink">
+            <h2 id={`${fieldId}-question`} className="text-headline font-semibold text-text">
               {t('photoQuestion')}
             </h2>
-            <p className="max-w-prose text-body text-pretty text-ink-2">{t('photoHelp')}</p>
+            <p className="max-w-prose text-body text-pretty text-text-secondary">{t('photoHelp')}</p>
           </div>
           {prepared === null ? null : (
-            <div data-testid="wizard-photo-chosen" className="flex items-center gap-3 rounded-md border border-rule bg-surface-2 p-3">
+            <div data-testid="wizard-photo-chosen" className="flex items-center gap-3 rounded-md border border-border bg-bg-subtle p-3">
               {preview === null ? null : (
                 // eslint-disable-next-line @next/next/no-img-element -- a local blob URL of the thumbnail made in this tab
-                <img src={preview} alt={td('previewAlt')} data-testid="upload-preview" className="size-16 shrink-0 rounded-sm object-cover" />
+                <img src={preview} alt={td('previewAlt')} data-testid="upload-preview" className="size-16 shrink-0 rounded-md object-cover" />
               )}
-              <p className="min-w-0 text-small break-words text-ink-2">
+              <p className="min-w-0 text-body-sm break-words text-text-secondary">
                 {td('chosenFile', { name: prepared.file.name, size: new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(prepared.file.size / 1024 / 1024) })}
                 {prepared.previews.pageCount > 1 ? ` · ${td('pageCount', { count: prepared.previews.pageCount })}` : null}
               </p>
             </div>
           )}
           {choice === 'skip' ? (
-            <p data-testid="wizard-skipped" className="rounded-md bg-surface-2 px-4 py-3 text-body text-ink-2">
+            <p data-testid="wizard-skipped" className="rounded-md bg-bg-subtle px-4 py-3 text-body text-text-secondary">
               {t('skipped')}
             </p>
           ) : null}
           <div className="grid grid-cols-1 gap-3 min-[22rem]:grid-cols-2">
-            <label className={cn(pickerClass, 'bg-ink text-surface')}>
+            <label className={cn(pickerClass, 'bg-accent text-on-accent')}>
               <Camera className="size-5" aria-hidden="true" />
               {prepared === null ? td('takePhoto') : t('changePhoto')}
               <input
@@ -242,7 +242,7 @@ export function StepPhoto({ otherCodes }: { otherCodes: readonly string[] }) {
                 onChange={(event) => choose(event.target.files?.[0])}
               />
             </label>
-            <label className={cn(pickerClass, 'border border-rule-strong bg-surface text-ink')}>
+            <label className={cn(pickerClass, 'border border-border-strong bg-surface text-text')}>
               <FolderOpen className="size-5" aria-hidden="true" />
               {td('chooseFile')}
               <input
@@ -255,7 +255,7 @@ export function StepPhoto({ otherCodes }: { otherCodes: readonly string[] }) {
             </label>
             <Button
               type="button"
-              variant="outline"
+              variant="secondary"
               data-testid="capture-pages"
               className="min-[22rem]:col-span-2"
               onClick={() => {
@@ -268,7 +268,7 @@ export function StepPhoto({ otherCodes }: { otherCodes: readonly string[] }) {
             </Button>
             <Button
               type="button"
-              variant={choice === 'skip' ? 'outline' : 'quiet'}
+              variant={choice === 'skip' ? 'secondary' : 'ghost'}
               aria-pressed={choice === 'skip'}
               data-testid="skip-photo"
               className="min-[22rem]:col-span-2"
@@ -282,8 +282,8 @@ export function StepPhoto({ otherCodes }: { otherCodes: readonly string[] }) {
               {t('skip')}
             </Button>
           </div>
-          <p className="text-small text-ink-muted">{td('fileRule')}</p>
-          {phase.step === 'preparing' && prepared === null ? <p className="text-small text-ink-muted">{td('preparing')}</p> : null}
+          <p className="text-body-sm text-text-muted">{td('fileRule')}</p>
+          {phase.step === 'preparing' && prepared === null ? <p className="text-body-sm text-text-muted">{td('preparing')}</p> : null}
           <FieldMessage id={`${fieldId}-file`} error={problem === null ? null : td(problem)} />
         </section>
 
@@ -311,12 +311,12 @@ export function StepPhoto({ otherCodes }: { otherCodes: readonly string[] }) {
 
       {phase.step === 'uploading' ? <UploadProgress loaded={phase.loaded} total={phase.total} /> : null}
       {phase.step === 'starting' ? (
-        <p role="status" className="text-body text-ink-2">
+        <p role="status" className="text-body text-text-secondary">
           {t('starting')}
         </p>
       ) : null}
       {errorText === null ? null : (
-        <p role="alert" data-testid="wizard-error" className="text-body font-medium break-words text-overdue">
+        <p role="alert" data-testid="wizard-error" className="text-body font-medium break-words text-danger-text">
           {errorText}
         </p>
       )}

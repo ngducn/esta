@@ -62,9 +62,9 @@ export default async function CollectionsPage({ searchParams }: { searchParams: 
   const page = (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <h1 className="text-h2 break-words lg:text-h1">{nav('collections')}</h1>
+        <h1 className="text-title-2 break-words lg:text-title-1">{nav('collections')}</h1>
         {member.role === 'admin' ? (
-          <Link href="/collections/import" data-testid="statement-import-link" className={buttonVariants({ variant: 'outline' })}>
+          <Link href="/collections/import" data-testid="statement-import-link" className={buttonVariants({ variant: 'secondary' })}>
             <FileSpreadsheet aria-hidden="true" />
             {t('importStatement')}
           </Link>
@@ -80,7 +80,7 @@ export default async function CollectionsPage({ searchParams }: { searchParams: 
         thisMonth={month === firstOfMonth(today) ? null : { href: '/collections', label: t('thisMonth') }}
       >
         {rows.length === 0 ? (
-          <p data-testid="collections-empty" className="max-w-3xl rounded-lg border border-rule bg-surface p-5 text-lead font-semibold text-ink shadow-card sm:p-6">
+          <p data-testid="collections-empty" className="max-w-3xl rounded-lg border border-border bg-surface p-5 text-headline font-semibold text-text shadow-xs sm:p-6">
             {t('empty', { month: monthLabel })}
           </p>
         ) : (

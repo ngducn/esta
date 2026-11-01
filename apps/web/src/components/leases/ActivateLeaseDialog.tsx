@@ -110,26 +110,26 @@ export default function ActivateLeaseDialog({
       />
       {blocked.length > 0 ? null : (
         <section aria-live="polite" data-testid="activation-preview" className="flex flex-col gap-2">
-          <h3 className="text-body font-medium text-ink">{t('previewTitle')}</h3>
+          <h3 className="text-body font-medium text-text">{t('previewTitle')}</h3>
           {!readable ? (
-            <p className="text-small text-ink-muted">{t('previewNeedsDate')}</p>
+            <p className="text-body-sm text-text-muted">{t('previewNeedsDate')}</p>
           ) : bills === undefined ? (
-            <p className="text-small text-ink-muted">{t('previewLoading')}</p>
+            <p className="text-body-sm text-text-muted">{t('previewLoading')}</p>
           ) : bills === null ? (
-            <p className="text-small text-overdue">{t('previewFailed')}</p>
+            <p className="text-body-sm text-danger-text">{t('previewFailed')}</p>
           ) : bills.length === 0 ? (
-            <p className="text-small text-ink-2">{t('previewNone')}</p>
+            <p className="text-body-sm text-text-secondary">{t('previewNone')}</p>
           ) : (
-            <ul className="flex flex-col rounded-md border border-rule">
+            <ul className="flex flex-col rounded-md border border-border">
               {bills.map((bill) => (
-                <li key={bill.periodStart} data-testid="preview-bill" className="flex items-start justify-between gap-3 border-b border-rule p-3 last:border-b-0">
+                <li key={bill.periodStart} data-testid="preview-bill" className="flex items-start justify-between gap-3 border-b border-border p-3 last:border-b-0">
                   <span className="flex min-w-0 flex-col gap-0.5">
-                    <span className="text-body font-medium text-ink">
+                    <span className="text-body font-medium text-text">
                       {t('invoicePeriod', { start: formatDate(bill.periodStart, locale), end: formatDate(bill.periodEnd, locale) })}
                     </span>
-                    <span className="text-small text-ink-muted">{t(bill.issuesNow ? 'previewIssuesNow' : 'previewLater', { date: formatDate(bill.dueDate, locale) })}</span>
+                    <span className="text-body-sm text-text-muted">{t(bill.issuesNow ? 'previewIssuesNow' : 'previewLater', { date: formatDate(bill.dueDate, locale) })}</span>
                   </span>
-                  <MoneyDisplay amount={bill.rentVnd} className="text-body font-medium text-ink" />
+                  <MoneyDisplay amount={bill.rentVnd} className="text-body font-medium text-text" />
                 </li>
               ))}
             </ul>

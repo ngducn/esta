@@ -2,7 +2,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
-import { oklchToSrgb255 } from '../apps/web/src/design/contrast.ts';
+import { hexToRgb } from '../apps/web/src/design/contrast.ts';
 import { colors } from '../apps/web/src/design/tokens.ts';
 
 const GLYPHS = readFileSync(new URL('../fixtures/glyph-test-string.txt', import.meta.url), 'utf8').trim();
@@ -71,7 +71,7 @@ test('esta_theme=dark renders the dark ground from the server and keeps it acros
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   const body = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
   const rendered = await srgbOf(page, body);
-  oklchToSrgb255(colors.ground.dark).forEach((channel, i) => expect(Math.abs((rendered[i] ?? NaN) - channel)).toBeLessThanOrEqual(1));
+  hexToRgb(colors.bg.dark).forEach((channel, i) => expect(Math.abs((rendered[i] ?? NaN) - channel)).toBeLessThanOrEqual(1));
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 });
@@ -81,5 +81,5 @@ test('a phone set to dark still gets the light theme until the member chooses da
   await page.goto('/dev/glyphs');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
   const rendered = await srgbOf(page, await page.evaluate(() => getComputedStyle(document.body).backgroundColor));
-  oklchToSrgb255(colors.ground.light).forEach((channel, i) => expect(Math.abs((rendered[i] ?? NaN) - channel)).toBeLessThanOrEqual(1));
+  hexToRgb(colors.bg.light).forEach((channel, i) => expect(Math.abs((rendered[i] ?? NaN) - channel)).toBeLessThanOrEqual(1));
 });

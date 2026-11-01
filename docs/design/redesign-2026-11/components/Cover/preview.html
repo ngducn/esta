@@ -1,0 +1,44 @@
+<!-- @dsCard height=288 -->
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><title>Cover</title>
+<style>
+  .cv { position: relative; width: 960px; height: 288px; overflow: hidden; background: var(--bg); }
+  .cv svg { display: block; }
+  .cv-art { position: absolute; inset: 0; }
+  .cv-accent { fill: var(--accent); }
+  .cv-on { fill: var(--on-accent); }
+  .cv-tint { fill: var(--accent-subtle); }
+  .cv-ink { fill: var(--surface-inverse); }
+  .cv-ink-text { fill: var(--text-inverse); }
+  .cv-seal { fill: var(--accent); }
+  .cv-r { rx: var(--radius-xl); }
+  .cv-text { position: absolute; left: var(--space-12); bottom: var(--space-12); max-width: 440px; }
+  .cv-word { fill: var(--text); }
+  .cv-tag { margin: var(--space-4) 0 0; font-size: 0.875rem; line-height: 1.25rem; color: var(--text-muted); }
+</style>
+</head>
+<body>
+<div class="cv">
+  <!--
+    blocks: --accent 176×216 slab (bleeds top) · --surface-inverse 264×240 (bleeds right and bottom) holding the E and its seal · --accent-subtle 176×104 relief. Blue leads because it is the one colour people know Esta by; status colours stay off the cover.
+    pattern: the brand layer's fine line pattern, 8px pitch (space-2): twenty vertical hairlines fading across the blue slab, ten ledger rows fading up the ink block.
+    type: the outlined ESTA wordmark (Inter Display Medium, +22%) with its blue seal, the same paths as esta-logo.svg; tagline 14px muted.
+    scales: blocks radius-xl (16); block edges on the 8px grid from x = 528.
+  -->
+  <svg class="cv-art" viewBox="0 0 960 288" width="960" height="288" aria-hidden="true">
+    <defs><clipPath id="cv-slab"><rect x="528" y="-24" width="176" height="216" rx="16"/></clipPath><clipPath id="cv-inkc"><rect x="720" y="72" width="264" height="240" rx="16"/></clipPath></defs>
+    <rect class="cv-accent cv-r" x="528" y="-24" width="176" height="216"/>
+    <g clip-path="url(#cv-slab)"><rect class="cv-on" x="544" y="-24" width="1" height="216" opacity="0.04"/><rect class="cv-on" x="552" y="-24" width="1" height="216" opacity="0.06"/><rect class="cv-on" x="560" y="-24" width="1" height="216" opacity="0.08"/><rect class="cv-on" x="568" y="-24" width="1" height="216" opacity="0.09"/><rect class="cv-on" x="576" y="-24" width="1" height="216" opacity="0.12"/><rect class="cv-on" x="584" y="-24" width="1" height="216" opacity="0.13"/><rect class="cv-on" x="592" y="-24" width="1" height="216" opacity="0.15"/><rect class="cv-on" x="600" y="-24" width="1" height="216" opacity="0.17"/><rect class="cv-on" x="608" y="-24" width="1" height="216" opacity="0.18"/><rect class="cv-on" x="616" y="-24" width="1" height="216" opacity="0.20"/><rect class="cv-on" x="624" y="-24" width="1" height="216" opacity="0.22"/><rect class="cv-on" x="632" y="-24" width="1" height="216" opacity="0.24"/><rect class="cv-on" x="640" y="-24" width="1" height="216" opacity="0.25"/><rect class="cv-on" x="648" y="-24" width="1" height="216" opacity="0.27"/><rect class="cv-on" x="656" y="-24" width="1" height="216" opacity="0.29"/><rect class="cv-on" x="664" y="-24" width="1" height="216" opacity="0.30"/><rect class="cv-on" x="672" y="-24" width="1" height="216" opacity="0.32"/><rect class="cv-on" x="680" y="-24" width="1" height="216" opacity="0.34"/><rect class="cv-on" x="688" y="-24" width="1" height="216" opacity="0.36"/><rect class="cv-on" x="696" y="-24" width="1" height="216" opacity="0.37"/></g>
+    <rect class="cv-tint cv-r" x="528" y="208" width="176" height="104"/>
+    <rect class="cv-ink cv-r" x="720" y="72" width="264" height="240"/>
+    <g clip-path="url(#cv-inkc)"><rect class="cv-ink-text" x="720" y="224" width="264" height="1" opacity="0.03"/><rect class="cv-ink-text" x="720" y="232" width="264" height="1" opacity="0.06"/><rect class="cv-ink-text" x="720" y="240" width="264" height="1" opacity="0.09"/><rect class="cv-ink-text" x="720" y="248" width="264" height="1" opacity="0.12"/><rect class="cv-ink-text" x="720" y="256" width="264" height="1" opacity="0.15"/><rect class="cv-ink-text" x="720" y="264" width="264" height="1" opacity="0.18"/><rect class="cv-ink-text" x="720" y="272" width="264" height="1" opacity="0.21"/><rect class="cv-ink-text" x="720" y="280" width="264" height="1" opacity="0.24"/><rect class="cv-ink-text" x="720" y="288" width="264" height="1" opacity="0.27"/><rect class="cv-ink-text" x="720" y="296" width="264" height="1" opacity="0.30"/></g>
+    <g transform="translate(748.35 144) scale(0.02685)"><path class="cv-ink-text" d="M136 0V-1490H1138V-1295H358V-856H1080V-663H358V-195H1138V0Z"/><rect class="cv-seal" x="1240" y="-1490" width="358" height="358"/></g>
+  </svg>
+  <div class="cv-text">
+    <svg class="cv-word" viewBox="136 -1514 6762.68 1538" width="281.41" height="64" role="img" aria-label="Esta"><path d="M136 0V-1490H1138V-1295H358V-856H1080V-663H358V-195H1138V0ZM2308.6 24Q2129.6 24 2000.6 -37Q1871.6 -98 1801.6 -212Q1731.6 -326 1731.6 -483H1953.6Q1954.6 -385 1996.6 -314.5Q2038.6 -244 2118.1 -207Q2197.6 -170 2308.6 -170Q2410.6 -170 2485.1 -199Q2559.6 -228 2601.6 -281.5Q2643.6 -335 2643.6 -408Q2643.6 -465 2615.1 -507.5Q2586.6 -550 2524.1 -582Q2461.6 -614 2357.6 -638L2194.6 -677Q1968.6 -730 1865.1 -827Q1761.6 -924 1761.6 -1079Q1761.6 -1210 1827.6 -1307.5Q1893.6 -1405 2013.6 -1459.5Q2133.6 -1514 2292.6 -1514Q2453.6 -1514 2571.6 -1457Q2689.6 -1400 2755.1 -1295Q2820.6 -1190 2825.6 -1044H2610.6Q2602.6 -1173 2516.6 -1246.5Q2430.6 -1320 2289.6 -1320Q2200.6 -1320 2131.1 -1290.5Q2061.6 -1261 2022.1 -1209.5Q1982.6 -1158 1982.6 -1090Q1982.6 -1036 2011.6 -996Q2040.6 -956 2103.1 -926Q2165.6 -896 2267.6 -871L2428.6 -833Q2540.6 -806 2623.1 -768Q2705.6 -730 2759.1 -679.5Q2812.6 -629 2839.1 -564.5Q2865.6 -500 2865.6 -420Q2865.6 -286 2796.6 -186Q2727.6 -86 2602.6 -31Q2477.6 24 2308.6 24ZM3407.1 -1295V-1490H4578.1V-1295H4105.1V0H3882.1V-1295ZM5092.7 0 5633.7 -1490H5901.7L6438.7 0H6197.7L5910.7 -840Q5875.7 -947 5834.7 -1074Q5793.7 -1201 5736.7 -1389H5799.7Q5742.7 -1201 5701.7 -1074Q5660.7 -947 5624.7 -840L5328.7 0ZM5392.7 -387V-576H6139.7V-387Z"/><rect class="cv-seal" x="6540.68" y="-1514" width="358" height="358"/></svg>
+    <p class="cv-tag">Sổ cái nhà đất của gia đình.</p>
+  </div>
+</div>
+</body>
+</html>

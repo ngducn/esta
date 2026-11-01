@@ -70,7 +70,7 @@ export function LegalFormShell({
     <form noValidate onSubmit={submit} className="flex max-w-3xl flex-col gap-5" data-testid={`${kind}-form`}>
       <fieldset disabled={!hydrated} className="flex min-w-0 flex-col gap-5">
         {hydrated ? null : (
-          <p role="status" data-testid="form-loading" className="text-body text-ink-muted">
+          <p role="status" data-testid="form-loading" className="text-body text-text-muted">
             {t('formLoading')}
           </p>
         )}
@@ -81,7 +81,7 @@ export function LegalFormShell({
             <Button type="submit" disabled={pending} data-testid="save-legal-item">
               {pending ? t('saving') : t('save')}
             </Button>
-            <Link href={tabHref} className={buttonVariants({ variant: 'outline' })}>
+            <Link href={tabHref} className={buttonVariants({ variant: 'secondary' })}>
               {t('cancel')}
             </Link>
           </div>

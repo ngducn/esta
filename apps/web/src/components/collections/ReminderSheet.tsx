@@ -59,17 +59,17 @@ export default function ReminderSheet({
             </SheetTitle>
             <SheetDescription className="flex flex-wrap gap-x-3">
               <span className="break-words">{target.draft.tenantName}</span>
-              {target.zalo === null ? null : <span className="figures">{target.zalo.phone}</span>}
+              {target.zalo === null ? null : <span className="num">{target.zalo.phone}</span>}
             </SheetDescription>
           </div>
 
           <fieldset className="flex flex-col gap-2">
-            <legend className="mb-2 text-body font-medium text-ink">{labels.form}</legend>
+            <legend className="mb-2 text-body font-medium text-text">{labels.form}</legend>
             <div className="flex flex-wrap gap-2">
               {labels.forms.map(({ key, label }) => (
                 <label
                   key={key}
-                  className="inline-flex min-h-touch cursor-pointer items-center gap-1.5 rounded-full border border-field bg-surface px-4 text-body font-medium text-ink transition-colors duration-(--duration-fast) ease-standard hover:border-ink-muted has-checked:border-ink has-checked:bg-surface-2 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-accent"
+                  className="inline-flex min-h-touch cursor-pointer items-center gap-1.5 rounded-full border border-border-field bg-surface px-4 text-body font-medium text-text transition-colors duration-(--duration-fast) ease-standard hover:border-border-field has-checked:border-accent has-checked:bg-accent-subtle has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus-ring"
                 >
                   <input
                     type="radio"
@@ -90,27 +90,27 @@ export default function ReminderSheet({
           </fieldset>
 
           <div className="flex flex-col gap-2">
-            <h3 className="text-body font-medium text-ink">{labels.text}</h3>
+            <h3 className="text-body font-medium text-text">{labels.text}</h3>
             <p
               ref={textRef}
               data-testid="reminder-text"
               lang="vi"
-              className="rounded-md border border-rule bg-surface-2 p-4 text-body wrap-anywhere whitespace-pre-wrap text-ink"
+              className="rounded-md border border-border bg-bg-subtle p-4 text-body wrap-anywhere whitespace-pre-wrap text-text"
             >
               {text}
             </p>
           </div>
 
           {target.zalo === null ? null : (
-            <p data-testid="reminder-zalo-note" className="rounded-md border border-rule bg-surface-2 p-3 text-body text-ink">
-              <span className="mr-2 inline-flex rounded-full bg-due-fill px-2.5 py-0.5 text-small font-medium text-due">{labels.assumption}</span>
+            <p data-testid="reminder-zalo-note" className="rounded-md border border-border bg-bg-subtle p-3 text-body text-text">
+              <span className="mr-2 inline-flex rounded-full bg-warning-bg px-2.5 py-0.5 text-body-sm font-medium text-warning-text">{labels.assumption}</span>
               {labels.zaloNote}
             </p>
           )}
         </div>
 
-        <div className="sticky bottom-0 mt-auto flex flex-col gap-2 border-t border-rule bg-surface px-5 pt-3 pb-[max(--spacing(5),env(safe-area-inset-bottom))] sm:px-6">
-          <p role="status" data-testid="reminder-copy-status" className={cn('text-body', copy === 'failed' ? 'text-overdue' : 'text-ink-2', copy === 'idle' && 'sr-only')}>
+        <div className="sticky bottom-0 mt-auto flex flex-col gap-2 border-t border-border bg-surface px-5 pt-3 pb-[max(--spacing(5),env(safe-area-inset-bottom))] sm:px-6">
+          <p role="status" data-testid="reminder-copy-status" className={cn('text-body', copy === 'failed' ? 'text-danger-text' : 'text-text-secondary', copy === 'idle' && 'sr-only')}>
             {copy === 'copied' ? labels.copied : copy === 'failed' ? labels.copyFailed : null}
           </p>
           <button type="button" data-testid="reminder-copy" onClick={() => void copyDraft()} className={buttonVariants({ variant: 'primary' })}>
@@ -119,20 +119,20 @@ export default function ReminderSheet({
           </button>
           <div className="flex gap-2">
             {target.zalo === null ? (
-              <button type="button" data-testid="reminder-zalo" disabled aria-describedby={noPhone} className={cn(buttonVariants({ variant: 'outline' }), 'flex-1')}>
+              <button type="button" data-testid="reminder-zalo" disabled aria-describedby={noPhone} className={cn(buttonVariants({ variant: 'secondary' }), 'flex-1')}>
                 <MessageCircle aria-hidden="true" />
                 {labels.openZalo}
               </button>
             ) : (
-              <a href={target.zalo.url} target="_blank" rel="noopener noreferrer" data-testid="reminder-zalo" className={cn(buttonVariants({ variant: 'outline' }), 'flex-1')}>
+              <a href={target.zalo.url} target="_blank" rel="noopener noreferrer" data-testid="reminder-zalo" className={cn(buttonVariants({ variant: 'secondary' }), 'flex-1')}>
                 <MessageCircle aria-hidden="true" />
                 {labels.openZalo}
               </a>
             )}
-            <SheetClose className={cn(buttonVariants({ variant: 'outline' }), 'flex-1')}>{labels.close}</SheetClose>
+            <SheetClose className={cn(buttonVariants({ variant: 'secondary' }), 'flex-1')}>{labels.close}</SheetClose>
           </div>
           {target.zalo === null ? (
-            <p id={noPhone} data-testid="reminder-no-phone" className="text-body text-ink-2">
+            <p id={noPhone} data-testid="reminder-no-phone" className="text-body text-text-secondary">
               {labels.noPhone}
             </p>
           ) : null}

@@ -14,7 +14,7 @@ export function OwnershipSheet({ label, adding, ...props }: OwnershipSheetProps 
   const Icon = adding ? Plus : Pencil;
   return (
     <>
-      <button type="button" className={buttonVariants({ variant: adding ? 'primary' : 'outline' })} data-testid="edit-owners" {...dialog.triggerProps}>
+      <button type="button" className={buttonVariants({ variant: adding ? 'primary' : 'secondary' })} data-testid="edit-owners" {...dialog.triggerProps}>
         <Icon aria-hidden="true" />
         {label}
       </button>

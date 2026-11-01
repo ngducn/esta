@@ -20,6 +20,7 @@ import {
 import { StatusMark } from '@/components/status-mark';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Avatar } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { ConfirmDialogDemo, DateInputDemo, MoneyInputDemo, RentTableDemo, SheetDemo, UndoToastDemo } from './demos';
@@ -38,9 +39,9 @@ export type RegistryEntry = {
 
 /** Draws the focus ring a keyboard user sees, so the focus state is visible without focusing anything. */
 const focusRing = {
-  input: '[&_[data-slot=input]]:outline-2 [&_[data-slot=input]]:outline-offset-2 [&_[data-slot=input]]:outline-ink',
-  button: '[&_[data-slot=button]]:outline-2 [&_[data-slot=button]]:outline-offset-2 [&_[data-slot=button]]:outline-ink',
-  checkbox: '[&_[data-slot=checkbox]]:outline-2 [&_[data-slot=checkbox]]:-outline-offset-2 [&_[data-slot=checkbox]]:outline-ink',
+  input: '[&_[data-slot=input]]:outline-2 [&_[data-slot=input]]:outline-offset-2 [&_[data-slot=input]]:outline-focus-ring',
+  button: '[&_[data-slot=button]]:outline-2 [&_[data-slot=button]]:outline-offset-2 [&_[data-slot=button]]:outline-focus-ring',
+  checkbox: '[&_[data-slot=checkbox]]:outline-2 [&_[data-slot=checkbox]]:-outline-offset-2 [&_[data-slot=checkbox]]:outline-focus-ring',
 } as const;
 
 function Focused({ on, children }: { on: keyof typeof focusRing; children: ReactNode }) {
@@ -50,7 +51,7 @@ function Focused({ on, children }: { on: keyof typeof focusRing; children: React
 function TextField({ t, id, value, disabled = false, error }: { t: DevT; id: string; value: string; disabled?: boolean; error?: string }) {
   return (
     <div className="flex flex-col gap-2">
-      <label htmlFor={id} className="text-body font-medium text-ink">
+      <label htmlFor={id} className="text-body font-medium text-text">
         {t('samples.nicknameLabel')}
       </label>
       <Input
@@ -68,7 +69,7 @@ function TextField({ t, id, value, disabled = false, error }: { t: DevT; id: str
 function CheckboxField({ label, defaultChecked = false, disabled = false }: { label: string; defaultChecked?: boolean; disabled?: boolean }) {
   const labelId = useId();
   return (
-    <label className="-ml-2.5 inline-flex max-w-prose cursor-pointer items-start text-body text-ink has-data-disabled:cursor-not-allowed has-data-disabled:text-ink-muted">
+    <label className="-ml-2.5 inline-flex max-w-prose cursor-pointer items-start text-body text-text has-data-disabled:cursor-not-allowed has-data-disabled:text-text-muted">
       <Checkbox defaultChecked={defaultChecked} disabled={disabled} aria-labelledby={labelId} />
       <span id={labelId} className="py-2.5 pr-2">
         {label}
@@ -92,11 +93,11 @@ export const registry: readonly RegistryEntry[] = [
               {t('samples.record')}
             </Button>
             <Button variant="secondary">{t('samples.record')}</Button>
-            <Button variant="outline">
+            <Button variant="secondary">
               <FileText aria-hidden="true" />
               {t('samples.viewLease')}
             </Button>
-            <Button variant="quiet">{t('samples.skip')}</Button>
+            <Button variant="ghost">{t('samples.skip')}</Button>
           </div>
         ),
       },
@@ -116,10 +117,10 @@ export const registry: readonly RegistryEntry[] = [
             <Button variant="secondary" disabled>
               {t('samples.record')}
             </Button>
-            <Button variant="outline" disabled>
+            <Button variant="secondary" disabled>
               {t('samples.viewLease')}
             </Button>
-            <Button variant="quiet" disabled>
+            <Button variant="ghost" disabled>
               {t('samples.skip')}
             </Button>
           </div>
@@ -260,6 +261,14 @@ export const registry: readonly RegistryEntry[] = [
     ],
   },
   {
+    component: 'avatar',
+    states: [
+      { state: 'default', render: (t) => <Avatar initial="H" label={t('samples.memberName')} /> },
+      { state: 'empty', render: () => <Avatar initial={null} /> },
+      { state: 'assistant', render: () => <Avatar initial="TL" assistant /> },
+    ],
+  },
+  {
     component: 'completenessRing',
     states: [
       { state: 'default', render: () => <CompletenessRing percent={70} missing={3} /> },
@@ -313,11 +322,11 @@ export const registry: readonly RegistryEntry[] = [
         state: 'default',
         render: (t) => (
           <Card className="flex flex-col gap-3">
-            <h3 className="flex items-center gap-2 text-lead font-semibold text-ink">
-              <Wallet className="size-5 text-accent" aria-hidden="true" />
+            <h3 className="flex items-center gap-2 text-headline font-semibold text-text">
+              <Wallet className="size-5 text-accent-text" aria-hidden="true" />
               {t('samples.tableCaption')}
             </h3>
-            <MoneyDisplay amount={vnd(29_000_000)} variant="compact" className="text-start text-hero font-semibold tracking-tight" />
+            <MoneyDisplay amount={vnd(29_000_000)} variant="compact" className="text-start text-figure-lg font-semibold tracking-tight" />
             <StatusMark status="overdue" days={12} />
           </Card>
         ),

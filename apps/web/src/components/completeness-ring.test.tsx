@@ -7,7 +7,7 @@ const arcClass = (container: HTMLElement) => container.querySelector('circle[str
 describe('CompletenessRing', () => {
   it('draws a complete ring in the paid color, which the accent would read as overdue', () => {
     const { container } = renderInLocale(<CompletenessRing percent={100} missing={0} />);
-    expect(arcClass(container)).toBe('stroke-paid');
+    expect(arcClass(container)).toBe('stroke-success-text');
     expect(container.textContent).toContain('Đủ thông tin');
   });
 

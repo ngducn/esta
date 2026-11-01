@@ -1,0 +1,41 @@
+<!-- @dsCard group="App shell" height=960 width=1200 subtitle="An identity block with a chevron, never a field: states, the open list, a long name, the phone header" -->
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><title>Family switcher</title></head>
+<body>
+<div id="src">
+  <p class="ds-why"><b>It says whose house this is, then lets you change it.</b> No border, no inset, no placeholder: a field invites typing, and this is a choice of family. The monogram square and the count of properties make it read as an identity, the chevron as "there are others".</p>
+
+  <div class="ds-matrix" style="--ds-cell: 240px">
+    <div class="ds-cell"><span class="ds-cap">Default</span><button class="es-switcher" type="button" aria-haspopup="menu" aria-expanded="false"><span class="es-switcher__mark"><i data-icon="house"></i></span><span class="es-switcher__text"><span class="es-switcher__name">Nhà Demo</span><span class="es-switcher__sub">5 tài sản · 10 phòng</span></span><i class="es-switcher__chev" data-icon="chevrons-up-down"></i></button></div>
+    <div class="ds-cell"><span class="ds-cap">Hover</span><button class="es-switcher is-hover" type="button" aria-haspopup="menu" aria-expanded="false"><span class="es-switcher__mark"><i data-icon="house"></i></span><span class="es-switcher__text"><span class="es-switcher__name">Nhà Demo</span><span class="es-switcher__sub">5 tài sản · 10 phòng</span></span><i class="es-switcher__chev" data-icon="chevrons-up-down"></i></button></div>
+    <div class="ds-cell"><span class="ds-cap">Focus-visible</span><button class="es-switcher is-focus" type="button" aria-haspopup="menu" aria-expanded="false"><span class="es-switcher__mark"><i data-icon="house"></i></span><span class="es-switcher__text"><span class="es-switcher__name">Nhà Demo</span><span class="es-switcher__sub">5 tài sản · 10 phòng</span></span><i class="es-switcher__chev" data-icon="chevrons-up-down"></i></button></div>
+    <div class="ds-cell"><span class="ds-cap">Long name: one line, ellipsis, full name in title</span><button class="es-switcher" type="button" aria-haspopup="menu" aria-expanded="false" title="Gia đình Nguyễn Demo ở Dĩ An và Thủ Đức"><span class="es-switcher__mark"><i data-icon="house"></i></span><span class="es-switcher__text"><span class="es-switcher__name">Gia đình Nguyễn Demo ở Dĩ An và Thủ Đức</span><span class="es-switcher__sub">12 tài sản · 46 phòng</span></span><i class="es-switcher__chev" data-icon="chevrons-up-down"></i></button></div>
+  </div>
+
+  <div class="ds-cell"><span class="ds-cap">Open · a menu of households, the current one checked; managing members is the last item</span>
+    <div style="display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1)">
+      <button class="es-switcher" type="button" aria-haspopup="menu" aria-expanded="true" aria-controls="hh" style="width: 240px"><span class="es-switcher__mark"><i data-icon="house"></i></span><span class="es-switcher__text"><span class="es-switcher__name">Nhà Demo</span><span class="es-switcher__sub">5 tài sản · 10 phòng</span></span><i class="es-switcher__chev" data-icon="chevrons-up-down"></i></button>
+      <div class="es-menu" role="menu" id="hh" aria-label="Chọn gia đình" style="width: 320px">
+        <p class="es-menu__label">Gia đình</p>
+        <button class="es-menu__item" role="menuitemradio" aria-checked="true" type="button"><span class="es-switcher__mark" aria-hidden="true"><i data-icon="house"></i></span><span class="es-menu__item-text">Nhà Demo<span class="es-menu__item-sub">5 tài sản · 10 phòng</span></span><i class="es-menu__check" data-icon="check"></i></button>
+        <button class="es-menu__item is-hover" role="menuitemradio" aria-checked="false" type="button"><span class="es-switcher__mark" aria-hidden="true">B</span><span class="es-menu__item-text">Nhà bà ngoại Demo<span class="es-menu__item-sub">2 tài sản · 3 phòng</span></span><i class="es-menu__check" data-icon="check"></i></button>
+        <hr class="es-menu__sep">
+        <button class="es-menu__item" role="menuitem" type="button"><i data-icon="users"></i><span class="es-menu__item-text">Quản lý thành viên</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="ds-cell"><span class="ds-cap">Phone header · compact: the family name is the page's anchor, the avatar opens the account menu</span>
+    <div class="ds-phone">
+      <div class="ds-appbar" style="padding-left: var(--space-2)">
+        <div style="flex: 1; min-width: 0"><button class="es-switcher es-switcher--compact" type="button" aria-haspopup="menu" aria-expanded="false"><span class="es-switcher__mark"><i data-icon="house"></i></span><span class="es-switcher__text"><span class="es-switcher__name">Nhà Demo</span></span><i class="es-switcher__chev" data-icon="chevron-down"></i></button></div>
+        <button class="es-avatar" type="button" aria-label="Nguyễn Demo Hường, tài khoản">H</button>
+      </div>
+      <div class="ds-listrow"><div class="ds-listrow__main"><span class="ds-listrow__title">Tổng quan</span><span class="ds-listrow__sub">Thứ Tư, 07/10/2026</span></div></div>
+    </div>
+  </div>
+</div>
+<script>Esta.themes('#src');</script>
+</body>
+</html>

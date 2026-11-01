@@ -58,13 +58,13 @@ export default async function PropertyFinancePage({
 
   return (
     <PropertyDetailFrame property={property} tab="finance" expenseActions={false}>
-      <section aria-labelledby="ledger-title" data-testid="ledger" className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
+      <section aria-labelledby="ledger-title" data-testid="ledger" className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
         <div className="flex flex-col gap-1">
-          <h2 id="ledger-title" className="text-h3 text-ink">
+          <h2 id="ledger-title" className="text-title-3 text-text">
             {tLedger('title', { year })}
           </h2>
           {ledger.empty ? null : (
-            <p data-testid="ledger-summary" className="text-body text-ink-2 figures">
+            <p data-testid="ledger-summary" className="text-body text-text-secondary num">
               {tLedger('summary', {
                 income: formatVnd(total(ledger.table, 'income'), locale),
                 expenses: formatVnd(total(ledger.table, 'expenses'), locale),
@@ -79,8 +79,8 @@ export default async function PropertyFinancePage({
         />
         {ledger.empty ? (
           <div data-testid="ledger-empty" className="flex flex-col gap-1 text-body">
-            <p className="font-medium text-ink">{tLedger('empty', { year })}</p>
-            <p className="text-ink-2">{tLedger('emptyAction')}</p>
+            <p className="font-medium text-text">{tLedger('empty', { year })}</p>
+            <p className="text-text-secondary">{tLedger('emptyAction')}</p>
           </div>
         ) : (
           <>
@@ -92,13 +92,13 @@ export default async function PropertyFinancePage({
               marked={marked?.startsWith(`${year}-`) ? { key: marked, label: tLedger('marked') } : null}
             />
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-small text-ink-muted">{tLedger('basis')}</p>
+              <p className="text-body-sm text-text-muted">{tLedger('basis')}</p>
               <div role="group" aria-label={tLedger('downloads')} className="grid grid-cols-2 gap-2 sm:flex">
-                <a href={exportHref('csv')} download data-testid="ledger-csv" className={buttonVariants({ variant: 'outline' })}>
+                <a href={exportHref('csv')} download data-testid="ledger-csv" className={buttonVariants({ variant: 'secondary' })}>
                   <Download aria-hidden="true" />
                   {tLedger('downloadCsv')}
                 </a>
-                <a href={exportHref('xlsx')} download data-testid="ledger-xlsx" className={buttonVariants({ variant: 'outline' })}>
+                <a href={exportHref('xlsx')} download data-testid="ledger-xlsx" className={buttonVariants({ variant: 'secondary' })}>
                   <Download aria-hidden="true" />
                   {tLedger('downloadExcel')}
                 </a>
@@ -107,14 +107,14 @@ export default async function PropertyFinancePage({
           </>
         )}
       </section>
-      <section aria-labelledby="expenses-title" data-testid="expense-section" className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
+      <section aria-labelledby="expenses-title" data-testid="expense-section" className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
           <div className="flex min-w-0 flex-col gap-1">
-            <h2 id="expenses-title" className="text-h3 text-ink">
+            <h2 id="expenses-title" className="text-title-3 text-text">
               {t('sectionTitle', { year })}
             </h2>
             {shown.length === 0 ? null : (
-              <p data-testid="expense-total" className="text-body text-ink-2 figures">
+              <p data-testid="expense-total" className="text-body text-text-secondary num">
                 {t('yearTotal', { count: shown.length, amount: formatVnd(expenseTotal, locale) })}
               </p>
             )}
@@ -123,8 +123,8 @@ export default async function PropertyFinancePage({
         </div>
         {shown.length === 0 ? (
           <div data-testid="expense-empty" className="flex flex-col gap-1 text-body">
-            <p className="font-medium text-ink">{t('empty', { year })}</p>
-            {canEdit ? <p className="text-ink-2">{t('emptyAction')}</p> : null}
+            <p className="font-medium text-text">{t('empty', { year })}</p>
+            {canEdit ? <p className="text-text-secondary">{t('emptyAction')}</p> : null}
           </div>
         ) : (
           <ExpenseList rows={shown} canEdit={canEdit} />

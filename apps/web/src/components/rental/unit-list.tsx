@@ -37,7 +37,7 @@ export type UnitLease = {
 
 type Direction = 'up' | 'down';
 
-const small = 'min-h-touch px-3 text-small';
+const small = 'min-h-touch px-3 text-body-sm';
 
 /**
  * Rooms in room-number order unless someone set another. Reordering is rare, so `Lên` and `Xuống` show only after
@@ -132,7 +132,7 @@ export function UnitList({
               data-testid="sort-by-number"
               onClick={() => reorder(() => sortUnitsByRoomNumber(propertyId))}
               disabled={pending || inRoomOrder}
-              className={buttonVariants({ variant: 'outline' })}
+              className={buttonVariants({ variant: 'secondary' })}
             >
               <ArrowDown01 aria-hidden="true" />
               {t('sortByNumber')}
@@ -154,7 +154,7 @@ export function UnitList({
               type="button"
               data-testid="add-unit"
               {...addUnit.triggerProps}
-              className={buttonVariants({ variant: roomingHouse ? 'outline' : 'primary' })}
+              className={buttonVariants({ variant: roomingHouse ? 'secondary' : 'primary' })}
             >
               <Plus aria-hidden="true" />
               {t('addUnit')}
@@ -165,7 +165,7 @@ export function UnitList({
               type="button"
               data-testid="reorder-rooms"
               onClick={() => setReorderOn(!reordering)}
-              className={cn(buttonVariants({ variant: reordering ? 'primary' : 'outline' }), 'sm:ml-auto')}
+              className={cn(buttonVariants({ variant: reordering ? 'primary' : 'secondary' }), 'sm:ml-auto')}
             >
               {reordering ? <Check aria-hidden="true" /> : <ArrowUpDown aria-hidden="true" />}
               {reordering ? t('reorderDone') : t('reorder')}
@@ -173,28 +173,28 @@ export function UnitList({
           ) : null}
         </div>
       ) : null}
-      {reordering ? <p className="text-body text-ink-2">{t('reorderHint')}</p> : null}
+      {reordering ? <p className="text-body text-text-secondary">{t('reorderHint')}</p> : null}
       <FormAlert message={error} />
-      <ol ref={list} data-testid="unit-list" className="@container flex flex-col overflow-hidden rounded-lg border border-rule bg-surface shadow-card">
+      <ol ref={list} data-testid="unit-list" className="@container flex flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-xs">
         {units.map((unit, index) => {
           const facts = [t('unitKind', { kind: unit.kind }), unit.area_m2 === null ? null : formatArea(unit.area_m2, locale)].filter((fact) => fact !== null);
           return (
-            <li key={unit.id} data-testid="unit-row" data-id={unit.id} data-kind={unit.kind} className="flex flex-col gap-3 border-b border-rule p-4 last:border-b-0 sm:px-5 @3xl:flex-row @3xl:items-start @3xl:justify-between @3xl:gap-4">
+            <li key={unit.id} data-testid="unit-row" data-id={unit.id} data-kind={unit.kind} className="flex flex-col gap-3 border-b border-border p-4 last:border-b-0 sm:px-5 @3xl:flex-row @3xl:items-start @3xl:justify-between @3xl:gap-4">
               <div className="flex min-w-0 flex-1 flex-col gap-1">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-                  <h3 data-testid="unit-label" className="min-w-0 text-lead font-semibold break-words text-ink">
+                  <h3 data-testid="unit-label" className="min-w-0 text-headline font-semibold break-words text-text">
                     {unit.label}
                   </h3>
                   {unit.list_rent_vnd === null ? (
-                    <span className="text-small text-ink-muted">{t('noRent')}</span>
+                    <span className="text-body-sm text-text-muted">{t('noRent')}</span>
                   ) : (
-                    <MoneyDisplay amount={unit.list_rent_vnd} className="text-lead font-medium text-ink" />
+                    <MoneyDisplay amount={unit.list_rent_vnd} className="text-headline font-medium text-text" />
                   )}
                 </div>
-                <p className="text-small text-ink-muted">{facts.join(' · ')}</p>
+                <p className="text-body-sm text-text-muted">{facts.join(' · ')}</p>
                 <UnitLeaseLine lease={leases[unit.id]} />
                 {unit.available_from === null || (leases[unit.id]?.mark.kind ?? 'vacant') !== 'vacant' ? null : (
-                  <p data-testid="unit-available" className="text-small text-ink-2">
+                  <p data-testid="unit-available" className="text-body-sm text-text-secondary">
                     {t('availableFrom', { date: formatDate(unit.available_from, locale) })}
                   </p>
                 )}
@@ -203,7 +203,7 @@ export function UnitList({
                 <LeaseLink propertyId={propertyId} unit={unit} lease={leases[unit.id]} canEdit={canEdit} />
                 {canEdit ? <EditUnitButton propertyId={propertyId} unit={unit} otherUnits={units.length - 1} onDelete={unit.kind === 'whole' ? null : remove} /> : null}
               {reordering ? (
-                <div className="ml-auto flex rounded-sm border border-rule-strong bg-surface @3xl:ml-0">
+                <div className="ml-auto flex rounded-md border border-border-strong bg-surface @3xl:ml-0">
                   <MoveButton direction="up" label={unit.label} disabled={pending || index === 0} onMove={() => move(unit, 'up')} />
                   <MoveButton direction="down" label={unit.label} disabled={pending || index === units.length - 1} onMove={() => move(unit, 'down')} />
                 </div>
@@ -224,7 +224,7 @@ function EditUnitButton({ propertyId, unit, otherUnits, onDelete }: { propertyId
   const sheet = useDeferredDialog(loadUnitSheet);
   return (
     <>
-      <button type="button" aria-label={t('editLabel', { label: unit.label })} className={cn(buttonVariants({ variant: 'outline' }), small)} {...sheet.triggerProps}>
+      <button type="button" aria-label={t('editLabel', { label: unit.label })} className={cn(buttonVariants({ variant: 'secondary' }), small)} {...sheet.triggerProps}>
         <Pencil aria-hidden="true" />
         {t('edit')}
       </button>
@@ -243,8 +243,8 @@ function MoveButton({ direction, label, disabled, onMove }: { direction: Directi
       disabled={disabled}
       aria-label={direction === 'up' ? t('moveUpLabel', { label }) : t('moveDownLabel', { label })}
       className={cn(
-        'inline-flex min-h-touch min-w-touch items-center justify-center gap-1.5 px-3 text-small font-medium text-ink transition-colors duration-(--duration-fast) ease-standard select-none',
-        'first:rounded-l-sm last:rounded-r-sm not-first:border-l not-first:border-rule-strong hover:bg-surface-2 active:bg-rule disabled:cursor-not-allowed disabled:text-ink-muted disabled:hover:bg-transparent',
+        'inline-flex min-h-touch min-w-touch items-center justify-center gap-1.5 px-3 text-body-sm font-medium text-text transition-colors duration-(--duration-fast) ease-standard select-none',
+        'first:rounded-l-md last:rounded-r-md not-first:border-l not-first:border-border-strong hover:bg-fill-hover active:bg-fill-pressed disabled:cursor-not-allowed disabled:text-text-muted disabled:hover:bg-transparent',
         '[&_svg]:pointer-events-none [&_svg]:size-5 [&_svg]:shrink-0',
       )}
     >
@@ -266,16 +266,16 @@ function UnitLeaseLine({ lease }: { lease: UnitLease | undefined }) {
       {mark.kind === 'draft' ? <StatusMark status="draft" /> : null}
       {mark.kind === 'vacant' ? <StatusMark status="vacant" /> : null}
       {lease.tenantName === null ? null : (
-        <p data-testid="unit-tenant" className="text-body font-medium break-words text-ink">
+        <p data-testid="unit-tenant" className="text-body font-medium break-words text-text">
           {lease.tenantName}
         </p>
       )}
       {lease.rentVnd === null || mark.kind === 'vacant' ? null : (
-        <p className="text-small text-ink-2">{t('tenantRent', { rent: formatVnd(lease.rentVnd, locale) })}</p>
+        <p className="text-body-sm text-text-secondary">{t('tenantRent', { rent: formatVnd(lease.rentVnd, locale) })}</p>
       )}
-      {mark.kind === 'upcoming' ? <p className="text-small text-ink-2">{t('nextDue', { date: formatDate(mark.dueDate, locale) })}</p> : null}
+      {mark.kind === 'upcoming' ? <p className="text-body-sm text-text-secondary">{t('nextDue', { date: formatDate(mark.dueDate, locale) })}</p> : null}
       {lease.endsOn === null ? null : (
-        <p data-testid="unit-lease-ends" className="text-small text-ink-2">
+        <p data-testid="unit-lease-ends" className="text-body-sm text-text-secondary">
           {t('leaseEnds', { date: formatDate(lease.endsOn, locale) })}
         </p>
       )}
@@ -302,7 +302,7 @@ function LeaseLink({ propertyId, unit, lease, canEdit }: { propertyId: string; u
       href={`${base}/${lease.leaseId}`}
       data-testid={draft ? 'continue-lease' : 'open-lease'}
       aria-label={draft && canEdit ? t('continueLeaseLabel', { label: unit.label }) : t('openLeaseLabel', { label: unit.label })}
-      className={cn(buttonVariants({ variant: 'outline' }), small)}
+      className={cn(buttonVariants({ variant: 'secondary' }), small)}
     >
       {draft ? <FilePen aria-hidden="true" /> : <FileText aria-hidden="true" />}
       {draft && canEdit ? t('continueLease') : t('openLease')}

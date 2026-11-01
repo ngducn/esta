@@ -11,27 +11,27 @@ import { cn } from '@/lib/utils';
 export async function HomeBrief({ summary, briefId, lastRun }: { summary: string | null; briefId: string | null; lastRun: WallClockStamp | null }) {
   const [t, assistant] = await Promise.all([getTranslations('home'), getTranslations('assistant')]);
   return (
-    <section aria-labelledby="home-brief-title" data-testid="home-brief" className="flex flex-col gap-3 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
+    <section aria-labelledby="home-brief-title" data-testid="home-brief" className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
       <header className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <AssistantMonogram />
-        <h2 id="home-brief-title" className="text-body font-semibold text-ink">
+        <h2 id="home-brief-title" className="text-body font-semibold text-text">
           {assistant('briefLabel')}
         </h2>
         {lastRun === null ? null : (
-          <p data-testid="home-brief-ran" className="text-small text-ink-muted figures">
+          <p data-testid="home-brief-ran" className="text-body-sm text-text-muted num">
             {assistant('ranAt', { time: stampLabel(lastRun) })}
           </p>
         )}
       </header>
-      <p data-testid={summary === null ? 'home-brief-empty' : 'home-brief-summary'} className={cn('text-body text-pretty break-words', summary === null ? 'text-ink-2' : 'text-ink')}>
+      <p data-testid={summary === null ? 'home-brief-empty' : 'home-brief-summary'} className={cn('text-body text-pretty break-words', summary === null ? 'text-text-secondary' : 'text-text')}>
         {summary ?? t('briefNone')}
       </p>
       <div className="flex flex-wrap gap-x-6">
-        <Link href={briefId === null ? '/assistant' : `/assistant?note=${briefId}`} data-testid="home-brief-open" className={cn(buttonVariants({ variant: 'quiet' }), 'px-0')}>
+        <Link href={briefId === null ? '/assistant' : `/assistant?note=${briefId}`} data-testid="home-brief-open" className={cn(buttonVariants({ variant: 'ghost' }), 'px-0')}>
           {t('briefOpen')}
         </Link>
         {briefId === null ? null : (
-          <Link href={`/assistant?reply=${briefId}`} data-testid="home-brief-reply" className={cn(buttonVariants({ variant: 'quiet' }), 'px-0')}>
+          <Link href={`/assistant?reply=${briefId}`} data-testid="home-brief-reply" className={cn(buttonVariants({ variant: 'ghost' }), 'px-0')}>
             <Reply aria-hidden="true" />
             {assistant('reply')}
           </Link>

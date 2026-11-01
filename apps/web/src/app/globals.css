@@ -5,24 +5,27 @@
   html {
     font-size: calc(100% * var(--text-scale));
     font-family: var(--font-inter);
-    background-color: var(--ground);
-    color: var(--ink);
+    background-color: var(--bg);
+    color: var(--text);
   }
 
   body {
     font-size: var(--text-body);
     line-height: var(--text-body--line-height);
-    background-color: var(--ground);
+    background-color: var(--bg);
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   ::selection {
-    background-color: color-mix(in oklch, var(--accent) 18%, var(--surface));
-    color: var(--ink);
+    background-color: var(--accent-subtle-hover);
+    color: var(--text);
   }
 
   :focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
+    outline: var(--focus-width) solid var(--focus-ring);
+    outline-offset: var(--focus-offset);
   }
 
   input,
@@ -37,7 +40,6 @@
   h1,
   h2 {
     font-weight: 600;
-    letter-spacing: -0.02em;
   }
 
   b,
@@ -55,7 +57,8 @@
   }
 }
 
-@utility figures {
+/* A money or count figure: tabular lining digits. Wrapping is left to the caller, as `MoneyDisplay` and the amount cells set nowrap. */
+@utility num {
   font-variant-numeric: lining-nums tabular-nums;
   font-feature-settings: 'tnum';
 }

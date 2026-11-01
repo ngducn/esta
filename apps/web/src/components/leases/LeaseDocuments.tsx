@@ -35,37 +35,37 @@ export function LeaseDocuments({
   const router = useRouter();
   const uploading = useDeferredDialog(loadUploadSheet);
   const upload = canEdit ? (
-    <Button type="button" variant="outline" data-testid="lease-upload" {...uploading.triggerProps}>
+    <Button type="button" variant="secondary" data-testid="lease-upload" {...uploading.triggerProps}>
       <Upload aria-hidden="true" />
       {t('uploadContract')}
     </Button>
   ) : null;
   return (
-    <section aria-labelledby="lease-documents" data-testid="lease-documents" className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
-      <h2 id="lease-documents" className="text-lead font-semibold text-ink">
+    <section aria-labelledby="lease-documents" data-testid="lease-documents" className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
+      <h2 id="lease-documents" className="text-headline font-semibold text-text">
         {t('documentsTitle')}
       </h2>
       {documents.length === 0 ? (
         <div className="flex flex-col items-start gap-3">
-          <p className="flex items-center gap-3 text-body font-medium text-ink">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-accent-tint text-accent">
+          <p className="flex items-center gap-3 text-body font-medium text-text">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-accent-subtle text-accent-text">
               <FileText className="size-5" strokeWidth={1.8} aria-hidden="true" />
             </span>
             {t('documentsEmpty')}
           </p>
-          <p className="max-w-prose text-body text-pretty text-ink-2">{canEdit ? t('documentsEmptyBody') : t('documentsViewerEmpty')}</p>
+          <p className="max-w-prose text-body text-pretty text-text-secondary">{canEdit ? t('documentsEmptyBody') : t('documentsViewerEmpty')}</p>
           {upload}
         </div>
       ) : (
         <>
           <ul className="flex flex-col">
             {documents.map((document) => (
-              <li key={document.id} data-testid="lease-document" className="border-b border-rule last:border-b-0">
-                <Link href={`/documents/${document.id}`} className="flex min-h-touch items-center gap-3 py-2 text-body text-ink hover:text-accent">
-                  <FileText className="size-5 shrink-0 text-ink-muted" strokeWidth={1.8} aria-hidden="true" />
+              <li key={document.id} data-testid="lease-document" className="border-b border-border last:border-b-0">
+                <Link href={`/documents/${document.id}`} className="flex min-h-touch items-center gap-3 py-2 text-body text-text hover:text-accent-text">
+                  <FileText className="size-5 shrink-0 text-text-muted" strokeWidth={1.8} aria-hidden="true" />
                   <span className="flex min-w-0 flex-col">
                     <span className="font-medium break-words">{document.title}</span>
-                    <span className="text-small text-ink-muted">{category('category', { category: document.category })}</span>
+                    <span className="text-body-sm text-text-muted">{category('category', { category: document.category })}</span>
                   </span>
                 </Link>
               </li>

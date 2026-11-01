@@ -65,11 +65,11 @@ export function MortgageFields({
   const t = useTranslations('propertyLegal');
   return (
     <div data-testid="mortgage-fields" className="flex flex-col gap-4">
-      <p className="text-small text-ink-muted">{t('mortgageHint')}</p>
+      <p className="text-body-sm text-text-muted">{t('mortgageHint')}</p>
       <BankPicker parties={parties} value={draft.bankId} onChange={(bankId) => onChange({ ...draft, bankId })} onParty={onParty} invalid={invalid === 'bank'} />
       <MoneyInput label={t('mortgageAmount')} defaultText={draft.amountText} onTextChange={(amountText) => onChange({ ...draft, amountText })} />
       {invalid === 'amount' ? (
-        <p role="alert" className="text-small text-overdue">
+        <p role="alert" className="text-body-sm text-danger-text">
           {t('amountRequired')}
         </p>
       ) : null}
@@ -87,7 +87,7 @@ export function MortgageFields({
               onValueChange={(releasedOn) => onChange({ ...draft, releasedOn })}
             />
             {invalid === 'released' ? (
-              <p role="alert" className="text-small text-overdue">
+              <p role="alert" className="text-body-sm text-danger-text">
                 {t('releasedRequired')}
               </p>
             ) : null}

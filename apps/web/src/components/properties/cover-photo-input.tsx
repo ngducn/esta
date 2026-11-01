@@ -81,9 +81,9 @@ export function CoverPhotoInput({ propertyId, nickname, photoUrl }: { propertyId
 
   return (
     <div className="flex flex-col gap-4" aria-busy={pending}>
-      <div className="relative aspect-[16/10] w-full max-w-md overflow-hidden rounded-md border border-rule bg-surface-2">
+      <div className="relative aspect-[16/10] w-full max-w-md overflow-hidden rounded-md border border-border bg-bg-subtle">
         {shown === null ? (
-          <div className="flex size-full items-center justify-center text-ink-muted">
+          <div className="flex size-full items-center justify-center text-text-muted">
             <ImagePlus className="size-12" strokeWidth={1.25} aria-hidden="true" />
           </div>
         ) : (
@@ -108,7 +108,7 @@ export function CoverPhotoInput({ propertyId, nickname, photoUrl }: { propertyId
         }}
       />
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="button" variant="outline" disabled={pending || !hydrated} data-testid="cover-photo-pick" onClick={() => picker.current?.click()}>
+        <Button type="button" variant="secondary" disabled={pending || !hydrated} data-testid="cover-photo-pick" onClick={() => picker.current?.click()}>
           <ImagePlus aria-hidden="true" />
           {pending ? t('photoUploading') : shown === null ? t('photoPick') : t('photoReplace')}
         </Button>
@@ -126,11 +126,11 @@ export function CoverPhotoInput({ propertyId, nickname, photoUrl }: { propertyId
         {message === null ? null : (
           <>
             <StatusShape status="overdue" className="size-4" />
-            <span data-testid="cover-photo-error" className="text-overdue">
+            <span data-testid="cover-photo-error" className="text-danger-text">
               {message}
             </span>
             {retryFile === null ? null : (
-              <Button type="button" variant="quiet" onClick={() => send(retryFile)}>
+              <Button type="button" variant="ghost" onClick={() => send(retryFile)}>
                 <RotateCcw aria-hidden="true" />
                 {t('photoRetry')}
               </Button>

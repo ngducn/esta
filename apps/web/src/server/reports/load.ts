@@ -18,7 +18,7 @@ type ReportDefinition = {
   /** A yearly report reads the chosen year; the others read the Clock's date. */
   readonly yearly: boolean;
   readonly build: (snapshot: ReportSnapshot, messages: Messages) => ExportTable;
-  /** The message key of the mark its figures carry: estimates, or tax estimates that are not advice. */
+  /** The message key of the mark its num carry: estimates, or tax estimates that are not advice. */
   readonly estimate: 'estimate' | 'taxEstimate' | null;
   /** Nothing to report: the report shows its empty line instead of a table of zeros. */
   readonly empty: (snapshot: ReportSnapshot) => boolean;

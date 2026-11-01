@@ -150,7 +150,7 @@ export default function UploadSheet({
         <form noValidate hidden={capturing} onSubmit={save} className="flex flex-col gap-5">
           <div className="flex flex-col gap-3">
             <div className="grid grid-cols-1 gap-3 min-[22rem]:grid-cols-2">
-              <label className="relative inline-flex min-h-touch cursor-pointer items-center justify-center gap-2 rounded-sm bg-ink px-4 text-body font-medium text-surface has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus">
+              <label className="relative inline-flex min-h-touch cursor-pointer items-center justify-center gap-2 rounded-md bg-accent px-4 text-body font-medium text-on-accent has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus-ring">
                 <Camera className="size-5" aria-hidden="true" />
                 {t('takePhoto')}
                 <input
@@ -163,7 +163,7 @@ export default function UploadSheet({
                   onChange={(event) => choose(event.target.files?.[0])}
                 />
               </label>
-              <label className="relative inline-flex min-h-touch cursor-pointer items-center justify-center gap-2 rounded-sm border border-rule-strong bg-surface px-4 text-body font-medium text-ink has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus">
+              <label className="relative inline-flex min-h-touch cursor-pointer items-center justify-center gap-2 rounded-md border border-border-strong bg-surface px-4 text-body font-medium text-text has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus-ring">
                 <FolderOpen className="size-5" aria-hidden="true" />
                 {t('chooseFile')}
                 <input
@@ -177,7 +177,7 @@ export default function UploadSheet({
               </label>
               <Button
                 type="button"
-                variant="outline"
+                variant="secondary"
                 data-testid="capture-pages"
                 disabled={busy}
                 className="min-[22rem]:col-span-2"
@@ -190,20 +190,20 @@ export default function UploadSheet({
                 {t('multiPage')}
               </Button>
             </div>
-            <p className="text-small text-ink-muted">{t('fileRule')}</p>
+            <p className="text-body-sm text-text-muted">{t('fileRule')}</p>
             {prepared === null ? null : (
-              <div className="flex items-center gap-3 rounded-md border border-rule bg-surface-2 p-3">
+              <div className="flex items-center gap-3 rounded-md border border-border bg-bg-subtle p-3">
                 {preview === null ? null : (
                   // eslint-disable-next-line @next/next/no-img-element -- a local blob URL of the thumbnail made in this tab
-                  <img src={preview} alt={t('previewAlt')} data-testid="upload-preview" className="size-16 shrink-0 rounded-sm object-cover" />
+                  <img src={preview} alt={t('previewAlt')} data-testid="upload-preview" className="size-16 shrink-0 rounded-md object-cover" />
                 )}
-                <p className="min-w-0 text-small break-words text-ink-2">
+                <p className="min-w-0 text-body-sm break-words text-text-secondary">
                   {t('chosenFile', { name: prepared.file.name, size: megabytes.format(prepared.file.size / 1024 / 1024) })}
                   {prepared.previews.pageCount > 1 ? ` · ${t('pageCount', { count: prepared.previews.pageCount })}` : null}
                 </p>
               </div>
             )}
-            {upload.step === 'preparing' ? <p className="text-small text-ink-muted">{t('preparing')}</p> : null}
+            {upload.step === 'preparing' ? <p className="text-body-sm text-text-muted">{t('preparing')}</p> : null}
             <FieldMessage id={`${fieldId}-file`} error={problem === null ? null : t(problem)} />
           </div>
           <FormSelect
@@ -214,10 +214,10 @@ export default function UploadSheet({
             onChange={changeCategory}
           />
           <div className="flex flex-col gap-1">
-            <label htmlFor={`${fieldId}-property`} className="text-body font-medium text-ink">
+            <label htmlFor={`${fieldId}-property`} className="text-body font-medium text-text">
               {t('propertyField')}
             </label>
-            <Input id={`${fieldId}-property`} data-testid="document-property" value={nickname} readOnly className="mt-1 bg-surface-2" />
+            <Input id={`${fieldId}-property`} data-testid="document-property" value={nickname} readOnly className="mt-1 bg-bg-subtle" />
           </div>
           <TextField
             label={t('titleField')}
@@ -237,7 +237,7 @@ export default function UploadSheet({
             <DuplicateDialog title={upload.duplicates.map((duplicate) => duplicate.title).join(', ')} onCancel={dismiss} onContinue={proceed} />
           ) : (
             <FormActions>
-              <SheetClose render={<Button type="button" variant="outline" disabled={busy} />}>{t('cancel')}</SheetClose>
+              <SheetClose render={<Button type="button" variant="secondary" disabled={busy} />}>{t('cancel')}</SheetClose>
               <Button type="submit" data-testid="save-document" disabled={busy}>
                 {upload.step === 'failed' ? <RotateCw aria-hidden="true" /> : null}
                 {upload.step === 'failed' ? t('retry') : t('save')}

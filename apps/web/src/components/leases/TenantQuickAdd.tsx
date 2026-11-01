@@ -38,7 +38,7 @@ export function TenantQuickAdd({
 
   if (!open) {
     return (
-      <Button type="button" variant="outline" data-testid="add-tenant" className="self-start" onClick={() => setOpen(true)}>
+      <Button type="button" variant="secondary" data-testid="add-tenant" className="self-start" onClick={() => setOpen(true)}>
         <UserPlus aria-hidden="true" />
         {t('addTenant')}
       </Button>
@@ -67,7 +67,7 @@ export function TenantQuickAdd({
   };
 
   return (
-    <div data-testid="tenant-quick-add" className="flex flex-col gap-4 rounded-md border border-rule bg-surface-2 p-4">
+    <div data-testid="tenant-quick-add" className="flex flex-col gap-4 rounded-md border border-border bg-bg-subtle p-4">
       <div className="grid gap-4 sm:grid-cols-2">
         <TextField label={t('tenantName')} inputId="tenant-name" value={name} maxLength={200} error={invalid === 'name' ? t('tenantNameRequired') : null} onChange={setName} />
         <TextField
@@ -77,7 +77,7 @@ export function TenantQuickAdd({
           value={phone}
           maxLength={20}
           inputMode="numeric"
-          className="figures"
+          className="num"
           error={invalid === 'phone' ? t('tenantPhoneInvalid') : null}
           onChange={setPhone}
         />
@@ -85,10 +85,10 @@ export function TenantQuickAdd({
       {initial !== null && name === initial.fullName && phone === (initial.phone ?? '') ? <FromContractMark label={mark} /> : null}
       <FormAlert message={failed ? t('tenantFailed') : null} />
       <FormActions>
-        <Button type="button" variant="quiet" onClick={() => setOpen(false)}>
+        <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
           {t('cancel')}
         </Button>
-        <Button type="button" variant="outline" disabled={pending} data-testid="save-tenant" onClick={save}>
+        <Button type="button" variant="secondary" disabled={pending} data-testid="save-tenant" onClick={save}>
           {pending ? t('savingTenant') : t('saveTenant')}
         </Button>
       </FormActions>

@@ -12,8 +12,8 @@ import type { InvoiceSummary, LeaseWithTenant } from '@/server/leases/load';
 function Fact({ label, testId, children }: { label: string; testId?: string; children: React.ReactNode }) {
   return (
     <div data-testid={testId} className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
-      <dt className="text-small text-ink-muted sm:w-40 sm:shrink-0 sm:text-body">{label}</dt>
-      <dd className="min-w-0 text-body break-words text-ink">{children}</dd>
+      <dt className="text-body-sm text-text-muted sm:w-40 sm:shrink-0 sm:text-body">{label}</dt>
+      <dd className="min-w-0 text-body break-words text-text">{children}</dd>
     </div>
   );
 }
@@ -52,36 +52,36 @@ export function LeaseTerms({
   const escalation = toEscalation(lease.escalation);
   const rentChanges = amendments.flatMap((amendment) => (amendment.changes.rentVnd === undefined ? [] : [{ ...amendment, rentVnd: amendment.changes.rentVnd }]));
   return (
-    <section aria-labelledby="lease-terms" data-testid="lease-terms" className="flex flex-col gap-4 rounded-lg border border-rule bg-surface p-5 shadow-card sm:p-6">
-      <h2 id="lease-terms" className="text-lead font-semibold text-ink">
+    <section aria-labelledby="lease-terms" data-testid="lease-terms" className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
+      <h2 id="lease-terms" className="text-headline font-semibold text-text">
         {t('termsTitle')}
       </h2>
       <dl className="flex flex-col gap-3">
         <Fact label={t('tenantLabel')}>
           <span data-testid="lease-tenant-name">{lease.tenant?.fullName ?? t('none')}</span>
-          {lease.tenant?.phone == null ? null : <span className="block figures text-ink-2">{lease.tenant.phone}</span>}
+          {lease.tenant?.phone == null ? null : <span className="block num text-text-secondary">{lease.tenant.phone}</span>}
         </Fact>
         <Fact label={t('unitLabel')}>{unitLabel}</Fact>
         <Fact label={t('periodLabel')} testId="lease-period">
           {lease.end_date === null ? t('openEnded', { start }) : t('fromTo', { start, end: formatDate(lease.end_date, locale) })}
         </Fact>
         <Fact label={t('rentNowLabel')} testId="lease-rent">
-          <span className="figures">{rentNow === null ? t('none') : t('rentPerMonth', { rent: formatVnd(rentNow, locale), months: lease.billing_cycle_months })}</span>
+          <span className="num">{rentNow === null ? t('none') : t('rentPerMonth', { rent: formatVnd(rentNow, locale), months: lease.billing_cycle_months })}</span>
         </Fact>
         {rentChanges.length === 0 ? null : (
           <Fact label={t('amendmentsLabel')} testId="lease-amendments">
             <ul className="flex flex-col gap-1">
               {rentChanges.map((change) => (
-                <li key={change.id} className="figures">
+                <li key={change.id} className="num">
                   {t('amendmentLine', { date: formatDate(change.effectivePeriodStart, locale), rent: formatVnd(change.rentVnd, locale) })}
-                  {change.reason === null ? null : <span className="block text-small text-ink-2">{change.reason}</span>}
+                  {change.reason === null ? null : <span className="block text-body-sm text-text-secondary">{change.reason}</span>}
                 </li>
               ))}
             </ul>
           </Fact>
         )}
         <Fact label={t('depositLabel')} testId="lease-deposit">
-          <span className="figures">{money(lease.deposit_vnd)}</span>
+          <span className="num">{money(lease.deposit_vnd)}</span>
         </Fact>
         <Fact label={t('escalationLabel')}>
           {escalation.kind === 'none'
@@ -104,14 +104,14 @@ export function LeaseTerms({
         ) : null}
         {renewalOf === null ? null : (
           <Fact label={t('renewalOfLabel')}>
-            <Link href={renewalOf.href} data-testid="lease-renewal-of" className="font-medium text-accent underline underline-offset-4">
+            <Link href={renewalOf.href} data-testid="lease-renewal-of" className="font-medium text-accent-text underline underline-offset-4">
               {t('renewalOf')}
             </Link>
           </Fact>
         )}
         {renewedBy === null || renewedBy.startDate === null ? null : (
           <Fact label={t('renewedByLabel')}>
-            <Link href={renewedBy.href} data-testid="lease-renewed-by" className="font-medium text-accent underline underline-offset-4">
+            <Link href={renewedBy.href} data-testid="lease-renewed-by" className="font-medium text-accent-text underline underline-offset-4">
               {t('renewedBy', { date: formatDate(renewedBy.startDate, locale) })}
             </Link>
           </Fact>

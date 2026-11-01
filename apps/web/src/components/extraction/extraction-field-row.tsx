@@ -10,7 +10,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { DateInput } from '@/components/date-input';
 import { LandUseCodePicker } from '@/components/legal/land-use-code-picker';
 import { MoneyInput } from '@/components/money/money-input';
-import { StatusShape, statusMarks } from '@/components/status-shape';
+import { StatusShape, statusBadge, statusMarks } from '@/components/status-shape';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -110,36 +110,36 @@ export function ExtractionFieldRow({
     >
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div className="flex min-w-0 flex-1 basis-48 flex-col gap-0.5">
-          <p className="text-small font-medium text-ink-muted">{label}</p>
-          <p data-testid="field-value" className={cn('text-body break-words', value === null ? 'text-ink-muted' : 'text-ink')}>
+          <p className="text-body-sm font-medium text-text-muted">{label}</p>
+          <p data-testid="field-value" className={cn('text-body break-words', value === null ? 'text-text-muted' : 'text-text')}>
             {value ?? t('empty')}
           </p>
           {unknownCode ? (
-            <p data-testid="unknown-code" className="text-small text-ink-2 italic">
+            <p data-testid="unknown-code" className="text-body-sm text-text-secondary italic">
               {t('unknownCode')}
             </p>
           ) : null}
           {message === null ? null : (
-            <p data-testid="field-error" className={cn('text-small font-medium', error === null ? 'text-due' : 'text-overdue')}>
+            <p data-testid="field-error" className={cn('text-body-sm font-medium', error === null ? 'text-warning-text' : 'text-danger-text')}>
               {message}
             </p>
           )}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {field.marked && decision === undefined ? (
-            <span data-testid="needs-check" className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-small font-medium', statusMarks.due.pill)}>
+            <span data-testid="needs-check" className={cn(statusBadge, statusMarks.due.pill)}>
               <StatusShape status="due" className="size-4" />
               <span>{t('needsCheck')}</span>
             </span>
           ) : null}
           {decision === undefined ? null : (
-            <span data-testid="decided" className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-small font-medium', statusMarks.paid.pill)}>
+            <span data-testid="decided" className={cn(statusBadge, statusMarks.paid.pill)}>
               <StatusShape status="paid" className="size-4" />
               <span>{t('decision', { decision: decision.kind })}</span>
             </span>
           )}
           {page === null ? null : (
-            <Button type="button" variant="quiet" data-testid="field-page" aria-label={t('pageLabel', { page, field: label })} onClick={() => onPage(page)}>
+            <Button type="button" variant="ghost" data-testid="field-page" aria-label={t('pageLabel', { page, field: label })} onClick={() => onPage(page)}>
               {t('page', { page })}
             </Button>
           )}
@@ -149,7 +149,7 @@ export function ExtractionFieldRow({
         <div className="flex flex-wrap gap-2">
           <Button
             type="button"
-            variant="outline"
+            variant="secondary"
             data-testid="field-correct"
             aria-label={t('correctLabel', { field: label })}
             aria-pressed={decision?.kind === 'accepted'}
@@ -162,12 +162,12 @@ export function ExtractionFieldRow({
             <Check aria-hidden="true" />
             {t('correct')}
           </Button>
-          <Button type="button" variant="outline" data-testid="field-edit" aria-label={t('editLabel', { field: label })} aria-expanded={editing} onClick={() => onEdit(!editing)}>
+          <Button type="button" variant="secondary" data-testid="field-edit" aria-label={t('editLabel', { field: label })} aria-expanded={editing} onClick={() => onEdit(!editing)}>
             <Pencil aria-hidden="true" />
             {t('edit')}
           </Button>
           {decision === undefined ? null : (
-            <Button type="button" variant="quiet" data-testid="field-undo" onClick={() => onDecide(undefined)}>
+            <Button type="button" variant="ghost" data-testid="field-undo" onClick={() => onDecide(undefined)}>
               <Undo2 aria-hidden="true" />
               {t('undo')}
             </Button>
@@ -175,12 +175,12 @@ export function ExtractionFieldRow({
         </div>
       ) : null}
       {canEdit && editing ? (
-        <div data-testid="field-editor" className="flex flex-col gap-3 rounded-md bg-surface-2 p-4">
+        <div data-testid="field-editor" className="flex flex-col gap-3 rounded-md bg-bg-subtle p-4">
           {editor === 'select' ? (
             <label className="flex flex-col gap-1">
-              <span className="text-body font-medium text-ink">{label}</span>
+              <span className="text-body font-medium text-text">{label}</span>
               <select
-                className="min-h-touch rounded-md border border-field bg-surface px-3 text-body text-ink"
+                className="min-h-touch rounded-md border border-border-field bg-surface px-3 text-body text-text"
                 defaultValue={startText}
                 onChange={(event) => edit(event.target.value)}
               >
@@ -200,7 +200,7 @@ export function ExtractionFieldRow({
             <MoneyInput label={label} defaultText={startText} onTextChange={edit} />
           ) : (
             <label className="flex flex-col gap-1">
-              <span className="text-body font-medium text-ink">{label}</span>
+              <span className="text-body font-medium text-text">{label}</span>
               <Input
                 data-testid="field-input"
                 defaultValue={startText}

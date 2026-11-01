@@ -1,0 +1,41 @@
+<!-- @dsCard group="Forms" height=1300 width=1200 subtitle="For settings that apply at once; says Bật or Tắt in words beside the track" -->
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><title>Switch</title></head>
+<body>
+<div id="src">
+  <p class="ds-why"><b>A switch acts the moment it moves.</b> Use it only for a setting that takes effect without Lưu; in a form that waits for Lưu, use a checkbox. The word Bật or Tắt sits beside the track, because a pill's position alone is easy to misread. The off track still meets 3:1 against the page; on is blue. If saving fails, the switch moves back and says so.</p>
+  <div class="ds-matrix" style="--ds-cell: 240px">
+    <div class="ds-cell"><span class="ds-cap">Off</span>
+      <label class="es-switch"><span class="es-switch__text">Nhắc tiền thuê</span><span class="es-switch__side"><span class="es-switch__state" aria-hidden="true">Tắt</span><input type="checkbox" role="switch" class="es-switch__input"><span class="es-switch__track"><span class="es-switch__thumb"></span></span></span></label></div>
+    <div class="ds-cell"><span class="ds-cap">On</span>
+      <label class="es-switch"><span class="es-switch__text">Nhắc tiền thuê</span><span class="es-switch__side"><span class="es-switch__state" aria-hidden="true">Bật</span><input type="checkbox" role="switch" class="es-switch__input" checked><span class="es-switch__track"><span class="es-switch__thumb"></span></span></span></label></div>
+    <div class="ds-cell"><span class="ds-cap">Hover, off</span>
+      <label class="es-switch is-hover"><span class="es-switch__text">Nhắc tiền thuê</span><span class="es-switch__side"><span class="es-switch__state" aria-hidden="true">Tắt</span><input type="checkbox" role="switch" class="es-switch__input"><span class="es-switch__track"><span class="es-switch__thumb"></span></span></span></label></div>
+    <div class="ds-cell"><span class="ds-cap">Hover, on</span>
+      <label class="es-switch is-hover"><span class="es-switch__text">Nhắc tiền thuê</span><span class="es-switch__side"><span class="es-switch__state" aria-hidden="true">Bật</span><input type="checkbox" role="switch" class="es-switch__input" checked><span class="es-switch__track"><span class="es-switch__thumb"></span></span></span></label></div>
+    <div class="ds-cell"><span class="ds-cap">Focus-visible</span>
+      <label class="es-switch is-focus"><span class="es-switch__text">Nhắc tiền thuê</span><span class="es-switch__side"><span class="es-switch__state" aria-hidden="true">Bật</span><input type="checkbox" role="switch" class="es-switch__input" checked><span class="es-switch__track"><span class="es-switch__thumb"></span></span></span></label></div>
+    <div class="ds-cell"><span class="ds-cap">Active (pressed)</span>
+      <label class="es-switch is-active"><span class="es-switch__text">Nhắc tiền thuê</span><span class="es-switch__side"><span class="es-switch__state" aria-hidden="true">Bật</span><input type="checkbox" role="switch" class="es-switch__input" checked><span class="es-switch__track"><span class="es-switch__thumb"></span></span></span></label></div>
+    <div class="ds-cell"><span class="ds-cap">Loading (saving)</span>
+      <label class="es-switch is-loading" aria-busy="true"><span class="es-switch__text">Nhắc tiền thuê</span><span class="es-switch__side"><i data-icon="loader-circle" class="es-spinner"></i><span class="es-switch__state">Đang lưu</span><input type="checkbox" role="switch" class="es-switch__input" checked><span class="es-switch__track"><span class="es-switch__thumb"></span></span></span></label></div>
+    <div class="ds-cell"><span class="ds-cap">Error: moved back, says why</span>
+      <div><label class="es-switch"><span class="es-switch__text">Nhắc tiền thuê</span><span class="es-switch__side"><span class="es-switch__state" aria-hidden="true">Tắt</span><input type="checkbox" role="switch" class="es-switch__input" aria-describedby="sw-em"><span class="es-switch__track"><span class="es-switch__thumb"></span></span></span></label>
+      <p class="es-field__msg" id="sw-em"><i data-icon="triangle-alert" data-size="16"></i><span>Chưa lưu được. Kiểm tra mạng rồi thử lại.</span></p></div></div>
+    <div class="ds-cell"><span class="ds-cap">Disabled, off</span>
+      <label class="es-switch is-disabled"><span class="es-switch__text">Nhắc qua email<span class="es-switch__hint">Thêm email ở Tài khoản để bật.</span></span><span class="es-switch__side"><span class="es-switch__state" aria-hidden="true">Tắt</span><input type="checkbox" role="switch" class="es-switch__input" disabled><span class="es-switch__track"><span class="es-switch__thumb"></span></span></span></label></div>
+    <div class="ds-cell"><span class="ds-cap">Disabled, on</span>
+      <label class="es-switch is-disabled"><span class="es-switch__text">Nhắc tiền thuê<span class="es-switch__hint">Chỉ người quản lý đổi được.</span></span><span class="es-switch__side"><span class="es-switch__state" aria-hidden="true">Bật</span><input type="checkbox" role="switch" class="es-switch__input" checked disabled><span class="es-switch__track"><span class="es-switch__thumb"></span></span></span></label></div>
+  </div>
+  <div class="ds-cell"><span class="ds-cap">In a settings list, with hints and a long label</span>
+    <div class="es-switch-list" style="max-width: 520px">
+      <label class="es-switch"><span class="es-switch__text">Nhắc tiền thuê sắp đến hạn<span class="es-switch__hint">Trợ lý ghi chú 3 ngày trước ngày thu.</span></span><span class="es-switch__side"><span class="es-switch__state" aria-hidden="true">Bật</span><input type="checkbox" role="switch" class="es-switch__input" checked><span class="es-switch__track"><span class="es-switch__thumb"></span></span></span></label>
+      <label class="es-switch"><span class="es-switch__text">Báo khi hợp đồng còn 30 ngày</span><span class="es-switch__side"><span class="es-switch__state" aria-hidden="true">Tắt</span><input type="checkbox" role="switch" class="es-switch__input"><span class="es-switch__track"><span class="es-switch__thumb"></span></span></span></label>
+      <label class="es-switch"><span class="es-switch__text">Hiện số tiền đầy đủ thay vì dạng gọn trên trang tổng quan của cả gia đình<span class="es-switch__hint">Ví dụ 12.500.000.000 ₫ thay vì 12,5 tỷ.</span></span><span class="es-switch__side"><span class="es-switch__state" aria-hidden="true">Tắt</span><input type="checkbox" role="switch" class="es-switch__input"><span class="es-switch__track"><span class="es-switch__thumb"></span></span></span></label>
+    </div>
+  </div>
+</div>
+<script>Esta.themes('#src', { densities: true });</script>
+</body>
+</html>

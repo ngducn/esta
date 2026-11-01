@@ -24,7 +24,7 @@ const SheetDemoPopup = lazy(loadSheetPopup);
 function Emitted({ testId, value }: { testId: string; value: string | number | null }) {
   const t = useTranslations('devComponents.samples');
   return (
-    <p data-testid={testId} className="text-small text-ink-muted">
+    <p data-testid={testId} className="text-body-sm text-text-muted">
       {value === null ? t('emittedNone') : t('emitted', { value: String(value) })}
     </p>
   );
@@ -115,7 +115,7 @@ export function UndoToastDemo({ long = false }: { long?: boolean }) {
   const amount = formatVnd(ROOM_RENT, locale);
   return (
     <div className="flex flex-col items-start gap-3">
-      <p data-testid="undo-state" className="text-body text-ink">
+      <p data-testid="undo-state" className="text-body text-text">
         {paid ? t('paidLine', { unit, amount }) : t('unpaidLine', { unit })}
       </p>
       <Button
@@ -141,7 +141,7 @@ export function ConfirmDialogDemo({ long = false }: { long?: boolean }) {
   const date = formatDate(LEASE_END, locale);
   return (
     <div className="flex flex-col items-start gap-3">
-      <p data-testid="lease-state" className="text-body text-ink">
+      <p data-testid="lease-state" className="text-body text-text">
         {ended ? t('leaseEnded', { unit }) : t('leaseActive', { unit })}
       </p>
       <ConfirmDialog
@@ -160,7 +160,7 @@ export function SheetDemo() {
   const dialog = useDeferredDialog(loadSheetPopup);
   return (
     <>
-      <Button variant="outline" {...dialog.triggerProps}>
+      <Button variant="secondary" {...dialog.triggerProps}>
         {t('openSheet')}
       </Button>
       <DeferredPopup dialog={dialog} popup={SheetDemoPopup} props={{}} />
