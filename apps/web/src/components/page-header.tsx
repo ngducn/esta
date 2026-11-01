@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 
-/** A title, one line of context, and the screen's actions with the one primary last (README: PageHeader). */
 export function PageHeader({ title, meta, actions }: { title: string; meta?: ReactNode; actions?: ReactNode }) {
   return (
     <header className="flex flex-wrap items-end gap-x-4 gap-y-3">

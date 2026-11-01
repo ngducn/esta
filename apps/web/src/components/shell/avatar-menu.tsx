@@ -34,7 +34,7 @@ function close(menu: HTMLDivElement | null) {
   if (menu?.matches(':popover-open')) menu.hidePopover();
 }
 
-/** Arrow keys walk the menu's stops: each setting's selected option, each link and sign-out. Left and right still move inside a setting. */
+/** Left and right stay inside a setting, so only up and down move between stops. */
 function walk(event: KeyboardEvent<HTMLDivElement>) {
   if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
   const all = [...event.currentTarget.querySelectorAll<HTMLElement>(stops)];
@@ -116,7 +116,6 @@ export function AccountTrigger({
   label: string;
   detail?: string;
   accessibleName: string;
-  /** The phone header: only the avatar, which names the account through its label. */
   compact?: boolean;
   className?: string;
 }) {

@@ -14,7 +14,6 @@ export type SettingGroup = {
   options: readonly { value: string; label: string; lang?: string }[];
 };
 
-/** Each tap saves at once and the menu stays open, so she sees the page change under it. */
 export function AccountSettings({ groups, failed }: { groups: readonly SettingGroup[]; failed: string }) {
   const prefix = useId();
   const [saveFailed, setSaveFailed] = useState(false);

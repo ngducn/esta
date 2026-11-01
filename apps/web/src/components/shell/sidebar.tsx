@@ -12,7 +12,6 @@ const linkClass =
 const tooltipClass =
   'after:pointer-events-none after:absolute after:top-1/2 after:left-full after:z-20 after:ml-2 after:hidden after:-translate-y-1/2 after:rounded-md after:bg-surface-inverse after:px-2 after:py-1 after:text-body-sm after:whitespace-nowrap after:text-text-inverse after:shadow-md after:content-[attr(data-label)] max-lg:hover:after:block max-lg:focus-visible:after:block';
 
-/** From 840 px the sidebar is an icon rail: the label stays as the accessible name and shows in a tooltip. From 1080 px it is the full 256 px sidebar. */
 function NavList({ items, pathname }: { items: readonly NavItem[]; pathname: string }) {
   return (
     <ul className="flex flex-col gap-0.5 max-lg:items-center">

@@ -5,7 +5,7 @@ import { IntentLink } from './intent-link';
 import { isActive, type NavItem } from './nav';
 import { sectionIcons } from './section-icons';
 
-/** The current tab carries an accent-subtle pill behind its icon and a semibold label, so it reads without color too. Labels wrap at larger text and are never hidden. */
+/** The pill and semibold label mark the current tab without relying on color. */
 export function TabBar({ items, label }: { items: readonly NavItem[]; label: string }) {
   const pathname = usePathname();
   return (
