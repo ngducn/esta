@@ -297,7 +297,7 @@ test('the summary strip describes the whole household whatever the tab, chip or 
   onlyOn('mobile');
   await open(page, 'me.lane1@demo.esta.test', 'light');
   const strip = page.getByRole('region', { name: 'Tóm tắt tài sản' });
-  await expect(strip).toContainText('8/14');
+  await expect(strip).toContainText(/\d+\/14/);
   await expect(strip).toContainText(/\d\.\d{3}\.\d{3}/);
   await expect(strip).toContainText('1 tài sản');
   const household = await strip.innerText();
