@@ -239,6 +239,7 @@ describe('planCertificateAcceptance', () => {
       manual,
       {
         form: { kind: 'edited', value: 'paper_only' },
+        serial_no: { kind: 'edited', value: 'AB 123456' },
         'parcels[0].parcel_no': { kind: 'edited', value: '12' },
         'parcels[0].area_m2': { kind: 'edited', value: '300' },
         'holders[0].full_name': { kind: 'accepted' },
@@ -247,6 +248,31 @@ describe('planCertificateAcceptance', () => {
     );
     expect(tables(result)).toEqual(['certificates', 'parcels']);
     expect(rowsOf(result, 'parcels')[0]).toMatchObject({ parcel_no: '12', area_m2: 300, purposes: [] });
+  });
+
+  it('refuses a certificate with nothing that tells it apart, naming the rows that would (#356)', () => {
+    const manual = { ...extraction, result: null };
+    const formOnly = { form: { kind: 'edited', value: 'gcn_2009_2024' } } as const;
+    const rows = ['serial_no', 'book_entry_no', 'issued_on', 'holders[0].full_name'];
+    expect(planCertificateAcceptance(manual, formOnly, none)).toEqual({ ok: false, reason: 'unidentified', paths: rows });
+    const withParcel = { ...formOnly, 'parcels[0].parcel_no': { kind: 'edited', value: '12' } } as const;
+    expect(planCertificateAcceptance(manual, withParcel, none)).toEqual({ ok: false, reason: 'unidentified', paths: rows });
+    const read = Object.fromEntries(Object.entries(acceptAll(extraction.result)).filter(([path]) => !/^(serial_no|book_entry_no|issued_on|holders\[)/u.test(path)));
+    expect(planCertificateAcceptance(extraction, read, none)).toEqual({
+      ok: false,
+      reason: 'unidentified',
+      paths: ['serial_no', 'book_entry_no', 'issued_on', 'holders[0].full_name', 'holders[1].full_name'],
+    });
+  });
+
+  it.each([
+    ['a serial number', 'serial_no', 'AB 123456'],
+    ['a book entry number', 'book_entry_no', 'CS 01234'],
+    ['an issue date', 'issued_on', '15/10/2019'],
+    ['a holder', 'holders[0].full_name', 'Nguyễn Thị Demo'],
+  ])('saves a manual certificate with only %s beside its form', (_case, path, value) => {
+    const manual = { ...extraction, result: null };
+    expect(tables(planCertificateAcceptance(manual, { form: { kind: 'edited', value: 'paper_only' }, [path]: { kind: 'edited', value } }, none))).toContain('certificates');
   });
 });
 
@@ -270,6 +296,17 @@ describe('planUtilityBillAcceptance', () => {
         },
       },
     ]);
+  });
+
+  it('refuses a bill read with only its kind, naming the rows that tell the account apart (#356)', () => {
+    const manual = { ...extraction, result: null };
+    expect(planUtilityBillAcceptance(manual, { kind: { kind: 'edited', value: 'electricity' } }, none)).toEqual({
+      ok: false,
+      reason: 'unidentified',
+      paths: ['provider', 'customer_code', 'holder_name'],
+    });
+    const withCode = { kind: { kind: 'edited', value: 'electricity' }, customer_code: { kind: 'edited', value: 'PE0901000001' } } as const;
+    expect(tables(planUtilityBillAcceptance(manual, withCode, none))).toEqual(['utility_accounts']);
   });
 
   it('reuses an account of the same kind and customer code on the property, and writes nothing', () => {

@@ -42,10 +42,10 @@ describe('fieldViews', () => {
       'opens the area %s in the editor as text that saves as the same area',
       async (area) => {
         session.locale = locale;
-        const result = { form: leaf('gcn_2024'), parcels: [{ area_m2: leaf(area), purposes: [] }] };
+        const result = { form: leaf('gcn_2024'), serial_no: leaf('AB 123456'), parcels: [{ area_m2: leaf(area), purposes: [] }] };
         const view = (await fieldViews(reviewFields('certificate_v1', result), 'certificate')).find((field) => field.path === 'parcels[0].area_m2');
         const extraction = { id: 'e1', householdId: 'h1', propertyId: 'p1', documentId: 'd1', result };
-        const saved = planCertificateAcceptance(extraction, { form: { kind: 'accepted' }, 'parcels[0].area_m2': { kind: 'edited', value: view?.editValue ?? '' } }, { parties: [] });
+        const saved = planCertificateAcceptance(extraction, { form: { kind: 'accepted' }, serial_no: { kind: 'accepted' }, 'parcels[0].area_m2': { kind: 'edited', value: view?.editValue ?? '' } }, { parties: [] });
         expect(saved).toMatchObject({ ok: true, plan: { acceptedFields: { 'parcels[0].area_m2': { decision: 'edited', value: area } } } });
       },
     );

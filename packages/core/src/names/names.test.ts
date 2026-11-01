@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { compareVietnameseNames, givenName, idLast4, sortKeyVietnameseName } from './index';
+import { compareVietnameseNames, givenName, idLast4, sameName, sortKeyVietnameseName } from './index';
 
 describe('givenName', () => {
   it('is the last word of the full name, which a reminder greets', () => {
@@ -59,5 +59,32 @@ describe('idLast4', () => {
     expect(idLast4('55')).toBe('55');
     expect(idLast4('a5-5b')).toBe('55');
     expect(idLast4('')).toBe('');
+  });
+});
+
+describe('sameName', () => {
+  it.each([
+    ['the old and new tone placement', 'Lê Thị Hoà Demo', 'Lê Thị Hòa Demo'],
+    ['the old and new tone placement on uy', 'Phạm Thị Thuỷ Demo', 'Phạm Thị Thủy Demo'],
+    ['the old and new tone placement on oe', 'Trần Văn Khoẻ Demo', 'Trần Văn Khỏe Demo'],
+    ['one side written without diacritics', 'Nguyen Thi Lan', 'NGUYỄN THỊ LAN'],
+    ['one side without diacritics or đ', 'Dang Quoc Demo', 'Đặng Quốc Demo'],
+    ['a title Ông', 'Ông Trần Văn Demo', 'Trần Văn Demo'],
+    ['a title Bà with a colon, as a certificate prints it', 'Bà: NGUYỄN THỊ DEMO', 'Nguyễn Thị Demo'],
+    ['a title Hộ ông', 'Hộ ông Trần Văn Demo', 'trần văn demo'],
+    ['a title Hộ bà', 'Hộ bà Nguyễn Thị Demo', 'Nguyễn  Thị Demo'],
+    ['NFD against NFC', 'Võ Thị Demo Mai'.normalize('NFD'), 'Võ Thị Demo Mai'],
+  ])('matches %s', (_case, a, b) => {
+    expect(sameName(a, b)).toBe(true);
+    expect(sameName(b, a)).toBe(true);
+  });
+
+  it.each([
+    ['another person', 'Trần Văn Demo', 'Nguyễn Thị Demo'],
+    ['another tone, both sides marked', 'Nguyễn Thị Lan', 'Nguyễn Thị Lân'],
+    ['another vowel, both sides marked', 'Lê Văn Demo Hà', 'Lê Văn Demo Hạ'],
+    ['a name that only shares the title', 'Bà Nguyễn Thị Demo', 'Bà Nguyễn Thị Demo Lan'],
+  ])('tells apart %s', (_case, a, b) => {
+    expect(sameName(a, b)).toBe(false);
   });
 });

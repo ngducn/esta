@@ -31,6 +31,8 @@ export type ReviewData = PagePreviews & {
   readonly canEdit: boolean;
   /** Only for a document filed without a property, which needs one before it is saved. */
   readonly properties: readonly { readonly id: string; readonly nickname: string }[];
+  /** The certificate address of the document's property, or of each property it may be filed on, by property id. */
+  readonly certificateAddresses: Readonly<Record<string, string | null>>;
 };
 
 /** The document and its latest extraction under the member's RLS; another household's document reads as absent. */
@@ -60,8 +62,8 @@ export async function loadReview(documentId: string): Promise<ReviewData | null>
     signPagePreviews(member.household.id, documentId),
     readDocumentStatuses(documentId, 'document'),
     document.property_id === null
-      ? supabase.from('properties').select('id, nickname').eq('household_id', member.household.id).order('nickname')
-      : Promise.resolve({ data: [] }),
+      ? supabase.from('properties').select('id, nickname, certificate_address_text').eq('household_id', member.household.id).order('nickname')
+      : supabase.from('properties').select('id, nickname, certificate_address_text').eq('household_id', member.household.id).eq('id', document.property_id),
   ]);
   const row = latest.data;
   const extraction = row !== null && isSchemaName(row.schema_name) ? { id: row.id, status: row.status as ExtractionStatus, schemaName: row.schema_name, result: row.result } : null;
@@ -80,7 +82,8 @@ export async function loadReview(documentId: string): Promise<ReviewData | null>
     ...previews,
     statuses: statuses ?? { statuses: {}, workerOffline: false, offlineSince: null },
     canEdit: member.role !== 'viewer',
-    properties: properties.data ?? [],
+    properties: document.property_id === null ? (properties.data ?? []).map(({ id, nickname }) => ({ id, nickname })) : [],
+    certificateAddresses: Object.fromEntries((properties.data ?? []).map((row) => [row.id, row.certificate_address_text])),
   };
 }
 

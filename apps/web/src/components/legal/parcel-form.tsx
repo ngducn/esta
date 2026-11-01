@@ -3,7 +3,8 @@
 import { formatArea } from '@esta/core/format';
 import { measureInputText, parseMeasureInput } from '@esta/core/parse/measure';
 import { purposesMismatch } from '@esta/core/properties/area';
-import { PARCEL_UNIDENTIFIED, USE_FORMS, newParcelSchema, type Parcel } from '@esta/core/schemas/legal';
+import { UNIDENTIFIED } from '@esta/core/schemas/identity';
+import { USE_FORMS, newParcelSchema, type Parcel } from '@esta/core/schemas/legal';
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { Group, TextField } from '@/components/form-parts';
@@ -66,7 +67,7 @@ export function ParcelForm({
       origin_text: originText,
     };
     const checked = itemId === null ? newParcelSchema.safeParse(input) : null;
-    if (checked !== null && !checked.success && checked.error.issues.some((issue) => issue.message === PARCEL_UNIDENTIFIED)) {
+    if (checked !== null && !checked.success && checked.error.issues.some((issue) => issue.message === UNIDENTIFIED)) {
       setInvalid('identity');
       return null;
     }
@@ -75,14 +76,8 @@ export function ParcelForm({
   };
 
   return (
-    <LegalFormShell propertyId={propertyId} kind="parcels" itemId={itemId} read={submit}>
+    <LegalFormShell propertyId={propertyId} kind="parcels" itemId={itemId} read={submit} refusal={invalid === 'identity' ? t('parcelUnidentified') : null}>
       <Group title={t('groupParcel')}>
-        {invalid === 'identity' ? (
-          <p data-testid="parcel-unidentified" role="alert" className="flex items-start gap-2 text-body text-overdue">
-            <StatusShape status="overdue" className="mt-1 size-4" />
-            <span>{t('parcelUnidentified')}</span>
-          </p>
-        ) : null}
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField label={t('parcelNo')} inputId="parcel-no" value={parcelNo} maxLength={20} error={null} onChange={setParcelNo} />
           <TextField label={t('mapSheetNo')} inputId="map-sheet-no" value={mapSheetNo} maxLength={20} error={null} onChange={setMapSheetNo} />

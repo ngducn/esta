@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { parseSlot } from '../scripts/slot.ts';
 import { slotEnv } from '../scripts/slot-env.ts';
 import { seedId } from '../supabase/seed/generator/ids.ts';
+import { memberRest } from './helpers/auth-api';
 import { signIn } from './helpers/inbucket';
 import { accessToken } from './helpers/session';
 
@@ -133,6 +134,17 @@ test('rule 3: an electricity account on Phòng 2 lists under Phòng 2 and a wate
   const water = group('Cả tài sản').getByTestId('account-row').filter({ hasText: 'NB0123456789' });
   await expect(water).toContainText('Nước · Cấp nước Demo Bình Dương');
   expect(await seriousAxeViolations(page)).toEqual([]);
+});
+
+test('tapping Lưu on an empty account form says what is missing and adds no account (#356)', async ({ page }) => {
+  await open(page, 'ryan.lane3@demo.esta.test', 'light', PHONE);
+  await page.goto(`${rentalPath(3, 'bien-hoa')}/accounts/new`);
+  await expect(page.getByTestId('form-loading')).toHaveCount(0);
+  await page.getByTestId('save-account').click();
+  await expect(page.getByTestId('form-error')).toHaveText('Tài khoản này chưa có gì để nhận ra. Điền nhà cung cấp, mã khách hàng hoặc tên chủ hợp đồng.');
+  await expect(page).toHaveURL(/\/accounts\/new$/);
+  const blank = await memberRest<unknown[]>(page, 'GET', `utility_accounts?property_id=eq.${propertyId(3, 'bien-hoa')}&provider=is.null&customer_code=is.null&holder_name=is.null&select=id`);
+  expect(blank).toEqual([]);
 });
 
 test('rule 4: Tài sản sorted by Giá thuê leads with Dãy trọ Dĩ An at 15,6 tr and leaves the land without rent last (PRP-8)', async ({ page }) => {

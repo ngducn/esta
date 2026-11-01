@@ -1,7 +1,8 @@
 'use client';
 
 import type { IsoDate } from '@esta/core/date';
-import { CERTIFICATE_FORMS, CERTIFICATE_STATUSES, type Certificate } from '@esta/core/schemas/legal';
+import { UNIDENTIFIED } from '@esta/core/schemas/identity';
+import { CERTIFICATE_FORMS, CERTIFICATE_STATUSES, identifiedCertificateSchema, type Certificate } from '@esta/core/schemas/legal';
 import { usedNewParties } from '@esta/core/schemas/party';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
@@ -41,17 +42,19 @@ export function CertificateForm({
   const [annotations, setAnnotations] = useState<readonly AnnotationDraft[]>(() => (initial?.annotations ?? []).map((annotation, index) => annotationDraft(index, annotation)));
   const [nextKey, setNextKey] = useState(annotations.length);
   const [invalid, setInvalid] = useState<MortgageInvalid | null>(null);
+  const [unidentified, setUnidentified] = useState(false);
 
   const activeMortgage = status === 'mortgaged' || showMortgage ? mortgage : mortgageDraft(null);
 
   const submit = () => {
+    setUnidentified(false);
     const read = readMortgage(status, activeMortgage);
     if (!read.ok) {
       setInvalid(read.invalid);
       return null;
     }
     setInvalid(null);
-    return {
+    const input = {
       form,
       serial_no: serialNo,
       book_entry_no: bookEntryNo,
@@ -62,6 +65,10 @@ export function CertificateForm({
       mortgage: read.value,
       annotations: readAnnotations(annotations),
     };
+    const checked = identifiedCertificateSchema.safeParse(input);
+    const blank = !checked.success && checked.error.issues.some((issue) => issue.message === UNIDENTIFIED);
+    setUnidentified(blank);
+    return blank ? null : input;
   };
 
   return (
@@ -70,6 +77,7 @@ export function CertificateForm({
       kind="certificates"
       itemId={itemId}
       read={submit}
+      refusal={unidentified ? t('certificateUnidentified') : null}
       newParties={() => usedNewParties(pending, [...holders, activeMortgage.bankId])}
     >
       <Group title={t('groupCertificate')}>

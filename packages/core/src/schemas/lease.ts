@@ -3,6 +3,7 @@ import { BILLING_CYCLES, LEASE_STATUSES, PERIOD_ANCHORS, PRORATIONS, TAX_PAYERS,
 import { MAX_AMOUNT_VND, vnd } from '../money/vnd';
 import { normalizePhone, type Phone } from '../phone';
 import type { Amendment, Escalation, SchedulePeriod } from '../schedule/types';
+import { identifies, UNIDENTIFIED } from './identity';
 import { isoDateSchema, text } from './legal';
 import { vndSchema } from './property';
 
@@ -46,6 +47,8 @@ export const leaseDraftSchema = z
   })
   .refine((lease) => lease.start_date === null || lease.end_date === null || lease.end_date >= lease.start_date, { path: ['end_date'] });
 export type LeaseDraft = z.output<typeof leaseDraftSchema>;
+
+export const newLeaseDraftSchema = leaseDraftSchema.refine(identifies('leaseDraft'), { error: UNIDENTIFIED });
 
 /** LSE-1: a tenant is a name and a phone, normalized so Zalo and reminders can use it. */
 export const tenantSchema = z.strictObject({

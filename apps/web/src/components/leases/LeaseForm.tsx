@@ -2,6 +2,7 @@
 
 import { BILLING_CYCLES, PERIOD_ANCHORS, PRORATIONS, TAX_PAYERS, UTILITIES_MODES, activationRefusals, type ActivationRefusal, type LeaseFormDefaults } from '@esta/core/lease';
 import { parseOptionalDateInput } from '@esta/core/parse/date-input';
+import { identifies } from '@esta/core/schemas/identity';
 import { ChevronDown, ScanText } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
@@ -27,7 +28,7 @@ import { TenantQuickAdd } from './TenantQuickAdd';
 const loadDialog = () => import('./ActivateLeaseDialog');
 const ActivateLeaseDialog = lazy(loadDialog);
 
-type FormError = 'invalid' | 'notDraft' | 'document' | 'network' | null;
+type FormError = 'invalid' | 'unidentified' | 'notDraft' | 'document' | 'network' | null;
 
 const asDefault = (text: string) => {
   const date = parseOptionalDateInput(text);
@@ -96,6 +97,10 @@ export function LeaseForm({
       return;
     }
     setInvalid(null);
+    if (leaseId === null && !identifies('leaseDraft')(draft.value)) {
+      setError('unidentified');
+      return;
+    }
     run(
       () => saveLease(propertyId, leaseId, draft.value, contract?.documentId ?? null),
       (result) => {
@@ -311,7 +316,7 @@ export function LeaseForm({
           </div>
         </details>
         <FormAlert
-          message={error === null ? null : { invalid: t('errorInvalid'), notDraft: t('errorNotDraft'), document: t('errorDocument'), network: t('errorNetwork') }[error]}
+          message={error === null ? null : { invalid: t('errorInvalid'), unidentified: t('errorUnidentified'), notDraft: t('errorNotDraft'), document: t('errorDocument'), network: t('errorNetwork') }[error]}
           data-testid="form-error"
         />
         <FormActions>

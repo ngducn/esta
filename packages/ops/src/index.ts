@@ -1,5 +1,5 @@
 export { billRowSchema, leaseActivate, type Activated, type ActivationOpRefusal } from './activation-op';
-export { isCommuneOf, suggestCurrentUnits, type CurrentUnitSuggestion } from './address';
+export { currentProvinces, isCommuneOf, suggestCurrentUnits, type CurrentUnitSuggestion } from './address';
 export {
   applyPlan,
   MAX_ITEMS,

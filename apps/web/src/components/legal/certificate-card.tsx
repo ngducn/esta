@@ -1,4 +1,5 @@
 import { formatDate, formatVnd } from '@esta/core/format';
+import { shownStatus } from '@esta/core/schemas/legal';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { StatusShape, statusMarks } from '@/components/status-shape';
 import { cn } from '@/lib/utils';
@@ -6,7 +7,7 @@ import type { LegalRow } from '@esta/ops';
 import type { PartyOption } from '@/server/properties/legal';
 import { LegalCard } from './legal-card';
 
-const statusMark = { valid: 'paid', mortgaged: 'due', replaced: 'ended', lost: 'overdue' } as const;
+const statusMark = { valid: 'paid', undated: 'draft', mortgaged: 'due', replaced: 'ended', lost: 'overdue' } as const;
 
 export async function CertificateCard({
   propertyId,
@@ -22,7 +23,8 @@ export async function CertificateCard({
   const [t, locale] = await Promise.all([getTranslations('propertyLegal'), getLocale()]);
   const holders = certificate.holder_party_ids.flatMap((id) => parties.get(id)?.fullName ?? []);
   const { mortgage } = certificate;
-  const mark = statusMark[certificate.status];
+  const status = shownStatus(certificate);
+  const mark = statusMark[status];
   const facts = [
     certificate.serial_no === null ? null : t('serial', { serial: certificate.serial_no }),
     certificate.book_entry_no === null ? null : t('bookEntry', { entry: certificate.book_entry_no }),
@@ -40,11 +42,11 @@ export async function CertificateCard({
     >
       <p
         data-testid="certificate-status"
-        data-status={certificate.status}
+        data-status={status}
         className={cn('inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1 text-small font-medium', statusMarks[mark].pill)}
       >
         <StatusShape status={mark} className="size-4" />
-        {t('status', { status: certificate.status })}
+        {t('status', { status })}
       </p>
       {mortgage === null ? null : (
         <div data-testid="certificate-mortgage" className="flex flex-col gap-0.5 rounded-md bg-surface-2 px-3 py-2">
