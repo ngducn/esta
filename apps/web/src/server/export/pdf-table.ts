@@ -64,7 +64,7 @@ export async function toPdfTable(table: ExportTable, header: PdfHeader): Promise
     bold,
   );
   const drawColumnHeader = () => {
-    drawRow(columnHeader, bold, 'ink-2');
+    drawRow(columnHeader, bold, 'text-secondary');
     rule('text', 1);
   };
   const row = (line: ExportRow, font: PDFFont) => {
@@ -77,11 +77,11 @@ export async function toPdfTable(table: ExportTable, header: PdfHeader): Promise
       pen.y = A4_LANDSCAPE.height - MARGIN;
       drawColumnHeader();
     }
-    drawRow(cells, font, 'ink');
+    drawRow(cells, font, 'text');
   };
 
-  heading(pen, header.title, bold, 14, 'ink');
-  for (const note of header.notes) heading(pen, note, regular, SIZE, 'ink-2');
+  heading(pen, header.title, bold, 14, 'text');
+  for (const note of header.notes) heading(pen, note, regular, SIZE, 'text-secondary');
   pen.y -= 8;
   drawColumnHeader();
   for (const line of table.rows) {

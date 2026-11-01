@@ -108,7 +108,7 @@ export function DataTable<Row>({
                   key={id}
                   data-selected={isSelected || undefined}
                   className={cn(
-                    'data-selected:bg-border/50',
+                    'data-selected:bg-accent-subtle',
                     'max-sm:grid max-sm:items-center max-sm:gap-x-3 max-sm:gap-y-0.5 max-sm:border-b max-sm:border-border max-sm:py-2',
                     selectable ? 'max-sm:grid-cols-[auto_1fr_auto]' : 'max-sm:grid-cols-[1fr_auto]',
                   )}

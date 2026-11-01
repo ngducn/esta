@@ -136,7 +136,7 @@ export function HolderPicker({
                   type="button"
                   aria-label={t('partyRemove', { name })}
                   onClick={() => onChange(selected.filter((other) => other !== id))}
-                  className="flex size-9 items-center justify-center rounded-full text-text-muted hover:bg-border hover:text-text"
+                  className="flex size-9 items-center justify-center rounded-full text-text-muted hover:bg-fill-hover hover:text-text"
                 >
                   <X className="size-4" aria-hidden="true" />
                 </button>

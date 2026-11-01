@@ -8,7 +8,7 @@ import { NAME_MAX_LENGTH } from './limits';
 const ROLES: readonly Role[] = ['admin', 'member', 'viewer'];
 
 const fieldClass = 'min-h-touch w-full rounded-md border border-border-field bg-surface px-3.5 text-body text-text transition-colors duration-(--duration-fast) ease-standard hover:border-border-field aria-invalid:border-danger-text';
-const primaryClass = 'inline-flex min-h-touch w-full items-center justify-center gap-2 rounded-md bg-accent px-4 font-medium text-on-accent transition-colors duration-(--duration-fast) ease-standard hover:bg-accent/90 disabled:opacity-60';
+const primaryClass = 'inline-flex min-h-touch w-full items-center justify-center gap-2 rounded-md bg-accent px-4 font-medium text-on-accent transition-colors duration-(--duration-fast) ease-standard hover:bg-accent-hover active:bg-accent-pressed disabled:opacity-60';
 
 const initialCreate: CreateHouseholdState = { householdName: '', displayName: '', errors: {} };
 const initialInvite: InviteState = { status: 'idle' };

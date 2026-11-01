@@ -244,7 +244,7 @@ function MoveButton({ direction, label, disabled, onMove }: { direction: Directi
       aria-label={direction === 'up' ? t('moveUpLabel', { label }) : t('moveDownLabel', { label })}
       className={cn(
         'inline-flex min-h-touch min-w-touch items-center justify-center gap-1.5 px-3 text-body-sm font-medium text-text transition-colors duration-(--duration-fast) ease-standard select-none',
-        'first:rounded-l-md last:rounded-r-md not-first:border-l not-first:border-border-strong hover:bg-fill-hover active:bg-border disabled:cursor-not-allowed disabled:text-text-muted disabled:hover:bg-transparent',
+        'first:rounded-l-md last:rounded-r-md not-first:border-l not-first:border-border-strong hover:bg-fill-hover active:bg-fill-pressed disabled:cursor-not-allowed disabled:text-text-muted disabled:hover:bg-transparent',
         '[&_svg]:pointer-events-none [&_svg]:size-5 [&_svg]:shrink-0',
       )}
     >

@@ -18,7 +18,7 @@ type Move = Extract<CaptureAction, { url: string }>['type'];
 
 const PHOTO_TYPES = 'image/jpeg,image/png,image/webp';
 const pickerClass =
-  'relative inline-flex min-h-touch cursor-pointer items-center justify-center gap-2 rounded-md px-4 text-body font-medium has-[:disabled]:cursor-not-allowed has-[:disabled]:bg-border has-[:disabled]:text-text-muted has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus-ring';
+  'relative inline-flex min-h-touch cursor-pointer items-center justify-center gap-2 rounded-md px-4 text-body font-medium has-[:disabled]:cursor-not-allowed has-[:disabled]:bg-fill-disabled has-[:disabled]:text-text-muted has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus-ring';
 
 /**
  * Asks inside the sheet, as the duplicate warning does, so the sheet's focus trap never holds the answer out of reach.

@@ -11,7 +11,7 @@ export type Around = readonly [before: string, after: string];
 export const fieldClass =
   'min-h-touch w-full rounded-md border border-border-field bg-surface px-3.5 text-body text-text transition-colors duration-(--duration-fast) ease-standard hover:border-border-field aria-invalid:border-danger-text';
 export const primaryClass =
-  'inline-flex min-h-touch w-full items-center justify-center gap-2 rounded-md bg-accent px-4 font-medium text-on-accent transition-colors duration-(--duration-fast) ease-standard hover:bg-accent/90 disabled:opacity-60';
+  'inline-flex min-h-touch w-full items-center justify-center gap-2 rounded-md bg-accent px-4 font-medium text-on-accent transition-colors duration-(--duration-fast) ease-standard hover:bg-accent-hover active:bg-accent-pressed disabled:opacity-60';
 const secondaryClass =
   'min-h-touch px-2 font-medium text-text underline decoration-text-muted underline-offset-4 disabled:no-underline disabled:opacity-60';
 export const outlineClass =

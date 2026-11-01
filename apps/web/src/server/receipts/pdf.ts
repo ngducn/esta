@@ -48,7 +48,7 @@ function room(pen: Pen, needed: number): void {
 }
 
 /** Draws wrapped text from the pen's line down and moves the pen below it. */
-function text(pen: Pen, value: string, x: number, width: number, { font = 'regular', size = 10, color = 'ink' }: Style = {}): void {
+function text(pen: Pen, value: string, x: number, width: number, { font = 'regular', size = 10, color = 'text' }: Style = {}): void {
   for (const line of wrap(value, face(pen, font), size, width)) {
     room(pen, size * LEADING);
     pen.page.drawText(line, { x, y: pen.y - size, size, font: face(pen, font), color: tone(color) });
@@ -56,7 +56,7 @@ function text(pen: Pen, value: string, x: number, width: number, { font = 'regul
   }
 }
 
-function rightText(pen: Pen, value: string, { font = 'regular', size = 10, color = 'ink' }: Style = {}): void {
+function rightText(pen: Pen, value: string, { font = 'regular', size = 10, color = 'text' }: Style = {}): void {
   const used = face(pen, font);
   pen.page.drawText(value, { x: RIGHT - used.widthOfTextAtSize(value, size), y: pen.y - size, size, font: used, color: tone(color) });
 }
@@ -69,7 +69,7 @@ function rule(pen: Pen, color: ColorToken, thickness: number): void {
 function field(pen: Pen, label: string, value: string, style: Style = {}): void {
   room(pen, Math.max(height(pen, label, LABEL_COLUMN - 8), height(pen, value, RIGHT - LEFT - LABEL_COLUMN, style)));
   const top = pen.y;
-  text(pen, label, LEFT, LABEL_COLUMN - 8, { color: 'ink-muted' });
+  text(pen, label, LEFT, LABEL_COLUMN - 8, { color: 'text-muted' });
   const below = pen.y;
   pen.y = top;
   text(pen, value, LEFT + LABEL_COLUMN, RIGHT - LEFT - LABEL_COLUMN, style);
@@ -95,9 +95,9 @@ function qrBlock(pen: Pen, receipt: Receipt): void {
   const width = RIGHT - x;
   const notes: readonly [string, Style][] = [
     [receipt.labels.scanToPay, { font: 'bold' }],
-    [receipt.labels.memo, { color: 'ink-muted', size: 9 }],
+    [receipt.labels.memo, { color: 'text-muted', size: 9 }],
     [qr.memo, { font: 'bold', size: 12 }],
-    [receipt.labels.account, { color: 'ink-muted', size: 9 }],
+    [receipt.labels.account, { color: 'text-muted', size: 9 }],
     [`${qr.bank} · ${qr.accountNo}`, {}],
     [qr.accountName, {}],
   ];
@@ -130,13 +130,13 @@ export async function renderReceiptPdf(receipt: Receipt): Promise<Uint8Array> {
   const { pdf, regular, bold } = await openPdf(receipt.title, 'vi');
   const pen: Pen = { pdf, page: pdf.addPage([A5_PT.width, A5_PT.height]), regular, bold, y: TOP };
 
-  rightText(pen, `${receipt.labels.number} ${receipt.number}`, { size: 9, color: 'ink-muted' });
+  rightText(pen, `${receipt.labels.number} ${receipt.number}`, { size: 9, color: 'text-muted' });
   text(pen, receipt.header, LEFT, RIGHT - LEFT - 130, { font: 'bold', size: 12 });
   pen.y -= 4;
-  rule(pen, 'ink', 1);
+  rule(pen, 'text', 1);
   pen.y -= 18;
   text(pen, receipt.title, LEFT, RIGHT - LEFT, { font: 'bold', size: 20 });
-  text(pen, `${receipt.labels.issuedOn} ${receipt.issuedOn}`, LEFT, RIGHT - LEFT, { size: 9, color: 'ink-muted' });
+  text(pen, `${receipt.labels.issuedOn} ${receipt.issuedOn}`, LEFT, RIGHT - LEFT, { size: 9, color: 'text-muted' });
   pen.y -= 10;
   field(pen, receipt.labels.tenant, receipt.tenant, { font: 'bold' });
   field(pen, receipt.labels.place, receipt.place);
@@ -147,19 +147,19 @@ export async function renderReceiptPdf(receipt: Receipt): Promise<Uint8Array> {
   for (const line of receipt.lines) {
     amountRow(pen, line.label, line.amount);
     pen.y -= 2;
-    rule(pen, 'rule-strong', 0.5);
+    rule(pen, 'border-strong', 0.5);
     pen.y -= 6;
   }
   pen.y += 2;
-  rule(pen, 'ink', 1);
+  rule(pen, 'text', 1);
   pen.y -= 8;
   amountRow(pen, receipt.labels.total, receipt.total, { font: 'bold', size: 14 });
-  if (receipt.totalWords !== null) text(pen, `${receipt.labels.words} ${receipt.totalWords}`, LEFT, RIGHT - LEFT, { color: 'ink-2' });
+  if (receipt.totalWords !== null) text(pen, `${receipt.labels.words} ${receipt.totalWords}`, LEFT, RIGHT - LEFT, { color: 'text-secondary' });
   pen.y -= 6;
   if (receipt.received !== null) amountRow(pen, receipt.labels.received, receipt.received);
   amountRow(pen, receipt.labels.outstanding, receipt.outstanding, { font: 'bold' });
   pen.y -= 14;
-  if (receipt.paid) text(pen, receipt.labels.paidInFull, LEFT, RIGHT - LEFT, { font: 'bold', size: 12, color: 'paid' });
+  if (receipt.paid) text(pen, receipt.labels.paidInFull, LEFT, RIGHT - LEFT, { font: 'bold', size: 12, color: 'success-text' });
   else qrBlock(pen, receipt);
   return pdf.save({ useObjectStreams: true });
 }

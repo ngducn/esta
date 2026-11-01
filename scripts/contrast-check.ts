@@ -3,7 +3,7 @@ import { pathToFileURL } from 'node:url';
 import { blendHex, contrastRatio } from '../apps/web/src/design/contrast.ts';
 import { colorPairs, grounds, minimumRatio, type ColorPair } from '../apps/web/src/design/text-pairs.ts';
 import { colors, type ColorToken, type Hex, type Theme } from '../apps/web/src/design/tokens.ts';
-import { findUnlistedPairs } from './used-color-pairs.ts';
+import { findRetiredNames, findUnlistedPairs } from './used-color-pairs.ts';
 
 export type Palette = Record<ColorToken, Record<Theme, Hex>>;
 
@@ -83,12 +83,14 @@ function main(): void {
   for (const problem of tokenProblems) console.log(`FAIL ${problem}`);
   const unlisted = findUnlistedPairs();
   for (const pair of unlisted) console.log(`FAIL ${pair} is drawn but not listed in text-pairs.ts`);
+  const retired = findRetiredNames();
+  for (const name of retired) console.log(`FAIL ${name} is a retired 2026-10 name; rerun the RD-1 codemod or use the role token`);
   const failed = results.filter((r) => !r.ok).length;
   const selectionFailed = selection.some((r) => !r.ok);
   console.log(
-    `contrast: ${results.length - failed}/${results.length} pairs pass, ${tokenProblems.length} token problems, ${unlisted.length} unlisted pairs`,
+    `contrast: ${results.length - failed}/${results.length} pairs pass, ${tokenProblems.length} token problems, ${unlisted.length} unlisted pairs, ${retired.length} retired names`,
   );
-  if (failed > 0 || selectionFailed || tokenProblems.length > 0 || unlisted.length > 0) process.exit(1);
+  if (failed > 0 || selectionFailed || tokenProblems.length > 0 || unlisted.length > 0 || retired.length > 0) process.exit(1);
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) main();
