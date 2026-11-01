@@ -290,7 +290,7 @@ test('rule 3: Ryan accepts a certificate held by Nguyễn Thị Demo; her party 
   expect(audit.every((entry) => entry.actor_kind === 'user' && entry.actor_id === userOf('ryan', 3))).toBe(true);
 });
 
-test('rule 4: a blank page the assistant cannot read is entered by hand beside its image and saves a parcel', async ({ page, request }) => {
+test('rule 4: a blank page the assistant cannot read is entered by hand beside its image, asks for what tells the certificate apart, and saves a parcel', async ({ page, request }) => {
   await startWorker();
   await open(page, 'ryan.lane4@demo.esta.test', 'dark', DESKTOP);
   await page.goto(`/properties/${propertyId(4, 'bao-loc')}/documents`);
@@ -323,6 +323,15 @@ test('rule 4: a blank page the assistant cannot read is entered by hand beside i
   await row(page, 'form').getByTestId('field-done').click();
   await editField(page, 'parcels[0].parcel_no', '12');
   await editField(page, 'parcels[0].area_m2', '300');
+  await page.getByTestId('review-submit').click();
+  await expect(page.getByTestId('review-error')).toHaveText(
+    'Giấy chứng nhận này chưa có gì để nhận ra. Điền số phát hành, số vào sổ cấp giấy, ngày cấp hoặc họ tên người đứng tên rồi lưu.',
+  );
+  for (const path of ['serial_no', 'book_entry_no', 'issued_on', 'holders[0].full_name']) {
+    await expect(row(page, path).getByTestId('field-error'), path).toHaveText('Điền ô này hoặc một ô khác được đánh dấu.');
+  }
+  expect(await extractions(page, documentId)).toHaveLength(1);
+  await editField(page, 'serial_no', 'AB 123456');
   await page.getByTestId('review-submit').click();
   await expect(page).toHaveURL(`/properties/${propertyId(4, 'bao-loc')}/legal`, { timeout: 15_000 });
 

@@ -228,15 +228,15 @@ test('Đất vườn Long An shows a paper-only certificate with no issue date a
   await expect(parcels(page).getByTestId('parcel-area')).toHaveText('Chưa có diện tích');
 });
 
-test('tapping Lưu on an empty parcel form says what is missing and adds no row', async ({ page }) => {
+test('tapping Lưu on an empty parcel form says beside Lưu what is missing and adds no row', async ({ page }) => {
   await open(page, 'ryan.lane6@demo.esta.test', 'light', PHONE);
   await page.goto(`${legalPath(6, 'long-an')}/parcels/new`);
   await expect(page.getByTestId('form-loading')).toHaveCount(0);
   await page.getByTestId('save-legal-item').click();
-  await expect(page.getByTestId('parcel-unidentified')).toHaveText(
+  await expect(page.getByTestId('form-error')).toHaveText(
     'Thửa này chưa có gì để nhận ra. Điền số thửa, tờ bản đồ hoặc diện tích. Đất chỉ có giấy tay thì ghi nguồn gốc sử dụng.',
   );
-  await expect(page.getByTestId('form-error')).toBeVisible();
+  await expect(page.getByTestId('form-error')).toBeInViewport();
   await expect(page).toHaveURL(/\/parcels\/new$/);
 
   await page.goto(legalPath(6, 'long-an'));
@@ -244,14 +244,17 @@ test('tapping Lưu on an empty parcel form says what is missing and adds no row'
   await expect(parcels(page).getByRole('heading', { level: 3 })).toHaveText('Thửa chưa có số');
 });
 
-test('tapping Lưu on an empty certificate form says what is missing and adds no certificate (#356)', async ({ page }) => {
+test('tapping Lưu on an empty certificate form says beside Lưu what to fill and adds no certificate (#356)', async ({ page }) => {
   await open(page, 'ryan.lane6@demo.esta.test', 'light', PHONE);
   await page.goto(`${legalPath(6, 'long-an')}/certificates/new`);
   await expect(page.getByTestId('form-loading')).toHaveCount(0);
   await page.getByTestId('save-legal-item').click();
-  await expect(page.getByTestId('certificate-unidentified')).toHaveText(
+  await expect(page.getByTestId('form-error')).toHaveText(
     'Giấy chứng nhận này chưa có gì để nhận ra. Điền số phát hành, số vào sổ cấp giấy hoặc ngày cấp, hoặc chọn người đứng tên.',
   );
+  await expect(page.getByTestId('form-error')).toBeInViewport();
+  await expect(page.getByTestId('save-legal-item')).toBeInViewport();
+  await page.screenshot({ path: test.info().outputPath('certificate-unidentified-beside-save-390-light.png') });
   await expect(page).toHaveURL(/\/certificates\/new$/);
 
   await page.goto(legalPath(6, 'long-an'));
