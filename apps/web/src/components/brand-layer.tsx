@@ -5,7 +5,7 @@ import './brand-layer.css';
 
 /** Spaced capitals over a headline, saying what the page is. */
 export function Eyebrow({ children, className }: { children: ReactNode; className?: string }) {
-  return <span className={cn('block font-display text-xs leading-4 font-medium tracking-[0.18em] text-text-secondary uppercase', className)}>{children}</span>;
+  return <p className={cn('font-display text-xs leading-4 font-medium tracking-[0.18em] text-text-secondary uppercase', className)}>{children}</p>;
 }
 
 const lineClass = 'flex min-w-0 items-end gap-[0.25em]';
