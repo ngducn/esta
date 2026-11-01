@@ -22,7 +22,9 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 
 - **Merged since 2026-11-01:** #368 (d2016c5a), every screen on the 2026-11 design system; #374 (2bbf8891), the shell; #376 (496542e4), the e2e app runs on a clock pinned to 2026-11-01T10:00+07:00 (main had gone red at midnight when a seed lease ended). Lows: #372, #373, #377.
 - **#374 merged** as 2bbf8891: the new shell (tab bar, rail, sidebar, account menu, page header).
-- **RD-2, Tài sản as a workbench.** Running: Sonnet owner, slot 3, `briefs/rd-2.md`, worktree `/tmp/owner-rd-2/wt`, branch esta/rd-2-properties-workbench. Next: its review at verify:tier, then merge.
+- **#381, RD-2 Tài sản as a workbench, head 2f81c2d6, ci green, rigorous** (status, filters and totals moved into packages/core). Running: Opus audit `briefs/pr381-audit.md` (`/tmp/review-381/audit.md`) and Sonnet lane slot 14 `briefs/pr381-lane.md` (`/tmp/review-381/lane/`).
+  - Ryan decisions (defaults apply): "Cần chú ý" counts rent overdue or due today, not missing papers; the filter chip rows stay open on desktop (the owner suggests folding them behind "Bộ lọc").
+  - Next: one Sonnet fix round with the audit's blocking findings, a scoped reader, then merge.
 - **#375, RD-6 sign-in and onboarding on the brand layer, head 3466ec25, rigorous.** Sonnet lane CLEAN; Opus audit ISSUES: B1 the eyebrow's `text-xs` has no theme token, so it renders 16/16 instead of 12/16. Running: Sonnet fix round, slot 2, `briefs/rd-6-ff1.md` (B1 with a red test, brand type and colour tokens, /deslop, /no-comments, merge main, Lighthouse 5 runs per side). Lows #378, #379, #380.
   - Ryan decisions: accept the ~150 ms LCP on /sign-in (default; the audit calls it mostly lab noise) or set the headline in Inter; the logo shows twice on desktop (default: keep, #379).
   - Next: a scoped Sonnet reader of the fix round against B1, then merge on CLEAN plus green ci.
@@ -49,7 +51,7 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 
 ## Budget
 
-Week at 17% at 00:57 on 2026-11-02 (9% at 23:25 the night before). The root pauses new spawns at 30% of the week and tells Ryan; running agents finish.
+Week at 18% at 01:40 on 2026-11-02 (17% at 00:57) (9% at 23:25 the night before). The root pauses new spawns at 30% of the week and tells Ryan; running agents finish.
 
 
 No cap stated for 2026-11-01; the last explicit one was 50% of a 5-hour window, so spawning stops at 30% and owners pause at 38%. Read the plan limits with the session usage tool, which matches /usage; `usage-pct.sh` under-reads. At 23:25 on 2026-11-01 the week stood at 9%. On a 429, resume the owner with SendMessage after the reset.
