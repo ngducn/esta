@@ -1,6 +1,7 @@
-import type { CollectionGroup, CollectionGroupKey, CollectionItem } from '@esta/core/collections';
+import type { BoardTotals, CollectionGroup, CollectionGroupKey, CollectionItem } from '@esta/core/collections';
 import type { IsoDate } from '@esta/core/date';
-import { formatDate, formatMonthWithin, formatRelativeDue, type Locale } from '@esta/core/format';
+import { formatDate, formatMonthWithin, formatRelativeDue } from '@esta/core/format';
+import { FileText } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { QrAction } from '@/components/invoices/QrAction';
@@ -8,7 +9,7 @@ import type { QrSheetLabels } from '@/components/invoices/QrSheet';
 import { MoneyDisplay } from '@/components/money/money-display';
 import { RecordPaymentAction } from '@/components/payments/RecordPaymentAction';
 import type { PaymentAccount } from '@/components/payments/RecordPaymentSheet';
-import { StatusShape, type MarkStatus } from '@/components/status-shape';
+import type { MarkStatus } from '@/components/status-shape';
 import { StatusMark } from '@/components/status-mark';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -22,38 +23,74 @@ import { collectionRowActions } from './rowActions';
 
 export const GROUP_MARKS = { overdue: 'overdue', due: 'due', notDue: 'upcoming', paid: 'paid' } as const satisfies Record<CollectionGroupKey, MarkStatus>;
 
-type Board = readonly CollectionGroup<CollectionRow>[];
-/** Each lease's open invoices, which `Ghi nhận` prefills from and settles. */
-type OpenInvoices = ReadonlyMap<string, readonly PaymentInvoice[]>;
-/** Each owed row's `Mã QR`, by invoice; a row is missing when the household has no default receiving account. */
 /** Each owed row's code, and the default receiving account a transfer recorded from the board lands in. */
 export type BoardQrs = { readonly byInvoice: ReadonlyMap<string, InvoiceQrView>; readonly labels: QrSheetLabels; readonly account: PaymentAccount | null };
 /** Each owed row's `Nhắc qua Zalo`, by invoice. */
 export type BoardReminders = { readonly byInvoice: ReadonlyMap<string, ReminderTarget>; readonly labels: ReminderLabels };
 
-/** Below 640 px every row stacks: place and amount, tenant and due date, the status, then the actions. */
-const cell = {
-  place: 'max-sm:col-start-1 max-sm:row-start-1',
-  amount: 'max-sm:col-start-2 max-sm:row-start-1 max-sm:self-start',
-  tenant: 'max-sm:col-start-1 max-sm:row-start-2',
-  due: 'max-sm:col-start-2 max-sm:row-start-2 max-sm:text-end',
-  status: 'max-sm:col-span-2 max-sm:col-start-1 max-sm:row-start-3',
-  actions: 'max-sm:col-span-2 max-sm:col-start-1 max-sm:row-start-4 max-sm:pt-1',
-} as const;
+export type BoardRowContext = {
+  readonly month: IsoDate;
+  readonly asOf: IsoDate;
+  readonly canEdit: boolean;
+  /** Each lease's open invoices, which `Ghi nhận` prefills from and settles. */
+  readonly openInvoices: ReadonlyMap<string, readonly PaymentInvoice[]>;
+  readonly qrs: BoardQrs;
+  readonly reminders: BoardReminders;
+};
 
-function StatusCell({ item, month, asOf, locale }: { item: CollectionItem<CollectionRow>; month: IsoDate; asOf: IsoDate; locale: Locale }) {
+/**
+ * Under 48rem of its own width the board is a list: place and what is still owed, the due date and what was paid, the
+ * status, then the actions. Up to 64rem it is a table at its full width that scrolls sideways; wider, a name truncates
+ * to make room, and an amount, a date or a badge never wraps.
+ */
+const list = '@max-[48rem]:h-auto @max-[48rem]:min-h-0 @max-[48rem]:border-0 @max-[48rem]:p-0';
+const cell = {
+  place: 'w-full max-w-0 @max-[64rem]:w-auto @max-[64rem]:max-w-none @max-[48rem]:col-start-1 @max-[48rem]:row-start-1 @max-[48rem]:max-w-none',
+  owed: 'text-end whitespace-nowrap @max-[48rem]:col-start-2 @max-[48rem]:row-start-1 @max-[48rem]:self-start',
+  due: 'whitespace-nowrap text-text-secondary @max-[48rem]:col-start-1 @max-[48rem]:row-start-2 @max-[48rem]:text-body-sm',
+  paid: 'text-end whitespace-nowrap @max-[48rem]:col-start-2 @max-[48rem]:row-start-2 @max-[48rem]:text-body-sm @max-[48rem]:text-text-secondary',
+  status: 'whitespace-nowrap @max-[48rem]:col-span-2 @max-[48rem]:col-start-1 @max-[48rem]:row-start-3 @max-[48rem]:whitespace-normal',
+  actions: 'w-px text-end @max-[48rem]:w-auto @max-[48rem]:col-span-2 @max-[48rem]:col-start-1 @max-[48rem]:row-start-4 @max-[48rem]:pt-1 @max-[48rem]:text-start',
+} as const;
+const inlineLabel = 'hidden @max-[48rem]:inline';
+
+/** `text-balance` on a button would let its label wrap inside a cell the table sized to the label's longest word. */
+const mainAction = cn(buttonVariants({ variant: 'secondary', size: 'sm' }), '@min-[48rem]:text-nowrap');
+/** A row's other actions: labelled in the list, an icon on the table with its name shown on hover and focus. */
+const sideAction = cn(
+  buttonVariants({ variant: 'ghost', size: 'sm' }),
+  'relative @min-[48rem]:min-w-control-sm @min-[48rem]:px-0 @min-[48rem]:pointer-coarse:min-w-touch',
+  "after:pointer-events-none after:absolute after:top-full after:right-0 after:z-20 after:mt-1 after:hidden after:rounded-sm after:bg-surface-inverse after:px-2 after:py-1 after:text-caption after:font-medium after:whitespace-nowrap after:text-text-inverse after:shadow-md after:content-[attr(data-label)_/_''] @min-[48rem]:hover:after:block @min-[48rem]:focus-visible:after:block",
+);
+const sideLabel = '@min-[48rem]:sr-only';
+
+function DueCell({ item, month, asOf }: { item: CollectionItem<CollectionRow>; month: IsoDate; asOf: IsoDate }) {
   const t = useTranslations('collections');
-  const { state, carriedFrom } = item;
+  const locale = useLocale();
+  const { row, carriedFrom, state } = item;
   return (
-    <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-      {state.group === 'overdue' ? <StatusMark status="overdue" days={state.days} /> : <StatusMark status={GROUP_MARKS[state.group]} />}
+    <span className="flex flex-col @max-[48rem]:flex-row @max-[48rem]:flex-wrap @max-[48rem]:gap-x-2">
+      <span data-testid="row-due" className="num">
+        <span className={inlineLabel}>{t('duePrefix')} </span>
+        {formatDate(row.dueDate, locale)}
+      </span>
       {carriedFrom === null ? null : (
         <span data-testid="carried-from" className="text-body-sm font-medium text-text-secondary">
           {t('carriedFrom', { month: formatMonthWithin(carriedFrom, month, locale) })}
         </span>
       )}
-      {state.group === 'notDue' ? <span className="text-body-sm text-text-muted">{formatRelativeDue(item.row.dueDate, asOf, locale)}</span> : null}
-      {item.row.paymentStatus === 'partial' ? (
+      {state.group === 'notDue' ? <span className="text-body-sm text-text-muted">{formatRelativeDue(row.dueDate, asOf, locale)}</span> : null}
+    </span>
+  );
+}
+
+function StatusCell({ item }: { item: CollectionItem<CollectionRow> }) {
+  const t = useTranslations('collections');
+  const { state, row } = item;
+  return (
+    <span className="flex w-max flex-col items-start gap-1 @max-[48rem]:w-auto @max-[48rem]:flex-row @max-[48rem]:flex-wrap @max-[48rem]:items-center @max-[48rem]:gap-x-2">
+      {state.group === 'overdue' ? <StatusMark status="overdue" days={state.days} /> : <StatusMark status={GROUP_MARKS[state.group]} />}
+      {row.paymentStatus === 'partial' ? (
         <span data-testid="row-partial" className="text-body-sm font-medium text-text-secondary">
           {t('partial')}
         </span>
@@ -62,190 +99,172 @@ function StatusCell({ item, month, asOf, locale }: { item: CollectionItem<Collec
   );
 }
 
-function CollectionsRow({
-  item,
-  month,
-  asOf,
-  canEdit,
-  openInvoices,
-  qrs,
-  reminders,
-}: {
-  item: CollectionItem<CollectionRow>;
-  month: IsoDate;
-  asOf: IsoDate;
-  canEdit: boolean;
-  openInvoices: OpenInvoices;
-  qrs: BoardQrs;
-  reminders: BoardReminders;
-}) {
+function RowActions({ item, place, context }: { item: CollectionItem<CollectionRow>; place: string; context: BoardRowContext }) {
   const t = useTranslations('collections');
   const locale = useLocale();
   const { row } = item;
-  const qr = qrs.byInvoice.get(row.invoiceId);
-  const reminder = reminders.byInvoice.get(row.invoiceId);
+  const qr = context.qrs.byInvoice.get(row.invoiceId);
+  const reminder = context.reminders.byInvoice.get(row.invoiceId);
+  const shown = collectionRowActions(item, context.canEdit).filter((action) => (action.kind === 'qr' ? qr !== undefined : action.kind !== 'remind' || reminder !== undefined));
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1 @min-[48rem]:flex-nowrap">
+      {shown.map((action, index) => {
+        const className = index === 0 ? mainAction : sideAction;
+        const labelClassName = index === 0 ? undefined : sideLabel;
+        const label = t(action.label);
+        switch (action.kind) {
+          case 'link':
+            return (
+              <Link key={action.id} href={action.href(row)} data-testid={`row-action-${action.id}`} data-label={label} className={className}>
+                <FileText aria-hidden="true" />
+                <span className={labelClassName}>{label}</span>
+              </Link>
+            );
+          case 'qr':
+            return qr === undefined ? null : (
+              <QrAction
+                key={action.id}
+                label={label}
+                title={place}
+                description={t('qrDescription', { number: row.number, date: formatDate(row.dueDate, locale) })}
+                invoiceHref={`/collections/invoices/${row.invoiceId}`}
+                qr={qr}
+                labels={context.qrs.labels}
+                className={className}
+                labelClassName={labelClassName}
+              />
+            );
+          case 'remind':
+            return reminder === undefined ? null : (
+              <ReminderAction key={action.id} label={label} title={place} target={reminder} labels={context.reminders.labels} className={className} labelClassName={labelClassName} />
+            );
+          case 'recordPayment':
+            return (
+              <RecordPaymentAction
+                key={action.id}
+                label={label}
+                className={className}
+                target={{
+                  invoiceId: row.invoiceId,
+                  place,
+                  shortPlace: row.wholeUnit ? row.propertyName : row.unitLabel,
+                  tenantName: row.tenantName,
+                  openInvoices: context.openInvoices.get(row.leaseId) ?? [],
+                  today: context.asOf,
+                  account: context.qrs.account,
+                }}
+              />
+            );
+        }
+      })}
+    </span>
+  );
+}
+
+function CollectionsRow({ item, context }: { item: CollectionItem<CollectionRow>; context: BoardRowContext }) {
+  const t = useTranslations('collections');
+  const { row } = item;
   const place = row.wholeUnit ? row.propertyName : t('place', { unit: row.unitLabel, property: row.propertyName });
+  const tenant = row.tenantName ?? t('noTenant');
   return (
     <TableRow
       data-testid="collections-row"
       data-group={item.state.group}
-      className="max-sm:grid max-sm:grid-cols-[minmax(0,1fr)_auto] max-sm:gap-x-3 max-sm:gap-y-1.5 max-sm:border-b max-sm:border-border max-sm:px-4 max-sm:py-3.5 max-sm:last:border-b-0"
+      className="hover:bg-bg-subtle @max-[48rem]:grid @max-[48rem]:grid-cols-[minmax(0,1fr)_auto] @max-[48rem]:gap-x-3 @max-[48rem]:gap-y-1.5 @max-[48rem]:border-b @max-[48rem]:border-border @max-[48rem]:px-4 @max-[48rem]:py-3.5"
     >
-      <TableCell className={cn('lg:min-w-60 max-sm:border-0 max-sm:p-0', cell.place)}>
-        <span data-testid="row-place" className="block min-w-0 text-body font-medium break-words text-text">
-          {place}
-        </span>
-        {row.propertyArchived ? (
-          <span data-testid="row-archived" className="text-body-sm font-medium text-text-secondary">
-            {t('propertyArchived')}
+      <TableCell className={cn(list, cell.place)}>
+        <span className="flex min-w-0 flex-col" title={`${place} · ${tenant}`}>
+          <span data-testid="row-place" className="truncate font-medium text-text @max-[48rem]:whitespace-normal @max-[48rem]:break-words">
+            {place}
           </span>
-        ) : null}
-      </TableCell>
-      <TableCell className={cn('text-body text-text-secondary max-sm:border-0 max-sm:p-0', cell.tenant)}>
-        <span data-testid="row-tenant" className="break-words">
-          {row.tenantName ?? t('noTenant')}
-        </span>
-      </TableCell>
-      <TableCell className={cn('text-body whitespace-nowrap text-text-secondary max-sm:border-0 max-sm:p-0', cell.due)}>
-        <span data-testid="row-due" className="num">
-          <span className="sm:sr-only">{t('dueOn', { date: formatDate(row.dueDate, locale) })}</span>
-          <span aria-hidden="true" className="max-sm:hidden">
-            {formatDate(row.dueDate, locale)}
+          <span data-testid="row-tenant" className="truncate text-body-sm text-text-secondary @max-[48rem]:whitespace-normal @max-[48rem]:break-words">
+            {tenant}
           </span>
+          {row.propertyArchived ? (
+            <span data-testid="row-archived" className="truncate text-body-sm font-medium text-text-secondary @max-[48rem]:whitespace-normal">
+              {t('propertyArchived')}
+            </span>
+          ) : null}
         </span>
       </TableCell>
-      <TableCell className={cn('max-sm:border-0 max-sm:p-0', cell.status)}>
-        <StatusCell item={item} month={month} asOf={asOf} locale={locale} />
+      <TableCell className={cn(list, cell.due)}>
+        <DueCell item={item} month={context.month} asOf={context.asOf} />
       </TableCell>
-      <TableCell className={cn('text-end max-sm:border-0 max-sm:p-0', cell.amount)}>
-        <MoneyDisplay amount={item.amountVnd} className="text-body font-medium text-text" />
+      <TableCell data-testid="row-owed" className={cn(list, cell.owed)}>
+        <MoneyDisplay amount={row.outstandingVnd} className="font-medium" />
       </TableCell>
-      {/* Wide enough for Nhắc qua Zalo and Xem hợp đồng on one line, so a row's actions take two lines, not three. */}
-      <TableCell className={cn('text-end lg:min-w-[19.5rem] max-sm:border-0 max-sm:p-0 max-sm:text-start', cell.actions)}>
-        <span className="inline-flex flex-wrap gap-2">
-          {collectionRowActions(item, canEdit).map((action) => {
-            switch (action.kind) {
-              case 'link':
-                return (
-                  <Link key={action.id} href={action.href(row)} data-testid={`row-action-${action.id}`} className={buttonVariants({ variant: 'ghost', className: 'max-sm:first:-ml-2' })}>
-                    {t(action.label)}
-                  </Link>
-                );
-              case 'qr':
-                return qr === undefined ? null : (
-                  <QrAction
-                    key={action.id}
-                    label={t(action.label)}
-                    title={place}
-                    description={t('qrDescription', { number: row.number, date: formatDate(row.dueDate, locale) })}
-                    invoiceHref={`/collections/invoices/${row.invoiceId}`}
-                    qr={qr}
-                    labels={qrs.labels}
-                  />
-                );
-              case 'remind':
-                return reminder === undefined ? null : <ReminderAction key={action.id} label={t(action.label)} title={place} target={reminder} labels={reminders.labels} />;
-              case 'recordPayment':
-                return (
-                  <RecordPaymentAction
-                    key={action.id}
-                    label={t(action.label)}
-                    target={{
-                      invoiceId: row.invoiceId,
-                      place,
-                      shortPlace: row.wholeUnit ? row.propertyName : row.unitLabel,
-                      tenantName: row.tenantName,
-                      openInvoices: openInvoices.get(row.leaseId) ?? [],
-                      today: asOf,
-                      account: qrs.account,
-                    }}
-                  />
-                );
-            }
-          })}
-        </span>
+      <TableCell data-testid="row-paid" className={cn(list, cell.paid)}>
+        <span className={inlineLabel}>{t('paidPrefix')} </span>
+        <MoneyDisplay amount={row.allocatedVnd} />
+      </TableCell>
+      <TableCell className={cn(list, cell.status)}>
+        <StatusCell item={item} />
+      </TableCell>
+      <TableCell className={cn(list, cell.actions)}>
+        <RowActions item={item} place={place} context={context} />
       </TableCell>
     </TableRow>
   );
 }
 
-function GroupHeader({ group }: { group: CollectionGroup<CollectionRow> }) {
+function TotalRow({ totals }: { totals: BoardTotals }) {
   const t = useTranslations('collections');
-  const id = `collections-${group.key}`;
+  const foot = 'h-row-h bg-bg-subtle px-cell-x py-1.5 align-middle font-medium text-text @max-[48rem]:h-auto @max-[48rem]:bg-transparent @max-[48rem]:p-0';
   return (
-    <TableRow className="max-sm:flex max-sm:items-center max-sm:justify-between max-sm:gap-3 max-sm:border-b max-sm:border-border max-sm:bg-bg-subtle max-sm:px-4 max-sm:py-3">
-      <TableHead id={id} scope="rowgroup" colSpan={4} className="bg-bg-subtle py-3 max-sm:border-0 max-sm:p-0">
-        <span className="flex flex-wrap items-center gap-x-3 gap-y-1 whitespace-normal">
-          <StatusShape status={GROUP_MARKS[group.key]} />
-          <span data-testid="group-title" className="text-headline font-semibold text-text">
-            {t('group', { group: group.key })}
-          </span>
-          <span data-testid="group-count" className="text-body font-medium text-text-muted">
-            {t('groupCount', { count: group.items.length })}
-          </span>
-        </span>
-      </TableHead>
-      <TableCell className="bg-bg-subtle py-3 text-end max-sm:border-0 max-sm:p-0">
-        {group.items.length === 0 ? null : <MoneyDisplay amount={group.totalVnd} className="text-headline font-medium text-text" />}
-      </TableCell>
-      <TableCell aria-hidden="true" className="bg-bg-subtle py-3 max-sm:hidden" />
-    </TableRow>
+    <tfoot data-testid="collections-total" className="@max-[48rem]:block">
+      <tr className="@max-[48rem]:flex @max-[48rem]:flex-wrap @max-[48rem]:items-baseline @max-[48rem]:justify-between @max-[48rem]:gap-x-4 @max-[48rem]:gap-y-1 @max-[48rem]:rounded-b-lg @max-[48rem]:bg-bg-subtle @max-[48rem]:px-4 @max-[48rem]:py-3">
+        <th scope="row" colSpan={2} className={cn(foot, 'rounded-bl-lg text-start @max-[48rem]:basis-full')}>
+          <span data-testid="total-count">{t('totalLabel', { count: totals.count })}</span>
+        </th>
+        <td data-testid="total-owed" className={cn(foot, 'text-end whitespace-nowrap')}>
+          <span className={inlineLabel}>{t('owedPrefix')} </span>
+          <MoneyDisplay amount={totals.owedVnd} />
+        </td>
+        <td data-testid="total-paid" className={cn(foot, 'text-end whitespace-nowrap')}>
+          <span className={inlineLabel}>{t('paidPrefix')} </span>
+          <MoneyDisplay amount={totals.paidVnd} />
+        </td>
+        <td colSpan={2} aria-hidden="true" className={cn(foot, 'rounded-br-lg @max-[48rem]:hidden')} />
+      </tr>
+    </tfoot>
   );
 }
 
-/** LSE-10: four groups in the order Mẹ reads them, each with its count and total, in one table whose header stays put. */
-export function CollectionsBoard({
-  board,
-  month,
-  monthLabel,
-  asOf,
-  canEdit,
-  openInvoices,
-  qrs,
-  reminders,
-}: {
-  board: Board;
-  month: IsoDate;
-  monthLabel: string;
-  asOf: IsoDate;
-  canEdit: boolean;
-  openInvoices: OpenInvoices;
-  qrs: BoardQrs;
-  reminders: BoardReminders;
-}) {
+const COLUMNS = ['colPlace', 'colDue', 'colOwed', 'colPaid', 'colStatus', 'colActions'] as const;
+
+/** LSE-10's bills under one status tab, in the order Mẹ reads them, each group its own row group, and their total. */
+export function CollectionsBoard({ groups, totals, caption, context }: { groups: readonly CollectionGroup<CollectionRow>[]; totals: BoardTotals; caption: string; context: BoardRowContext }) {
   const t = useTranslations('collections');
   return (
-    <div data-testid="collections-board" className="rounded-lg border border-border bg-surface shadow-xs">
-      <Table className="max-sm:block">
-        <caption className="sr-only">{t('caption', { month: monthLabel })}</caption>
-        <TableHeader className="max-sm:sr-only">
-          <TableRow>
-            {(['colPlace', 'colTenant', 'colDue', 'colStatus', 'colAmount', 'colActions'] as const).map((key, index) => (
-              <TableHead
-                key={key}
-                scope="col"
-                className={cn('sticky top-0 z-10 bg-bg-subtle', index === 0 && 'rounded-tl-lg', index === 5 && 'rounded-tr-lg', (key === 'colAmount' || key === 'colActions') && 'text-end')}
-              >
-                {key === 'colActions' ? <span className="sr-only">{t(key)}</span> : t(key)}
-              </TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        {board.map((group) => (
-          <TableBody key={group.key} data-testid={`group-${group.key}`} aria-labelledby={`collections-${group.key}`} className="max-sm:block">
-            <GroupHeader group={group} />
-            {group.items.length === 0 ? (
-              <TableRow className="max-sm:block">
-                <TableCell colSpan={6} className="text-body text-text-muted max-sm:block max-sm:border-b max-sm:border-border max-sm:px-4">
-                  {t('groupEmpty', { group: group.key })}
-                </TableCell>
-              </TableRow>
-            ) : (
-              group.items.map((item) => <CollectionsRow key={item.row.invoiceId} item={item} month={month} asOf={asOf} canEdit={canEdit} openInvoices={openInvoices} qrs={qrs} reminders={reminders} />)
-            )}
-          </TableBody>
-        ))}
-      </Table>
+    <div data-testid="collections-board" className="@container rounded-lg border border-border bg-surface shadow-xs">
+      <div className="@min-[48rem]:@max-[64rem]:overflow-x-auto">
+        <Table className="@min-[48rem]:@max-[64rem]:w-max @min-[48rem]:@max-[64rem]:min-w-full @max-[48rem]:block">
+          <caption className="sr-only">{caption}</caption>
+          <TableHeader className="@max-[48rem]:sr-only">
+            <TableRow>
+              {COLUMNS.map((key, index) => (
+                <TableHead
+                  key={key}
+                  scope="col"
+                  className={cn('sticky top-0 z-10', index === 0 && 'rounded-tl-lg', index === COLUMNS.length - 1 && 'rounded-tr-lg', (key === 'colOwed' || key === 'colPaid') && 'text-end')}
+                >
+                  {key === 'colActions' ? <span className="sr-only">{t(key)}</span> : t(key)}
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          {groups.map((group) =>
+            group.items.length === 0 ? null : (
+              <TableBody key={group.key} data-testid={`group-${group.key}`} className="@max-[48rem]:block">
+                {group.items.map((item) => (
+                  <CollectionsRow key={item.row.invoiceId} item={item} context={context} />
+                ))}
+              </TableBody>
+            ),
+          )}
+          <TotalRow totals={totals} />
+        </Table>
+      </div>
     </div>
   );
 }

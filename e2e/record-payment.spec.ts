@@ -175,7 +175,7 @@ test('rule 5: 3tr5 by transfer on Phòng 5 October previews 3.500.000 ₫, settl
   await expect(toast(page)).toContainText(`Đã ghi nhận ${vnd('3.500.000')} từ Phòng 5.`);
   const october = row(group(page, 'notDue'), 'Phòng 5, Dãy trọ Dĩ An');
   await expect(october.getByTestId('row-partial')).toHaveText('Thu một phần');
-  await expect(october.locator('data')).toHaveText(vnd('2.100.000'));
+  await expect(october.getByTestId('row-owed').locator('data')).toHaveText(vnd('2.100.000'));
   await expect(group(page, 'overdue').getByTestId('collections-row')).toHaveCount(0);
 });
 

@@ -49,6 +49,8 @@ const group = (page: Page, key: 'overdue' | 'due' | 'notDue' | 'paid') => page.g
 const rows = (scope: Locator) => scope.getByTestId('collections-row');
 const placesIn = (scope: Locator) => rows(scope).getByTestId('row-place').allInnerTexts();
 const row = (scope: Locator, place: string) => rows(scope).filter({ has: scope.page().getByTestId('row-place').getByText(place, { exact: true }) });
+const tab = (page: Page, key: 'all' | 'overdue' | 'due' | 'notDue' | 'paid') => page.locator(`[data-tab="${key}"]`);
+const figure = (page: Page, key: 'paid' | 'owed' | 'overdue') => page.getByTestId(`figure-${key}`).locator('data');
 const noSideScroll = (page: Page) => page.locator('html').evaluate((html) => html.scrollWidth <= html.clientWidth);
 
 async function chooseMonth(page: Page, month: string) {
@@ -80,8 +82,8 @@ test('rule 1 and 2: in October Mẹ finds only Phòng 5 overdue, 12 days from Se
   await expect(page.getByTestId('month-select')).toHaveValue('2026-10');
   await expectOctoberBoard(page);
   await holdForRecording(page);
-  await expect(group(page, 'overdue').getByTestId('group-count')).toHaveText('1 hóa đơn');
-  await expect(group(page, 'notDue').getByTestId('group-count')).toHaveText('6 hóa đơn');
+  await expect(tab(page, 'overdue')).toHaveText('Quá hạn 1');
+  await expect(tab(page, 'notDue')).toHaveText('Chưa đến hạn 6');
   await group(page, 'paid').scrollIntoViewIfNeeded();
   await holdForRecording(page);
   await page.getByTestId('month-select').scrollIntoViewIfNeeded();
@@ -100,7 +102,7 @@ test('the October board reads the same at 1440, in a table whose header names ea
   await open(page, 'me.lane2@demo.esta.test', 'light', DESKTOP);
   await page.goto('/collections');
   await expectOctoberBoard(page);
-  await expect(page.getByRole('columnheader', { name: 'Số tiền' })).toBeVisible();
+  await expect(page.getByRole('columnheader')).toHaveText(['Phòng', 'Hạn thu', 'Còn phải thu', 'Đã thu', 'Trạng thái', 'Việc cần làm']);
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
 
@@ -145,7 +147,7 @@ test('rule 5: the tenant who pays in two transfers shows under Đã thu in Septe
   const paid = row(group(page, 'paid'), 'Phòng 2, Dãy trọ Dĩ An');
   await expect(paid.getByTestId('row-tenant')).toHaveText('Trần Thị Bình Demo');
   await expect(paid.locator('[data-status="paid"]')).toHaveText('Đã thu');
-  await expect(paid.locator('data')).toHaveText(`2.500.000${NBSP}₫`);
+  await expect(paid.getByTestId('row-paid').locator('data')).toHaveText(`2.500.000${NBSP}₫`);
 });
 
 test('rule 6: Xem hợp đồng on Phòng 5 opens its lease with the September period 12 days overdue', async ({ page }) => {
@@ -168,7 +170,7 @@ test('rule 7: in compact density the header stays put, amounts sit right in tabu
     await expect(page.locator('html')).toHaveAttribute('data-density', 'compact');
     await page.getByTestId('group-paid').scrollIntoViewIfNeeded();
     await page.mouse.wheel(0, 400);
-    const header = page.getByRole('columnheader', { name: 'Số tiền' });
+    const header = page.getByRole('columnheader', { name: 'Còn phải thu' });
     const box = await header.boundingBox();
     expect(box?.y ?? -1, 'the column header is still on screen').toBeGreaterThanOrEqual(0);
     expect(await page.evaluate(() => window.scrollY), 'the page scrolled').toBeGreaterThan(0);
@@ -193,8 +195,9 @@ test('rule 8: December 2024 shows one sentence and nothing else', async ({ page 
   await open(page, 'me.lane8@demo.esta.test', 'dark', PHONE);
   await page.goto('/collections');
   await chooseMonth(page, '2024-12');
-  await expect(page.getByTestId('collections-empty')).toHaveText('Không có hóa đơn nào trong tháng 12/2024.');
+  await expect(page.getByTestId('collections-empty')).toHaveText('Tháng 12/2024 không có hóa đơn nào.');
   await expect(page.getByTestId('collections-board')).toHaveCount(0);
+  await expect(page.locator('[data-tab]')).toHaveCount(0);
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
 
@@ -204,9 +207,42 @@ test('rule 9: the Chưa đến hạn total equals what the six invoices due 25/1
   expect(balances).toHaveLength(6);
   const owed = balances.reduce((sum, { outstanding_vnd }) => sum + outstanding_vnd, 0);
   await page.goto('/collections');
-  const total = group(page, 'notDue').locator('th + td data');
+  await tab(page, 'notDue').click();
+  await expect(page.getByTestId('total-count')).toHaveText('Cộng 6 hóa đơn');
+  const total = page.getByTestId('total-owed').locator('data');
   await expect(total).toHaveAttribute('value', String(owed));
   await expect(total).toHaveText(`15.600.000${NBSP}₫`);
+});
+
+test('a status tab takes one tap, survives a reload and a month change, and its total row matches the strip', async ({ page }) => {
+  await open(page, 'ryan.lane3@demo.esta.test', 'light', PHONE);
+  await page.goto('/collections');
+  await expect(tab(page, 'all')).toHaveAttribute('aria-current', 'true');
+  await expect(page.getByTestId('total-count')).toHaveText('Cộng 9 hóa đơn');
+  await expect(page.getByTestId('total-owed').locator('data')).toHaveAttribute('value', (await figure(page, 'owed').getAttribute('value')) ?? '');
+  await expect(page.getByTestId('total-paid').locator('data')).toHaveAttribute('value', (await figure(page, 'paid').getAttribute('value')) ?? '');
+
+  await tab(page, 'overdue').click();
+  await expect(page).toHaveURL(/\/collections\?status=overdue$/);
+  await expect(tab(page, 'overdue')).toHaveAttribute('aria-current', 'true');
+  expect(await placesIn(page.getByTestId('collections-board'))).toEqual(['Phòng 5, Dãy trọ Dĩ An']);
+  await expect(page.getByTestId('total-count')).toHaveText('Cộng 1 hóa đơn');
+  await expect(figure(page, 'overdue')).toHaveText(`2.800.000${NBSP}₫`);
+  await expect(page.getByTestId('total-owed').locator('data')).toHaveAttribute('value', '2800000');
+
+  await page.reload();
+  await expect(tab(page, 'overdue')).toHaveAttribute('aria-current', 'true');
+  expect(await placesIn(page.getByTestId('collections-board'))).toEqual(['Phòng 5, Dãy trọ Dĩ An']);
+
+  await page.getByTestId('month-select').selectOption('2026-09');
+  await expect(page).toHaveURL(/month=2026-09&status=overdue$/);
+  await expect(tab(page, 'overdue')).toHaveAttribute('aria-current', 'true');
+  await tab(page, 'due').click();
+  await expect(page.getByTestId('collections-filter-empty')).toHaveText(/Hôm nay không có hóa đơn nào đến hạn\.\s*Xem tất cả/);
+  await page.getByRole('link', { name: 'Xem tất cả' }).click();
+  await expect(page).toHaveURL(/\/collections\?month=2026-09$/);
+  expect(await noSideScroll(page)).toBe(true);
+  expect(await seriousAxeViolations(page)).toEqual([]);
 });
 
 test('rule 10: in English at 130% text Phòng 5 sits in Overdue at 12 days and no row text is cut', async ({ page }) => {
@@ -215,7 +251,7 @@ test('rule 10: in English at 130% text Phòng 5 sits in Overdue at 12 days and n
   await rest(page, 'PATCH', member, { locale: 'en', text_scale: 130 });
   try {
     await page.goto('/collections');
-    await expect(group(page, 'overdue').getByTestId('group-title')).toHaveText('Overdue');
+    await expect(tab(page, 'overdue')).toHaveText('Overdue 1');
     await expect(row(group(page, 'overdue'), 'Phòng 5, Dãy trọ Dĩ An').locator('[data-status="overdue"]')).toHaveText('12 days overdue');
     await expect(row(group(page, 'overdue'), 'Phòng 5, Dãy trọ Dĩ An').getByTestId('carried-from')).toHaveText('from September');
     const cut = await page.getByTestId('collections-row').locator('span, data').evaluateAll((elements) =>

@@ -96,8 +96,8 @@ describe('MoneyInput', () => {
 
     it.each([
       ['0', 'Nhập số tiền lớn hơn 0.'],
-      ['1.000.000.000.001', 'Esta ghi được tối đa 1.000 tỷ đồng.'],
-      ['5000 tỷ', 'Esta ghi được tối đa 1.000 tỷ đồng.'],
+      ['1.000.000.000.001', 'Số này lớn hơn mức Esta ghi được.'],
+      ['5000 tỷ', 'Số này lớn hơn mức Esta ghi được.'],
       ['3,5', 'Tiền đồng không có số lẻ.'],
     ])('refuses %s with the reason in words and no amount', (text, reason) => {
       const { input, words } = setupWords(text);

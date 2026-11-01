@@ -1,12 +1,16 @@
 import { PageHeader } from '@/components/page-header';
-import { boardMonthParam, groupCollections, parseBoardMonth } from '@esta/core/collections';
+import { boardGroups, boardMonthParam, boardTotals, BOARD_FILTERS, groupCollections, longestOverdueDays, parseBoardFilter, parseBoardMonth, type BoardFilter } from '@esta/core/collections';
 import { isoDate, type IsoDate } from '@esta/core/date';
 import { formatMonthWithin, formatMonthYear } from '@esta/core/format';
 import { addMonths, firstOfMonth } from '@esta/core/date/calendar';
-import { FileSpreadsheet } from 'lucide-react';
+import { CircleCheck, FileSpreadsheet, SearchX } from 'lucide-react';
 import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { CollectionsBoard } from '@/components/collections/CollectionsBoard';
+import { EmptyState } from '@/components/empty-state';
+import { FilterTabs } from '@/components/filter-tabs';
+import { MoneyDisplay } from '@/components/money/money-display';
+import { SummaryStrip } from '@/components/summary-strip';
 import { MonthSelector } from '@/components/collections/MonthSelector';
 import { OfflineNotice } from '@/components/collections/offline-notice';
 import { PropertyIntl } from '@/components/properties/property-intl';
@@ -30,10 +34,20 @@ function pickerMonths(today: IsoDate, month: IsoDate): IsoDate[] {
   return months.includes(month) ? months : [...months, month].toSorted();
 }
 
-export default async function CollectionsPage({ searchParams }: { searchParams: Promise<{ month?: string | string[] }> }) {
+/** `/collections` with the board's month (none for the Clock's) and status tab. */
+function boardHref(month: IsoDate | null, status: BoardFilter): string {
+  const query = new URLSearchParams();
+  if (month !== null) query.set('month', boardMonthParam(month));
+  if (status !== 'all') query.set('status', status);
+  const search = query.toString();
+  return search === '' ? '/collections' : `/collections?${search}`;
+}
+
+export default async function CollectionsPage({ searchParams }: { searchParams: Promise<{ month?: string | string[]; status?: string | string[] }> }) {
   const [params, member, clock] = await Promise.all([searchParams, requireMember(), getClock()]);
   const today = clock.today();
   const month = parseBoardMonth(typeof params.month === 'string' ? params.month : undefined, today);
+  const status = parseBoardFilter(typeof params.status === 'string' ? params.status : undefined);
   const canEdit = member.role !== 'viewer';
   const [rows, account, openInvoices, nav, t, locale, messages, qrLabels, reminderLabels] = await Promise.all([
     loadCollectionRows(member.household.id, month),
@@ -55,15 +69,32 @@ export default async function CollectionsPage({ searchParams }: { searchParams: 
   // Reminding a tenant is acting for the household, so a viewer gets no `Nhắc qua Zalo`.
   const reminders = { byInvoice: canEdit ? await boardReminders(rows, owed, today, account !== null) : new Map(), labels: reminderLabels };
   const monthLabel = formatMonthYear(month, locale);
+  const shortMonth = formatMonthWithin(month, today, locale);
+  const onThisMonth = month === firstOfMonth(today);
   const step = (offset: number) => {
     const value = addMonths(month, offset);
-    return { href: `/collections?month=${boardMonthParam(value)}`, label: t('monthTitle', { month: formatMonthWithin(value, month, locale) }) };
+    return { href: boardHref(value, status), label: t('monthTitle', { month: formatMonthWithin(value, month, locale) }) };
   };
 
+  const board = groupCollections(rows, month, today);
+  const shown = boardGroups(board, status);
+  const all = boardTotals(board);
+  const totals = status === 'all' ? all : boardTotals(shown);
+  const overdue = boardTotals(boardGroups(board, 'overdue'));
+  const paidInFull = boardTotals(boardGroups(board, 'paid')).count;
+  const tabs = BOARD_FILTERS.map((filter) => ({
+    key: filter,
+    label: filter === 'all' ? t('all') : t('group', { group: filter }),
+    count: filter === 'all' ? all.count : boardTotals(boardGroups(board, filter)).count,
+    href: boardHref(onThisMonth ? null : month, filter),
+    current: filter === status,
+  }));
+
   const page = (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-stack">
       <PageHeader
         title={nav('collections')}
+        meta={<p data-testid="collections-meta">{t('pageMeta', { month: monthLabel, count: rows.length })}</p>}
         actions={
           member.role === 'admin' ? (
             <Link href="/collections/import" data-testid="statement-import-link" className={buttonVariants({ variant: 'secondary' })}>
@@ -80,23 +111,58 @@ export default async function CollectionsPage({ searchParams }: { searchParams: 
         options={pickerMonths(today, month).map((value) => ({ value: boardMonthParam(value), label: t('monthTitle', { month: formatMonthYear(value, locale) }) }))}
         previous={step(-1)}
         next={step(1)}
-        thisMonth={month === firstOfMonth(today) ? null : { href: '/collections', label: t('thisMonth') }}
+        thisMonth={onThisMonth ? null : { href: boardHref(null, status), label: t('thisMonth') }}
+        query={status === 'all' ? '' : `&status=${status}`}
       >
         {rows.length === 0 ? (
-          <p data-testid="collections-empty" className="max-w-3xl rounded-lg border border-border bg-surface p-5 text-headline font-semibold text-text shadow-xs sm:p-6">
-            {t('empty', { month: monthLabel })}
-          </p>
+          <div data-testid="collections-empty" className="max-w-3xl">
+            <EmptyState title={t('empty', { month: monthLabel })} />
+          </div>
         ) : (
-          <CollectionsBoard
-            board={groupCollections(rows, month, today)}
-            month={month}
-            monthLabel={monthLabel}
-            asOf={today}
-            canEdit={canEdit}
-            openInvoices={openInvoices}
-            qrs={qrs}
-            reminders={reminders}
-          />
+          <div className="flex flex-col gap-stack">
+            <SummaryStrip
+              label={t('stripLabel', { month: shortMonth })}
+              unknownLabel={t('unknownFigure')}
+              figures={[
+                {
+                  label: t('figurePaid'),
+                  value: <MoneyDisplay amount={all.paidVnd} className="text-start" />,
+                  sub: t('figurePaidSub', { paid: paidInFull, count: all.count }),
+                  testId: 'figure-paid',
+                },
+                {
+                  label: t('figureOwed'),
+                  value: <MoneyDisplay amount={all.owedVnd} className="text-start" />,
+                  sub: t('figureOwedSub', { count: all.count - paidInFull }),
+                  testId: 'figure-owed',
+                },
+                {
+                  label: t('figureOverdue'),
+                  value: <MoneyDisplay amount={overdue.owedVnd} className="text-start" />,
+                  sub: t('figureOverdueSub', { count: overdue.count, days: longestOverdueDays(board) ?? 0 }),
+                  testId: 'figure-overdue',
+                },
+              ]}
+            />
+            <FilterTabs label={t('statusLabel')} tabs={tabs} />
+            {totals.count === 0 ? (
+              <div data-testid="collections-filter-empty" className="max-w-3xl">
+                <EmptyState
+                  icon={status === 'overdue' || status === 'due' ? CircleCheck : SearchX}
+                  {...(status === 'overdue' || status === 'due' ? { tone: 'good' as const } : {})}
+                  title={t('emptyFiltered', { status, month: shortMonth })}
+                  action={{ label: t('showAll'), href: boardHref(onThisMonth ? null : month, 'all') }}
+                />
+              </div>
+            ) : (
+              <CollectionsBoard
+                groups={shown}
+                totals={totals}
+                caption={t('caption', { month: monthLabel, count: totals.count })}
+                context={{ month, asOf: today, canEdit, openInvoices, qrs, reminders }}
+              />
+            )}
+          </div>
         )}
       </MonthSelector>
     </div>
