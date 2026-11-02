@@ -179,6 +179,34 @@ test('rule 5: 3tr5 by transfer on Phòng 5 October previews 3.500.000 ₫, settl
   await expect(group(page, 'overdue').getByTestId('collections-row')).toHaveCount(0);
 });
 
+test('paying Phòng 5’s September bill in two parts lowers Còn phải thu each time and leaves Đã thu at what Tổng quan shows', async ({ page }) => {
+  const figure = (key: 'paid' | 'owed') => page.getByTestId(`figure-${key}`).locator('data');
+  const recordOnSeptember = async (amount: string, saved: string) => {
+    await row(group(page, 'overdue'), 'Phòng 5, Dãy trọ Dĩ An').getByTestId('row-action-record-payment').click();
+    await sheet(page).getByRole('textbox', { name: 'Số tiền nhận' }).fill(amount);
+    await sheet(page).getByRole('radio', { name: 'Tiền mặt' }).click();
+    await sheet(page).getByTestId('payment-save').click();
+    await expect(toast(page)).toContainText(`Đã ghi nhận ${vnd(saved)} từ Phòng 5.`);
+  };
+  await open(page, 'me.lane4@demo.esta.test', 'light', PHONE);
+  await page.goto('/collections');
+  await expect(figure('paid')).toHaveAttribute('value', '54000000');
+  await expect(figure('owed')).toHaveAttribute('value', '18400000');
+
+  await recordOnSeptember('1tr', '1.000.000');
+  await expect(figure('owed')).toHaveAttribute('value', '17400000');
+  await expect(figure('paid'), 'a payment toward September is not October’s money').toHaveAttribute('value', '54000000');
+
+  await recordOnSeptember('1tr8', '1.800.000');
+  await expect(group(page, 'overdue').getByTestId('collections-row'), 'September paid in full leaves the October board').toHaveCount(0);
+  await expect(figure('owed')).toHaveAttribute('value', '15600000');
+  await expect(figure('paid')).toHaveAttribute('value', '54000000');
+  expect(await allocationsOf(page, invoiceId(4, 5, '2026-09-25'))).toMatchObject([{ amount_vnd: 1_000_000 }, { amount_vnd: 1_800_000 }]);
+
+  await page.goto('/');
+  await expect(page.getByTestId('month-figure')).toHaveAttribute('data-collected-vnd', '54000000');
+});
+
 test('rule 6: more than Phòng 2 owes names the credit before saving, and the allocation stops at what was owed', async ({ page }) => {
   await open(page, 'ryan.lane6@demo.esta.test', 'light', DESKTOP);
   await page.goto('/collections');

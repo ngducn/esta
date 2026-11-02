@@ -106,6 +106,32 @@ test('the October board reads the same at 1440, in a table whose header names ea
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
 
+for (const width of [960, 1280]) {
+  test(`at ${width} wide the board fits its card, and the first row's Ghi nhận and its other actions are on screen without scrolling sideways (#377)`, async ({ page }) => {
+    await open(page, 'ryan.lane2@demo.esta.test', 'light', { width, height: 800 });
+    await page.goto('/collections');
+    const table = page.getByTestId('collections-board').locator('table');
+    await expect(table).toBeVisible();
+    const fit = await table.evaluate((element) => {
+      const box = element.parentElement ?? element;
+      return { scrollWidth: box.scrollWidth, clientWidth: box.clientWidth };
+    });
+    expect(fit.scrollWidth, 'the board does not scroll sideways').toBe(fit.clientWidth);
+    const record = rows(table).first().getByTestId('row-action-record-payment');
+    await expect(record).toHaveText('Ghi nhận');
+    await expect(record).toBeInViewport({ ratio: 1 });
+    const actions = await page.getByTestId('collections-board').evaluate((board) => {
+      const edge = board.getBoundingClientRect();
+      return [...board.querySelectorAll('[data-testid="collections-row"]')].map((row) => {
+        const boxes = [...row.querySelectorAll('a, button')].map((action) => action.getBoundingClientRect());
+        return { inside: boxes.every((box) => box.left >= edge.left && box.right <= edge.right), lines: new Set(boxes.map((box) => Math.round(box.top))).size };
+      });
+    });
+    expect(actions, 'every row keeps its actions inside the board, on one line').toEqual(Array.from({ length: 9 }, () => ({ inside: true, lines: 1 })));
+    expect(await noSideScroll(page)).toBe(true);
+  });
+}
+
 test('rule 3: September shows Phòng 5 overdue without a carry marker and the other five Dĩ An rooms paid', async ({ page }) => {
   await open(page, 'ryan.lane3@demo.esta.test', 'dark', DESKTOP);
   await page.goto('/collections');

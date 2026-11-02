@@ -3,7 +3,7 @@ import type { PaymentStatus } from '../allocation/status';
 import { isoDate } from '../date/iso-date';
 import { vnd } from '../money/vnd';
 import { boardGroups, boardTotals, longestOverdueDays, parseBoardFilter } from './board';
-import { groupCollections, type CollectionCandidate } from './group';
+import { groupCollections, monthCollected, type CollectionCandidate } from './group';
 
 function bill(unitLabel: string, dueDate: string, totalVnd: number, allocatedVnd: number, paymentStatus: PaymentStatus): CollectionCandidate {
   return {
@@ -66,6 +66,18 @@ describe('boardTotals', () => {
   it('reads an empty tab as a known zero', () => {
     const quiet = groupCollections(BILLS.slice(5), isoDate('2026-10-01'), isoDate('2026-10-07'));
     expect(boardTotals(boardGroups(quiet, 'overdue'))).toEqual({ count: 0, owedVnd: 0, paidVnd: 0 });
+  });
+});
+
+describe("the strip's Đã thu", () => {
+  it('counts what came in toward the month’s own bills, each capped at its bill, as Tổng quan does', () => {
+    const board = groupCollections(
+      [bill('Phòng 2', '2026-09-25', 2_800_000, 700_000, 'partial'), bill('Phòng 3', '2026-10-25', 2_500_000, 3_000_000, 'overpaid'), bill('Phòng 4', '2026-10-25', 3_200_000, 1_000_000, 'partial')],
+      isoDate('2026-10-01'),
+      isoDate('2026-10-07'),
+    );
+    expect(monthCollected(board).collectedVnd).toBe(2_500_000 + 1_000_000);
+    expect(boardTotals(board).paidVnd).toBe(monthCollected(board).collectedVnd);
   });
 });
 
