@@ -240,7 +240,7 @@ export default function RecordPaymentSheet({ open, onOpenChange, finalFocus, tar
               {METHODS.map(({ value, label, Icon }) => (
                 <label
                   key={value}
-                  className="flex min-h-10 min-w-36 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-sm border border-transparent px-2 text-center text-label font-medium text-text-secondary transition-colors duration-(--duration-fast) ease-standard hover:bg-fill-hover hover:text-text has-checked:border-accent-border has-checked:bg-accent-subtle has-checked:font-semibold has-checked:text-accent-text has-disabled:cursor-not-allowed has-disabled:text-text-disabled has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-1 has-[:focus-visible]:outline-focus-ring"
+                  className="flex min-h-10 min-w-36 flex-1 cursor-pointer pointer-coarse:min-h-touch items-center justify-center gap-1.5 rounded-sm border border-transparent px-2 text-center text-label font-medium text-text-secondary transition-colors duration-(--duration-fast) ease-standard hover:bg-fill-hover hover:text-text has-checked:border-accent-border has-checked:bg-accent-subtle has-checked:font-semibold has-checked:text-accent-text has-disabled:cursor-not-allowed has-disabled:text-text-disabled has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-1 has-[:focus-visible]:outline-focus-ring"
                 >
                   <input
                     type="radio"
