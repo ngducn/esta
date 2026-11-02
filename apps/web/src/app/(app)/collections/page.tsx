@@ -1,7 +1,7 @@
 import { PageHeader } from '@/components/page-header';
-import { boardGroups, boardMonthParam, boardTotals, BOARD_FILTERS, groupCollections, longestOverdueDays, parseBoardFilter, parseBoardMonth, type BoardFilter } from '@esta/core/collections';
+import { boardGroups, boardMonthParam, boardTotals, BOARD_FILTERS, groupCollections, longestOverdueDays, monthCollected, parseBoardFilter, parseBoardMonth, type BoardFilter } from '@esta/core/collections';
 import { isoDate, type IsoDate } from '@esta/core/date';
-import { formatMonthWithin, formatMonthYear } from '@esta/core/format';
+import { formatMonthWithin, formatMonthYear, formatVnd } from '@esta/core/format';
 import { addMonths, firstOfMonth } from '@esta/core/date/calendar';
 import { CircleCheck, FileSpreadsheet, SearchX } from 'lucide-react';
 import { getLocale, getMessages, getTranslations } from 'next-intl/server';
@@ -78,6 +78,7 @@ export default async function CollectionsPage({ searchParams }: { searchParams: 
   const board = groupCollections(rows, month, today);
   const shown = boardGroups(board, status);
   const all = boardTotals(board);
+  const collected = monthCollected(board);
   const totals = boardTotals(shown);
   const overdue = boardTotals(boardGroups(board, 'overdue'));
   const paidInFull = boardTotals(boardGroups(board, 'paid')).count;
@@ -126,8 +127,8 @@ export default async function CollectionsPage({ searchParams }: { searchParams: 
               figures={[
                 {
                   label: t('figurePaid'),
-                  value: <MoneyDisplay amount={all.paidVnd} className="text-start" />,
-                  sub: t('figurePaidSub', { paid: paidInFull, count: all.count }),
+                  value: <MoneyDisplay amount={collected.collectedVnd} className="text-start" />,
+                  sub: collected.billedVnd === 0 ? t('figurePaidNone', { month: shortMonth }) : t('figurePaidSub', { billed: formatVnd(collected.billedVnd, locale) }),
                   testId: 'figure-paid',
                 },
                 {

@@ -13,15 +13,11 @@ export function boardGroups<R extends CollectionCandidate>(board: readonly Colle
   return filter === 'all' ? board : board.filter((group) => group.key === filter);
 }
 
-export type BoardTotals = { readonly count: number; readonly owedVnd: Vnd; readonly paidVnd: Vnd };
+export type BoardTotals = { readonly count: number; readonly owedVnd: Vnd };
 
 export function boardTotals<R extends CollectionCandidate>(groups: readonly CollectionGroup<R>[]): BoardTotals {
   const rows = groups.flatMap((group) => group.items.map((item) => item.row));
-  return {
-    count: rows.length,
-    owedVnd: vnd(rows.reduce((sum, row) => sum + row.outstandingVnd, 0)),
-    paidVnd: vnd(rows.reduce((sum, row) => sum + row.allocatedVnd, 0)),
-  };
+  return { count: rows.length, owedVnd: vnd(rows.reduce((sum, row) => sum + row.outstandingVnd, 0)) };
 }
 
 export function longestOverdueDays<R extends CollectionCandidate>(board: readonly CollectionGroup<R>[]): number | null {

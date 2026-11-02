@@ -246,7 +246,6 @@ test('a status tab takes one tap, survives a reload and a month change, and its 
   await expect(tab(page, 'all')).toHaveAttribute('aria-current', 'true');
   await expect(page.getByTestId('total-count')).toHaveText('Cộng 9 hóa đơn');
   await expect(page.getByTestId('total-owed').locator('data')).toHaveAttribute('value', (await figure(page, 'owed').getAttribute('value')) ?? '');
-  await expect(page.getByTestId('total-paid').locator('data')).toHaveAttribute('value', (await figure(page, 'paid').getAttribute('value')) ?? '');
 
   await tab(page, 'overdue').click();
   await expect(page).toHaveURL(/\/collections\?status=overdue$/);

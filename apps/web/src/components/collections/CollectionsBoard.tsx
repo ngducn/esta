@@ -215,11 +215,7 @@ function TotalRow({ totals }: { totals: BoardTotals }) {
           <span className={inlineLabel}>{t('owedPrefix')} </span>
           <MoneyDisplay amount={totals.owedVnd} />
         </td>
-        <td data-testid="total-paid" className={cn(foot, 'text-end whitespace-nowrap')}>
-          <span className={inlineLabel}>{t('paidPrefix')} </span>
-          <MoneyDisplay amount={totals.paidVnd} />
-        </td>
-        <td colSpan={2} aria-hidden="true" className={cn(foot, 'rounded-br-lg @max-[48rem]:hidden')} />
+        <td colSpan={3} aria-hidden="true" className={cn(foot, 'rounded-br-lg @max-[48rem]:hidden')} />
       </tr>
     </tfoot>
   );
