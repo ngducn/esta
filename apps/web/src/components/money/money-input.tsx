@@ -22,8 +22,8 @@ type MoneyInputProps = {
   /** The figure-sized field of a sheet whose whole job is one amount, such as recording a payment. */
   large?: boolean;
   /**
-   * Says the amount in words under the `=` line, as a receipt prints it. Words exist only for an amount Esta can store,
-   * so the field then reads with `parseStorableVnd` and refuses 0 and anything over 1.000 tỷ.
+   * Says the amount in words under the `=` line, as a receipt prints it. The field then reads with `parseStorableVnd`
+   * and refuses 0 and anything over 1.000 tỷ.
    */
   words?: boolean;
   /** A refusal the form found on save, such as an amount of 0; it shows in place of the field's own reading error. */

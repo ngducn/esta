@@ -160,7 +160,6 @@ export function SkeletonButton() {
   );
 }
 
-/** The board as it lands: title, the month selector, the three figures, the status tabs, then table rows at their final widths. */
 export function SkeletonCollections() {
   const money = 'h-5 w-[12ch] @max-[48rem]:h-4';
   return (

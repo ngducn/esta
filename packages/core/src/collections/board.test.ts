@@ -19,7 +19,6 @@ function bill(unitLabel: string, dueDate: string, totalVnd: number, allocatedVnd
   };
 }
 
-/** Every amount differs, so a bill dropped or counted twice changes each sum. */
 const BILLS = [
   bill('Phòng 1', '2026-08-25', 2_100_000, 0, 'unpaid'),
   bill('Phòng 2', '2026-09-25', 2_800_000, 700_000, 'partial'),

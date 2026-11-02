@@ -15,7 +15,6 @@ export function boardGroups<R extends CollectionCandidate>(board: readonly Colle
 
 export type BoardTotals = { readonly count: number; readonly owedVnd: Vnd; readonly paidVnd: Vnd };
 
-/** The total row under a tab and the summary strip both come from here, so the two always agree. */
 export function boardTotals<R extends CollectionCandidate>(groups: readonly CollectionGroup<R>[]): BoardTotals {
   const rows = groups.flatMap((group) => group.items.map((item) => item.row));
   return {

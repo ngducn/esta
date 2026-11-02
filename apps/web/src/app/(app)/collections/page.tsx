@@ -34,7 +34,6 @@ function pickerMonths(today: IsoDate, month: IsoDate): IsoDate[] {
   return months.includes(month) ? months : [...months, month].toSorted();
 }
 
-/** `/collections` with the board's month (none for the Clock's) and status tab. */
 function boardHref(month: IsoDate | null, status: BoardFilter): string {
   const query = new URLSearchParams();
   if (month !== null) query.set('month', boardMonthParam(month));

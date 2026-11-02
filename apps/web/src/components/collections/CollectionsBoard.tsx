@@ -38,11 +38,6 @@ export type BoardRowContext = {
   readonly reminders: BoardReminders;
 };
 
-/**
- * Under 48rem of its own width the board is a list: place and what is still owed, the due date, what was paid when
- * anything was, the status, then the actions. Up to 64rem it is a table at its full width that scrolls sideways; wider,
- * a name truncates to make room, and an amount, a date or a badge never wraps.
- */
 const list = '@max-[48rem]:h-auto @max-[48rem]:min-h-0 @max-[48rem]:border-0 @max-[48rem]:p-0';
 const cell = {
   place: 'w-full max-w-0 @max-[64rem]:w-auto @max-[64rem]:max-w-none @max-[48rem]:col-start-1 @max-[48rem]:row-start-1',
@@ -54,13 +49,13 @@ const cell = {
 } as const;
 const inlineLabel = 'hidden @max-[48rem]:inline';
 
-/** `text-balance` on a button would let its label wrap inside a cell the table sized to the label's longest word. */
 const mainAction = cn(buttonVariants({ variant: 'secondary', size: 'sm' }), '@min-[48rem]:text-nowrap');
-/** A row's other actions: labelled in the list, an icon on the table with its name shown on hover and focus. */
+const nameTooltip =
+  "after:pointer-events-none after:absolute after:top-full after:right-0 after:z-20 after:mt-1 after:hidden after:rounded-sm after:bg-surface-inverse after:px-2 after:py-1 after:text-caption after:font-medium after:whitespace-nowrap after:text-text-inverse after:shadow-md after:content-[attr(data-label)_/_''] @min-[48rem]:hover:after:block @min-[48rem]:focus-visible:after:block";
 const sideAction = cn(
   buttonVariants({ variant: 'ghost', size: 'sm' }),
   'relative @min-[48rem]:min-w-control-sm @min-[48rem]:px-0 @min-[48rem]:pointer-coarse:min-w-touch',
-  "after:pointer-events-none after:absolute after:top-full after:right-0 after:z-20 after:mt-1 after:hidden after:rounded-sm after:bg-surface-inverse after:px-2 after:py-1 after:text-caption after:font-medium after:whitespace-nowrap after:text-text-inverse after:shadow-md after:content-[attr(data-label)_/_''] @min-[48rem]:hover:after:block @min-[48rem]:focus-visible:after:block",
+  nameTooltip,
 );
 const sideLabel = '@min-[48rem]:sr-only';
 
