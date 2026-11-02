@@ -4,6 +4,14 @@ on:
   pull_request:
   push:
     branches: [main]
+    # The coordinator's notes are read by no check; a push of only these skips CI. Pull requests always run.
+    paths-ignore:
+      - docs/plan/RESUME.md
+      - docs/plan/trail/decisions.tsv
+      - docs/plan/trail/standing-orders.md
+      - docs/plan/trail/owner-brief.md
+      - docs/plan/trail/lane-brief.md
+      - docs/plan/trail/verification-tiers.md
   workflow_dispatch:
 
 permissions:
