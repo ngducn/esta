@@ -153,7 +153,7 @@ export default function RecordPaymentSheet({ open, onOpenChange, finalFocus, tar
               <SheetTitle ref={title} tabIndex={-1} className="min-w-0 flex-1 outline-none">
                 {t('title')}
               </SheetTitle>
-              <SheetClose disabled={pending} data-testid="payment-close" className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), '-my-1 -me-2 sm:px-0')}>
+              <SheetClose disabled={pending} className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), '-my-1 -me-2 sm:px-0')}>
                 <X aria-hidden="true" className="max-sm:hidden" />
                 <span className="sm:sr-only">{t('close')}</span>
               </SheetClose>

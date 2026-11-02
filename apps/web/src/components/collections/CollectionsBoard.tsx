@@ -40,12 +40,12 @@ export type BoardRowContext = {
 
 /**
  * Under 48rem of its own width the board is a list: place and what is still owed, the due date, what was paid when
- * anything was, the status, then the actions. Up to 64rem it is a table at its full width that scrolls sideways; wider, a name truncates
- * to make room, and an amount, a date or a badge never wraps.
+ * anything was, the status, then the actions. Up to 64rem it is a table at its full width that scrolls sideways; wider,
+ * a name truncates to make room, and an amount, a date or a badge never wraps.
  */
 const list = '@max-[48rem]:h-auto @max-[48rem]:min-h-0 @max-[48rem]:border-0 @max-[48rem]:p-0';
 const cell = {
-  place: 'w-full max-w-0 @max-[64rem]:w-auto @max-[64rem]:max-w-none @max-[48rem]:col-start-1 @max-[48rem]:row-start-1 @max-[48rem]:max-w-none',
+  place: 'w-full max-w-0 @max-[64rem]:w-auto @max-[64rem]:max-w-none @max-[48rem]:col-start-1 @max-[48rem]:row-start-1',
   owed: 'text-end whitespace-nowrap @max-[48rem]:col-start-2 @max-[48rem]:row-start-1 @max-[48rem]:self-start',
   due: 'whitespace-nowrap text-text-secondary @max-[48rem]:col-span-2 @max-[48rem]:text-body-sm @max-[48rem]:whitespace-normal',
   paid: 'text-end whitespace-nowrap @max-[48rem]:col-span-2 @max-[48rem]:text-start @max-[48rem]:text-body-sm @max-[48rem]:text-text-secondary',

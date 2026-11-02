@@ -171,7 +171,7 @@ export function SkeletonCollections() {
       </div>
       <Block className="h-touch w-80 max-w-full" />
       <div className="@container overflow-hidden rounded-lg border border-border bg-surface shadow-xs">
-        <div className="grid grid-cols-1 @min-[40rem]:grid-cols-3">
+        <div className="grid grid-cols-1 @min-[30rem]:grid-cols-2 @min-[40rem]:grid-cols-3">
           {[0, 1, 2].map((figure) => (
             <div key={figure} className="flex flex-col gap-2 px-5 py-4">
               <Block className="h-5 w-24" />

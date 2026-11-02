@@ -79,13 +79,14 @@ export default async function CollectionsPage({ searchParams }: { searchParams: 
   const board = groupCollections(rows, month, today);
   const shown = boardGroups(board, status);
   const all = boardTotals(board);
-  const totals = status === 'all' ? all : boardTotals(shown);
+  const totals = boardTotals(shown);
   const overdue = boardTotals(boardGroups(board, 'overdue'));
   const paidInFull = boardTotals(boardGroups(board, 'paid')).count;
+  const nothingLate = status === 'overdue' || status === 'due';
   const tabs = BOARD_FILTERS.map((filter) => ({
     key: filter,
     label: filter === 'all' ? t('all') : t('group', { group: filter }),
-    count: filter === 'all' ? all.count : boardTotals(boardGroups(board, filter)).count,
+    count: boardTotals(boardGroups(board, filter)).count,
     href: boardHref(onThisMonth ? null : month, filter),
     current: filter === status,
   }));
@@ -94,7 +95,7 @@ export default async function CollectionsPage({ searchParams }: { searchParams: 
     <div className="flex flex-col gap-stack">
       <PageHeader
         title={nav('collections')}
-        meta={<p data-testid="collections-meta">{t('pageMeta', { month: monthLabel, count: rows.length })}</p>}
+        meta={<p>{t('pageMeta', { month: monthLabel, count: rows.length })}</p>}
         actions={
           member.role === 'admin' ? (
             <Link href="/collections/import" data-testid="statement-import-link" className={buttonVariants({ variant: 'secondary' })}>
@@ -148,8 +149,8 @@ export default async function CollectionsPage({ searchParams }: { searchParams: 
             {totals.count === 0 ? (
               <div data-testid="collections-filter-empty" className="max-w-3xl">
                 <EmptyState
-                  icon={status === 'overdue' || status === 'due' ? CircleCheck : SearchX}
-                  {...(status === 'overdue' || status === 'due' ? { tone: 'good' as const } : {})}
+                  icon={nothingLate ? CircleCheck : SearchX}
+                  {...(nothingLate ? { tone: 'good' as const } : {})}
                   title={t('emptyFiltered', { status, month: shortMonth })}
                   action={{ label: t('showAll'), href: boardHref(onThisMonth ? null : month, 'all') }}
                 />
