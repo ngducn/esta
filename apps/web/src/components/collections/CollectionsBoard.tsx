@@ -38,33 +38,36 @@ export type BoardRowContext = {
   readonly reminders: BoardReminders;
 };
 
-const list = '@max-[48rem]:h-auto @max-[48rem]:min-h-0 @max-[48rem]:border-0 @max-[48rem]:p-0';
+// Every row's actions stay in view without sideways scroll (#377): the six columns need 64rem of the board's own width,
+// and from 56rem the table still fits once it leaves out Đã thu, so below 56rem the board is the phone list.
+const list = '@max-[56rem]:h-auto @max-[56rem]:min-h-0 @max-[56rem]:border-0 @max-[56rem]:p-0';
 const cell = {
-  place: 'w-full max-w-0 @max-[64rem]:w-auto @max-[64rem]:max-w-none @max-[48rem]:col-start-1 @max-[48rem]:row-start-1',
-  owed: 'text-end whitespace-nowrap @max-[48rem]:col-start-2 @max-[48rem]:row-start-1 @max-[48rem]:self-start',
-  due: 'whitespace-nowrap text-text-secondary @max-[48rem]:col-span-2 @max-[48rem]:text-body-sm @max-[48rem]:whitespace-normal',
-  paid: 'text-end whitespace-nowrap @max-[48rem]:col-span-2 @max-[48rem]:text-start @max-[48rem]:text-body-sm @max-[48rem]:text-text-secondary',
-  status: 'whitespace-nowrap @max-[48rem]:col-span-2 @max-[48rem]:whitespace-normal',
-  actions: 'w-px text-end @max-[48rem]:w-auto @max-[48rem]:col-span-2 @max-[48rem]:pt-1 @max-[48rem]:text-start',
+  place: 'w-full max-w-0 @max-[56rem]:w-auto @max-[56rem]:max-w-none @max-[56rem]:col-start-1 @max-[56rem]:row-start-1',
+  owed: 'text-end whitespace-nowrap @max-[56rem]:col-start-2 @max-[56rem]:row-start-1 @max-[56rem]:self-start',
+  due: 'whitespace-nowrap text-text-secondary @max-[56rem]:col-span-2 @max-[56rem]:text-body-sm @max-[56rem]:whitespace-normal',
+  paid: 'text-end whitespace-nowrap @max-[56rem]:col-span-2 @max-[56rem]:text-start @max-[56rem]:text-body-sm @max-[56rem]:text-text-secondary',
+  status: 'whitespace-nowrap @max-[56rem]:col-span-2 @max-[56rem]:whitespace-normal',
+  actions: 'w-px text-end @max-[56rem]:w-auto @max-[56rem]:col-span-2 @max-[56rem]:pt-1 @max-[56rem]:text-start',
 } as const;
-const inlineLabel = 'hidden @max-[48rem]:inline';
+const inlineLabel = 'hidden @max-[56rem]:inline';
+const paidColumn = '@min-[56rem]:@max-[64rem]:hidden';
 
-const mainAction = cn(buttonVariants({ variant: 'secondary', size: 'sm' }), '@min-[48rem]:text-nowrap');
+const mainAction = cn(buttonVariants({ variant: 'secondary', size: 'sm' }), '@min-[56rem]:text-nowrap');
 const nameTooltip =
-  "after:pointer-events-none after:absolute after:top-full after:right-0 after:z-20 after:mt-1 after:hidden after:rounded-sm after:bg-surface-inverse after:px-2 after:py-1 after:text-caption after:font-medium after:whitespace-nowrap after:text-text-inverse after:shadow-md after:content-[attr(data-label)_/_''] @min-[48rem]:hover:after:block @min-[48rem]:focus-visible:after:block";
+  "after:pointer-events-none after:absolute after:top-full after:right-0 after:z-20 after:mt-1 after:hidden after:rounded-sm after:bg-surface-inverse after:px-2 after:py-1 after:text-caption after:font-medium after:whitespace-nowrap after:text-text-inverse after:shadow-md after:content-[attr(data-label)_/_''] @min-[56rem]:hover:after:block @min-[56rem]:focus-visible:after:block";
 const sideAction = cn(
   buttonVariants({ variant: 'ghost', size: 'sm' }),
-  'relative @min-[48rem]:min-w-control-sm @min-[48rem]:px-0 @min-[48rem]:pointer-coarse:min-w-touch',
+  'relative @min-[56rem]:min-w-control-sm @min-[56rem]:px-0 @min-[56rem]:pointer-coarse:min-w-touch',
   nameTooltip,
 );
-const sideLabel = '@min-[48rem]:sr-only';
+const sideLabel = '@min-[56rem]:sr-only';
 
 function DueCell({ item, month, asOf }: { item: CollectionItem<CollectionRow>; month: IsoDate; asOf: IsoDate }) {
   const t = useTranslations('collections');
   const locale = useLocale();
   const { row, carriedFrom, state } = item;
   return (
-    <span className="flex flex-col @max-[48rem]:flex-row @max-[48rem]:flex-wrap @max-[48rem]:gap-x-2">
+    <span className="flex flex-col @max-[56rem]:flex-row @max-[56rem]:flex-wrap @max-[56rem]:gap-x-2">
       <span data-testid="row-due" className="num">
         <span className={inlineLabel}>{t('duePrefix')} </span>
         {formatDate(row.dueDate, locale)}
@@ -83,7 +86,7 @@ function StatusCell({ item }: { item: CollectionItem<CollectionRow> }) {
   const t = useTranslations('collections');
   const { state, row } = item;
   return (
-    <span className="flex w-max flex-col items-start gap-1 @max-[48rem]:w-auto @max-[48rem]:flex-row @max-[48rem]:flex-wrap @max-[48rem]:items-center @max-[48rem]:gap-x-2">
+    <span className="flex w-max flex-col items-start gap-1 @max-[56rem]:w-auto @max-[56rem]:flex-row @max-[56rem]:flex-wrap @max-[56rem]:items-center @max-[56rem]:gap-x-2">
       {state.group === 'overdue' ? <StatusMark status="overdue" days={state.days} /> : <StatusMark status={GROUP_MARKS[state.group]} />}
       {row.paymentStatus === 'partial' ? (
         <span data-testid="row-partial" className="text-body-sm font-medium text-text-secondary">
@@ -102,7 +105,7 @@ function RowActions({ item, place, context }: { item: CollectionItem<CollectionR
   const reminder = context.reminders.byInvoice.get(row.invoiceId);
   const shown = collectionRowActions(item, context.canEdit).filter((action) => (action.kind === 'qr' ? qr !== undefined : action.kind !== 'remind' || reminder !== undefined));
   return (
-    <span className="inline-flex flex-wrap items-center gap-1 @min-[48rem]:flex-nowrap">
+    <span className="inline-flex flex-wrap items-center gap-1 @min-[56rem]:flex-nowrap">
       {shown.map((action, index) => {
         const className = index === 0 ? mainAction : sideAction;
         const labelClassName = index === 0 ? undefined : sideLabel;
@@ -165,18 +168,18 @@ function CollectionsRow({ item, context }: { item: CollectionItem<CollectionRow>
     <TableRow
       data-testid="collections-row"
       data-group={item.state.group}
-      className="hover:bg-bg-subtle @max-[48rem]:grid @max-[48rem]:grid-cols-[minmax(0,1fr)_auto] @max-[48rem]:gap-x-3 @max-[48rem]:gap-y-1.5 @max-[48rem]:border-b @max-[48rem]:border-border @max-[48rem]:px-4 @max-[48rem]:py-3.5"
+      className="hover:bg-bg-subtle @max-[56rem]:grid @max-[56rem]:grid-cols-[minmax(0,1fr)_auto] @max-[56rem]:gap-x-3 @max-[56rem]:gap-y-1.5 @max-[56rem]:border-b @max-[56rem]:border-border @max-[56rem]:px-4 @max-[56rem]:py-3.5"
     >
       <TableCell className={cn(list, cell.place)}>
         <span className="flex min-w-0 flex-col" title={`${place} · ${tenant}`}>
-          <span data-testid="row-place" className="truncate font-medium text-text @max-[48rem]:whitespace-normal @max-[48rem]:break-words">
+          <span data-testid="row-place" className="truncate font-medium text-text @max-[56rem]:whitespace-normal @max-[56rem]:break-words">
             {place}
           </span>
-          <span data-testid="row-tenant" className="truncate text-body-sm text-text-secondary @max-[48rem]:whitespace-normal @max-[48rem]:break-words">
+          <span data-testid="row-tenant" className="truncate text-body-sm text-text-secondary @max-[56rem]:whitespace-normal @max-[56rem]:break-words">
             {tenant}
           </span>
           {row.propertyArchived ? (
-            <span data-testid="row-archived" className="truncate text-body-sm font-medium text-text-secondary @max-[48rem]:whitespace-normal">
+            <span data-testid="row-archived" className="truncate text-body-sm font-medium text-text-secondary @max-[56rem]:whitespace-normal">
               {t('propertyArchived')}
             </span>
           ) : null}
@@ -188,7 +191,7 @@ function CollectionsRow({ item, context }: { item: CollectionItem<CollectionRow>
       <TableCell data-testid="row-owed" className={cn(list, cell.owed)}>
         <MoneyDisplay amount={row.outstandingVnd} className="font-medium" />
       </TableCell>
-      <TableCell data-testid="row-paid" className={cn(list, cell.paid, row.allocatedVnd === 0 && '@max-[48rem]:hidden')}>
+      <TableCell data-testid="row-paid" className={cn(list, cell.paid, paidColumn, row.allocatedVnd === 0 && '@max-[56rem]:hidden')}>
         <span className={inlineLabel}>{t('paidPrefix')} </span>
         <MoneyDisplay amount={row.allocatedVnd} />
       </TableCell>
@@ -204,18 +207,19 @@ function CollectionsRow({ item, context }: { item: CollectionItem<CollectionRow>
 
 function TotalRow({ totals }: { totals: BoardTotals }) {
   const t = useTranslations('collections');
-  const foot = 'h-row-h bg-bg-subtle px-cell-x py-1.5 align-middle font-medium text-text @max-[48rem]:h-auto @max-[48rem]:bg-transparent @max-[48rem]:p-0';
+  const foot = 'h-row-h bg-bg-subtle px-cell-x py-1.5 align-middle font-medium text-text @max-[56rem]:h-auto @max-[56rem]:bg-transparent @max-[56rem]:p-0';
   return (
-    <tfoot data-testid="collections-total" className="@max-[48rem]:block">
-      <tr className="@max-[48rem]:flex @max-[48rem]:flex-wrap @max-[48rem]:items-baseline @max-[48rem]:justify-between @max-[48rem]:gap-x-4 @max-[48rem]:gap-y-1 @max-[48rem]:rounded-b-lg @max-[48rem]:bg-bg-subtle @max-[48rem]:px-4 @max-[48rem]:py-3">
-        <th scope="row" colSpan={2} className={cn(foot, 'rounded-bl-lg text-start @max-[48rem]:basis-full')}>
+    <tfoot data-testid="collections-total" className="@max-[56rem]:block">
+      <tr className="@max-[56rem]:flex @max-[56rem]:flex-wrap @max-[56rem]:items-baseline @max-[56rem]:justify-between @max-[56rem]:gap-x-4 @max-[56rem]:gap-y-1 @max-[56rem]:rounded-b-lg @max-[56rem]:bg-bg-subtle @max-[56rem]:px-4 @max-[56rem]:py-3">
+        <th scope="row" colSpan={2} className={cn(foot, 'rounded-bl-lg text-start @max-[56rem]:basis-full')}>
           <span data-testid="total-count">{t('totalLabel', { count: totals.count })}</span>
         </th>
         <td data-testid="total-owed" className={cn(foot, 'text-end whitespace-nowrap')}>
           <span className={inlineLabel}>{t('owedPrefix')} </span>
           <MoneyDisplay amount={totals.owedVnd} />
         </td>
-        <td colSpan={3} aria-hidden="true" className={cn(foot, 'rounded-br-lg @max-[48rem]:hidden')} />
+        <td aria-hidden="true" className={cn(foot, '@max-[64rem]:hidden')} />
+        <td colSpan={2} aria-hidden="true" className={cn(foot, 'rounded-br-lg @max-[56rem]:hidden')} />
       </tr>
     </tfoot>
   );
@@ -228,34 +232,32 @@ export function CollectionsBoard({ groups, totals, caption, context }: { groups:
   const t = useTranslations('collections');
   return (
     <div data-testid="collections-board" className="@container rounded-lg border border-border bg-surface shadow-xs">
-      <div className="@min-[48rem]:@max-[64rem]:overflow-x-auto">
-        <Table className="@min-[48rem]:@max-[64rem]:w-max @min-[48rem]:@max-[64rem]:min-w-full @max-[48rem]:block">
-          <caption className="sr-only">{caption}</caption>
-          <TableHeader className="@max-[48rem]:sr-only">
-            <TableRow>
-              {COLUMNS.map((key, index) => (
-                <TableHead
-                  key={key}
-                  scope="col"
-                  className={cn('sticky top-0 z-10', index === 0 && 'rounded-tl-lg', index === COLUMNS.length - 1 && 'rounded-tr-lg', (key === 'colOwed' || key === 'colPaid') && 'text-end')}
-                >
-                  {key === 'colActions' ? <span className="sr-only">{t(key)}</span> : t(key)}
-                </TableHead>
+      <Table className="@max-[56rem]:block">
+        <caption className="sr-only">{caption}</caption>
+        <TableHeader className="@max-[56rem]:sr-only">
+          <TableRow>
+            {COLUMNS.map((key, index) => (
+              <TableHead
+                key={key}
+                scope="col"
+                className={cn('sticky top-0 z-10', index === 0 && 'rounded-tl-lg', index === COLUMNS.length - 1 && 'rounded-tr-lg', (key === 'colOwed' || key === 'colPaid') && 'text-end', key === 'colPaid' && paidColumn)}
+              >
+                {key === 'colActions' ? <span className="sr-only">{t(key)}</span> : t(key)}
+              </TableHead>
+            ))}
+          </TableRow>
+        </TableHeader>
+        {groups.map((group) =>
+          group.items.length === 0 ? null : (
+            <TableBody key={group.key} data-testid={`group-${group.key}`} className="@max-[56rem]:block">
+              {group.items.map((item) => (
+                <CollectionsRow key={item.row.invoiceId} item={item} context={context} />
               ))}
-            </TableRow>
-          </TableHeader>
-          {groups.map((group) =>
-            group.items.length === 0 ? null : (
-              <TableBody key={group.key} data-testid={`group-${group.key}`} className="@max-[48rem]:block">
-                {group.items.map((item) => (
-                  <CollectionsRow key={item.row.invoiceId} item={item} context={context} />
-                ))}
-              </TableBody>
-            ),
-          )}
-          <TotalRow totals={totals} />
-        </Table>
-      </div>
+            </TableBody>
+          ),
+        )}
+        <TotalRow totals={totals} />
+      </Table>
     </div>
   );
 }
