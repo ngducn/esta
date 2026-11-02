@@ -21,7 +21,7 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 ## Open items (updated 2026-11-02 02:50 +07)
 
 - **Merged since 2026-11-01:** #368 (d2016c5a) design foundation; #376 (496542e4) e2e clock pinned to 2026-11-01T10:00+07:00; #374 (2bbf8891) the shell; #375 (a19892e9) sign-in and onboarding brand layer; #383 (32991ea4) axe judges resting colours, one shared helper (closes #373); #381 (9a898a45) Tài sản workbench. Lows open: #372, #377, #378, #379, #380, #382.
-- **Running: RD-3 owner** (Opus, slot 3, briefs/rd-3.md, worktree /tmp/owner-rd-3/wt, branch esta/rd-3-collections-board). After /clear, respawn it from that brief; it resumes from the branch.
+- **#384 (RD-3 Thu tiền) fix round 1 running** (Opus, briefs/rd-3-ff1.md, worktree /tmp/owner-rd-3/wt, slot 3): "Đã thu" from monthCollected, no sideways scroll 960 to 1280. Then a scoped Sonnet reader, then merge. After /clear, respawn from the brief. Lows in #385.
 - **Next: RD-3, Thu tiền board and recording a payment** (plan row: data table with phone list, totals, bulk bar; money input with `=` and words; sheet footer states; signed, unknown, zero). It reuses SummaryStrip, FilterTabs and EmptyState from #381 (apps/web/src/components). Money input and payment recording make it rigorous: name the tier before spawning (standing orders rule 6: an Opus owner for rigorous work, or a Sonnet owner with an Opus audit as RD-1 and RD-2 had; RD-2 on Sonnet needed two fix rounds). Include #377 (Thu tiền cramped at 960) and the desktop badge wrapping. Write briefs/rd-3.md from briefs/rd-2.md.
 - **Then:** RD-4 (Tổng quan and the Trợ lý thread), RD-5 (property tabs, documents, reports, Cài đặt, wizard). Then Mẹ's session (Ryan's step), P5-09, P5-14, P5-15, P5-16b, P5-10, Phase 6.
 - **Tripwire set** since 23:30 on 2026-11-01: heavy.sh runs everything one at a time. Clear with `rm /tmp/ci-local/one-at-a-time` after a quiet stretch, and record it.
@@ -36,6 +36,8 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 5. P5-13 chips come from open notes of any day, an [app rule].
 6. Redesign questions with defaults: keep Inter Display on /sign-in despite ~150 ms LCP; logo twice on desktop sign-in (#379); "Cần chú ý" = rent overdue or due today on any property (alternatives: Tổng quan's list, or the design set with expiring contracts and overdue tax); Tài sản chip rows stay open on desktop (or fold behind "Bộ lọc").
 7. The redesign defaults in `docs/plan/redesign-2026-11.md`: Esta blue, role-name codemod, Thoáng/Gọn, wordmark, icon-and-word status, the new shell. Ryan can overrule any in a sentence.
+
+Ruled 2026-11-02: Thu tiền "Đã thu" counts payments toward this month's rent, as Tổng quan does (Ryan: "Yes, match Tổng quan").
 
 ## Rules added this session
 
