@@ -343,3 +343,14 @@ Ryan asked whether the one-at-a-time rule for heavy jobs should have more leeway
 4. **Executing agents run on Sonnet** where the 2026-10-30 rule 6 allows it. Building a design that is already specified is a standard owner's job, not hard design.
 
 Why: on 2026-11-01 two owners spent long stretches queued behind each other's local full suites, which CI repeats anyway. The machine has 12 cores and 18 GB, and Docker now holds three local stacks instead of five.
+
+## Update 2026-11-02 (Ryan: loosen for dev speed and token saving)
+
+Ryan: "i feel like own CI now is too strict and too long, can you examine what took the most time and tokens in our process / i think for now we can loosen a bit to prioritise dev speed and token saving", then "Yes, apply all". The measurements are in `decisions.tsv` at 2026-11-02. These rules override older ones where they conflict.
+
+1. Owners and fix rounds run on Sonnet for every tier. Opus runs only the rigorous-tier audit.
+2. Owners read narrowly and prove lean, per `owner-brief.md`: no poteto-mode, playbooks or standing orders in their reading; `pnpm check`, the touched specs and two to four screenshots; no video; Lighthouse only on a loading-path change; no `/impeccable shape` when a finished design exists. An owner waits for CI once, reports code-ready and stops; a fresh agent takes any fix round.
+3. Rigorous review is an Opus audit plus a Sonnet live lane. The regression lane, the second-model audit and the separate codebase-health lane are retired. One fix round; a second only when money is still wrong.
+4. Pushes to `main` that touch only the root's notes (`RESUME.md`, `decisions.tsv`, the briefs, the standing orders, the tier rules) do not run CI. The PR gate is unchanged. The one-at-a-time tripwire is cleared; set it again only when a test fails beside another run and passes alone.
+5. The root posts status only at verdicts, merges and blocks, and names in every brief the existing home for each figure or rule the PR shows, so owners reuse it instead of writing a second one.
+

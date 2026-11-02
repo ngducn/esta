@@ -24,16 +24,19 @@ Any one of these makes a PR rigorous:
 
 ## What each tier runs
 
+Since 2026-11-02 (Ryan: "i think for now we can loosen a bit to prioritise dev speed and token saving", then "Yes, apply all"), every tier runs leaner. The measurements behind it are in `decisions.tsv` at 2026-11-02: Opus owners and fix rounds were 61% of agent tokens, and about a fifth of an owner's cost was its cache expiring while it waited for CI, a lock or a reply.
+
 | | Lean | Standard | Rigorous |
 | --- | --- | --- | --- |
 | Typical PR | Docs, tooling, test-only changes, copy, styling, refactors with no behavior change, small fixes outside the triggers | A new screen or feature slice outside the triggers | Anything a trigger names |
-| Owner proof | `pnpm check` and the touched tests | Plus the plan's Playwright rules and verify-skill screenshots: 390x844 and 1440x900, Vietnamese, light and dark | Plus screenshots of every state, the error and empty states included, and a recorded video of the main flow from start to finish, published in the PR body |
-| Independent review | One Sonnet review lane, no Supabase stack | One Sonnet live lane that drives the change in a browser | A Sonnet live lane, an Opus adversarial audit lane, a regression lane that runs the same flow on `main`, and a second-opinion audit from a different model on the riskiest part (money math, a policy, a migration) |
-| Perf | None | Lighthouse when the plan's perf box names the route | Lighthouse plus the plan's query and bench budgets, each on a quiet machine through `bin/heavy.sh` |
-| Fix rounds | One | One | Up to two, the playbook ceiling |
-| Merge | Root merges on a clean verdict | Root merges on a clean verdict | Root merges on a clean verdict and posts Ryan a short plain-language summary with the video link on the PR. Since 2026-10-30 nothing waits for his click (standing orders) |
+| Owner and fix-round model | Sonnet | Sonnet | Sonnet |
+| Owner proof | `pnpm check` and the touched tests | Plus two to four screenshots at 390x844 and 1440x900, Vietnamese | Plus a red-then-green test for every money, security or data rule the PR adds or moves. No video and no full screenshot matrix; the live lane covers the states |
+| Independent review | One Sonnet reader of the diff, no stack | One Sonnet live lane that drives the change in a browser | An Opus audit and a Sonnet live lane |
+| Perf | None | Lighthouse only when the PR changes a route's loading path (images, fonts, the JavaScript bundle) | Same as standard |
+| Fix rounds | One | One | One. A second only when money is still wrong after the first |
+| Merge | Root merges on a clean verdict | Root merges on a clean verdict | Root merges on a clean verdict and posts Ryan a short plain-language summary on the PR. Nothing waits for his click (standing orders 2026-10-30) |
 
-The video is a Playwright recording (`video: 'on'`) of the PR's main flow at 390x844. It is converted to a GIF when `ffmpeg` is available so it plays inline on GitHub, and it is published with `bin/pr-media.sh`.
+Each reviewer also covers codebase health: a second way to do something that has a home, a duplicated rule, logic in the wrong layer, several rows written outside one transaction, a file over the size limit. There is no separate codebase-health lane.
 
 ## Planned tiers for the remaining PRs
 
@@ -96,6 +99,6 @@ Cleanup rounds of `[low]` issues are lean unless one of the issues hits a trigge
 
 Every tier needs the `ci` check on GitHub Actions green at the exact head before a merge. It runs the full suite, so owners run only the specs their change touches. When Actions is down, `tools/ci-local.sh` on this machine is the fallback, and its `local-ci/*` statuses count instead.
 
-## Codebase-health lane, every tier (2026-10-19 16:45)
+## Codebase-health lane (retired 2026-11-02)
 
-Every round, lean included, adds one codebase-health lane: Sonnet, no stack, reading the diff against the thermo-nuclear standard and `ARCHITECTURE.md`. It blocks a diff that adds a second way to do something that has a home, duplicates a rule, puts logic in the wrong layer, writes several rows outside one transaction, or pushes a file over the size limit. It does not report debt the diff did not add. The quality ratchet in `pnpm check` is its deterministic floor.
+Folded into each tier's reviewer, as the table says. The quality ratchet in `pnpm check` stays its deterministic floor.
