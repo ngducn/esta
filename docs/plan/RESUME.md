@@ -25,7 +25,7 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 - **Next: RD-3, Thu tiền board and recording a payment** (plan row: data table with phone list, totals, bulk bar; money input with `=` and words; sheet footer states; signed, unknown, zero). It reuses SummaryStrip, FilterTabs and EmptyState from #381 (apps/web/src/components). Money input and payment recording make it rigorous: name the tier before spawning (standing orders rule 6: an Opus owner for rigorous work, or a Sonnet owner with an Opus audit as RD-1 and RD-2 had; RD-2 on Sonnet needed two fix rounds). Include #377 (Thu tiền cramped at 960) and the desktop badge wrapping. Write briefs/rd-3.md from briefs/rd-2.md.
 - **Then:** RD-4 (Tổng quan and the Trợ lý thread), RD-5 (property tabs, documents, reports, Cài đặt, wizard). Then Mẹ's session (Ryan's step), P5-09, P5-14, P5-15, P5-16b, P5-10, Phase 6.
 - **Tripwire cleared** 2026-11-02 (lean rules, item 4). Set it again only when a test fails beside another run and passes alone.
-- **#386** (ci: skip push runs that only touch the coordinator's notes), lean tier, opened 2026-11-02; a Sonnet reader is checking it. Merge on CLEAN plus green `ci`.
+- **#386 merged** 2026-11-02: pushes to main that touch only the notes files skip CI.
 - **Watch:** shell and auth-password specs lost a poll-until-pass in #383; a random failure there means a title-flicker wait, not a retry loop.
 
 ## Waiting for Ryan (defaults apply)
