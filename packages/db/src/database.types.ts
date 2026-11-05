@@ -3672,6 +3672,10 @@ export type Database = {
         Args: { p_payment_id: string; p_row_id: string }
         Returns: undefined
       }
+      log_export_downloads: {
+        Args: { p_document_ids: string[]; p_household_id: string }
+        Returns: number
+      }
       national_id_indexes: { Args: { p_values: Json }; Returns: number[] }
       preview_activation: {
         Args: { p_lease_id: string; p_paid_through?: string }
