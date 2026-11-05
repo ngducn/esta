@@ -1,6 +1,7 @@
 import { unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { createClient } from '@supabase/supabase-js';
 import { EXPORT_TABLES } from '../packages/core/src/export/tables.ts';
 import { localTarget, readExport, runSql } from './export-source.ts';
 import { importScript } from './import-export.ts';
@@ -8,26 +9,18 @@ import { importScript } from './import-export.ts';
 const [command, ...args] = process.argv.slice(2);
 
 /** Gives a household one document whose file ends in `.jfif` and one with no extension, as a browser and a Mac can store them. */
-function oddDocumentNames(email: string): void {
-  const dbUrl = localTarget().dbUrl;
-  const householdId = runSql<{ id: string }>(dbUrl, `select household_id::text as id from public.household_members where invited_email = '${email.replaceAll("'", '')}'`)[0]?.id;
+async function oddDocumentNames(email: string): Promise<void> {
+  const target = localTarget();
+  const householdId = runSql<{ id: string }>(target.dbUrl, `select household_id::text as id from public.household_members where invited_email = '${email.replaceAll("'", '')}'`)[0]?.id;
   if (householdId === undefined) throw new Error(`No household member invited as ${email}`);
   const pick = (mime: string, leaf: string) =>
-    `(select id, storage_path, '${leaf}' as leaf from public.documents where household_id = '${householdId}' and mime = '${mime}' order by id limit 1)`;
-  runSql(
-    dbUrl,
-    `do $x$
-declare r record; renamed text;
-begin
-  set local session_replication_role = replica;
-  for r in ${pick('image/jpeg', 'scan.jfif')} union all ${pick('application/pdf', 'tai-lieu')} loop
-    renamed := '${householdId}/' || r.id || '/' || r.leaf;
-    update storage.objects set name = renamed where bucket_id = 'documents' and name = r.storage_path;
-    if not found then raise exception 'no stored file for %', r.storage_path; end if;
-    update public.documents set storage_path = renamed where id = r.id;
-  end loop;
-end $x$;`,
-  );
+    runSql<{ id: string; storage_path: string }>(target.dbUrl, `select id::text as id, storage_path from public.documents where household_id = '${householdId}' and mime = '${mime}' order by id limit 1`).map((row) => ({ ...row, renamed: `${householdId}/${row.id}/${leaf}` }));
+  const storage = createClient(target.apiUrl, target.serviceKey, { auth: { persistSession: false } }).storage.from('documents');
+  for (const doc of [...pick('image/jpeg', 'scan.jfif'), ...pick('application/pdf', 'tai-lieu')]) {
+    const { error } = await storage.move(doc.storage_path, doc.renamed);
+    if (error) throw new Error(`Moving ${doc.storage_path} failed: ${error.message}`);
+    runSql(target.dbUrl, `do $x$ begin set local session_replication_role = replica; update public.documents set storage_path = '${doc.renamed}' where id = '${doc.id}'; end $x$;`);
+  }
   console.log('renamed one jpeg document to scan.jfif and one pdf document to tai-lieu');
 }
 
@@ -55,7 +48,7 @@ function failedImportLeavesNothing(paths: readonly string[]): void {
   console.log(`a repeated ${late.name} row failed the import and left no household`);
 }
 
-if (command === 'odd-names' && args[0] !== undefined) oddDocumentNames(args[0]);
+if (command === 'odd-names' && args[0] !== undefined) await oddDocumentNames(args[0]);
 else if (command === 'rollback' && args.length > 0) failedImportLeavesNothing(args);
 else {
   console.error('Usage: tsx scripts/roundtrip-checks.ts odd-names <member email> | rollback <export zip or folder>...');

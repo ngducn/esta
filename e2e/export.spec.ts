@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { EXPORT_TABLES } from '../packages/core/src/export/tables.ts';
 import { query } from '../scripts/db-checksum.ts';
 import { e2eServiceHeaders } from '../scripts/e2e-service.ts';
+import { localTarget, runSql } from '../scripts/export-source.ts';
 import { parseSlot, slotWorkdir } from '../scripts/slot.ts';
 import { memberRest } from './helpers/auth-api';
 import { laneHousehold } from './helpers/seed';
@@ -188,16 +189,16 @@ type Ids = { chat: string; item: string };
 
 /** Adds, as the service role, a conversation Mẹ started and an assistant item for the operator only, then removes both. */
 async function withPrivateRows(page: Page, run: (ids: Ids) => Promise<void>): Promise<void> {
-  const [me] = JSON.parse(await (await page.request.get(`${rest}/household_members?household_id=eq.${HOUSEHOLD}&invited_email=eq.me.lane${LANE}@demo.esta.test&select=user_id`, { headers: service })).text()) as { user_id: string }[];
   const headers = { ...service, 'content-type': 'application/json', prefer: 'return=representation' };
   const post = async (table: string, data: object) => {
     const response = await page.request.post(`${rest}/${table}`, { headers, data });
     expect(response.ok(), await response.text()).toBe(true);
     return ((await response.json()) as { id: string }[])[0]?.id ?? '';
   };
-  const chat = await post('conversations', { household_id: HOUSEHOLD, title: SEEN.chat, created_by: me?.user_id, last_asked_at: '2026-10-07T02:00:00Z' });
-  const item = await post('agent_items', { household_id: HOUSEHOLD, kind: 'note', severity: 'info', title: SEEN.item, body_md: 'Chỉ Ryan đọc', audience: 'operator', dedupe_key: `export-spec-${chat}` });
+  const chat = await post('conversations', { household_id: HOUSEHOLD, title: SEEN.chat, last_asked_at: '2026-10-07T02:00:00Z' });
+  const item = await post('agent_items', { household_id: HOUSEHOLD, kind: 'system', severity: 'info', title: SEEN.item, body_md: 'Chỉ Ryan đọc', audience: 'operator', dedupe_key: `export-spec-${chat}` });
   try {
+    runSql(localTarget().dbUrl, `do $x$ begin set local session_replication_role = replica; update public.conversations set created_by = (select user_id from public.household_members where household_id = '${HOUSEHOLD}' and invited_email = 'me.lane${LANE}@demo.esta.test') where id = '${chat}'; end $x$;`);
     await run({ chat, item });
   } finally {
     await page.request.delete(`${rest}/agent_items?id=eq.${item}`, { headers });
