@@ -1474,6 +1474,7 @@
     "figureReview": "Ready for review",
     "figureReviewSub": "The assistant has read them; they need a check",
     "figureReviewNone": "None waiting",
+    "unknownFigure": "No figure yet",
     "category": "{category, select, certificate {Land use certificate} lease_contract {Lease contract} utility_bill {Utility bill} insurance {Insurance} tax_receipt {Tax receipt} sale_contract {Sale contract} invoice_receipt {Invoice or receipt} building_permit {Building permit} drawing {Drawing} handover {Handover record} photo {Property photo} id_card {ID card} other {Other document}}",
     "titlePrefix": "{category, select, certificate {Certificate} lease_contract {Lease} utility_bill {Bill} insurance {Insurance} tax_receipt {Tax receipt} sale_contract {Sale contract} invoice_receipt {Receipt} building_permit {Building permit} drawing {Drawing} handover {Handover} photo {Photo} id_card {ID card} other {Document}}",
     "sheetTitle": "Add a document",

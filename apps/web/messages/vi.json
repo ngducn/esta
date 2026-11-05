@@ -1474,6 +1474,7 @@
     "figureReview": "Chờ xem lại",
     "figureReviewSub": "Trợ lý đã đọc, cần kiểm tra lại",
     "figureReviewNone": "Không có giấy nào",
+    "unknownFigure": "Chưa có số liệu",
     "category": "{category, select, certificate {Sổ đỏ / sổ hồng} lease_contract {Hợp đồng thuê} utility_bill {Hóa đơn điện, nước} insurance {Bảo hiểm} tax_receipt {Biên lai thuế} sale_contract {Hợp đồng mua bán} invoice_receipt {Hóa đơn, biên nhận} building_permit {Giấy phép xây dựng} drawing {Bản vẽ} handover {Biên bản bàn giao} photo {Ảnh tài sản} id_card {CCCD} other {Tài liệu khác}}",
     "titlePrefix": "{category, select, certificate {Sổ hồng} lease_contract {Hợp đồng thuê} utility_bill {Hóa đơn} insurance {Bảo hiểm} tax_receipt {Biên lai thuế} sale_contract {Hợp đồng mua bán} invoice_receipt {Biên nhận} building_permit {Giấy phép xây dựng} drawing {Bản vẽ} handover {Biên bản bàn giao} photo {Ảnh} id_card {CCCD} other {Tài liệu}}",
     "sheetTitle": "Thêm tài liệu",

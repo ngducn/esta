@@ -7,3 +7,8 @@ export type DocumentStatuses = {
   /** The last heartbeat as `HH:mm`, with its date when it is an earlier day; null when the worker is online or never ran. */
   readonly offlineSince?: string | null;
 };
+
+/** How many documents wait for a person to check the reading; null when the status read failed, so no screen shows a false zero. */
+export function awaitingReview(read: DocumentStatuses | null): number | null {
+  return read === null ? null : Object.values(read.statuses).filter((status) => status === 'needs_review').length;
+}

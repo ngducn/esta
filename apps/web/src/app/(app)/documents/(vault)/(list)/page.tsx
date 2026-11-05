@@ -13,7 +13,7 @@ export default async function DocumentsPage({ searchParams }: { searchParams: Pr
   const [params, member] = await Promise.all([searchParams, requireMember()]);
   const [vault, nav, t] = await Promise.all([loadVault(member.household.id, null, queryParam(params.q)), getTranslations('nav'), getTranslations('documents')]);
 
-  const awaitingReview = Object.values(vault.statuses.statuses).filter((status) => status === 'needs_review').length;
+  const { awaitingReview } = vault;
 
   return (
     <div className="flex flex-col gap-stack">
@@ -21,7 +21,7 @@ export default async function DocumentsPage({ searchParams }: { searchParams: Pr
       {vault.tiles.length === 0 ? null : (
         <SummaryStrip
           label={t('stripLabel')}
-          unknownLabel={t('figureTotal')}
+          unknownLabel={t('unknownFigure')}
           figures={[
             { label: t('figureTotal'), value: vault.tiles.length, sub: t('figureTotalSub'), testId: 'figure-total' },
             {
@@ -33,7 +33,7 @@ export default async function DocumentsPage({ searchParams }: { searchParams: Pr
             {
               label: t('figureReview'),
               value: awaitingReview,
-              sub: awaitingReview === 0 ? t('figureReviewNone') : t('figureReviewSub'),
+              ...(awaitingReview === null ? {} : { sub: awaitingReview === 0 ? t('figureReviewNone') : t('figureReviewSub') }),
               testId: 'figure-review',
             },
           ]}
