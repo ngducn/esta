@@ -11,11 +11,13 @@ const [PROPERTY = ''] = labels.properties.keys();
 const OTHER_HOUSEHOLD_PROPERTY = '00000000-0000-4000-8000-0000000000b1';
 const LEASE = '00000000-0000-4000-8000-0000000000c1';
 const ISSUED_PERIOD = '2026-10-25';
+const SLIP_RENT = 1000;
 
 /** `public.proposal_refusal` as tasks.test.sql and proposal_effects.test.sql prove it, for the two subjects these cases name. */
 function proposalRefusal({ p_proposal }: Record<string, unknown>): string | null {
   const params = (p_proposal as { params: Record<string, unknown> }).params;
   if (params.property_id === OTHER_HOUSEHOLD_PROPERTY) return 'ESTA_PROPOSAL_SUBJECT';
+  if (params.rent_vnd === SLIP_RENT) return 'ESTA_RENT_CHANGE_RANGE';
   return params.effective_period_start === ISSUED_PERIOD ? 'ESTA_AMENDMENT_ALREADY_BILLED' : null;
 }
 
@@ -81,12 +83,25 @@ describe('create_proposal validation (AGENT.md §7)', () => {
       { type: 'suggest_rent_change', params: { title: 'Tăng tiền thuê phòng', lease_id: LEASE, effective_period_start: ISSUED_PERIOD, rent_vnd: 3_800_000 }, rationale: 'Giá khu này tăng.' },
       'effective_period_start: that period is already billed or paid',
     ],
+    [
+      'a rent a slip away from the rent it replaces (#333)',
+      { type: 'suggest_rent_change', params: { title: 'Giảm tiền thuê phòng', lease_id: LEASE, effective_period_start: '2026-11-25', rent_vnd: SLIP_RENT }, rationale: 'Giá khu này giảm.' },
+      'from 50% to 200% of the rent it replaces, and this rent is outside that range. Store no card for this change and try no other rent: tell the family member to change the rent on the lease itself.',
+    ],
     ['a filled title over the limit', task({ title: `${'Gọi khách '.repeat(20)}{{f1.place_label}}` }), 'params.title:'],
   ])('sends %s back to the model and stores nothing', async (_, input, message) => {
     const { tables, writer } = await setup();
     const call = writer.write(input);
     await expect(call).rejects.toBeInstanceOf(ToolRejection);
     await expect(call).rejects.toThrow(message);
+    expect(tables.agent_items).toEqual([]);
+  });
+
+  it('does not tell the model to call again after a rent outside the range (#333)', async () => {
+    const { tables, writer } = await setup();
+    const call = writer.write({ type: 'suggest_rent_change', params: { title: 'Giảm tiền thuê phòng', lease_id: LEASE, effective_period_start: '2026-11-25', rent_vnd: SLIP_RENT }, rationale: 'Giá khu này giảm.' });
+    await expect(call).rejects.toThrow(/lease itself/);
+    await expect(call).rejects.not.toThrow(/call create_proposal again/);
     expect(tables.agent_items).toEqual([]);
   });
 

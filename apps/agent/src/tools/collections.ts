@@ -37,7 +37,10 @@ export function collectionsTool({ reads, locale, asOf, cite, properties }: ReadT
         }),
       ),
     );
-    const totals = groups.map((group) => cite({ status: group.key, count_display: formatCount(group.items.length, locale), total_display: formatVnd(group.totalVnd, locale) }));
+    // A paid group's total adds each bill's whole allocation, which the board's Đã thu caps at the bill, so only month_collected states what was collected.
+    const totals = groups.map((group) =>
+      cite({ status: group.key, count_display: formatCount(group.items.length, locale), ...(group.key === 'paid' ? {} : { total_display: formatVnd(group.totalVnd, locale) }) }),
+    );
     const { collectedVnd, billedVnd } = monthCollected(groups);
     const month_collected = cite({ month_date_display: formatMonthYear(start, locale), collected_display: formatVnd(collectedVnd, locale), billed_display: formatVnd(billedVnd, locale) });
     return { bills, totals, month_collected };

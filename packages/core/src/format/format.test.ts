@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { isoDate } from '../date/iso-date';
 import { vnd } from '../money/vnd';
-import { formatArea, formatBps, formatDate, formatDateLong, formatDays, formatMonthWithin, formatMonthYear, formatRelativeDue, formatVnd, formatVndCompact, formatYear } from './index';
+import { formatArea, formatBps, formatDate, formatDateLong, formatDays, formatMonthWithin, formatMonthYear, formatRelativeDue, formatVnd, formatVndCompact, formatYear, wholePercent } from './index';
 
 const NBSP = '\u00a0';
 
@@ -165,5 +165,14 @@ describe('month labels', () => {
     expect(formatMonthWithin(isoDate('2026-09-01'), isoDate('2026-10-01'), 'en')).toBe('September');
     expect(formatMonthWithin(isoDate('2025-12-01'), isoDate('2026-01-01'), 'vi')).toBe('12/2025');
     expect(formatMonthWithin(isoDate('2025-12-01'), isoDate('2026-01-01'), 'en')).toBe('December 2025');
+  });
+});
+
+describe('wholePercent (#338)', () => {
+  it('floors a share of a threshold the way the tax card shows it, so an answer and the card agree', () => {
+    expect(wholePercent(9653)).toBe(96);
+    expect(wholePercent(9999)).toBe(99);
+    expect(wholePercent(10_000)).toBe(100);
+    expect(wholePercent(0)).toBe(0);
   });
 });
