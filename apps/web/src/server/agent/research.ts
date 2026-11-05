@@ -34,7 +34,6 @@ const address = z.object({ province_code: z.string() });
 const date = (text: string | null): IsoDate | null => (text !== null && isIsoDate(text) ? text : null);
 const TOPIC_ORDER = ['province:', 'commune:', 'national:'];
 
-/** Province topics first, then commune, then national: the order the Thị trường tab and Cài đặt list them. */
 export function topicLabels(rows: readonly { topic_key: string; label: string }[]): readonly string[] {
   const rank = (key: string) => TOPIC_ORDER.findIndex((prefix) => key.startsWith(prefix));
   return rows.toSorted((a, b) => rank(a.topic_key) - rank(b.topic_key)).map((row) => row.label);

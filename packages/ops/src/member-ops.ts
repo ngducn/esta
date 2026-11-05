@@ -12,6 +12,7 @@ export type MemberSaved = { readonly id: string };
 const SENTINELS = {
   'a household keeps at least one admin who has signed in': { kind: 'last_admin' },
   'only an operator of the household can change or remove an operator': { kind: 'operator' },
+  'the operator keeps the admin role and the row': { kind: 'operator' },
 } as const;
 
 const renameSchema = z.strictObject({ name: z.string().trim().min(1).max(120) });
@@ -31,7 +32,6 @@ async function storedMember(ctx: OpContext, id: string) {
 
 const settled = (ctx: OpContext, id: string, written: Written) => writtenRow(id, written, async () => (await storedMember(ctx, id)) !== null, SENTINELS);
 
-/** The household's name on every screen. Only an admin renames it; RLS refuses anyone else as `forbidden`. */
 export const householdRename = defineOp<Rename, Rename, MemberSaved, MemberRefusal>({
   creates: null,
   input: renameSchema,
@@ -48,10 +48,6 @@ export const householdRename = defineOp<Rename, Rename, MemberSaved, MemberRefus
   },
 });
 
-/**
- * Invites a relative by email with the role named, through `invite_member`, which only an admin may call. The same email
- * and role again plans as unchanged; an email already invited with another role, or already signed in, is refused.
- */
 export const memberInvite = defineOp<Invite, Invite, MemberSaved, MemberRefusal>({
   creates: 'household_members',
   input: inviteSchema,
@@ -68,7 +64,6 @@ export const memberInvite = defineOp<Invite, Invite, MemberSaved, MemberRefusal>
   },
 });
 
-/** Changes a member's role. The guards keep the last signed-in admin and the operator in place. */
 export const memberSetRole = defineOp<RoleChange, RoleChange, MemberSaved, MemberRefusal>({
   creates: null,
   input: roleChangeSchema,
@@ -82,7 +77,6 @@ export const memberSetRole = defineOp<RoleChange, RoleChange, MemberSaved, Membe
   },
 });
 
-/** Removes a member or a pending invite; one already gone plans as unchanged. */
 export const memberRemove = defineOp<Remove, Remove, MemberSaved, MemberRefusal>({
   creates: null,
   input: removeSchema,

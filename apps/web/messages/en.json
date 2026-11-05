@@ -1363,6 +1363,9 @@
     "memberRemoveBody": "They stop seeing anything. You can invite them again later.",
     "memberRemoveConfirm": "Remove from household",
     "memberKeep": "Keep",
+    "memberSelfTitle": "Lower your own role?",
+    "memberSelfBody": "You will no longer be able to invite people or change anyone's role. Another admin can give it back to you.",
+    "memberSelfConfirm": "Lower my role",
     "inviteOpen": "Invite a relative",
     "inviteTitle": "Invite a relative",
     "inviteBody": "The person invited can only look, not change anything. You can change the role later.",
@@ -1373,7 +1376,7 @@
     "refusals": {
       "invalid": "That email does not look right. Check it and try again.",
       "lastAdmin": "The household needs at least one admin.",
-      "operator": "Only the operator can change or remove the operator.",
+      "operator": "This person keeps the household's admin role, so it cannot be changed or removed.",
       "alreadyMember": "This email is already in the household.",
       "alreadyInvited": "This email is already invited with another role. Change the role in the list.",
       "notFound": "This person is no longer there. Reload the page to see the new list.",

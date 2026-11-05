@@ -6,7 +6,7 @@ import { useBillAction } from '@/components/invoices/use-bill-action';
 import { SheetFooter } from '@/components/sheet-footer';
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
 import { inviteMember, type MemberActionRefusal } from '@/server/actions/members';
-import type { Refusals } from './settings-labels';
+import type { Refusals } from './member-refusals';
 
 export type InviteSheetLabels = {
   readonly title: string;
@@ -21,7 +21,6 @@ export type InviteSheetLabels = {
 
 const FIELD_REFUSALS: ReadonlySet<MemberActionRefusal> = new Set(['invalid', 'alreadyMember', 'alreadyInvited']);
 
-/** A relative joins as a viewer: they read everything and change nothing. An admin can raise the role later. */
 export default function InviteSheet({
   open,
   onOpenChange,
@@ -56,7 +55,6 @@ export default function InviteSheet({
             }}
             error={refusal !== null && FIELD_REFUSALS.has(refusal) ? labels.refusals[refusal] : null}
             testId="invite-email"
-            inputMode="text"
             maxLength={254}
           />
         </div>

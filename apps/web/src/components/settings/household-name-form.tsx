@@ -6,11 +6,10 @@ import { TextField } from '@/components/form-parts';
 import { useBillAction } from '@/components/invoices/use-bill-action';
 import { Button } from '@/components/ui/button';
 import { renameHousehold, type MemberActionRefusal } from '@/server/actions/members';
-import type { Refusals } from './settings-labels';
+import type { Refusals } from './member-refusals';
 
 export type HouseholdNameLabels = { readonly name: string; readonly save: string; readonly saving: string; readonly refusals: Refusals };
 
-/** An admin renames the household; the page redraws with the new name everywhere it shows. */
 export function HouseholdNameForm({ name, labels }: { name: string; labels: HouseholdNameLabels }) {
   const [text, setText] = useState(name);
   const { refusal, setRefusal, pending, run } = useBillAction<MemberActionRefusal>();

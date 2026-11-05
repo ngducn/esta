@@ -1,5 +1,7 @@
 import { getTranslations } from 'next-intl/server';
-import type { Refusals } from './settings-labels';
+import type { MemberActionRefusal } from '@/server/actions/members';
+
+export type Refusals = Readonly<Record<MemberActionRefusal, string>>;
 
 export async function memberRefusals(): Promise<Refusals> {
   const t = await getTranslations('settings.refusals');

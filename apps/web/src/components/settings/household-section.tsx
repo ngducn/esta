@@ -5,7 +5,6 @@ import { HouseholdNameForm } from './household-name-form';
 import { memberRefusals } from './member-refusals';
 import { SettingsSection } from './settings-section';
 
-/** The household's name, which an admin renames, and the timezone every date is read in. */
 export async function HouseholdSection({ member }: { member: Member }) {
   const t = await getTranslations('settings');
   const admin = member.role === 'admin';

@@ -1363,6 +1363,9 @@
     "memberRemoveBody": "Họ không còn xem được gì. Mời lại sau vẫn được.",
     "memberRemoveConfirm": "Xóa khỏi hộ gia đình",
     "memberKeep": "Giữ lại",
+    "memberSelfTitle": "Bạn tự hạ quyền của mình?",
+    "memberSelfBody": "Bạn sẽ không còn mời người hay đổi quyền của ai được nữa. Một quản trị viên khác trả lại quyền cho bạn được.",
+    "memberSelfConfirm": "Hạ quyền của tôi",
     "inviteOpen": "Mời người thân",
     "inviteTitle": "Mời người thân",
     "inviteBody": "Người được mời chỉ xem, không sửa được gì. Có thể đổi quyền sau.",
@@ -1373,7 +1376,7 @@
     "refusals": {
       "invalid": "Chưa hiểu email này. Kiểm tra lại rồi thử tiếp.",
       "lastAdmin": "Hộ gia đình cần ít nhất một quản trị viên.",
-      "operator": "Chỉ người vận hành đổi hoặc xóa được người vận hành.",
+      "operator": "Người này giữ quyền quản trị của hộ gia đình, nên không đổi hay xóa được.",
       "alreadyMember": "Email này đã ở trong hộ gia đình.",
       "alreadyInvited": "Email này đã được mời với quyền khác. Đổi quyền ở danh sách.",
       "notFound": "Không thấy người này nữa. Tải lại trang để xem danh sách mới.",

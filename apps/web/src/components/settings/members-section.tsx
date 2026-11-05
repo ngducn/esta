@@ -7,10 +7,9 @@ import { MemberActions } from './member-actions';
 import { memberRefusals } from './member-refusals';
 import { SettingsSection } from './settings-section';
 
-/** Who belongs to the household and with which role. Only an admin sees the invite and role controls; SQL refuses anyone else. */
 export async function MembersSection({ member }: { member: Member }) {
-  const [t, members, refusals] = await Promise.all([getTranslations('settings'), loadMembers(member.household.id), memberRefusals()]);
   const admin = member.role === 'admin';
+  const [t, members, refusals] = await Promise.all([getTranslations('settings'), loadMembers(member.household.id), admin ? memberRefusals() : null]);
   const roles = { admin: t('roles.admin'), member: t('roles.member'), viewer: t('roles.viewer') };
   return (
     <SettingsSection id="members" title={t('members')} intro={admin ? t('membersIntro') : t('membersReadOnly')}>
@@ -20,7 +19,7 @@ export async function MembersSection({ member }: { member: Member }) {
             const name = row.displayName ?? row.email;
             const self = row.id === member.id;
             return (
-              <li key={row.id} data-testid="member-row" data-email={row.email} className="flex flex-col gap-3 p-5 sm:p-6">
+              <li key={row.id} data-testid="member-row" className="flex flex-col gap-3 p-5 sm:p-6">
                 <div className="flex flex-col gap-0.5">
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                     <h3 className="text-headline font-semibold break-words">{name}</h3>
@@ -32,17 +31,17 @@ export async function MembersSection({ member }: { member: Member }) {
                     )}
                   </div>
                   {row.displayName === null ? null : <p className="text-body-sm break-all text-text-secondary">{row.email}</p>}
-                  {admin ? null : (
+                  {admin && !row.isOperator ? null : (
                     <p data-testid="member-role-text" className="text-body-sm text-text-secondary">
                       {roles[row.role]}
                     </p>
                   )}
                 </div>
-                {admin ? (
+                {admin && !row.isOperator && refusals !== null ? (
                   <MemberActions
                     id={row.id}
                     role={row.role}
-                    canRemove={!self}
+                    self={self}
                     labels={{
                       role: t('memberRole'),
                       roles,
@@ -51,6 +50,9 @@ export async function MembersSection({ member }: { member: Member }) {
                       removeBody: t('memberRemoveBody'),
                       removeConfirm: t('memberRemoveConfirm'),
                       keep: t('memberKeep'),
+                      selfTitle: t('memberSelfTitle'),
+                      selfBody: t('memberSelfBody'),
+                      selfConfirm: t('memberSelfConfirm'),
                       refusals,
                     }}
                   />
@@ -60,7 +62,7 @@ export async function MembersSection({ member }: { member: Member }) {
           })}
         </ul>
       </Card>
-      {admin ? (
+      {admin && refusals !== null ? (
         <InviteButton
           label={t('inviteOpen')}
           labels={{ title: t('inviteTitle'), body: t('inviteBody'), email: t('inviteEmail'), emailHint: t('inviteEmailHint'), save: t('inviteSave'), saving: t('saving'), close: t('inviteClose'), refusals }}

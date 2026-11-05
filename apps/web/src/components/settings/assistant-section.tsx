@@ -12,7 +12,6 @@ import { SettingsSection } from './settings-section';
 
 const RECENT_RUNS = 5;
 
-/** Whether Trợ lý is working and what it reads; the last runs are for the operator only. */
 export async function AssistantSection({ member }: { member: Member }) {
   const clock = await getClock();
   const now = clock.now();

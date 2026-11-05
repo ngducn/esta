@@ -4,8 +4,6 @@ import { memberCall, memberRest } from './helpers/auth-api';
 import { signIn } from './helpers/inbucket';
 import { DESKTOP, noSidewaysScroll, open, openNewHousehold, PHONE, seriousAxeViolations } from './helpers/wizard';
 
-const LAST_ADMIN = 'Hộ gia đình cần ít nhất một quản trị viên.';
-
 test.beforeEach(() => {
   test.skip(test.info().project.name !== 'mobile', 'each rule makes its own household, so one viewport');
 });
@@ -61,19 +59,22 @@ test('Ryan invites a relative as a viewer, who signs in and finds nothing to cha
     await memberCall(viewer, 'PATCH', `households?id=eq.${household}`, { name: 'Đổi tên' }),
     await memberCall(viewer, 'POST', 'rpc/invite_member', { p_household_id: household, p_email: 'x@demo.esta.test', p_role: 'viewer' }),
   ]) {
-    const body = await attempt.text();
-    expect(attempt.ok() ? JSON.parse(body) : attempt.status(), 'the server refuses what the page hides').toEqual(attempt.ok() ? [] : 403);
+    const outcome: unknown = attempt.ok() ? JSON.parse(await attempt.text()) : attempt.status();
+    expect([[], 403], 'the server refuses what the page hides').toContainEqual(outcome);
   }
   expect((await roles(page)).find((row) => row.invited_email === email)?.role).toBe('viewer');
   await guest.close();
 });
 
-test('the last admin cannot demote itself, and removing someone asks first and names them', async ({ page }) => {
+test('the operator has no controls on its own row and SQL keeps it admin, and removing someone asks first and names them', async ({ page }) => {
   await openNewHousehold(page, 'dark', PHONE);
   await page.goto('/settings');
   const me = page.getByTestId('member-row').first();
-  await me.getByTestId('member-role').selectOption('member');
-  await expect(me.getByTestId('member-error')).toHaveText(LAST_ADMIN);
+  await expect(me.getByTestId('member-role-text')).toHaveText('Quản trị viên');
+  for (const control of ['member-role', 'remove-member']) await expect(me.getByTestId(control), control).toHaveCount(0);
+  const own = (await memberRest<{ id: string }[]>(page, 'GET', 'household_members?select=id'))[0]?.id;
+  expect((await memberCall(page, 'PATCH', `household_members?id=eq.${own}`, { role: 'viewer' })).status(), 'a crafted role change').toBe(403);
+  expect((await memberCall(page, 'DELETE', `household_members?id=eq.${own}`)).status(), 'a crafted removal').toBe(403);
   expect((await roles(page))[0]?.role).toBe('admin');
 
   const email = `co.${randomUUID().slice(0, 8)}@demo.esta.test`;
@@ -112,8 +113,25 @@ test('an admin who is not the operator sees the assistant status but no runs, an
   await expect(page.getByTestId('worker-status')).toBeVisible();
   await expect(page.getByTestId('assistant-runs')).toHaveCount(0);
   await expect(page.getByTestId('topics')).toBeVisible();
+  const rows = page.getByTestId('member-row');
+  const operatorRow = rows.filter({ has: page.getByTestId('member-role-text') });
+  await expect(operatorRow, 'only the operator row lacks the controls').toHaveCount(1);
+  for (const control of ['member-role', 'remove-member']) await expect(operatorRow.getByTestId(control), control).toHaveCount(0);
+  await expect(rows.getByTestId('member-role')).toHaveCount((await rows.count()) - 1);
+
+  const mine = rows.filter({ hasText: 'Bạn' }).first();
+  await mine.getByTestId('member-role').selectOption('member');
+  const ask = page.getByRole('alertdialog', { name: 'Bạn tự hạ quyền của mình?' });
+  await expect(ask).toBeVisible();
+  await ask.getByRole('button', { name: 'Giữ lại' }).click();
+  await expect(ask).toBeHidden();
+  await expect(mine.getByTestId('member-role')).toHaveValue('admin');
+
   const operator = (await memberRest<{ id: string }[]>(page, 'GET', 'household_members?select=id&is_operator=eq.true'))[0]?.id;
   const refused = await memberCall(page, 'DELETE', `household_members?id=eq.${operator}`);
   expect(refused.status()).toBe(403);
+  const demoted = await memberCall(page, 'PATCH', `household_members?id=eq.${operator}`, { role: 'viewer' });
+  expect(demoted.status(), 'a crafted role change on the operator').toBe(403);
+  expect(await memberRest<{ role: string }[]>(page, 'GET', `household_members?select=role&id=eq.${operator}`)).toEqual([{ role: 'admin' }]);
   expect((await roles(page)).length).toBeGreaterThan(1);
 });

@@ -48,9 +48,16 @@ describe('memberSetRole and memberRemove', () => {
     expect(await runOp(memberSetRole, context(db), { id: MEMBER, role: 'member' })).toEqual({ ok: false, reason: { kind: 'operator' } });
   });
 
+  it('reads the operator keeping its own row as operator', async () => {
+    const { db } = fakeDb(members(stored), (sent) => (sent.method === 'PATCH' || sent.method === 'DELETE' ? { code: '42501', message: 'the operator keeps the admin role and the row' } : null));
+    expect(await runOp(memberSetRole, context(db), { id: MEMBER, role: 'viewer' })).toEqual({ ok: false, reason: { kind: 'operator' } });
+    expect(await runOp(memberRemove, context(db), { id: MEMBER })).toEqual({ ok: false, reason: { kind: 'operator' } });
+  });
+
   it('answers forbidden when RLS hides the write and not_found when the member is gone', async () => {
     const hidden = fakeDb((sent) => (sent.method === 'GET' ? [stored] : []));
     expect(await runOp(memberSetRole, context(hidden.db), { id: MEMBER, role: 'viewer' })).toEqual({ ok: false, reason: { kind: 'forbidden' } });
+    expect(await runOp(memberRemove, context(hidden.db), { id: MEMBER })).toEqual({ ok: false, reason: { kind: 'forbidden' } });
     expect(await runOp(memberSetRole, context(fakeDb().db), { id: MEMBER, role: 'viewer' })).toEqual({ ok: false, reason: { kind: 'not_found' } });
   });
 
@@ -64,5 +71,9 @@ describe('householdRename', () => {
   it('trims the name and plans the same name as unchanged', async () => {
     expect(householdRename.input.parse({ name: '  Gia đình Demo  ' })).toEqual({ name: 'Gia đình Demo' });
     expect(await householdRename.plan(context(fakeDb(() => [{ name: 'Gia đình Demo' }]).db), { name: 'Gia đình Demo' })).toMatchObject({ ok: true, value: { kind: 'unchanged' } });
+  });
+
+  it('reads a rename RLS wrote nothing for as forbidden', async () => {
+    expect(await householdRename.apply(context(fakeDb().db), { name: 'Gia đình Demo' })).toEqual({ ok: false, reason: { kind: 'forbidden' } });
   });
 });
