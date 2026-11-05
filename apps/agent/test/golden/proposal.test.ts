@@ -86,7 +86,7 @@ describe('create_proposal validation (AGENT.md §7)', () => {
     [
       'a rent a slip away from the rent it replaces (#333)',
       { type: 'suggest_rent_change', params: { title: 'Giảm tiền thuê phòng', lease_id: LEASE, effective_period_start: '2026-11-25', rent_vnd: SLIP_RENT }, rationale: 'Giá khu này giảm.' },
-      'between 50% and 200% of the rent it replaces. A change outside that range is not for a suggestion card: tell the family member to change the rent on the lease itself.',
+      'from 50% to 200% of the rent it replaces, and this rent is outside that range. Store no card for this change and try no other rent: tell the family member to change the rent on the lease itself.',
     ],
     ['a filled title over the limit', task({ title: `${'Gọi khách '.repeat(20)}{{f1.place_label}}` }), 'params.title:'],
   ])('sends %s back to the model and stores nothing', async (_, input, message) => {
@@ -94,6 +94,14 @@ describe('create_proposal validation (AGENT.md §7)', () => {
     const call = writer.write(input);
     await expect(call).rejects.toBeInstanceOf(ToolRejection);
     await expect(call).rejects.toThrow(message);
+    expect(tables.agent_items).toEqual([]);
+  });
+
+  it('does not tell the model to call again after a rent outside the range (#333)', async () => {
+    const { tables, writer } = await setup();
+    const call = writer.write({ type: 'suggest_rent_change', params: { title: 'Giảm tiền thuê phòng', lease_id: LEASE, effective_period_start: '2026-11-25', rent_vnd: SLIP_RENT }, rationale: 'Giá khu này giảm.' });
+    await expect(call).rejects.toThrow(/lease itself/);
+    await expect(call).rejects.not.toThrow(/call create_proposal again/);
     expect(tables.agent_items).toEqual([]);
   });
 

@@ -25,9 +25,23 @@ const collator = new Intl.Collator('vi', { numeric: true });
  */
 export function vacantDays(unit: Pick<ReportUnit, 'availableFrom'>, tenancies: readonly Omit<ReportTenancy, 'unitId'>[], asOf: IsoDate): number | 'leased' | null {
   if (tenancies.some((lease) => holdsUnit(lease, asOf))) return 'leased';
-  const lastEnd = tenancies.reduce<IsoDate | null>((last, lease) => (lease.end_date !== null && lease.end_date <= asOf && (last === null || lease.end_date > last) ? lease.end_date : last), null);
-  const since = lastEnd ?? unit.availableFrom;
+  const since = lastEnd(tenancies, asOf) ?? unit.availableFrom;
   return since === null || since > asOf ? null : daysBetween(since, asOf);
+}
+
+/**
+ * The first empty day of a unit no lease holds on `asOf`, as its `Trống từ` pill dates it: the day after its last lease
+ * ended, else `available_from`; `'leased'` while a lease holds it and `null` with no date, or one still ahead.
+ */
+export function vacantSince(unit: Pick<ReportUnit, 'availableFrom'>, tenancies: readonly Omit<ReportTenancy, 'unitId'>[], asOf: IsoDate): IsoDate | 'leased' | null {
+  if (tenancies.some((lease) => holdsUnit(lease, asOf))) return 'leased';
+  const ended = lastEnd(tenancies, asOf);
+  const since = ended === null ? unit.availableFrom : addDays(ended, 1);
+  return since === null || since > asOf ? null : since;
+}
+
+function lastEnd(tenancies: readonly Omit<ReportTenancy, 'unitId'>[], asOf: IsoDate): IsoDate | null {
+  return tenancies.reduce<IsoDate | null>((last, lease) => (lease.end_date !== null && lease.end_date <= asOf && (last === null || lease.end_date > last) ? lease.end_date : last), null);
 }
 
 function daysOf(unit: ReportUnit, tenancies: readonly ReportTenancy[], from: IsoDate, through: IsoDate) {

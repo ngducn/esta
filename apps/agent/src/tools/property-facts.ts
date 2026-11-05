@@ -1,9 +1,10 @@
+import { daysBetween } from '@esta/core/date/calendar';
 import { formatBps, formatCount, formatDate, formatVnd } from '@esta/core/format';
 import { rentInEffect } from '@esta/core/lease';
 import { estaUri } from '@esta/core/links';
 import { vnd } from '@esta/core/money';
 import { propertyStatus } from '@esta/core/properties';
-import { vacantDays } from '@esta/core/reports';
+import { vacantSince } from '@esta/core/reports';
 import { grossYieldBp, latestValuation } from '@esta/core/valuations';
 import { z } from 'zod';
 import type { ReadToolContext } from './ask-reads';
@@ -72,7 +73,7 @@ export function propertyMetricsTool({ reads, locale, asOf, cite, properties }: R
     const units = report.units
       .filter((unit) => unit.propertyId === property.id)
       .toSorted(byUnitLabel)
-      .map((unit) => ({ unit, empty: vacantDays(unit, report.tenancies.filter((lease) => lease.unitId === unit.id), asOf) }));
+      .map((unit) => ({ unit, empty: vacantSince(unit, report.tenancies.filter((lease) => lease.unitId === unit.id), asOf) }));
     const leased = units.filter(({ empty }) => empty === 'leased').length;
     const pills = row === null ? [] : propertyStatus({ ...row, leasedUnitCount: leased, collection: null }, asOf);
     const vacant = pills.find((pill) => pill.kind === 'vacant');
@@ -93,7 +94,7 @@ export function propertyMetricsTool({ reads, locale, asOf, cite, properties }: R
         cite({
           unit_label: unit.wholeUnit ? property.property_label : unit.label,
           leased: empty === 'leased',
-          empty_days_display: typeof empty === 'number' ? formatCount(empty, locale) : null,
+          empty_days_display: empty === 'leased' || empty === null ? null : formatCount(daysBetween(empty, asOf), locale),
           link: estaUri({ type: 'unit', id: unit.id }),
         }),
       ),

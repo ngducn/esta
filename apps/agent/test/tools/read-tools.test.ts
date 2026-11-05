@@ -49,7 +49,8 @@ describe('the household reads count what the screens count (AGENT.md §4)', () =
     const board = monthCollected(groupCollections(rows as never, isoDate('2026-10-01'), ASOF));
     const answer = await collectionsTool(context)({ year: 2026, month: 10 });
     expect(answer.month_collected).toMatchObject({ month_date_display: '10/2026', collected_display: formatVnd(board.collectedVnd, 'vi'), billed_display: formatVnd(board.billedVnd, 'vi') });
-    expect(answer.totals.find((total) => total.status === 'paid')?.total_display).not.toBe(answer.month_collected.collected_display);
+    expect(answer.totals.find((total) => total.status === 'paid')).not.toHaveProperty('total_display');
+    expect(answer.totals.find((total) => total.status === 'overdue')).toHaveProperty('total_display');
   });
 
   it("dates an empty property from its Trống từ pill, the day after its last lease ended", async () => {

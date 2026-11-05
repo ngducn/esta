@@ -8,7 +8,7 @@ import { taxRuleRowSchema } from '../tax/rules';
 import type { Valuation } from '../valuations/schema';
 import { emptySnapshot, reportLease, testUuid as uuid } from './fixtures';
 import { checkReportInvariants, holds } from './invariants';
-import { occupancy, vacantDays } from './occupancy';
+import { occupancy, vacantDays, vacantSince } from './occupancy';
 import { ownerSummary, UNATTRIBUTED } from './ownerSummary';
 import { portfolioSummary } from './portfolio';
 import { propertyPnl } from './propertyPnl';
@@ -90,6 +90,13 @@ describe('occupancy (FIN-4, AGENT.md §5.3 W4)', () => {
     expect(vacantDays(unit(DI_AN, 'Phòng 9'), [], ASOF)).toBeNull();
     expect(vacantDays(unit(DI_AN, 'Phòng 9', { availableFrom: d('2026-11-01') }), [], ASOF)).toBeNull();
     expect(vacantDays(room8, [tenancy(room8.id, 'active', '2026-11-01', null)], ASOF), 'a signed lease starting later holds the room').toBe('leased');
+  });
+
+  it('dates the first empty day as the pill does: the day after the last end, else available_from', () => {
+    expect(vacantSince(room8, [tenancy(room8.id, 'ended', '2026-08-10', '2026-09-30')], ASOF)).toBe('2026-10-01');
+    expect(vacantSince(room8, [], ASOF)).toBe(room8.availableFrom);
+    expect(vacantSince(unit(DI_AN, 'Phòng 9'), [], ASOF)).toBeNull();
+    expect(vacantSince(room8, [tenancy(room8.id, 'active', '2026-11-01', null)], ASOF)).toBe('leased');
   });
 });
 

@@ -37,12 +37,15 @@ const REFUSALS: Readonly<Record<string, string>> = {
   ESTA_AMENDMENT_ALREADY_BILLED: 'effective_period_start: that period is already billed or paid; use a later period start',
   ESTA_AMENDMENT_DUPLICATE: 'effective_period_start: the lease already changes on that date',
   ESTA_AMENDMENT_NOT_A_PERIOD_START: 'effective_period_start: not a period start of this lease',
-  ESTA_RENT_CHANGE_RANGE: `rent_vnd: keep the new monthly rent between ${RENT_CHANGE_RANGE.minPercent}% and ${RENT_CHANGE_RANGE.maxPercent}% of the rent it replaces. A change outside that range is not for a suggestion card: tell the family member to change the rent on the lease itself.`,
+  ESTA_RENT_CHANGE_RANGE: `rent_vnd: a suggestion card holds a new monthly rent from ${RENT_CHANGE_RANGE.minPercent}% to ${RENT_CHANGE_RANGE.maxPercent}% of the rent it replaces, and this rent is outside that range. Store no card for this change and try no other rent: tell the family member to change the rent on the lease itself.`,
   ESTA_LEASE_NOT_RENEWABLE: 'lease_id: only an active or ended lease renews',
   ESTA_LEASE_OPEN_ENDED: 'lease_id: an open-ended lease has no end to renew from',
   ESTA_LEASE_ALREADY_RENEWED: 'lease_id: the lease already has a renewal',
   ESTA_RENEWAL_END: 'end_date: must be after the lease ends',
 };
+
+/** Refusals no retry can fix: the model is sent elsewhere, not told to call again. */
+const FINAL_REFUSALS: ReadonlySet<string> = new Set(['ESTA_RENT_CHANGE_RANGE']);
 
 async function resolveCitations({ db, householdId, citing }: ProposalBinding, urls: readonly string[]): Promise<{ readonly found: Citation[]; readonly refused: string[] }> {
   if (urls.length === 0) return { found: [], refused: [] };
@@ -118,7 +121,7 @@ export function proposalWriter(binding: ProposalBinding) {
     if (sources.refused.length > 0) throw rejected(sources.refused);
     const { data: refusal, error } = await binding.db.rpc('proposal_refusal', { p_household_id: binding.householdId, p_proposal: proposal });
     if (error) throw new Error(`Checking the proposal failed: ${error.message}`);
-    if (refusal !== null) throw rejected([REFUSALS[refusal] ?? refusal]);
+    if (refusal !== null) throw FINAL_REFUSALS.has(refusal) ? new ToolRejection(REFUSALS[refusal] ?? refusal) : rejected([REFUSALS[refusal] ?? refusal]);
 
     const links = subjects(proposal);
     const key = dedupeKey(proposal);
