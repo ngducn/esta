@@ -669,11 +669,11 @@
     "itemName": "{kind, select, parcels {{name, select, none {thửa đất chưa có số} other {thửa đất số {name}}}} structures {{name}} other {{name, select, none {giấy chứng nhận} other {giấy chứng nhận số {name}}}}}",
     "stripLabel": "Tóm tắt giấy tờ pháp lý",
     "figureCertificates": "Giấy chứng nhận",
-    "figureCertificatesValue": "{count} sổ",
+    "figureCertificatesValue": "{count, plural, other {# sổ}}",
     "figureParcels": "Thửa đất",
-    "figureParcelsValue": "{count} thửa",
+    "figureParcelsValue": "{count, plural, other {# thửa}}",
     "figureStructures": "Công trình trên đất",
-    "figureStructuresValue": "{count} công trình",
+    "figureStructuresValue": "{count, plural, other {# công trình}}",
     "figureSubNone": "Thêm ở bên dưới",
     "unknownFigure": "Chưa có số liệu"
   },
@@ -767,7 +767,7 @@
     "figureLeasedValue": "{leased}/{total}",
     "figureLeasedSub": "phòng, căn có người thuê",
     "figureOwed": "Cần thu",
-    "figureOwedValue": "{count} phòng",
+    "figureOwedValue": "{count, plural, other {# phòng}}",
     "figureOwedNone": "Không có phòng nào quá hạn hay đến hạn",
     "figureOwedSub": "quá hạn hoặc đến hạn",
     "unknownFigure": "Chưa có số liệu"
