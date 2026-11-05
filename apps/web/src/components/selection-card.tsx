@@ -29,7 +29,7 @@ export function SelectionCards({
   onChange: (value: string) => void;
   testId?: string;
   error?: string | null;
-  /** Cards with a title only: two to a row on a phone. */
+  /** Cards with a title only: one to a row on a phone, several from a tablet up. */
   narrow?: boolean;
   children?: ReactNode;
 }) {
@@ -37,7 +37,7 @@ export function SelectionCards({
   return (
     <fieldset data-testid={testId} className="flex min-w-0 flex-col gap-2">
       <legend className="mb-2 text-body font-medium text-text">{legend}</legend>
-      <div className={cn('grid gap-3', narrow ? 'grid-cols-[repeat(auto-fit,minmax(min(100%,9rem),1fr))]' : 'grid-cols-[repeat(auto-fit,minmax(min(100%,14rem),1fr))]')}>
+      <div className={cn('grid gap-3', narrow ? 'grid-cols-1 sm:grid-cols-[repeat(auto-fit,minmax(11rem,1fr))]' : 'grid-cols-[repeat(auto-fit,minmax(min(100%,14rem),1fr))]')}>
         {options.map(({ value: optionValue, title, description, icon: Icon }) => (
           <label
             key={optionValue}
@@ -62,9 +62,9 @@ export function SelectionCards({
             <span
               aria-hidden="true"
               className={cn(
-                'mt-0.5 flex size-icon-md shrink-0 items-center justify-center rounded-full border-[1.5px] bg-surface text-on-accent transition-colors duration-(--duration-fast) ease-standard',
+                'mt-0.5 flex size-icon-md shrink-0 items-center justify-center rounded-full border-[1.5px] bg-surface text-text transition-colors duration-(--duration-fast) ease-standard',
                 error === null ? 'border-border-field' : 'border-danger-text',
-                'peer-checked:border-accent peer-checked:bg-accent [&>svg]:scale-60 [&>svg]:opacity-0 peer-checked:[&>svg]:scale-100 peer-checked:[&>svg]:opacity-100',
+                'peer-checked:border-accent peer-checked:bg-accent peer-checked:text-on-accent [&>svg]:scale-60 [&>svg]:opacity-0 peer-checked:[&>svg]:scale-100 peer-checked:[&>svg]:opacity-100',
               )}
             >
               <Check className="size-icon-xs transition-[opacity,transform] duration-(--duration-base) ease-standard" strokeWidth={3} />

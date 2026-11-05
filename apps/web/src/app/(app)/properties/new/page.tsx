@@ -70,13 +70,13 @@ export default async function NewPropertyPage({ searchParams }: { searchParams: 
 
   const path = wizardPath(state.photo);
   const position = path.indexOf(state.step);
-  const { money, date, confirm, toast } = messages.components;
+  const { money, date, confirm, toast, address } = messages.components;
   const { purposeCodeHint, unknownCode } = messages.propertyLegal;
   const islandMessages = {
     propertyWizard: messages.propertyWizard,
     propertyForm: messages.propertyForm,
     properties: messages.properties,
-    components: { money, date, confirm, toast },
+    components: { money, date, confirm, toast, address },
     ...(state.step === 'photo' ? { documents: messages.documents } : {}),
     ...(state.step === 'review' ? { extraction: messages.extraction, propertyLegal: { purposeCodeHint, unknownCode } } : {}),
     ...(state.step === 'owners' ? { propertyOwners: messages.propertyOwners, propertyLegal: messages.propertyLegal } : {}),

@@ -64,7 +64,7 @@ export function DateInput({ label, defaultValue, onValueChange, onTextChange, na
           <Button
             type="button"
             variant="secondary"
-            icon
+            className="w-control-h px-0"
             disabled={disabled}
             aria-label={t('pick')}
             onClick={() => {

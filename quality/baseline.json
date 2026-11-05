@@ -1,7 +1,7 @@
 {
   "metrics": {
     "clones": {
-      "value": 106,
+      "value": 105,
       "files": {
         "apps/web/src/app/(app)/documents/[documentId]/review/page.tsx": 1,
         "apps/web/src/app/(app)/properties/[id]/documents/page.tsx": 1,
@@ -12,7 +12,6 @@
         "apps/web/src/app/forgot-password/reset-form.tsx": 2,
         "apps/web/src/app/sign-in/actions.ts": 1,
         "apps/web/src/app/sign-in/password-form.tsx": 1,
-        "apps/web/src/components/date-input.tsx": 1,
         "apps/web/src/components/expenses/expense-sheet.tsx": 2,
         "apps/web/src/components/legal/annotation-list.tsx": 1,
         "apps/web/src/components/legal/legal-form-shell.tsx": 1,
@@ -53,7 +52,7 @@
       }
     },
     "duplicated-lines": {
-      "value": 1104,
+      "value": 1093,
       "files": {
         "apps/web/src/app/(app)/documents/[documentId]/review/page.tsx": 15,
         "apps/web/src/app/(app)/properties/[id]/documents/page.tsx": 12,
@@ -64,7 +63,6 @@
         "apps/web/src/app/forgot-password/reset-form.tsx": 28,
         "apps/web/src/app/sign-in/actions.ts": 13,
         "apps/web/src/app/sign-in/password-form.tsx": 18,
-        "apps/web/src/components/date-input.tsx": 11,
         "apps/web/src/components/expenses/expense-sheet.tsx": 18,
         "apps/web/src/components/legal/annotation-list.tsx": 6,
         "apps/web/src/components/legal/legal-form-shell.tsx": 12,

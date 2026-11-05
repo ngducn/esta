@@ -25,12 +25,12 @@ export function AddressBlock({ legal, current }: { legal: string | null; current
       {lines.map((line) => {
         const Icon = line.key === 'current' ? MapPin : ScrollText;
         return (
-          <div key={line.key} data-line={line.key} className="flex items-start gap-3">
-            <Icon className="mt-0.5 size-icon-md shrink-0 text-text-secondary" strokeWidth={1.8} aria-hidden="true" />
-            <div className="flex min-w-0 flex-col">
-              <dt className="text-caption text-text-muted">{line.label}</dt>
-              <dd className={cn('break-words', line.muted ? 'text-body-sm text-text-secondary' : 'text-body text-text')}>{line.text}</dd>
-            </div>
+          <div key={line.key} data-line={line.key} className="flex flex-col pl-8">
+            <dt className="relative text-caption text-text-muted">
+              <Icon className="absolute -left-8 top-0 size-icon-md text-text-secondary" strokeWidth={1.8} aria-hidden="true" />
+              {line.label}
+            </dt>
+            <dd className={cn('break-words', line.muted ? 'text-body-sm text-text-secondary' : 'text-body text-text')}>{line.text}</dd>
           </div>
         );
       })}

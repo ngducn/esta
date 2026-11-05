@@ -46,7 +46,7 @@ async function listPhotos(page: Page, lane: number, id: string): Promise<{ name:
   return (await listed.json()) as { name: string; metadata: { size: number } }[];
 }
 
-const chooseKind = (page: Page, label: string) => page.getByTestId('kind-select').getByLabel(label, { exact: true }).check({ force: true });
+const chooseKind = (page: Page, label: string) => page.getByTestId('kind-select').locator('label').filter({ hasText: new RegExp(`^${label}$`) }).click();
 
 /** Since P2-08 a property starts in the add-property wizard: its first step creates it, and its details step is this form. */
 async function startInWizard(page: Page, nickname: string, kind: string) {
