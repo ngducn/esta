@@ -1,13 +1,18 @@
 import { expect, test } from '@playwright/test';
 import { addBulkProperties } from '../scripts/perf/bulk-rows.ts';
-import { signIn } from './helpers/inbucket';
+import { memberRest } from './helpers/auth-api';
+import { openNewHousehold, PHONE } from './helpers/wizard';
 
 const ROW_CAP = 100;
 
+// The rows go to a household of their own: a seeded lane household is read by other specs, and 1,000 unvalued
+// properties would break the one that expects Home to count none.
 test('the 1,000-row property list renders under 100 rows, scrolls, and searches', async ({ page }) => {
   test.slow();
-  await addBulkProperties();
-  await signIn(page, 'ryan.lane5@demo.esta.test');
+  await openNewHousehold(page, 'light', PHONE);
+  const [household] = await memberRest<{ id: string }[]>(page, 'GET', 'households?select=id');
+  if (household === undefined) throw new Error('The new member has no household');
+  await addBulkProperties(household.id);
   await page.goto('/properties');
   const cards = page.locator('[data-testid="virtual-property-list"] li');
   await expect(cards.first()).toBeVisible();

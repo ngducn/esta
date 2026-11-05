@@ -24,10 +24,12 @@ export function cspDirectives({ nonce, supabaseUrl, tileHost = TILE_HOST, develo
     'img-src': ["'self'", 'blob:', 'data:', supabase, tileHost],
     'font-src': ["'self'"],
     'connect-src': ["'self'", supabase, socketOrigin(supabase), tileHost],
-    'worker-src': ["'self'"],
+    // read-excel-file's unzip (fflate) starts a blob worker for a sheet of 512 KB or more; `strict-dynamic` and the nonce still gate scripts.
+    'worker-src': ["'self'", 'blob:'],
     'frame-ancestors': ["'none'"],
     'base-uri': ["'self'"],
-    'form-action': ["'self'"],
+    // A Google sign-in tapped before hydration is a native POST that Supabase redirects to Google, and form-action covers the redirect.
+    'form-action': ["'self'", supabase, 'https://accounts.google.com'],
     'object-src': ["'none'"],
   };
 }

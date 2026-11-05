@@ -1,9 +1,10 @@
 import { expect, test } from '@playwright/test';
 import { join } from 'node:path';
-import { golden, statementCsv, statementXlsx } from '../fixtures/statements/household.ts';
+import { bigStatementXlsx, golden, statementCsv, statementXlsx } from '../fixtures/statements/household.ts';
 import { renderCsv } from '../packages/core/src/matching/render.ts';
 import { query } from '../scripts/db-checksum.ts';
 import { parseSlot, slotWorkdir } from '../scripts/slot.ts';
+import { watchViolations } from './helpers/csp';
 import { inEnglishAt130, memberRest } from './helpers/auth-api';
 import { boardRow, storedInvoice } from './helpers/board';
 import { laneHousehold, laneInvoice } from './helpers/seed';
@@ -106,6 +107,16 @@ test('rule 2: at 1440 in dark, a layout B workbook into a second account preview
   expect(await noSidewaysScroll(page)).toBe(true);
   await commitLines(page, 3);
   expect((await statementPayments(page, household.householdId)).map((payment) => payment.bank_account_id)).toEqual([second, second, second]);
+});
+
+test('rule 2b: a 5,000-row workbook, whose sheet fflate unzips in a worker, is read under the CSP and previews', async ({ page }) => {
+  const violations = await watchViolations(page);
+  await openNewHousehold(page, 'light', DESKTOP);
+  const household = await statementHousehold(page);
+  await page.goto('/collections/import');
+  await chooseFile(page, 'sao-ke-lon.xlsx', await bigStatementXlsx(household.statement, 5000));
+  await expect(page.getByTestId('statement-read')).toBeVisible({ timeout: 15_000 });
+  expect(violations).toEqual([]);
 });
 
 test('rule 3: in English at 130% on a phone in dark, the preview reads in English and keeps amounts on one line', async ({ page }) => {

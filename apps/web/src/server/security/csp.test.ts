@@ -10,16 +10,20 @@ describe('buildCsp', () => {
     expect(directives()['script-src']).toEqual(["'self'", "'nonce-abc123'", "'strict-dynamic'"]);
   });
 
-  it.each([
-    ['default-src', ["'self'"]],
-    ['font-src', ["'self'"]],
-    ['worker-src', ["'self'"]],
-    ['frame-ancestors', ["'none'"]],
-    ['base-uri', ["'self'"]],
-    ['form-action', ["'self'"]],
-    ['object-src', ["'none'"]],
-  ])('sets %s', (name, values) => {
-    expect(directives()[name]).toEqual(values);
+  it('holds exactly these directives, so an added or loosened one fails', () => {
+    expect(directives()).toEqual({
+      'default-src': ["'self'"],
+      'script-src': ["'self'", "'nonce-abc123'", "'strict-dynamic'"],
+      'style-src': ["'self'", "'unsafe-inline'"],
+      'img-src': ["'self'", 'blob:', 'data:', 'https://abc.supabase.co', 'https://tiles.openfreemap.org'],
+      'font-src': ["'self'"],
+      'connect-src': ["'self'", 'https://abc.supabase.co', 'wss://abc.supabase.co', 'https://tiles.openfreemap.org'],
+      'worker-src': ["'self'", 'blob:'],
+      'frame-ancestors': ["'none'"],
+      'base-uri': ["'self'"],
+      'form-action': ["'self'", 'https://abc.supabase.co', 'https://accounts.google.com'],
+      'object-src': ["'none'"],
+    });
   });
 
   it('lets the page reach Supabase over https and wss, and the tile host', () => {
