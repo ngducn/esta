@@ -749,7 +749,7 @@
     "unitField": "Gắn với",
     "noteField": "Ghi chú",
     "formLoading": "Đang tải biểu mẫu…",
-    "errorWholeLeased": "Không thể chia nhỏ tài sản khi đang cho thuê nguyên căn.",
+    "errorWholeLeased": "Nhà này đang cho thuê nguyên căn. Kết thúc hợp đồng hiện tại rồi chia thành từng phòng.",
     "deleteHasLeases": "{label} có hợp đồng thuê nên không xóa được.",
     "addLease": "Thêm hợp đồng",
     "addLeaseLabel": "Thêm hợp đồng cho {label}",
@@ -761,7 +761,16 @@
     "nextDue": "Hạn thu {date}",
     "leaseEnds": "Kết thúc ngày {date}",
     "leasedCount": "Đang cho thuê {leased}/{total}",
-    "enterReadings": "Nhập chỉ số"
+    "enterReadings": "Nhập chỉ số",
+    "stripLabel": "Tóm tắt cho thuê",
+    "figureLeased": "Đang cho thuê",
+    "figureLeasedValue": "{leased}/{total}",
+    "figureLeasedSub": "phòng, căn có người thuê",
+    "figureOwed": "Cần thu",
+    "figureOwedValue": "{count} phòng",
+    "figureOwedNone": "Không có phòng nào quá hạn hay đến hạn",
+    "figureOwedSub": "quá hạn hoặc đến hạn",
+    "unknownFigure": "Chưa có số liệu"
   },
   "leases": {
     "newTitle": "Hợp đồng mới cho {unit}",

@@ -749,7 +749,7 @@
     "unitField": "Belongs to",
     "noteField": "Note",
     "formLoading": "Loading the form…",
-    "errorWholeLeased": "This property is let as a whole, so it can't be split into rooms.",
+    "errorWholeLeased": "This property is leased as a whole. End the current lease, then split it into rooms.",
     "deleteHasLeases": "{label} has leases, so it can't be deleted.",
     "addLease": "Add lease",
     "addLeaseLabel": "Add a lease for {label}",
@@ -761,7 +761,16 @@
     "nextDue": "Due {date}",
     "leaseEnds": "Ends on {date}",
     "leasedCount": "Let {leased}/{total}",
-    "enterReadings": "Enter readings"
+    "enterReadings": "Enter readings",
+    "stripLabel": "Rental summary",
+    "figureLeased": "Leased",
+    "figureLeasedValue": "{leased}/{total}",
+    "figureLeasedSub": "rooms or units with a tenant",
+    "figureOwed": "To collect",
+    "figureOwedValue": "{count, plural, one {# unit} other {# units}}",
+    "figureOwedNone": "No unit is overdue or due",
+    "figureOwedSub": "overdue or due",
+    "unknownFigure": "No figure yet"
   },
   "leases": {
     "newTitle": "New lease for {unit}",
