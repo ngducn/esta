@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(19);
+select plan(30);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 select tests.user_id('admin.a@test.esta.test') as admin_a, tests.user_id('admin.b@test.esta.test') as admin_b \gset
@@ -62,6 +62,35 @@ select lives_ok(format($$ update public.household_members set role = 'viewer' wh
 reset role;
 
 select tests.act_as('admin.a@test.esta.test');
+select throws_ok(format($$ update public.household_members set is_operator = false where id = %L $$, :'admin_a_member'),
+  '42501', 'the household keeps an operator', 'the sole operator cannot clear its own flag');
+select throws_ok(format($$ update public.household_members set is_operator = false, role = 'viewer' where id = %L $$, :'admin_a_member'),
+  '42501', 'the operator keeps the admin role and the row', 'clearing the flag and lowering the role in one statement is refused');
+select lives_ok(format($$ update public.household_members set is_operator = true where id = %L $$, :'second_admin_member'),
+  'the operator grants the flag to the second admin');
+select is((select count(*)::int from public.household_members where household_id = :'a' and is_operator and user_id is not null), 2,
+  'the household now has two operators');
+select lives_ok(format($$ update public.household_members set is_operator = false where id = %L $$, :'admin_a_member'),
+  'an operator with a second operator may clear its own flag');
+reset role;
+select is((select count(*)::int from public.household_members where household_id = :'a' and is_operator and user_id is not null), 1,
+  'the household still has one operator');
+select tests.act_as('second.admin.a@test.esta.test');
+select throws_ok(format($$ update public.household_members set is_operator = false where id = %L $$, :'second_admin_member'),
+  '42501', 'the household keeps an operator', 'the sole operator cannot clear its own flag after a hand-over');
+select lives_ok(format($$ update public.household_members set is_operator = true where id = %L $$, :'admin_a_member'),
+  'the new operator hands the flag back');
+reset role;
+select tests.act_as('admin.a@test.esta.test');
+select lives_ok(format($$ update public.household_members set is_operator = false where id = %L $$, :'second_admin_member'),
+  'an operator clears another operator''s flag while it remains');
+reset role;
+select tests.act_as('second.admin.a@test.esta.test');
+select throws_ok(format($$ update public.household_members set is_operator = false where id = %L $$, :'admin_a_member'),
+  '42501', 'only an operator of the household can grant or revoke operator', 'a non-operator cannot clear the flag');
+reset role;
+
+select tests.act_as('admin.a@test.esta.test');
 select lives_ok(format($$ update public.household_members set role = 'member' where id = %L $$, :'second_admin_member'),
   'the operator demotes another admin while it stays admin itself');
 reset role;
@@ -96,6 +125,11 @@ reset role;
 select tests.act_as('second.admin.a@test.esta.test');
 select throws_ok(format($$ update public.household_members set role = 'member' where id = %L $$, :'second_admin_member'),
   '23514', 'a household keeps at least one admin who has signed in', 'the last admin cannot be demoted');
+reset role;
+
+select tests.act_as_service('{"x-esta-actor": "system:test"}');
+select lives_ok(format($$ update public.household_members set is_operator = false where id = %L $$, :'admin_a_member'),
+  'a service-role repair may clear the last operator flag');
 reset role;
 
 select * from finish();
