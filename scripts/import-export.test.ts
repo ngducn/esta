@@ -36,6 +36,18 @@ describe('importScript', () => {
     expect(script).toContain('"invited_email":"me@demo.esta.test"');
   });
 
+  it('settles a job the backup caught running, so a restored worker never claims it again', () => {
+    const jobs = [
+      { id: 'j1', household_id: HOUSEHOLD, kind: 'backup_export', status: 'running', locked_by: 'w1', locked_at: '2026-10-08T02:00:00Z', attempts: 1, error: null, finished_at: null },
+      { id: 'j2', household_id: HOUSEHOLD, kind: 'ping', status: 'done', locked_by: null, locked_at: null, attempts: 1, error: null, finished_at: '2026-10-08T01:00:00Z' },
+    ];
+    const text = importScript(source({ households: [{ id: HOUSEHOLD, name: 'Gia đình Demo' }], agent_jobs: jobs }));
+    const rows = JSON.parse(/\$esta\$(\[\{"id":"j1".*?\])\$esta\$/s.exec(text)?.[1] ?? '[]') as Record<string, unknown>[];
+    expect(rows[0]).toMatchObject({ id: 'j1', status: 'failed', locked_by: null, locked_at: null, error: expect.stringContaining('restored') });
+    expect(rows[0]?.finished_at).toBe('2026-10-08T02:00:00Z');
+    expect(rows[1]).toMatchObject({ id: 'j2', status: 'done', finished_at: '2026-10-08T01:00:00Z' });
+  });
+
   it('loads tables in registry order, parents first', () => {
     const positions = ['households', 'household_members'].map((name) => script.indexOf(`insert into public.${name} `));
     expect(positions[0]).toBeGreaterThan(-1);

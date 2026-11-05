@@ -4,8 +4,9 @@ import { isIsoDate, type IsoDate } from '@esta/core/date';
 import { daysBetween } from '@esta/core/date/calendar';
 import type { Json } from '@esta/db';
 import { dirSink, objectsUnder, writeExport, type ExportSink } from '@esta/db/export';
+import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { mkdir, readdir, rename, rm } from 'node:fs/promises';
+import { chmod, mkdir, readdir, rename, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { z } from 'zod';
 import type { AgentDb } from '../supabase';
@@ -27,33 +28,51 @@ export type BackupInput = {
 
 export type BackupResult = { readonly created: boolean; readonly pruned: readonly string[] };
 
-/** Folders older than the last 30 days, judged by the date in their name; a folder named anything else is not ours to delete. */
+const STAGING_NAME = /^\.(\d{4}-\d{2}-\d{2})\.(?:[0-9a-f-]{36}\.)?partial$/;
+
+/**
+ * Keeps the newest 30 dated folders: one goes only when 30 newer ones exist and its own date is 30 or more days before
+ * this run's, so a clock that jumps ahead or back cannot empty the folder. A folder named anything else is not ours.
+ */
 async function prune(householdDir: string, today: IsoDate): Promise<string[]> {
   const entries = await readdir(householdDir, { withFileTypes: true });
-  const old = entries.filter((entry) => entry.isDirectory() && isIsoDate(entry.name) && daysBetween(entry.name, today) >= BACKUP_KEEP_DAYS).map((entry) => entry.name).toSorted();
+  const dated = entries.filter((entry) => entry.isDirectory() && isIsoDate(entry.name)).map((entry) => entry.name).toSorted().toReversed();
+  const old = dated.slice(BACKUP_KEEP_DAYS).filter((name) => name !== today && isIsoDate(name) && daysBetween(name, today) >= BACKUP_KEEP_DAYS).toSorted();
   for (const name of old) await rm(join(householdDir, name), { recursive: true });
   return old;
 }
 
+/** A crash leaves its hidden staging folder, which holds ID photos; a later date's run removes every one of an earlier date and never one of its own date, which may be a run in progress. */
+async function removeStaleStaging(householdDir: string, today: IsoDate): Promise<void> {
+  for (const entry of await readdir(householdDir, { withFileTypes: true })) {
+    const date = entry.isDirectory() ? STAGING_NAME.exec(entry.name)?.[1] : undefined;
+    if (date !== undefined && isIsoDate(date) && date < today) await rm(join(householdDir, entry.name), { recursive: true, force: true });
+  }
+}
+
 /**
- * Writes `{root}/{household}/{date}` once: the export goes to a hidden folder and is renamed whole, so a crash leaves no
- * half-written day for the rerun to mistake for a finished one. Old days go only after the new one is safe.
+ * Writes `{root}/{household}/{date}` once: the export goes to a hidden folder of its own and is renamed whole, so a
+ * crash leaves no half-written day for the rerun to mistake for a finished one, and two runs of one date never share
+ * a folder. Folders are 0700 and files 0600. Old days go only after the new one is safe.
  */
 export async function writeBackup({ root, householdId, date, write }: BackupInput): Promise<BackupResult> {
   if (!z.uuid().safeParse(householdId).success) throw new Error(`Refusing to back up "${householdId}": it is not a household id`);
   const householdDir = join(root, householdId);
   const final = join(householdDir, date);
-  const created = !existsSync(final);
+  let created = !existsSync(final);
+  await mkdir(householdDir, { recursive: true, mode: 0o700 });
+  await chmod(householdDir, 0o700);
+  await removeStaleStaging(householdDir, date);
   if (created) {
-    const staging = join(householdDir, `.${date}.partial`);
-    await rm(staging, { recursive: true, force: true });
-    await mkdir(staging, { recursive: true });
+    const staging = join(householdDir, `.${date}.${randomUUID()}.partial`);
+    await mkdir(staging, { mode: 0o700 });
     try {
       await write(dirSink(staging, date));
       await rename(staging, final);
     } catch (error) {
       await rm(staging, { recursive: true, force: true });
-      throw error;
+      if (!existsSync(final)) throw error;
+      created = false;
     }
   }
   return { created, pruned: await prune(householdDir, date) };
@@ -94,13 +113,13 @@ function backupDate(job: PlainJobContext['job'], clock: Clock): IsoDate {
 }
 
 export async function runBackupExport({ db, job, clock, backupDir }: PlainJobContext): Promise<Json> {
-  if (backupDir === null) throw new InvalidJobError('ESTA_BACKUP_DIR is not set, so there is nowhere to write the backup');
   const date = backupDate(job, clock);
   let totals = { rows: 0, files: 0 };
   let failure: unknown = null;
   let pruned: readonly string[] = [];
   let created = false;
   try {
+    if (backupDir === null) throw new InvalidJobError('ESTA_BACKUP_DIR is not set, so there is nowhere to write the backup');
     ({ created, pruned } = await writeBackup({
       root: backupDir,
       householdId: job.household_id,

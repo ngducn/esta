@@ -2,14 +2,15 @@ import { parseInstant } from '@esta/core';
 import { isoDate, type IsoDate } from '@esta/core/date';
 import { addDays } from '@esta/core/date/calendar';
 import { dirSink } from '@esta/db/export';
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { pollOnce } from '../src/runner';
-import { A, JOB_A, twoHouseholds } from './extract-job';
+import { A, JOB_A, clock as extractClock, twoHouseholds } from './extract-job';
 import { replayWorker } from './replay-worker';
-import { BACKUP_KEEP_DAYS, EXPORT_KEEP_HOURS, sweepExports, writeBackup, type ExportsStore } from '../src/jobs/backup_export';
+import { BACKUP_KEEP_DAYS, EXPORT_KEEP_HOURS, runBackupExport, sweepExports, writeBackup, type ExportsStore } from '../src/jobs/backup_export';
+import type { AgentDb } from '../src/supabase';
 
 const HOUSEHOLD = 'aaaaaaaa-0000-5000-8000-000000000006';
 const OTHER = 'bbbbbbbb-0000-5000-8000-000000000007';
@@ -96,11 +97,80 @@ describe('writeBackup', () => {
     expect(result.pruned).toEqual(['2026-09-07', '2026-09-08']);
   });
 
-  it('keeps a folder exactly 29 days old and drops one 30 days old', async () => {
+  it('keeps the newest 30 days when the date jumps forward a year, and everything when it moves back', async () => {
+    seedDays(30, HOUSEHOLD, TODAY);
+    const jumped = await backup(isoDate('2027-10-08'));
+    expect(jumped.pruned).toEqual(['2026-09-09']);
+    expect(folders()).toHaveLength(30);
+    expect(folders()).toContain('2027-10-08');
+    const back = await backup(isoDate('2026-08-01'));
+    expect(back.pruned).toEqual([]);
+    expect(folders()).toHaveLength(31);
+  });
+
+  it('keeps a sparse set of old folders, since fewer than 30 exist', async () => {
     seedDays(1, HOUSEHOLD, addDays(TODAY, -29));
     seedDays(1, HOUSEHOLD, addDays(TODAY, -30));
+    seedDays(1, HOUSEHOLD, addDays(TODAY, -400));
     await backup();
-    expect(folders()).toEqual(['2026-09-09', '2026-10-08']);
+    expect(folders()).toHaveLength(4);
+  });
+
+  it('writes the backup readable by its owner only', async () => {
+    await backup();
+    const day = join(root, HOUSEHOLD, '2026-10-08');
+    for (const path of [join(root, HOUSEHOLD), day, join(day, 'files'), join(day, 'files/documents/scan.pdf'), join(day, 'tables/properties.json'), join(day, 'manifest.json')]) {
+      expect(statSync(path).mode & 0o077, path).toBe(0);
+    }
+  });
+
+  it('closes a household folder an older version left open', async () => {
+    mkdirSync(join(root, HOUSEHOLD), { mode: 0o755 });
+    await backup();
+    expect(statSync(join(root, HOUSEHOLD)).mode & 0o077).toBe(0);
+  });
+
+  it('removes a staging folder an earlier date left, and nothing else that looks like one', async () => {
+    const crashed = ['.2026-10-07.partial', '.2026-10-01.3f2b9d3e-0000-4000-8000-000000000001.partial'];
+    for (const name of crashed) mkdirSync(join(root, HOUSEHOLD, name), { recursive: true });
+    const keep = ['.2026-10-09.3f2b9d3e-0000-4000-8000-000000000002.partial', '.2026-13-40.partial', '.notes.partial', 'x.2026-10-01.partial'];
+    for (const name of keep) mkdirSync(join(root, HOUSEHOLD, name));
+    writeFileSync(join(root, HOUSEHOLD, '.2026-10-02.partial'), 'a file');
+    await backup();
+    for (const name of crashed) expect(folders()).not.toContain(name);
+    expect(folders()).toEqual(expect.arrayContaining([...keep, '.2026-10-02.partial']));
+  });
+
+  it('lets two runs of one date finish with one complete folder and no mixed one', async () => {
+    const gate = () => {
+      let open!: () => void;
+      const wait = new Promise<void>((resolve) => (open = resolve));
+      return { open, wait };
+    };
+    const [aWrote, aGo, bWrote, bGo] = [gate(), gate(), gate(), gate()];
+    const bytes = new Uint8Array([1]);
+    const a = writeBackup({ root, householdId: HOUSEHOLD, date: TODAY, write: async (sink) => {
+      await sink.add('tables/properties.json', bytes);
+      aWrote.open();
+      await aGo.wait;
+      await sink.add('tables/units.json', bytes);
+      await sink.finish(() => bytes);
+    } });
+    await aWrote.wait;
+    const b = writeBackup({ root, householdId: HOUSEHOLD, date: TODAY, write: async (sink) => {
+      await sink.add('tables/leases.json', bytes);
+      bWrote.open();
+      await bGo.wait;
+      await sink.add('tables/invoices.json', bytes);
+      await sink.finish(() => bytes);
+    } });
+    await bWrote.wait;
+    aGo.open();
+    expect((await a).created).toBe(true);
+    bGo.open();
+    expect((await b).created).toBe(false);
+    expect(readdirSync(join(root, HOUSEHOLD, '2026-10-08/tables')).toSorted()).toEqual(['properties.json', 'units.json']);
+    expect(folders()).toEqual(['2026-10-08']);
   });
 
   it('never deletes a folder whose name is not a date, nor a file', async () => {
@@ -216,14 +286,26 @@ describe('sweepExports', () => {
 });
 
 describe('backup_export as a job the worker polls', () => {
-  it('fails at once and leaves admins a retry item when ESTA_BACKUP_DIR is not set, and starts no model session', async () => {
+  it('fails at once and leaves the operator a retry item when ESTA_BACKUP_DIR is not set, and starts no model session', async () => {
     const { db, tables } = twoHouseholds();
     const job = { id: JOB_A, household_id: A, kind: 'backup_export', payload: {}, status: 'queued', attempts: 0, max_attempts: 4, idempotency_key: `backup_export:${A}:2026-10-07`, created_at: '2026-10-06T19:00:00.000Z' };
     Object.assign(tables, { agent_jobs: [job], agent_runs: [] as Record<string, unknown>[] });
     const states: Parameters<typeof replayWorker>[5] = [];
     expect(await pollOnce(replayWorker(db, [job], root, undefined, undefined, states))).toBe(true);
     expect(job).toMatchObject({ status: 'failed', error: expect.stringContaining('ESTA_BACKUP_DIR is not set') });
-    expect(tables.agent_items).toEqual([expect.objectContaining({ title: 'Chưa lưu được bản sao đêm qua', proposal: { type: 'retry_job', params: { job_id: JOB_A }, min_role: 'admin' } })]);
+    expect(tables.agent_items).toEqual([expect.objectContaining({ audience: 'operator', title: 'Chưa lưu được bản sao đêm qua', proposal: { type: 'retry_job', params: { job_id: JOB_A }, min_role: 'admin' } })]);
     expect(states).toEqual([]);
+  });
+
+  it('still deletes old export ZIPs when ESTA_BACKUP_DIR is not set, then fails the backup step', async () => {
+    const removed: string[] = [];
+    const old = { id: 'o', name: 'old.zip', created_at: '2026-10-05T00:00:00.000Z' };
+    const fresh = { id: 'f', name: 'fresh.zip', created_at: '2026-10-07T08:00:00.000Z' };
+    const db = {
+      storage: { from: () => ({ list: async (_prefix: string, options: { offset: number }) => ({ data: options.offset === 0 ? [old, fresh] : [], error: null }), remove: async (paths: string[]) => (removed.push(...paths), { error: null }) }) },
+    } as unknown as AgentDb;
+    const job = { id: JOB_A, household_id: A, kind: 'backup_export', idempotency_key: `backup_export:${A}:2026-10-07` } as Parameters<typeof runBackupExport>[0]['job'];
+    await expect(runBackupExport({ db, job, clock: await extractClock(), backupDir: null })).rejects.toThrow('ESTA_BACKUP_DIR is not set');
+    expect(removed).toEqual([`${A}/old.zip`]);
   });
 });

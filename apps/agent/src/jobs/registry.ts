@@ -88,6 +88,8 @@ export type PlainJobSpec = {
   readonly timeoutMs: number;
   readonly schedule: Omit<ScheduledJob, 'kind'>;
   readonly failedTitle: Readonly<Record<Locale, string>>;
+  /** Whose Today shows the failure; a missing folder or disk is for the operator, and Mẹ cannot mend it with Thử lại. */
+  readonly failedAudience?: 'operator';
   run(context: PlainJobContext): Promise<Json>;
 };
 
@@ -174,6 +176,7 @@ export const PLAIN_JOBS = {
     timeoutMs: 20 * 60_000,
     schedule: { at: '02:00' },
     failedTitle: { vi: 'Chưa lưu được bản sao đêm qua', en: "Last night's backup did not finish" },
+    failedAudience: 'operator',
     run: runBackupExport,
   },
 } as const satisfies Record<string, PlainJobSpec>;
