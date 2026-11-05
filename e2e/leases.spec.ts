@@ -314,7 +314,7 @@ test('rule 9: adding a room to Thủ Đức, let as a whole, is refused and adds
   await sheet.locator('#unit-label').fill('Phòng 1');
   await sheet.getByTestId('unit-kind').selectOption('room');
   await sheet.getByTestId('save-unit').click();
-  await expect(sheet.getByTestId('form-error')).toHaveText('Không thể chia nhỏ tài sản khi đang cho thuê nguyên căn.');
+  await expect(sheet.getByTestId('form-error')).toHaveText('Nhà này đang cho thuê nguyên căn. Kết thúc hợp đồng hiện tại rồi chia thành từng phòng.');
   expect(await rest(page, 'GET', `units?property_id=eq.${propertyId(9, 'thu-duc')}&select=label`)).toEqual([{ label: 'Toàn bộ' }]);
 });
 

@@ -10,13 +10,29 @@ const loadSheet = () => import('./ReminderSheet');
 const ReminderSheet = lazy(loadSheet);
 
 /** `Nhắc qua Zalo` on a board row: drafts the reminder for what the row still owes. `initialOpen` opens it on arrival. */
-export function ReminderAction({ label, title, target, labels, initialOpen = false }: { label: string; title: string; target: ReminderTarget; labels: ReminderLabels; initialOpen?: boolean }) {
+export function ReminderAction({
+  label,
+  title,
+  target,
+  labels,
+  initialOpen = false,
+  className = buttonVariants({ variant: 'secondary' }),
+  labelClassName,
+}: {
+  label: string;
+  title: string;
+  target: ReminderTarget;
+  labels: ReminderLabels;
+  initialOpen?: boolean;
+  className?: string;
+  labelClassName?: string | undefined;
+}) {
   const dialog = useDeferredDialog(loadSheet, initialOpen);
   return (
     <>
-      <button type="button" data-testid="row-action-remind" {...dialog.triggerProps} className={buttonVariants({ variant: 'secondary' })}>
+      <button type="button" data-testid="row-action-remind" data-label={label} {...dialog.triggerProps} className={className}>
         <MessageCircle aria-hidden="true" />
-        {label}
+        <span className={labelClassName}>{label}</span>
       </button>
       <DeferredPopup dialog={dialog} popup={ReminderSheet} props={{ title, target, labels }} />
     </>

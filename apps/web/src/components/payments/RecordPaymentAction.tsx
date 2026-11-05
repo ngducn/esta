@@ -32,13 +32,25 @@ function warmOnFirstIntent(load: () => Promise<unknown>) {
  * `Ghi nhận` on a collections row or a Home item. Each opening mounts a fresh sheet, with its own idempotency key and
  * the row's prefill. Given `intl`, the sheet brings its own intl provider (`RecordPaymentIsland`).
  */
-export function RecordPaymentAction({ label, target, intl, describedBy }: { label: string; target: PaymentTarget; intl?: PaymentIntl; describedBy?: string }) {
+export function RecordPaymentAction({
+  label,
+  target,
+  intl,
+  describedBy,
+  className = buttonVariants({ variant: 'secondary' }),
+}: {
+  label: string;
+  target: PaymentTarget;
+  intl?: PaymentIntl;
+  describedBy?: string;
+  className?: string;
+}) {
   const load = intl === undefined ? loadSheet : loadIsland;
   const dialog = useDeferredDialog(load);
   useEffect(() => warmOnFirstIntent(load), [load]);
   return (
     <>
-      <button type="button" data-testid="row-action-record-payment" aria-describedby={describedBy} {...dialog.triggerProps} className={buttonVariants({ variant: 'secondary' })}>
+      <button type="button" data-testid="row-action-record-payment" aria-describedby={describedBy} {...dialog.triggerProps} className={className}>
         <Banknote aria-hidden="true" />
         {label}
       </button>

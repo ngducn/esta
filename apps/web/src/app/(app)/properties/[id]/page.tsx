@@ -6,6 +6,8 @@ import { z } from 'zod';
 import { FocusAnchor } from '@/components/completeness/use-focus-anchor';
 import { LocationCard } from '@/components/properties/location-card';
 import { OverviewFacts, type OverviewFact } from '@/components/properties/overview-facts';
+import { MoneyDisplay } from '@/components/money/money-display';
+import { SummaryStrip } from '@/components/summary-strip';
 import { ValuationBlock } from '@/components/valuations/valuation-block';
 import { getClock } from '@/server/clock';
 import { readBoundary } from '@/server/properties/boundary';
@@ -74,6 +76,22 @@ export default async function PropertyOverviewPage({ params }: { params: Promise
   return (
     <PropertyDetailFrame property={property} tab="overview">
       <FocusAnchor />
+      <SummaryStrip
+        label={tp('stripLabel')}
+        unknownLabel={tp('unknownFigure')}
+        figures={[
+          {
+            label: tp('figureRent'),
+            value: property.monthlyRentVnd === null ? null : <MoneyDisplay amount={property.monthlyRentVnd} className="text-start" />,
+            sub: property.monthlyRentVnd === null ? tp('figureRentNone') : tp('figureRentSub'),
+          },
+          {
+            label: tp('figureLeased'),
+            value: property.unitCount === 0 ? null : tp('figureLeasedValue', { leased: property.leasedUnitCount, total: property.unitCount }),
+            sub: tp('figureLeasedSub'),
+          },
+        ]}
+      />
       <div className="grid gap-5 lg:grid-cols-2 lg:items-start">
         <OverviewFacts
           facts={{

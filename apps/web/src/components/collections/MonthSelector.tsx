@@ -17,6 +17,8 @@ export type MonthSelectorProps = {
   next: MonthLink;
   /** Shown beside the selector when the board is not on the Clock's month. */
   thisMonth: MonthLink | null;
+  /** The board's other params, kept when the month changes, such as `&status=overdue`. */
+  query: string;
 };
 
 /**
@@ -24,7 +26,7 @@ export type MonthSelectorProps = {
  * and reads busy meanwhile. The native select lists the months in the member's language whatever the browser's, which a
  * month input would not, and covers its pill so a tap anywhere opens the picker.
  */
-export function MonthSelector({ label, value, options, previous, next, thisMonth, children }: MonthSelectorProps & { children: ReactNode }) {
+export function MonthSelector({ label, value, options, previous, next, thisMonth, query, children }: MonthSelectorProps & { children: ReactNode }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const current = options.find((option) => option.value === value);
@@ -53,7 +55,7 @@ export function MonthSelector({ label, value, options, previous, next, thisMonth
             <select
               data-testid="month-select"
               value={value}
-              onChange={(event) => go(`/collections?month=${event.target.value}`)}
+              onChange={(event) => go(`/collections?month=${event.target.value}${query}`)}
               className="absolute -inset-px cursor-pointer appearance-none rounded-md opacity-0"
             >
               {options.map((option) => (

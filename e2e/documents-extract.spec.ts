@@ -231,7 +231,7 @@ test('rule 6: with the worker stopped the tile says the assistant is offline, th
   const [beat] = await serviceGet<{ last_seen_at: string }[]>(page, 'worker_heartbeats?select=last_seen_at&order=last_seen_at.desc&limit=1');
   const lastBeat = Math.max(Date.parse(beat?.last_seen_at ?? ''), Date.parse('2026-10-07T09:00:00+07:00'));
   await setClock(request, new Date(lastBeat + 6 * 60_000).toISOString());
-  await expect(pill(page, documentId)).toHaveText('Trợ lý ngoại tuyến', { timeout: 10_000 });
+  await expect(pill(page, documentId)).toHaveText('Trợ lý đang nghỉ', { timeout: 10_000 });
   await shot(page, 'p2-03-offline-1440x900-dark');
   const [queued] = await extractions(page, documentId);
   expect(queued?.status).toBe('queued');

@@ -5,6 +5,9 @@ import { vndInWords } from './words';
 describe('vndInWords', () => {
   it.each([
     [0, 'Không đồng'],
+    [1_000, 'Một nghìn đồng'],
+    [10_005_000, 'Mười triệu không trăm lẻ năm nghìn đồng'],
+    [1_000_000_000, 'Một tỷ đồng'],
     [15, 'Mười lăm đồng'],
     [21, 'Hai mươi mốt đồng'],
     [105, 'Một trăm lẻ năm đồng'],

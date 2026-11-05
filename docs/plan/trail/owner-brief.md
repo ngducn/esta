@@ -17,7 +17,7 @@ Everything you read stays in your context and is paid for again on every later t
 2. Push early and open the PR ready (never draft) with a Conventional Commits title, the PR id as scope, and the tier on the body's first line.
 3. Name the data shape first. Build. Push after every verifiable unit.
 4. Prove it on the real surface per the tier table in `verification-tiers.md`: `pnpm check`, the specs your change touches, and the screenshots your tier asks for (two to four, through the verify skill). Evidence under `/tmp/owner-<pr id>/`.
-5. Run `/deslop`, then `/no-comments`, then `pnpm check` on the committed head. Push.
+5. Run `/deslop`. Run `/no-comments` only when the diff adds comment lines (`git diff origin/main... | rg '^\+.*(//|/\*)'`), because it starts a whole subagent. Then `pnpm check` on the committed head. Push.
 6. Wait for CI with one background `gh pr checks <n> --watch --fail-fast`, never a sleep or poll loop. Fix a red job that your change causes.
 7. Report code-ready to the root (SendMessage to `main`, at most 10 lines): PR URL, head SHA, `ci` state, evidence, what you could not check and why. Then stop: do not wait for the review. A fresh agent takes any fix round.
 
