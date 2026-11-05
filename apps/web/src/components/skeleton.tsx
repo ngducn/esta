@@ -33,12 +33,12 @@ export function SkeletonPage() {
 /** The vault as it lands: the title, the search bar, the expiring card and a row of 4:3 document tiles. */
 export function SkeletonVault() {
   return (
-    <Loading testId="skeleton-vault" className="flex flex-col gap-5">
+    <Loading testId="skeleton-vault" className="flex flex-col gap-stack">
       <Block className="h-9 w-40 max-w-full" />
-      <Block className="h-touch w-full" />
-      <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4 shadow-xs sm:p-5">
-        <Block className="h-7 w-36" />
-        <Block className="h-6 w-full max-w-md" />
+      <Block className="h-24 w-full" />
+      <div className="flex flex-wrap items-center gap-2">
+        <Block className="h-touch min-w-64 flex-1" />
+        <Block className="h-9 w-48" />
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 3 }, (_, index) => (

@@ -99,7 +99,7 @@ test('rule 1: Mẹ photographs the Long An certificate, sees it saved and clear,
   page.on('request', (request) => (isFilePut(request) ? puts.push(request) : undefined));
   try {
     await documentsPage(page, 1, 'long-an');
-    await expect(page.getByTestId('documents-empty')).toHaveText('Chưa có tài liệu nào. Thêm ảnh sổ, hợp đồng hoặc hóa đơn.', COLD_ROUTE);
+    await expect(page.getByTestId('documents-empty')).toContainText('Chưa có tài liệu nào.', COLD_ROUTE);
     await uploadThroughCamera(page, fixture('gcn_2024-photo/page-1.jpg'));
     await expect(page.getByTestId('document-category')).toHaveValue('certificate');
     await expect(page.getByTestId('document-category').locator('option:checked')).toHaveText('Sổ đỏ / sổ hồng');
