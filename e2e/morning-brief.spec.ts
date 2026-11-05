@@ -82,7 +82,7 @@ test('with the worker stopped and the clock 15 minutes on, every page says Trợ
   await open(page, ME, 'light', DESKTOP);
   for (const path of ['/', '/properties', '/collections', '/assistant']) {
     await page.goto(path);
-    await expect(page.getByTestId('worker-status'), path).toHaveText(/^Trợ lý ngoại tuyến từ 07:0\d\. Việc mới sẽ chạy khi máy hoạt động lại\.$/);
+    await expect(page.getByTestId('worker-status'), path).toHaveText(/^Trợ lý nghỉ từ 07:0\d\. Việc mới sẽ được làm khi Trợ lý chạy lại; mọi thứ khác vẫn dùng bình thường\.$/);
   }
   expect(await seriousAxeViolations(page)).toEqual([]);
 });

@@ -92,7 +92,7 @@ test('rule 2: the line goes offline six minutes after the worker stops and onlin
   await worker?.stop();
   await setClock(request, '2026-10-07T09:06:00+07:00');
   await page.reload();
-  await expect(statusLine(page)).toHaveText('Trợ lý ngoại tuyến từ 09:00. Việc mới sẽ chạy khi máy hoạt động lại.');
+  await expect(statusLine(page)).toHaveText('Trợ lý nghỉ từ 09:00. Việc mới sẽ được làm khi Trợ lý chạy lại; mọi thứ khác vẫn dùng bình thường.');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   // Each worker process writes its own row, so the restart uses a later minute than the offline check above:
   // a row left by an earlier run's restart then stays in that check's future, which the page does not read.
@@ -154,7 +154,7 @@ test('rule 5: a missing recording fails the ping once, with its hash and the rec
     await restartWorker(emptyDir);
     await openAssistant(page, 'ryan.lane5@demo.esta.test', { viewport: [390, 844], theme: 'light' });
     await runCheck(page, 'failed');
-    await expect(page.getByTestId('ping-status')).toHaveText('Lỗi');
+    await expect(page.getByTestId('ping-status')).toHaveText('Chưa xong');
     await expect(page.getByTestId('ping-error')).toHaveText(/input [0-9a-f]{64} .*pnpm agent:record/);
 
     const token = await accessToken(page);
