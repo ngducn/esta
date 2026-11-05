@@ -14,7 +14,7 @@ export const envSchema = z.object({
   ESTA_MODEL_DEEP: text,
   ESTA_AGENT_HOME: text,
   ESTA_REPLAY_DIR: text,
-  /** Where `backup_export` writes `{household_id}/{date}/`; unset, a worker outside production falls back to a folder under the temp dir and production refuses the job. */
+  /** Where `backup_export` writes `{household_id}/{date}/`; unset, a worker outside production falls back to a folder under the worker home and production refuses the job. */
   ESTA_BACKUP_DIR: text,
   ESTA_ENV: z.enum(['development', 'test', 'preview', 'production']).optional(),
   ESTA_FROZEN_NOW: text,
