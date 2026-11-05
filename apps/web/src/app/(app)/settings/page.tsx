@@ -2,8 +2,12 @@ import { ChevronRight, History } from 'lucide-react';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { DisplaySettingsForm, type SaveStatus } from '@/components/shell/display-settings-form';
 import { IntentLink } from '@/components/shell/intent-link';
+import { PageHeader } from '@/components/page-header';
 import { sectionMetadata } from '@/components/shell/section-page';
+import { AssistantSection } from '@/components/settings/assistant-section';
 import { DataSection } from '@/components/settings/data-section';
+import { HouseholdSection } from '@/components/settings/household-section';
+import { MembersSection } from '@/components/settings/members-section';
 import { ReceivingAccounts } from '@/components/settings/receiving-accounts';
 import { requireMember } from '@/server/member';
 import { getThemePreference } from '@/server/theme';
@@ -27,11 +31,11 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-title-2 break-words lg:text-title-1">{nav('settings')}</h1>
-        <p className="max-w-prose text-text-secondary">{sections('settings')}</p>
-      </div>
+      <PageHeader title={nav('settings')} meta={<p className="max-w-prose">{sections('settings')}</p>} />
+      <HouseholdSection member={member} />
+      <MembersSection member={member} />
       <ReceivingAccounts member={member} />
+      <AssistantSection member={member} />
       <DataSection member={member} />
       <DisplaySettingsForm
         settings={{ locale, textScale: member.textScale, density: member.density, theme }}

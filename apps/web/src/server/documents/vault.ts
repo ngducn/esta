@@ -3,7 +3,7 @@ import { expiringSoon } from '@esta/core/documents';
 import { getTranslations } from 'next-intl/server';
 import type { ExpiringItem } from '@/components/documents/document-vault';
 import { getClock } from '@/server/clock';
-import type { DocumentStatuses } from './extraction-status';
+import { awaitingReview, type DocumentStatuses } from './extraction-status';
 import { listDocuments, vaultTiles, type VaultTile } from './list';
 import { searchDocuments, type VaultSearch } from './search';
 import { readDocumentStatuses } from './status';
@@ -25,6 +25,7 @@ export type VaultData = {
   readonly expiring: readonly ExpiringItem[];
   readonly search: SearchState;
   readonly statuses: DocumentStatuses;
+  readonly awaitingReview: number | null;
 };
 
 /** Everything the vault renders on first paint, for the household or one property, with `?q=` already searched. */
@@ -46,6 +47,7 @@ export async function loadVault(householdId: string, propertyId: string | null, 
       text: t('expiry', { days }),
     })),
     search: initialSearch(query, search),
+    awaitingReview: awaitingReview(statuses),
     statuses: statuses ?? { statuses: {}, workerOffline: false },
   };
 }

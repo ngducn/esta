@@ -7,3 +7,7 @@ export type DocumentStatuses = {
   /** The last heartbeat as `HH:mm`, with its date when it is an earlier day; null when the worker is online or never ran. */
   readonly offlineSince?: string | null;
 };
+
+export function awaitingReview(read: DocumentStatuses | null): number | null {
+  return read === null ? null : Object.values(read.statuses).filter((status) => status === 'needs_review').length;
+}
