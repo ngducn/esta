@@ -83,7 +83,7 @@ const households = publicTable('households', ({ household }) => [
 ]);
 
 const householdSettings = publicTable('household_settings', ({ household }) => [
-  { id: seedId(`seed:household-settings:${household.key}`), household_id: householdId(household) },
+  { id: seedId(`seed:household-settings:${household.key}`), household_id: householdId(household), onboarding: {} },
 ]);
 
 const householdMembers = publicTable('household_members', ({ household }) =>
