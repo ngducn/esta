@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import { EXPORT_TABLES } from '../packages/core/src/export/tables.ts';
 import { localTarget, readExport, runSql } from './export-source.ts';
-import { importScript } from './import-export.ts';
+import { importScript, runImport } from './import-export.ts';
 
 const [command, ...args] = process.argv.slice(2);
 
@@ -48,9 +48,35 @@ function failedImportLeavesNothing(paths: readonly string[]): void {
   console.log(`a repeated ${late.name} row failed the import and left no household`);
 }
 
+/** The real import with one valuation's value nulled: the database step refuses it, and no file may stay in Storage for a household that does not exist. */
+async function refusedImportLeavesNoFiles(paths: readonly string[]): Promise<void> {
+  const target = localTarget();
+  const source = readExport(paths);
+  const valuations = source.tables.get('valuations') ?? [];
+  if (valuations.length === 0) throw new Error('The export holds no valuation to break');
+  const broken = { ...source, tables: new Map(source.tables).set('valuations', valuations.map((row, index) => (index === 0 ? { ...row, value_vnd: null } : row))) };
+  const leftover = () => {
+    const names = [...source.files.keys()].map((path) => `'${path.split('/').slice(1).join('/').replaceAll("'", "''")}'`).join(', ');
+    return runSql<{ n: number }>(target.dbUrl, `select count(*)::int as n from storage.objects where bucket_id in ('documents', 'property-photos') and name in (${names})`)[0]?.n ?? 0;
+  };
+  let failed = false;
+  try {
+    await runImport(broken, target);
+  } catch {
+    failed = true;
+  }
+  const households = runSql<{ n: number }>(target.dbUrl, 'select count(*)::int as n from public.households')[0]?.n;
+  if (!failed) throw new Error('The import accepted a valuation with no value');
+  if (households !== 0) throw new Error(`The import failed but left ${households} household(s) behind`);
+  const left = leftover();
+  if (left !== 0) throw new Error(`The refused import left ${left} file(s) in Storage`);
+  console.log('a refused import left no household and no file in Storage');
+}
+
 if (command === 'odd-names' && args[0] !== undefined) await oddDocumentNames(args[0]);
 else if (command === 'rollback' && args.length > 0) failedImportLeavesNothing(args);
+else if (command === 'refused' && args.length > 0) await refusedImportLeavesNoFiles(args);
 else {
-  console.error('Usage: tsx scripts/roundtrip-checks.ts odd-names <member email> | rollback <export zip or folder>...');
+  console.error('Usage: tsx scripts/roundtrip-checks.ts odd-names <member email> | rollback <export zip or folder>... | refused <export zip or folder>...');
   process.exit(2);
 }

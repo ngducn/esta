@@ -48,18 +48,55 @@ export function importScript({ tables }: ExportSource): string {
 }
 
 /** Runs before the rows are written: a file the bucket refuses then leaves the database empty, and a rerun uploads again over the same names. */
-async function uploadFiles(source: ExportSource, apiUrl: string, serviceKey: string): Promise<number> {
+async function uploadFiles(source: ExportSource, apiUrl: string, serviceKey: string, uploaded: string[]): Promise<void> {
   const storage = createClient(apiUrl, serviceKey, { auth: { persistSession: false } }).storage;
   const documents = documentMimes(source.tables.get('documents') ?? []);
-  let uploaded = 0;
   for (const [path, bytes] of source.files) {
     const [bucket = '', ...rest] = path.split('/');
     const name = rest.join('/');
     const { error } = await storage.from(bucket).upload(name, bytes, { upsert: true, contentType: contentTypeFor(path, documents, bytes) });
     if (error) throw new Error(`Uploading ${path} failed: ${error.message}`);
-    uploaded += 1;
+    uploaded.push(path);
   }
-  return uploaded;
+}
+
+export type ImportTarget = Pick<ReturnType<typeof localTarget>, 'dbUrl' | 'apiUrl' | 'serviceKey'>;
+
+/** Removes the files this run uploaded, no others; returns the paths that stayed. */
+async function removeUploaded(paths: readonly string[], apiUrl: string, serviceKey: string): Promise<string[]> {
+  const storage = createClient(apiUrl, serviceKey, { auth: { persistSession: false } }).storage;
+  const byBucket = new Map<string, string[]>();
+  for (const path of paths) byBucket.set(path.split('/')[0] ?? '', [...(byBucket.get(path.split('/')[0] ?? '') ?? []), path]);
+  const stayed: string[] = [];
+  for (const [bucket, bucketPaths] of byBucket) {
+    for (let from = 0; from < bucketPaths.length; from += 100) {
+      const batch = bucketPaths.slice(from, from + 100);
+      const { error } = await storage.from(bucket).remove(batch.map((path) => path.split('/').slice(1).join('/')));
+      if (error) stayed.push(...batch);
+    }
+  }
+  return stayed;
+}
+
+export async function runImport(source: ExportSource, target: ImportTarget): Promise<void> {
+  const uploaded: string[] = [];
+  try {
+    await uploadFiles(source, target.apiUrl, target.serviceKey, uploaded);
+    console.log(`uploaded ${uploaded.length} files`);
+    const file = join(tmpdir(), `esta-import-${process.pid}.sql`);
+    writeFileSync(file, importScript(source), { mode: 0o600 });
+    try {
+      runSql(target.dbUrl, file, { file: true });
+    } finally {
+      unlinkSync(file);
+    }
+  } catch (error) {
+    const stayed = await removeUploaded(uploaded, target.apiUrl, target.serviceKey).catch(() => uploaded);
+    if (stayed.length === 0) console.error(`The import failed, so the ${uploaded.length} file(s) it uploaded were removed. Fix the cause and run it again.`);
+    else console.error(`The import failed and ${stayed.length} uploaded file(s) could not be removed:\n${stayed.join('\n')}\nRemove them from Storage, then run the import again; a rerun uploads over the same names.`);
+    throw error;
+  }
+  console.log(`imported ${[...source.tables.values()].reduce((sum, rows) => sum + rows.length, 0)} rows`);
 }
 
 if (import.meta.main) {
@@ -72,14 +109,5 @@ if (import.meta.main) {
   const source = readExport(paths);
   const existing = runSql<{ households: number }>(target.dbUrl, 'select count(*)::int as households from public.households')[0]?.households ?? 0;
   if (existing > 0) throw new Error(`ESTA_SLOT=${target.slot} already holds ${existing} household(s); run pnpm db:reset:empty first`);
-  const uploaded = await uploadFiles(source, target.apiUrl, target.serviceKey);
-  console.log(`uploaded ${uploaded} files`);
-  const file = join(tmpdir(), `esta-import-${process.pid}.sql`);
-  writeFileSync(file, importScript(source), { mode: 0o600 });
-  try {
-    runSql(target.dbUrl, file, { file: true });
-  } finally {
-    unlinkSync(file);
-  }
-  console.log(`imported ${[...source.tables.values()].reduce((sum, rows) => sum + rows.length, 0)} rows`);
+  await runImport(source, target);
 }

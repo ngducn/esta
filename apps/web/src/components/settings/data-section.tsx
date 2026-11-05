@@ -30,7 +30,6 @@ export async function DataSection({ member }: { member: Member }) {
               <li key={line.key}>{line.text}</li>
             ))}
           </ul>
-          <p>{t('withheldBackup')}</p>
         </div>
         <DataExport labels={labels} />
         <p className="text-body-sm text-text-muted">{t('sensitive')}</p>

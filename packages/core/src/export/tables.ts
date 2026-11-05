@@ -44,7 +44,7 @@ export const EXPORT_TABLES: readonly HouseholdTable[] = [
   table('change_batches', [], 'applied_at created_at created_by household_id id outcomes plan planned_at status summary undone_at updated_at via'),
   table('conversations', [], 'created_at created_by household_id id last_asked_at sdk_handles sdk_session_id sdk_turn_hash title updated_at', 'chats'),
   table('household_members', [], 'created_at created_by density display_name household_id id invited_email is_operator locale role text_scale updated_at user_id'),
-  table('household_settings', [], 'agent created_at created_by household_id id invoicing updated_at'),
+  table('household_settings', [], 'agent created_at created_by household_id id invoicing onboarding updated_at'),
   table('notification_preferences', ['household_members'], 'channel created_at created_by daily_cap household_id id kinds member_id updated_at'),
   table('parties', ['household_members'], 'address_text created_at created_by email full_name household_id id id_last4 kind member_id notes phone short_name tags tax_code updated_at zalo_phone'),
   table('bank_accounts', ['parties'], 'account_name account_no bank_bin created_at created_by household_id id is_default owner_party_id updated_at'),

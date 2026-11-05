@@ -92,6 +92,7 @@ jobs:
           pnpm exec tsx scripts/export-household.ts ryan.lane9@demo.esta.test "$RUNNER_TEMP/export"
           pnpm db:reset:empty
           pnpm exec tsx scripts/roundtrip-checks.ts rollback "$RUNNER_TEMP/export"
+          pnpm exec tsx scripts/roundtrip-checks.ts refused "$RUNNER_TEMP/export"
           node scripts/import-export.ts "$RUNNER_TEMP/export"
           node scripts/row-counts.ts "$RUNNER_TEMP/export" | tee "$RUNNER_TEMP/row-counts.log"
           grep -q '^tables and files match what this export holds' "$RUNNER_TEMP/row-counts.log"

@@ -135,7 +135,7 @@ test('a viewer is refused, and a signed-out call is sent to sign in (FND-2)', as
     expect(await response.text()).toBe('');
     await viewer.goto('/settings');
     await expect(viewer.getByRole('heading', { level: 1 })).toBeVisible();
-    await expect(viewer.getByTestId('settings-data'), 'a viewer sees no Dữ liệu section').toHaveCount(0);
+    await expect(viewer.getByTestId('settings-data'), 'a viewer sees no download section').toHaveCount(0);
   } finally {
     await viewer.close();
   }
@@ -220,7 +220,7 @@ test('a partial export says so: each manifest and each screen names what that ad
     const ryanScreen = page.getByTestId('export-withheld');
     await expect(ryanScreen).toContainText('các cuộc trò chuyện với Trợ lý của người khác');
     await expect(ryanScreen).not.toContainText('người vận hành');
-    await expect(ryanScreen).toContainText('Bản sao lưu hằng đêm của hệ thống mới là bản đầy đủ');
+    await expect(ryanScreen).not.toContainText('sao lưu');
 
     const mother = await browser.newPage();
     try {
@@ -232,16 +232,16 @@ test('a partial export says so: each manifest and each screen names what that ad
       expect(rowIds(me.entries, 'conversations'), 'Mẹ reads her own chat').toContain(ids.chat);
       await mother.goto('/settings');
       const motherScreen = mother.getByTestId('export-withheld');
-      await expect(motherScreen).toContainText('ghi chú dành riêng cho người vận hành và hồ sơ công việc của Trợ lý');
+      await expect(motherScreen).toContainText('ghi chú kỹ thuật và công việc nền của Trợ lý');
       await expect(motherScreen).toContainText('các cuộc trò chuyện với Trợ lý của người khác');
-      await expect(motherScreen).toContainText('sắp có');
+      await expect(motherScreen).not.toContainText(/sắp có|dữ liệu|hệ thống|người vận hành/i);
     } finally {
       await mother.close();
     }
   });
 });
 
-test('Mẹ taps Xuất toàn bộ dữ liệu and gets one link per part, each a ZIP', async ({ page }) => {
+test('Mẹ taps Tải toàn bộ thông tin and gets one link per part, each a ZIP', async ({ page }) => {
   const phone = test.info().project.name === 'mobile';
   const viewport = phone ? PHONE : DESKTOP;
   await open(page, 'me.lane8@demo.esta.test', phone ? 'light' : 'dark', viewport);
@@ -251,8 +251,8 @@ test('Mẹ taps Xuất toàn bộ dữ liệu and gets one link per part, each a
   });
   await page.goto('/settings');
   const section = page.getByTestId('settings-data');
-  await expect(section.getByRole('heading', { name: 'Dữ liệu' })).toBeVisible();
-  await expect(section).toContainText('Tệp gồm cả tài liệu nhạy cảm');
+  await expect(section.getByRole('heading', { name: 'Tải thông tin về' })).toBeVisible();
+  await expect(section).toContainText('Tệp gồm cả giấy tờ nhạy cảm');
   expect(await seriousAxeViolations(page)).toEqual([]);
 
   await section.getByTestId('export-start').click();
