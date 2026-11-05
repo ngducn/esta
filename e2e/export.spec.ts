@@ -7,7 +7,7 @@ import { e2eServiceHeaders } from '../scripts/e2e-service.ts';
 import { parseSlot, slotWorkdir } from '../scripts/slot.ts';
 import { memberRest } from './helpers/auth-api';
 import { laneHousehold } from './helpers/seed';
-import { DESKTOP, noSidewaysScroll, open, openNewHousehold, PHONE, rest, seriousAxeViolations } from './helpers/wizard';
+import { DESKTOP, noSidewaysScroll, open, openNewHousehold, PHONE, rest, seriousAxeViolations, shot } from './helpers/wizard';
 
 const workdir = slotWorkdir(join(import.meta.dirname, '..'), parseSlot(process.env.ESTA_SLOT));
 const service = e2eServiceHeaders();
@@ -15,8 +15,8 @@ const LANE = 9;
 const HOUSEHOLD = laneHousehold(LANE);
 
 test.beforeEach(() => {
-  const onPhone = test.info().title.includes('on a phone');
-  test.skip(test.info().project.name !== (onPhone ? 'mobile' : 'desktop'), 'an export reads one lane household, so one viewport each');
+  const screen = test.info().title.includes('taps Xuất');
+  test.skip(!screen && test.info().project.name !== 'desktop', 'an export reads one lane household, so one viewport');
 });
 
 type Link = { name: string; url: string };
@@ -173,8 +173,10 @@ test('an admin who is not the operator gets everything except the operator-only 
   expect(short, 'the tables whose SELECT policy is narrower than the household').toEqual(['agent_jobs', 'agent_runs', 'audit_log']);
 });
 
-test('Mẹ taps Xuất toàn bộ dữ liệu on a phone and gets one link per part, each a ZIP', async ({ page }) => {
-  await open(page, 'me.lane8@demo.esta.test', 'light', PHONE);
+test('Mẹ taps Xuất toàn bộ dữ liệu and gets one link per part, each a ZIP', async ({ page }) => {
+  const phone = test.info().project.name === 'mobile';
+  const viewport = phone ? PHONE : DESKTOP;
+  await open(page, 'me.lane8@demo.esta.test', phone ? 'light' : 'dark', viewport);
   await page.route('**/api/export', async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 1200));
     await route.continue();
@@ -188,6 +190,8 @@ test('Mẹ taps Xuất toàn bộ dữ liệu on a phone and gets one link per p
   await section.getByTestId('export-start').click();
   await expect(section.getByTestId('export-start')).toBeDisabled();
   await expect(section.getByTestId('export-status')).toHaveText('Đang chuẩn bị tệp...');
+  await section.scrollIntoViewIfNeeded();
+  await shot(page, `p6-02a-preparing-${phone ? '390-light' : '1440-dark'}`);
   const links = section.getByTestId('export-link');
   await expect(links.first()).toBeVisible({ timeout: 30_000 });
   await expect(section.getByTestId('export-status')).toHaveText('');
@@ -199,11 +203,12 @@ test('Mẹ taps Xuất toàn bộ dữ liệu on a phone and gets one link per p
   for (let index = 0; index < count; index += 1) {
     const box = await links.nth(index).boundingBox();
     expect(box?.height ?? 0, 'a 44 px target').toBeGreaterThanOrEqual(44);
-    expect((box?.x ?? -1) + (box?.width ?? 0)).toBeLessThanOrEqual(PHONE.width);
+    expect((box?.x ?? -1) + (box?.width ?? 0)).toBeLessThanOrEqual(viewport.width);
     const download = await page.request.get((await links.nth(index).getAttribute('href')) ?? '');
     expect(download.status()).toBe(200);
     expect(Object.keys(unzipSync(new Uint8Array(await download.body()))).length).toBeGreaterThan(0);
   }
   expect(await noSidewaysScroll(page)).toBe(true);
   expect(await seriousAxeViolations(page)).toEqual([]);
+  await shot(page, `p6-02a-ready-${phone ? '390-light' : '1440-dark'}`);
 });
