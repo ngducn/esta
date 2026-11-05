@@ -6,8 +6,8 @@ import { useState } from 'react';
 import { useAction } from '@/components/use-action';
 
 /**
- * The bill page's writes: run the action, keep its refusal for the line under the button, and on success hand back to
- * the page, which the refresh redraws. A thrown call reads as `failed`.
+ * Run a server action, keep its refusal for the line under the control, and on success refresh the page so it redraws.
+ * A thrown call reads as `failed`.
  */
 export function useBillAction<R extends string>(onDone: () => void = () => {}) {
   const router = useRouter();
