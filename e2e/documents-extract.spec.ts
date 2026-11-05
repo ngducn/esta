@@ -231,7 +231,7 @@ test('rule 6: with the worker stopped the tile says the assistant is offline, th
   const [beat] = await serviceGet<{ last_seen_at: string }[]>(page, 'worker_heartbeats?select=last_seen_at&order=last_seen_at.desc&limit=1');
   const lastBeat = Math.max(Date.parse(beat?.last_seen_at ?? ''), Date.parse('2026-10-07T09:00:00+07:00'));
   await setClock(request, new Date(lastBeat + 6 * 60_000).toISOString());
-  await expect(pill(page, documentId)).toHaveText('Trợ lý ngoại tuyến', { timeout: 10_000 });
+  await expect(pill(page, documentId)).toHaveText('Trợ lý đang nghỉ', { timeout: 10_000 });
   await shot(page, 'p2-03-offline-1440x900-dark');
   const [queued] = await extractions(page, documentId);
   expect(queued?.status).toBe('queued');
@@ -242,7 +242,7 @@ test('rule 6: with the worker stopped the tile says the assistant is offline, th
   expect((await extractions(page, documentId)).map((row) => row.status)).toEqual(['needs_review']);
 });
 
-test('rule 7: a blank page fails after every attempt, the tile reads Không đọc được and admins get a retry item', async ({ page, request }) => {
+test('rule 7: a blank page fails after every attempt, the tile reads Chưa đọc được and admins get a retry item', async ({ page, request }) => {
   await startWorker();
   await open(page, 'me.lane7@demo.esta.test', 'light', PHONE);
   await page.goto(`/properties/${propertyId(7, 'bao-loc')}/documents`);
@@ -259,7 +259,7 @@ test('rule 7: a blank page fails after every attempt, the tile reads Không đ�
   }
   await expect.poll(jobOf, { timeout: 10_000 }).toEqual({ status: 'failed', attempts: 4 });
   await page.reload();
-  await expect(pill(page, documentId)).toHaveText('Không đọc được');
+  await expect(pill(page, documentId)).toHaveText('Chưa đọc được');
   await shot(page, 'p2-03-failed-390x844-light');
   expect((await extractions(page, documentId))[0]?.status).toBe('failed');
   const items = await serviceGet<{ severity: string; proposal: { type: string; min_role: string } }[]>(

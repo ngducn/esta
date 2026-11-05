@@ -24,10 +24,13 @@ function writeQuery(query: string) {
 export function VaultSearch({
   initial,
   propertyId,
+  actions,
   children,
 }: {
   initial: SearchState;
   propertyId: string | null;
+  /** Controls that sit beside the search in the filter bar. */
+  actions?: ReactNode;
   children: (state: SearchState) => ReactNode;
 }) {
   const t = useTranslations('documents');
@@ -67,28 +70,31 @@ export function VaultSearch({
 
   return (
     <>
-      <form role="search" className="min-w-0" onSubmit={(event) => {
-        event.preventDefault();
-        clearTimeout(timer.current);
-        writeQuery(value.trim());
-        search(value.trim());
-      }}>
-        <label className="flex min-h-touch items-center gap-2.5 rounded-md border border-border-field bg-surface px-3.5 shadow-xs focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus-ring">
-          <Search className="size-5 shrink-0 text-text-muted" aria-hidden="true" />
-          <span className="sr-only">{t('searchLabel')}</span>
-          <input
-            type="search"
-            name="q"
-            data-testid="vault-search"
-            value={value}
-            onChange={(event) => update(event.target.value)}
-            placeholder={t('searchPlaceholder')}
-            autoComplete="off"
-            enterKeyHint="search"
-            className="min-w-0 flex-1 bg-transparent py-2.5 text-body text-text outline-none placeholder:text-text-muted"
-          />
-        </label>
-      </form>
+      <div className="flex flex-wrap items-center gap-2 lg:gap-3">
+        <form role="search" className="min-w-0 flex-[1_1_16rem]" onSubmit={(event) => {
+          event.preventDefault();
+          clearTimeout(timer.current);
+          writeQuery(value.trim());
+          search(value.trim());
+        }}>
+          <label className="flex min-h-touch items-center gap-2.5 rounded-md border border-border-field bg-surface px-3.5 shadow-xs focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-focus-ring">
+            <Search className="size-5 shrink-0 text-text-muted" aria-hidden="true" />
+            <span className="sr-only">{t('searchLabel')}</span>
+            <input
+              type="search"
+              name="q"
+              data-testid="vault-search"
+              value={value}
+              onChange={(event) => update(event.target.value)}
+              placeholder={t('searchPlaceholder')}
+              autoComplete="off"
+              enterKeyHint="search"
+              className="min-w-0 flex-1 bg-transparent py-2.5 text-body text-text outline-none placeholder:text-text-muted"
+            />
+          </label>
+        </form>
+        {actions}
+      </div>
       {children(state)}
     </>
   );

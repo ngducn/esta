@@ -3,7 +3,7 @@
 import { DOCUMENT_CATEGORY_IDS } from '@esta/core/documents';
 import { useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import type { VaultTile } from '@/server/documents/list';
 import type { CoverPhotoPriority } from '@/components/properties/cover-photo';
@@ -40,43 +40,47 @@ export function groupTiles(tiles: readonly VaultTile[], by: GroupBy, noProperty:
 
 const LazyVirtualVault = dynamic(() => import('./virtual-vault-rows').then((module) => module.VirtualVaultRows));
 
+/** `Theo tài sản` or `Theo loại`, styled as the screen's other filter tabs. */
+export function GroupByToggle({ by, onChange }: { by: GroupBy; onChange: (by: GroupBy) => void }) {
+  const t = useTranslations('documents');
+  return (
+    <div role="group" aria-label={t('groupBy')} className="inline-flex max-w-full gap-0.5 rounded-md bg-segment-track p-0.5">
+      {(['property', 'category'] as const).map((option) => (
+        <button
+          key={option}
+          type="button"
+          aria-pressed={by === option}
+          data-testid={`group-by-${option}`}
+          onClick={() => onChange(option)}
+          className={cn(
+            'inline-flex min-h-9 items-center rounded-sm px-3 text-label font-medium whitespace-nowrap transition-colors duration-(--duration-fast) ease-standard pointer-coarse:min-h-touch',
+            by === option ? 'bg-segment-selected text-text shadow-xs ring-1 ring-border' : 'text-text-secondary hover:text-text',
+          )}
+        >
+          {t(option === 'property' ? 'byProperty' : 'byCategory')}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function VaultGroups({
   tiles,
-  initialBy = 'property',
+  by,
   renderTile,
 }: {
   tiles: readonly VaultTile[];
-  initialBy?: GroupBy;
+  by: GroupBy;
   renderTile: (tile: VaultTile, showProperty: boolean, priority?: CoverPhotoPriority) => ReactNode;
 }) {
   const t = useTranslations('documents');
-  const [by, setBy] = useState<GroupBy>(initialBy);
   const groups = groupTiles(tiles, by, t('noProperty'));
 
   return (
     <section aria-labelledby="vault-groups-title" data-testid="vault-groups" className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 id="vault-groups-title" className="text-title-3 text-text">
-          {t('allDocuments', { count: tiles.length })}
-        </h2>
-        <div role="group" aria-label={t('groupBy')} className="flex rounded-md border border-border-strong bg-surface p-1">
-          {(['property', 'category'] as const).map((option) => (
-            <button
-              key={option}
-              type="button"
-              aria-pressed={by === option}
-              data-testid={`group-by-${option}`}
-              onClick={() => setBy(option)}
-              className={cn(
-                'flex min-h-touch flex-1 items-center justify-center rounded-md px-4 text-body font-medium whitespace-nowrap transition-colors duration-(--duration-fast) ease-standard',
-                by === option ? 'bg-accent-subtle text-accent-text' : 'text-text-secondary hover:bg-fill-hover',
-              )}
-            >
-              {t(option === 'property' ? 'byProperty' : 'byCategory')}
-            </button>
-          ))}
-        </div>
-      </div>
+      <h2 id="vault-groups-title" className="text-title-3 text-text">
+        {t('allDocuments', { count: tiles.length })}
+      </h2>
       {tiles.length > VIRTUALIZE_ABOVE ? (
         <LazyVirtualVault groups={groups} renderTile={(tile) => renderTile(tile, by === 'category')} countLabel={(count) => t('groupCount', { count })} />
       ) : (
