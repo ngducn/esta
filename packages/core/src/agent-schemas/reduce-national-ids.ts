@@ -39,14 +39,21 @@ const JOIN_AFTER_LABEL = /^(?:\s{1,3}|\s?[./,_\-\u00B7\u2010-\u2015|]{1,2}\s?)$/
  * reduced ID never join one.
  */
 export const DATE =
-  /(?<!\p{Nd})(?:(?:0?[1-9]|[12]\d|3[01])([./-])(?:0?[1-9]|1[0-2])\1(?:19|20)?\d{2}|(?:19|20)\d{2}([./-])(?:0?[1-9]|1[0-2])\2(?:0?[1-9]|[12]\d|3[01])|(?:19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])|(?<!\p{Nd}[./-])(?:0?[1-9]|1[0-2])[./-](?:19|20)\d{2})(?!\p{Nd})/gu;
+  /(?<!\p{Nd})(?:(?:0?[1-9]|[12]\d|3[01])([./\u00B7-])(?:0?[1-9]|1[0-2])\1(?:19|20)?\d{2}|(?:19|20)\d{2}([./\u00B7-])(?:0?[1-9]|1[0-2])\2(?:0?[1-9]|[12]\d|3[01])|(?:19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])|(?<!\p{Nd}[./\u00B7-])(?:0?[1-9]|1[0-2])[./\u00B7-](?:19|20)\d{2})(?!\p{Nd})/gu;
 /**
  * A Vietnamese amount groups thousands with dots or commas, never starts with 0 (every CCCD does), names its currency
- * and does not continue digits before it after spaces, so the last group of `079 175 001 234 đồng` stays an ID group.
+ * and, when it has no thousands group, does not continue digits before it after spaces, so the last group of
+ * `079 175 001 234 đồng` stays an ID group while `1 125.000.000.000 đồng` stays an amount. A middle dot groups thousands too.
  * It is read on the folded text, where `đồng` is `đong`.
  */
 const AMOUNT =
-  /(?<!\p{Nd}|\p{Nd}[.,]|\p{Nd}[^\S\n\r]{1,3})(?![0０])\p{Nd}{1,3}(?:(?:\.\p{Nd}{3})+|(?:,\p{Nd}{3})+)?(?!\p{Nd}|[.,]\p{Nd})(?=\s?(?:đ|₫|[dđ]ong|vnd|vnđ)(?![\p{L}\p{N}]))/giu;
+  /(?<!\p{Nd}|\p{Nd}[.,\u00B7])(?![0０])(?:\p{Nd}{1,3}(?:(?:[.\u00B7]\p{Nd}{3})+|(?:,\p{Nd}{3})+)|(?<!\p{Nd}[^\S\n\r]{1,3})\p{Nd}{1,3})(?!\p{Nd}|[.,\u00B7]\p{Nd})(?=\s?(?:đ|₫|[dđ]ong|vnd|vnđ)(?![\p{L}\p{N}]))/giu;
+/**
+ * A number that is no ID but stands just before an ID label is left whole: a plus sign or a label for a phone, a tax
+ * code or an account right before it, and a 10-digit number that starts with 0 (a phone). These are cut only after a
+ * label, where the number's place is the ID's. `holds_national_id` leaves the same numbers.
+ */
+const OTHER_NUMBER_LABEL = /(?<!\p{L})(?:mst|ma so thue|so thue|tax code|tax id|stk|so tai khoan|tai khoan|account(?: no\.?| number)?|sdt|[dđ]t|[dđ]ien thoai|tel|hotline|phone)[^\p{L}\p{Nd}]{0,8}$|\+[^\S\n\r]?$/iu;
 const LETTERS_BEFORE = /\p{L}+$/u;
 
 type Group = { readonly start: number; readonly end: number; readonly digits: string; readonly gap: string | null };
@@ -86,7 +93,7 @@ function groupsIn(text: string, groups: readonly Group[], pattern: RegExp): Read
  * Finds every national ID in one string: 12 digits anywhere, or 9 to 12 digits within reach of an ID label or in an ID
  * field, the digits possibly grouped. A match spans whole digit groups and stops at the first total that reaches the
  * length, and never takes in a date or an amount, so the date, year or amount after a number stays out of it. A group
- * of up to three digits on the line after a labelled number that is already whole is another field, not part of it.
+ * of one or two digits on the line after a labelled 9-digit number is another field, not part of it.
  */
 function idSpans(original: string, idField: boolean): Span[] {
   const folded = fold(original);
@@ -117,8 +124,15 @@ function idSpans(original: string, idField: boolean): Span[] {
   };
   const codePrefixed = (first: Group) => CODE_PREFIXES.has(LETTERS_BEFORE.exec(text.slice(0, first.start))?.[0].toUpperCase() ?? '');
   const startsAnotherField = (run: readonly Group[], length: number) => {
-    const last = run.at(-1);
-    return last !== undefined && run.length > 1 && last.digits.length <= 3 && /[\r\n]/u.test(last.gap ?? '') && LABELLED_LENGTHS.some((n) => n === length - last.digits.length);
+    const [prefix, last] = run;
+    return run.length === 2 && prefix !== undefined && last !== undefined && prefix.digits.length === 9 && last.digits.length <= 2 && /[\r\n]/u.test(last.gap ?? '');
+  };
+
+  const isOtherNumber = (run: readonly Group[]) => {
+    const [first] = run;
+    if (first === undefined) return false;
+    const digits = run.map((group) => group.digits).join('');
+    return (digits.length === 10 && digits.startsWith('0')) || OTHER_NUMBER_LABEL.test(text.slice(0, first.start));
   };
 
   const spans: Span[] = [];
@@ -135,6 +149,10 @@ function idSpans(original: string, idField: boolean): Span[] {
       if (run === undefined || last === undefined) continue;
       if (groups[from + run.length]?.gap === '.' || run.some((group) => dates.has(group) || amounts.has(group))) continue;
       if (needsLabel && !labelled && !beforeLabel(last.end)) continue;
+      if (needsLabel && !labelled && isOtherNumber(run)) {
+        from += run.length - 1;
+        break;
+      }
       if (needsLabel && startsAnotherField(run, length)) continue;
       if (!needsLabel && codePrefixed(first)) continue;
       const lastChar = last.end - 1;

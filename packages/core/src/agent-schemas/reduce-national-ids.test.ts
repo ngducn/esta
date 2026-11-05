@@ -38,6 +38,12 @@ describe('reduceNationalIds', () => {
     expect(reduced.full_text).toBe('Khách hàng Demo, căn cước công dân 1776'.normalize('NFC'));
   });
 
+  it('fills id_last4 with the last four digits of a CCCD wrapped before its last group', () => {
+    const reduced = reduceNationalIds({ holders: [{ id_last4: leaf(null), address_text: leaf('CCCD số 079 070 001\n234, cấp ngày 12/03/2021') }] });
+    expect(reduced.holders[0]?.id_last4.value).toBe('1234');
+    expect(reduced.holders[0]?.address_text.value).toBe('CCCD số 1234, cấp ngày 12/03/2021');
+  });
+
   it('does not change its input', () => {
     const input = { id_last4: leaf('079062118340') };
     reduceNationalIds(input);
