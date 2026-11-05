@@ -5,6 +5,16 @@
     "heroAlt": "Hanoi rooftops looking towards the Long Bien bridge",
     "heroCaption": "Keep the home\nfor the whole family."
   },
+  "loadFailed": {
+    "title": "Could not load",
+    "body": "Check the network connection and try again. What you saved is still there.",
+    "retry": "Try again"
+  },
+  "notFound": {
+    "title": "This page was not found",
+    "body": "The link may be old or mistyped.",
+    "action": "Back to Home"
+  },
   "language": {
     "label": "Language",
     "switchTo": "Tiếng Việt"
@@ -128,6 +138,9 @@
     "todayTitle": "To do today",
     "todayCount": "{count, plural, one {# task} other {# tasks}}",
     "todayEmpty": "Nothing to do today.",
+    "emptyTitle": "No properties yet",
+    "emptyBody": "Add the first one with a photo of the certificate, or enter it by hand.",
+    "emptyAction": "Add property",
     "todayMore": "See all in Collections",
     "leaseEnding": "{days, plural, =0 {The lease ends today} one {The lease ends {date}, # day left} other {The lease ends {date}, # days left}}",
     "openBill": "View bill",
@@ -464,6 +477,7 @@
     "archivedLink": "Archived",
     "archivedTitle": "Archived properties",
     "archivedEmpty": "No property is archived.",
+    "archivedEmptyAction": "Back to Properties",
     "archivedToast": "Archived {nickname}.",
     "restore": "Restore",
     "listRent": "Listed rent",
@@ -519,7 +533,8 @@
     "edit": "Edit details",
     "askAssistant": "Ask Trợ lý about this property",
     "askAssistantShort": "Ask Trợ lý",
-    "activityEmptyBody": "Each edit to the property details or photo is recorded here."
+    "activityEmptyBody": "Each edit to the property details or photo is recorded here.",
+    "activityEmptyAction": "Edit details"
   },
   "completeness": {
     "title": "Completeness",
@@ -1109,8 +1124,9 @@
     "retryAskJob": "An admin can tap Retry.",
     "author": "Trợ lý",
     "thread": "Messages with Trợ lý",
-    "threadEmpty": "No messages yet",
-    "threadEmptyBody": "Trợ lý leaves its notes here each morning. Write to it any time.",
+    "threadEmpty": "Trợ lý will leave its first note tomorrow morning at 07:00.",
+    "threadEmptyBody": "You can also message Trợ lý right now.",
+    "threadEmptyAction": "Message Trợ lý",
     "threadOlder": "See older messages",
     "threadNewest": "See the newest messages",
     "sentAt": "You sent at {time}",
@@ -1495,6 +1511,7 @@
     "owners": "Owner",
     "years": "Year",
     "noOwners": "No one is recorded as an owner yet. Add owners on a property’s Legal tab.",
+    "noOwnersAction": "Open Properties",
     "projected": "Projected rental revenue for {year}",
     "progress": "{percent}% of the {threshold} threshold",
     "over": "Over the {threshold} threshold",
@@ -1668,6 +1685,8 @@
     "caption": "Collections for {month}, {count, plural, one {# bill} other {# bills}}",
     "group": "{group, select, overdue {Overdue} due {Due today} notDue {Not due yet} other {Paid}}",
     "empty": "No bills in {month}.",
+    "emptyBody": "Bills show here once a property has a lease.",
+    "emptyAction": "Open Properties",
     "place": "{unit}, {property}",
     "propertyArchived": "Property archived",
     "noTenant": "No tenant",
@@ -2012,6 +2031,7 @@
     "sheet": "Ledger {year}",
     "empty": "No income or expenses in {year}.",
     "emptyAction": "Rent shows here once payments are recorded.",
+    "emptyAdd": "Add expense",
     "stripLabel": "Income and spending summary for {year}",
     "unknownFigure": "No figure yet"
   },
@@ -2222,6 +2242,7 @@
     "errorNetwork": "Not saved. Check the network connection and try again.",
     "empty": "This property has no electricity or water meters yet.",
     "emptyBody": "Once each room has meters, the monthly readings are entered here.",
+    "emptyAction": "Add a room for rent",
     "viewerNote": "You can view the readings but not change them.",
     "priceNote": "Assumption: electricity and water are charged at the price set on each meter. Ministry of Industry and Trade rules cap what renters may be charged for electricity, so check the price before sending bills.",
     "monthNav": "Choose the month"
@@ -2232,6 +2253,7 @@
     "settingsLink": "Changes made through Claude",
     "settingsLinkHint": "See and undo what Claude changed.",
     "empty": "Nothing has been changed through Claude yet.",
+    "emptyAction": "Back to Settings",
     "via": "via Claude",
     "status": "{status, select, applied {Applied} partial {Partly applied} undone {Undone} other {}}",
     "entry": "{name} · {time} {date}",
@@ -2303,6 +2325,7 @@
     "pnlTitle": "Profit and loss by property, {year}",
     "pnlBasis": "Income counts in the month the money arrived, as on each property's Ledger tab.",
     "pnlEmpty": "No properties yet. Add a property to see its profit and loss.",
+    "emptyAction": "Open Properties",
     "rentRollTitle": "Rent roll on {date}",
     "rentRollBasis": "Leases in effect today, including a terminated lease until its termination date.",
     "rentRollEmpty": "No lease is in effect today.",

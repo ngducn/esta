@@ -5,6 +5,16 @@
     "heroAlt": "Mái nhà phố cổ Hà Nội nhìn về cầu Long Biên",
     "heroCaption": "Giữ nhà\ncho cả nhà."
   },
+  "loadFailed": {
+    "title": "Chưa tải được",
+    "body": "Kiểm tra kết nối mạng rồi thử lại. Thông tin đã lưu vẫn còn nguyên.",
+    "retry": "Thử lại"
+  },
+  "notFound": {
+    "title": "Không tìm thấy trang này",
+    "body": "Đường dẫn có thể đã cũ hoặc bị gõ sai.",
+    "action": "Về Tổng quan"
+  },
   "language": {
     "label": "Ngôn ngữ",
     "switchTo": "English"
@@ -128,6 +138,9 @@
     "todayTitle": "Cần làm hôm nay",
     "todayCount": "{count, plural, other {# việc}}",
     "todayEmpty": "Hôm nay không có việc cần làm.",
+    "emptyTitle": "Chưa có tài sản nào",
+    "emptyBody": "Thêm tài sản đầu tiên bằng ảnh sổ hoặc nhập tay.",
+    "emptyAction": "Thêm tài sản",
     "todayMore": "Xem tất cả ở Thu tiền",
     "leaseEnding": "{days, plural, =0 {Hợp đồng hết hạn hôm nay} other {Hợp đồng hết hạn {date}, còn # ngày}}",
     "openBill": "Xem hóa đơn",
@@ -464,6 +477,7 @@
     "archivedLink": "Đã lưu trữ",
     "archivedTitle": "Tài sản đã lưu trữ",
     "archivedEmpty": "Chưa có tài sản nào được lưu trữ.",
+    "archivedEmptyAction": "Về Tài sản",
     "archivedToast": "Đã lưu trữ {nickname}.",
     "restore": "Khôi phục",
     "listRent": "Giá niêm yết",
@@ -519,7 +533,8 @@
     "edit": "Sửa thông tin",
     "askAssistant": "Hỏi Trợ lý về tài sản này",
     "askAssistantShort": "Hỏi Trợ lý",
-    "activityEmptyBody": "Mỗi lần sửa thông tin hay đổi ảnh tài sản sẽ được ghi lại ở đây."
+    "activityEmptyBody": "Mỗi lần sửa thông tin hay đổi ảnh tài sản sẽ được ghi lại ở đây.",
+    "activityEmptyAction": "Sửa thông tin"
   },
   "completeness": {
     "title": "Mức đầy đủ",
@@ -1109,8 +1124,9 @@
     "retryAskJob": "Người quản trị có thể bấm Thử lại.",
     "author": "Trợ lý",
     "thread": "Tin nhắn với Trợ lý",
-    "threadEmpty": "Chưa có tin nào",
-    "threadEmptyBody": "Mỗi sáng Trợ lý để ghi chú ở đây. Viết cho Trợ lý bất cứ lúc nào.",
+    "threadEmpty": "Trợ lý sẽ để lại ghi chú đầu tiên vào sáng mai lúc 07:00.",
+    "threadEmptyBody": "Cũng có thể nhắn cho Trợ lý ngay bây giờ.",
+    "threadEmptyAction": "Nhắn cho Trợ lý",
     "threadOlder": "Xem tin cũ hơn",
     "threadNewest": "Xem tin mới nhất",
     "sentAt": "Bạn gửi lúc {time}",
@@ -1495,6 +1511,7 @@
     "owners": "Chủ sở hữu",
     "years": "Năm",
     "noOwners": "Chưa có ai được ghi là chủ sở hữu. Thêm chủ sở hữu ở tab Pháp lý của một tài sản.",
+    "noOwnersAction": "Mở Tài sản",
     "projected": "Doanh thu cho thuê dự kiến cả năm {year}",
     "progress": "Đạt {percent}% ngưỡng {threshold}",
     "over": "Vượt ngưỡng {threshold}",
@@ -1668,6 +1685,8 @@
     "caption": "Thu tiền tháng {month}, {count, plural, other {# hóa đơn}}",
     "group": "{group, select, overdue {Quá hạn} due {Đến hạn} notDue {Chưa đến hạn} other {Đã thu}}",
     "empty": "Tháng {month} không có hóa đơn nào.",
+    "emptyBody": "Hóa đơn hiện ở đây khi tài sản có hợp đồng thuê.",
+    "emptyAction": "Mở Tài sản",
     "place": "{unit}, {property}",
     "propertyArchived": "Tài sản đã lưu trữ",
     "noTenant": "Chưa có người thuê",
@@ -2012,6 +2031,7 @@
     "sheet": "Thu chi {year}",
     "empty": "Chưa có khoản thu hay chi nào trong năm {year}.",
     "emptyAction": "Tiền thuê hiện ở đây khi ghi nhận thanh toán.",
+    "emptyAdd": "Thêm chi phí",
     "stripLabel": "Tóm tắt thu chi năm {year}",
     "unknownFigure": "Chưa có số liệu"
   },
@@ -2222,6 +2242,7 @@
     "errorNetwork": "Chưa lưu được. Kiểm tra kết nối mạng rồi thử lại.",
     "empty": "Nhà này chưa có đồng hồ điện nước.",
     "emptyBody": "Khi mỗi phòng có đồng hồ, chỉ số hằng tháng được nhập ở đây.",
+    "emptyAction": "Thêm phòng cho thuê",
     "viewerNote": "Bạn chỉ xem được chỉ số, không sửa được.",
     "priceNote": "Giả định: tiền điện nước tính theo giá đặt cho từng đồng hồ. Quy định của Bộ Công Thương giới hạn giá điện thu của người thuê nhà, nên hãy kiểm tra giá trước khi gửi hóa đơn.",
     "monthNav": "Chọn tháng"
@@ -2232,6 +2253,7 @@
     "settingsLink": "Lịch sử thay đổi qua Claude",
     "settingsLinkHint": "Xem và hoàn tác những gì Claude đã sửa.",
     "empty": "Chưa có thay đổi nào qua Claude.",
+    "emptyAction": "Về Cài đặt",
     "via": "qua Claude",
     "status": "{status, select, applied {Đã áp dụng} partial {Áp dụng một phần} undone {Đã hoàn tác} other {}}",
     "entry": "{name} · {time} {date}",
@@ -2303,6 +2325,7 @@
     "pnlTitle": "Lãi lỗ theo tài sản năm {year}",
     "pnlBasis": "Tiền thu tính vào tháng nhận được tiền, như tab Thu chi của từng tài sản.",
     "pnlEmpty": "Chưa có tài sản nào. Thêm tài sản để xem lãi lỗ.",
+    "emptyAction": "Mở Tài sản",
     "rentRollTitle": "Danh sách thuê ngày {date}",
     "rentRollBasis": "Các hợp đồng đang hiệu lực hôm nay, kể cả hợp đồng đã chấm dứt nhưng chưa tới ngày chấm dứt.",
     "rentRollEmpty": "Hôm nay chưa có hợp đồng nào đang hiệu lực.",

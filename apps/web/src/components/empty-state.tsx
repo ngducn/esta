@@ -11,24 +11,28 @@ export function EmptyState({
   title,
   body,
   action,
+  cta,
   icon: Icon,
   media,
   tone,
   className,
   testId,
+  surface,
 }: {
   title: string;
   body?: string;
   action?: EmptyStateAction;
+  cta?: ReactNode;
   icon?: LucideIcon;
   media?: ReactNode;
   tone?: 'good';
   className?: string;
   testId?: string;
+  surface?: string;
 }) {
   const ActionIcon = action?.icon;
   return (
-    <section data-slot="empty-state" data-testid={testId} className={cn('overflow-hidden rounded-lg border border-border bg-surface shadow-xs', className)}>
+    <section data-slot="empty-state" data-surface={surface} data-testid={testId} className={cn('overflow-hidden rounded-lg border border-border bg-surface shadow-xs', className)}>
       {media}
       <div className="flex flex-col items-start gap-2 p-card-pad">
         <h2 className="flex items-start gap-2 text-headline text-text">
@@ -36,12 +40,13 @@ export function EmptyState({
           <span className="min-w-0 break-words">{title}</span>
         </h2>
         {body === undefined ? null : <p className="max-w-prose text-body text-pretty text-text-secondary">{body}</p>}
-        {action ? (
+        {cta ?? null}
+        {cta !== undefined || !action ? null : (
           <Link href={action.href} data-testid={action.testId} className={buttonVariants({ variant: 'primary', className: 'mt-2' })}>
             {ActionIcon ? <ActionIcon aria-hidden="true" /> : null}
             {action.label}
           </Link>
-        ) : null}
+        )}
       </div>
     </section>
   );

@@ -382,8 +382,8 @@ test('screens: Thu chi, the sheet and the empty year at 390 and 1440, light and 
       await expect(sheet(page)).toBeVisible();
       await shot(page, `sheet-${size}-${theme}`);
       await page.goto(`/properties/${longAn}/finance`);
-      await expect(page.getByTestId('expense-empty')).toBeVisible();
-      await shot(page, `empty-${size}-${theme}`, page.getByTestId('expense-empty'));
+      await expect(page.getByTestId('ledger-empty')).toBeVisible();
+      await shot(page, `empty-${size}-${theme}`, page.getByTestId('ledger-empty'));
     }
   }
 });

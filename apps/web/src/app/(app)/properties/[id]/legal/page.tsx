@@ -4,7 +4,7 @@ import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { EmptyState } from '@/components/empty-state';
+import { RegistryEmptyState } from '@/components/registry-empty-state';
 import { CertificateCard } from '@/components/legal/certificate-card';
 import { FocusAnchor } from '@/components/completeness/use-focus-anchor';
 import { OwnersSection } from '@/components/legal/owners-section';
@@ -112,7 +112,7 @@ export default async function PropertyLegalPage({ params }: { params: Promise<{ 
           <div className="flex flex-col gap-8">
           <Section id="legal-certificates" title={t('certificatesTitle')} action={legal.certificates.length === 0 ? null : addCertificate}>
             {legal.certificates.length === 0 ? (
-              <EmptyState title={t('certificatesEmpty')} body={t('certificatesEmptyBody')} icon={FileText} {...(addCertificate === null ? {} : { action: addCertificate })} />
+              <RegistryEmptyState surface="propertyLegalCertificates" ctx={{ canWrite: canEdit, propertyId: id }} icon={FileText} />
             ) : (
               <ul className="flex flex-col gap-3">
                 {legal.certificates.map((certificate) => (
@@ -145,14 +145,14 @@ export default async function PropertyLegalPage({ params }: { params: Promise<{ 
               action={legal.parcels.length === 0 ? null : addParcel}
             >
               {legal.parcels.length === 0 ? (
-                <EmptyState title={t('parcelsEmpty')} body={t('parcelsEmptyBody')} icon={LandPlot} {...(addParcel === null ? {} : { action: addParcel })} />
+                <RegistryEmptyState surface="propertyLegalParcels" ctx={{ canWrite: canEdit, propertyId: id }} icon={LandPlot} />
               ) : (
                 <ParcelList propertyId={id} parcels={legal.parcels} codes={codeByCode} canEdit={canEdit} />
               )}
             </Section>
             <Section id="legal-structures" title={t('structuresTitle')} action={legal.structures.length === 0 ? null : addStructure}>
               {legal.structures.length === 0 ? (
-                <EmptyState title={t('structuresEmpty')} body={t('structuresEmptyBody')} icon={Home} {...(addStructure === null ? {} : { action: addStructure })} />
+                <RegistryEmptyState surface="propertyLegalStructures" ctx={{ canWrite: canEdit, propertyId: id }} icon={Home} />
               ) : (
                 <StructureList propertyId={id} structures={legal.structures} canEdit={canEdit} />
               )}

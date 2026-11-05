@@ -223,13 +223,18 @@ test('Gia hạn opens the Thủ Đức lease with the renew sheet ready, and Xem
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(Q7_INSURANCE);
 });
 
-test('a new household has nothing to do and no bill this month, and draws no empty box or map', async ({ page }) => {
+test('a new household has no property, so Home shows the first-run guide, and once it is hidden says so once and offers one way to add it', async ({ page }) => {
   await openNewHousehold(page, 'dark', PHONE);
   await page.goto('/');
-  await expect(page.getByTestId('today-empty')).toHaveText('Hôm nay không có việc cần làm.');
-  await expect(page.getByTestId('month-empty')).toHaveText('Chưa có hóa đơn nào đến hạn trong tháng 10/2026.');
+  await expect(page.getByTestId('first-run')).toBeVisible();
+  await expect(page.locator('[data-surface="home"]')).toHaveCount(0);
+  await page.getByTestId('first-run-hide').click();
+  await expect(page.getByTestId('first-run')).toHaveCount(0);
+  const empty = page.locator('[data-surface="home"]');
+  await expect(empty.getByRole('heading', { level: 2 })).toHaveText('Chưa có tài sản nào');
+  await expect(empty.getByRole('link', { name: 'Thêm tài sản' })).toHaveAttribute('href', '/properties/new');
+  await expect(page.getByTestId('today-empty')).toHaveCount(0);
   await expect(page.getByTestId('month-figure')).toHaveCount(0);
-  await expect(page.getByTestId('month-group-overdue'), 'no row of four zeros under the sentence').toHaveCount(0);
   await expect(page.getByTestId('home-map-strip')).toHaveCount(0);
   expect(await seriousAxeViolations(page)).toEqual([]);
 });

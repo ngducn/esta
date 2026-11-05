@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { lazy } from 'react';
+import { emptyState, looseTranslate } from '@/app/empty-states';
+import { EmptyState } from '@/components/empty-state';
 import { Button } from '@/components/ui/button';
 import { DeferredPopup, useDeferredDialog } from '@/components/use-deferred-dialog';
 import type { LeaseDocument } from '@/server/leases/detail';
@@ -34,6 +36,7 @@ export function LeaseDocuments({
   const category = useTranslations('documents');
   const router = useRouter();
   const uploading = useDeferredDialog(loadUploadSheet);
+  const empty = emptyState('leaseDocuments', looseTranslate(t), { canWrite: canEdit });
   const upload = canEdit ? (
     <Button type="button" variant="secondary" data-testid="lease-upload" {...uploading.triggerProps}>
       <Upload aria-hidden="true" />
@@ -46,16 +49,14 @@ export function LeaseDocuments({
         {t('documentsTitle')}
       </h2>
       {documents.length === 0 ? (
-        <div className="flex flex-col items-start gap-3">
-          <p className="flex items-center gap-3 text-body font-medium text-text">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-accent-subtle text-accent-text">
-              <FileText className="size-5" strokeWidth={1.8} aria-hidden="true" />
-            </span>
-            {t('documentsEmpty')}
-          </p>
-          <p className="max-w-prose text-body text-pretty text-text-secondary">{canEdit ? t('documentsEmptyBody') : t('documentsViewerEmpty')}</p>
-          {upload}
-        </div>
+        <EmptyState
+          surface="leaseDocuments"
+          icon={FileText}
+          title={empty.title}
+          className="border-0 bg-transparent shadow-none"
+          {...(empty.body === undefined ? {} : { body: empty.body })}
+          {...(upload === null ? {} : { cta: upload })}
+        />
       ) : (
         <>
           <ul className="flex flex-col">

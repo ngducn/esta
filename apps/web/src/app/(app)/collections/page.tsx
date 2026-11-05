@@ -8,6 +8,7 @@ import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { CollectionsBoard } from '@/components/collections/CollectionsBoard';
 import { EmptyState } from '@/components/empty-state';
+import { RegistryEmptyState } from '@/components/registry-empty-state';
 import { FilterTabs } from '@/components/filter-tabs';
 import { MoneyDisplay } from '@/components/money/money-display';
 import { SummaryStrip } from '@/components/summary-strip';
@@ -18,7 +19,7 @@ import { UndoToastProvider } from '@/components/undo-toast-provider';
 import { sectionMetadata } from '@/components/shell/section-page';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { getClock } from '@/server/clock';
-import { loadCollectionRows, loadOpenInvoices, loadOwedBills, type PaymentInvoice } from '@/server/collections/load';
+import { householdHasLease, loadCollectionRows, loadOpenInvoices, loadOwedBills, type PaymentInvoice } from '@/server/collections/load';
 import { boardQrs, loadQrLabels, loadReceivingAccount } from '@/server/invoices/qr';
 import { requireMember } from '@/server/member';
 import { boardReminders, loadReminderLabels } from '@/server/reminders/board';
@@ -60,6 +61,7 @@ export default async function CollectionsPage({ searchParams }: { searchParams: 
     loadReminderLabels(),
   ]);
   const owed = await loadOwedBills(member.household.id, rows);
+  const leased = rows.length > 0 || (await householdHasLease(member.household.id));
   const qrs = {
     byInvoice: boardQrs(rows, owed, account, locale),
     labels: qrLabels,
@@ -117,7 +119,7 @@ export default async function CollectionsPage({ searchParams }: { searchParams: 
       >
         {rows.length === 0 ? (
           <div data-testid="collections-empty" className="max-w-3xl">
-            <EmptyState title={t('empty', { month: monthLabel })} />
+            <RegistryEmptyState surface={leased ? 'collectionsMonth' : 'collections'} ctx={{ canWrite: canEdit }} values={{ month: monthLabel }} />
           </div>
         ) : (
           <div className="flex flex-col gap-stack">

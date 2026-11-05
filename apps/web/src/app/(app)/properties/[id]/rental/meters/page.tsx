@@ -7,7 +7,7 @@ import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { EmptyState } from '@/components/empty-state';
+import { RegistryEmptyState } from '@/components/registry-empty-state';
 import { MeterEntryList } from '@/components/meters/MeterEntryList';
 import { BackLink } from '@/components/properties/back-link';
 import { PropertyIntl } from '@/components/properties/property-intl';
@@ -85,7 +85,7 @@ export default async function MeterEntryPage({ params, searchParams }: { params:
         ) : null}
       </div>
       {rooms.length === 0 ? (
-        <EmptyState title={t('empty')} body={t('emptyBody')} icon={Gauge} />
+        <RegistryEmptyState surface="propertyMeters" ctx={{ canWrite: member.role !== 'viewer', propertyId: id }} icon={Gauge} />
       ) : (
         <PropertyIntl locale={intl.locale} messages={intl.messages}>
           <MeterEntryList key={month} propertyId={id} month={month} monthLabel={monthLabel} rooms={rooms} canEdit={member.role !== 'viewer'} />

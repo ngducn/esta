@@ -40,13 +40,14 @@ export async function loadReview(documentId: string): Promise<ReviewData | null>
   if (!z.uuid().safeParse(documentId).success) return null;
   const member = await requireMember();
   const supabase = await createSessionClient();
-  const { data: document } = await supabase
+  const { data: document, error } = await supabase
     .from('documents')
     .select('id, title, mime, page_count, property_id, category, lease_id')
     .eq('household_id', member.household.id)
     .eq('id', documentId)
     .is('deleted_at', null)
     .maybeSingle();
+  if (error) throw new Error(`Reading the document failed: ${error.message}`);
   if (document === null) return null;
   const [latest, fileUrl, previews, statuses, properties] = await Promise.all([
     supabase
@@ -65,6 +66,7 @@ export async function loadReview(documentId: string): Promise<ReviewData | null>
       ? supabase.from('properties').select('id, nickname, certificate_address_text').eq('household_id', member.household.id).order('nickname')
       : supabase.from('properties').select('id, nickname, certificate_address_text').eq('household_id', member.household.id).eq('id', document.property_id),
   ]);
+  for (const read of [latest, properties]) if (read.error) throw new Error(`Reading the document review failed: ${read.error.message}`);
   const row = latest.data;
   const extraction = row !== null && isSchemaName(row.schema_name) ? { id: row.id, status: row.status as ExtractionStatus, schemaName: row.schema_name, result: row.result } : null;
   return {

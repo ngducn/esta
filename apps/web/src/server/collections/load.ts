@@ -16,6 +16,12 @@ export async function loadCollectionRows(householdId: string, month: IsoDate, pr
   return readCollectionRows(await createSessionClient(), householdId, month, propertyId);
 }
 
+export async function householdHasLease(householdId: string): Promise<boolean> {
+  const { data, error } = await (await createSessionClient()).from('leases').select('id').eq('household_id', householdId).limit(1);
+  if (error) throw new Error(`leases read failed: ${error.message}`);
+  return data.length > 0;
+}
+
 export async function loadCollectionStates(householdId: string, asOf: IsoDate, propertyId?: string): Promise<Map<string, CollectionState> | null> {
   const rows = await loadCollectionRows(householdId, firstOfMonth(asOf), propertyId).catch((error: unknown) => {
     console.error(error);
