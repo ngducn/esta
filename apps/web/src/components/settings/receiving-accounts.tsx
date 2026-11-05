@@ -28,7 +28,7 @@ export async function ReceivingAccounts({ member }: { member: Member }) {
   };
 
   return (
-    <section aria-labelledby="accounts-heading" data-testid="receiving-accounts" className="flex max-w-3xl flex-col gap-4">
+    <section aria-labelledby="accounts-heading" id="accounts" data-testid="receiving-accounts" className="flex max-w-3xl flex-col gap-4">
       <div className="flex flex-col gap-1">
         <h2 id="accounts-heading" className="text-title-3">
           {t('accounts')}

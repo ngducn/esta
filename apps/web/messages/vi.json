@@ -2290,5 +2290,19 @@
     "taxEstimate": "Ước tính, không phải tư vấn thuế",
     "downloadPdf": "Tải PDF",
     "downloadFailed": "Chưa tải được. Kiểm tra kết nối mạng rồi thử lại."
+  },
+  "firstRun": {
+    "title": "Bắt đầu với Esta",
+    "addPropertyTitle": "Thêm tài sản đầu tiên",
+    "addPropertyAction": "Thêm tài sản",
+    "addBankAccountTitle": "Thêm tài khoản nhận tiền",
+    "addBankAccountAction": "Thêm tài khoản",
+    "inviteMemberTitle": "Mời một người trong gia đình",
+    "inviteMemberAction": "Mời thành viên",
+    "hide": "Ẩn hướng dẫn",
+    "hidden": "Đã ẩn hướng dẫn.",
+    "hideFailed": "Chưa ẩn được. Kiểm tra mạng rồi thử lại.",
+    "restoreFailed": "Chưa hoàn tác được. Kiểm tra mạng rồi thử lại.",
+    "done": "Đã xong"
   }
 }
