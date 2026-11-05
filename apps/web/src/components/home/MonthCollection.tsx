@@ -1,18 +1,20 @@
 import type { CollectionGroup, MonthCollected } from '@esta/core/collections';
 import type { IsoDate } from '@esta/core/date';
-import { formatMonthYear, formatVnd, formatVndCompact } from '@esta/core/format';
+import { formatMonthYear, formatVnd } from '@esta/core/format';
 import { vnd } from '@esta/core/money';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { GROUP_MARKS } from '@/components/collections/CollectionsBoard';
+import { MoneyDisplay } from '@/components/money/money-display';
+import { StatCard } from '@/components/stat-card';
 import { StatusShape } from '@/components/status-shape';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { cn } from '@/lib/utils';
 import type { CollectionRow } from '@esta/ops';
 
 /**
- * This month's collection: `Đã thu X / Y` in the compact form a summary uses, a thin rule for the share collected, and
- * the board's four groups with their counts, read from the same board Thu tiền draws for the month.
+ * This month's collection as the hero stat card: collected against billed, a meter for the share, and the board's four
+ * groups with their counts, all read from the same board Thu tiền draws for the month.
  */
 export function MonthCollection({ month, board, collected }: { month: IsoDate; board: readonly CollectionGroup<CollectionRow>[]; collected: MonthCollected }) {
   const t = useTranslations('home');
@@ -21,42 +23,36 @@ export function MonthCollection({ month, board, collected }: { month: IsoDate; b
   const monthLabel = formatMonthYear(month, locale);
   const { collectedVnd, billedVnd } = collected;
   const percent = billedVnd === 0 ? 0 : Math.floor((collectedVnd * 100) / billedVnd);
+  const label = t('monthLabel', { month: monthLabel });
+  const known = billedVnd !== 0;
   return (
-    <section aria-labelledby="month-title" data-testid="month-collection" className="flex flex-col gap-5 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <h2 id="month-title" className="text-title-3 text-text">
-          {tc('monthTitle', { month: monthLabel })}
-        </h2>
-        <Link href="/collections" className={cn(buttonVariants({ variant: 'ghost' }), 'px-0')}>
-          {t('openCollections')}
-        </Link>
-      </div>
-      {billedVnd === 0 ? (
-        <p data-testid="month-empty" className="text-body text-text-secondary">
-          {t('monthEmpty', { month: monthLabel })}
-        </p>
-      ) : (
-        <div className="flex flex-col gap-3">
-          <p data-testid="month-figure" data-collected-vnd={collectedVnd} data-billed-vnd={billedVnd} className="flex flex-wrap items-baseline gap-x-2.5 text-text">
-            {t.rich('monthFigure', {
-              collected: formatVndCompact(collectedVnd, locale),
-              billed: formatVndCompact(billedVnd, locale),
-              label: (chunks) => <span className="text-headline font-semibold text-text-secondary">{chunks}</span>,
-              amounts: (chunks) => <span className="flex flex-wrap items-baseline gap-x-2.5">{chunks}</span>,
-              big: (chunks) => <span className="num text-figure-lg font-semibold tracking-tight whitespace-nowrap">{chunks}</span>,
-              small: (chunks) => <span className="num text-title-2 font-semibold whitespace-nowrap text-text-muted">{chunks}</span>,
-              slash: (chunks) => <span aria-hidden="true">{chunks}</span>,
-              of: (chunks) => <span className="sr-only">{chunks}</span>,
-            })}
-          </p>
-          <div aria-hidden="true" className="h-2 overflow-hidden rounded-full bg-border">
-            <div className="h-full rounded-full bg-success-solid" style={{ width: `${percent}%` }} />
-          </div>
-          <p data-testid="month-rest" className="text-body text-text-secondary">
-            {collectedVnd < billedVnd ? t('monthStillOwed', { amount: formatVnd(vnd(billedVnd - collectedVnd), locale) }) : t('monthAllCollected')}
-          </p>
-        </div>
-      )}
+    <StatCard
+      hero
+      testId="month-collection"
+      labelId="month-title"
+      label={label}
+      unknownLabel={t('unknownFigure')}
+      value={
+        known ? (
+          <span data-testid="month-figure" data-collected-vnd={collectedVnd} data-billed-vnd={billedVnd}>
+            <MoneyDisplay amount={collectedVnd} variant="compact" className="text-start" />
+            <span className="ms-2 text-headline font-medium text-text-secondary">
+              <span aria-hidden="true">/ </span>
+              <span className="sr-only">{t('monthOf')} </span>
+              <MoneyDisplay amount={billedVnd} variant="compact" className="text-start" />
+            </span>
+          </span>
+        ) : null
+      }
+      meter={known ? { label, percent } : null}
+      sub={
+        known ? (
+          <span data-testid="month-rest">{collectedVnd < billedVnd ? t('monthStillOwed', { amount: formatVnd(vnd(billedVnd - collectedVnd), locale) }) : t('monthAllCollected')}</span>
+        ) : (
+          <span data-testid="month-empty">{t('monthEmpty', { month: monthLabel })}</span>
+        )
+      }
+    >
       {board.every((group) => group.items.length === 0) ? null : (
         <ul aria-label={t('monthGroups')} className="flex flex-wrap gap-x-5 gap-y-2 border-t border-border pt-4">
           {board.map((group) => (
@@ -68,6 +64,9 @@ export function MonthCollection({ month, board, collected }: { month: IsoDate; b
           ))}
         </ul>
       )}
-    </section>
+      <Link href="/collections" className={cn(buttonVariants({ variant: 'ghost' }), 'self-start px-0')}>
+        {t('openCollections')}
+      </Link>
+    </StatCard>
   );
 }
