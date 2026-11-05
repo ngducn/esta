@@ -3,6 +3,7 @@ import { getLocale, getTranslations } from 'next-intl/server';
 import { DisplaySettingsForm, type SaveStatus } from '@/components/shell/display-settings-form';
 import { IntentLink } from '@/components/shell/intent-link';
 import { sectionMetadata } from '@/components/shell/section-page';
+import { DataSection } from '@/components/settings/data-section';
 import { ReceivingAccounts } from '@/components/settings/receiving-accounts';
 import { requireMember } from '@/server/member';
 import { getThemePreference } from '@/server/theme';
@@ -31,6 +32,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         <p className="max-w-prose text-text-secondary">{sections('settings')}</p>
       </div>
       <ReceivingAccounts member={member} />
+      <DataSection member={member} />
       <DisplaySettingsForm
         settings={{ locale, textScale: member.textScale, density: member.density, theme }}
         status={parseStatus(status)}

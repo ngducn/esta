@@ -2274,5 +2274,16 @@
     "taxEstimate": "Ước tính, không phải tư vấn thuế",
     "downloadPdf": "Tải PDF",
     "downloadFailed": "Chưa tải được. Kiểm tra kết nối mạng rồi thử lại."
+  },
+  "dataExport": {
+    "title": "Dữ liệu",
+    "intro": "Tải về toàn bộ dữ liệu của gia đình: mọi bảng và mọi tệp tài liệu trong một tệp ZIP.",
+    "start": "Xuất toàn bộ dữ liệu",
+    "preparing": "Đang chuẩn bị tệp...",
+    "ready": "Tải tệp ZIP (hết hạn sau {minutes, plural, other {# phút}})",
+    "readyPart": "Tải tệp ZIP phần {part}/{total} (hết hạn sau {minutes, plural, other {# phút}})",
+    "manyParts": "Dữ liệu khá lớn nên được chia thành {total} tệp. Hãy tải đủ cả {total} tệp.",
+    "sensitive": "Tệp gồm cả tài liệu nhạy cảm, như ảnh thẻ căn cước. Hãy cất tệp ở nơi an toàn.",
+    "failed": "Chưa xuất được dữ liệu. Hãy thử lại sau ít phút."
   }
 }

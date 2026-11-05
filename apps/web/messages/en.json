@@ -2274,5 +2274,16 @@
     "taxEstimate": "Estimate, not tax advice",
     "downloadPdf": "Download PDF",
     "downloadFailed": "Could not download. Check your connection and try again."
+  },
+  "dataExport": {
+    "title": "Data",
+    "intro": "Download all of the family's data: every table and every document file in one ZIP file.",
+    "start": "Export all data",
+    "preparing": "Preparing the file...",
+    "ready": "Download ZIP file (expires in {minutes, plural, one {# minute} other {# minutes}})",
+    "readyPart": "Download ZIP file part {part}/{total} (expires in {minutes, plural, one {# minute} other {# minutes}})",
+    "manyParts": "The data is large, so it is split into {total} files. Download all {total} files.",
+    "sensitive": "The file holds sensitive documents, such as ID card photos. Keep it somewhere safe.",
+    "failed": "The data could not be exported. Please try again in a few minutes."
   }
 }

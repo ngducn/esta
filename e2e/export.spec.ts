@@ -7,7 +7,7 @@ import { e2eServiceHeaders } from '../scripts/e2e-service.ts';
 import { parseSlot, slotWorkdir } from '../scripts/slot.ts';
 import { memberRest } from './helpers/auth-api';
 import { laneHousehold } from './helpers/seed';
-import { DESKTOP, open, openNewHousehold, rest } from './helpers/wizard';
+import { DESKTOP, noSidewaysScroll, open, openNewHousehold, PHONE, rest, seriousAxeViolations } from './helpers/wizard';
 
 const workdir = slotWorkdir(join(import.meta.dirname, '..'), parseSlot(process.env.ESTA_SLOT));
 const service = e2eServiceHeaders();
@@ -15,7 +15,8 @@ const LANE = 9;
 const HOUSEHOLD = laneHousehold(LANE);
 
 test.beforeEach(() => {
-  test.skip(test.info().project.name !== 'desktop', 'an export reads one lane household, so one viewport');
+  const onPhone = test.info().title.includes('on a phone');
+  test.skip(test.info().project.name !== (onPhone ? 'mobile' : 'desktop'), 'an export reads one lane household, so one viewport each');
 });
 
 type Link = { name: string; url: string };
@@ -120,6 +121,9 @@ test('a viewer is refused, and a signed-out call is sent to sign in (FND-2)', as
     const response = await viewer.request.post('/api/export');
     expect(response.status()).toBe(403);
     expect(await response.text()).toBe('');
+    await viewer.goto('/settings');
+    await expect(viewer.getByRole('heading', { level: 1 })).toBeVisible();
+    await expect(viewer.getByTestId('settings-data'), 'a viewer sees no Dữ liệu section').toHaveCount(0);
   } finally {
     await viewer.close();
   }
@@ -167,4 +171,39 @@ test('an admin who is not the operator gets everything except the operator-only 
     expect(exported, `${table.name} never exports more than the database holds`).toBeLessThanOrEqual(live);
   }
   expect(short, 'the tables whose SELECT policy is narrower than the household').toEqual(['agent_jobs', 'agent_runs', 'audit_log']);
+});
+
+test('Mẹ taps Xuất toàn bộ dữ liệu on a phone and gets one link per part, each a ZIP', async ({ page }) => {
+  await open(page, 'me.lane8@demo.esta.test', 'light', PHONE);
+  await page.route('**/api/export', async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    await route.continue();
+  });
+  await page.goto('/settings');
+  const section = page.getByTestId('settings-data');
+  await expect(section.getByRole('heading', { name: 'Dữ liệu' })).toBeVisible();
+  await expect(section).toContainText('Tệp gồm cả tài liệu nhạy cảm');
+  expect(await seriousAxeViolations(page)).toEqual([]);
+
+  await section.getByTestId('export-start').click();
+  await expect(section.getByTestId('export-start')).toBeDisabled();
+  await expect(section.getByTestId('export-status')).toHaveText('Đang chuẩn bị tệp...');
+  const links = section.getByTestId('export-link');
+  await expect(links.first()).toBeVisible({ timeout: 30_000 });
+  await expect(section.getByTestId('export-status')).toHaveText('');
+  const count = await links.count();
+  expect(count).toBeGreaterThan(1);
+  await expect(section).toContainText(`chia thành ${count} tệp`);
+  await expect(links.first()).toHaveText(`Tải tệp ZIP phần 1/${count} (hết hạn sau 5 phút)`);
+  await expect(links.last()).toHaveText(`Tải tệp ZIP phần ${count}/${count} (hết hạn sau 5 phút)`);
+  for (let index = 0; index < count; index += 1) {
+    const box = await links.nth(index).boundingBox();
+    expect(box?.height ?? 0, 'a 44 px target').toBeGreaterThanOrEqual(44);
+    expect((box?.x ?? -1) + (box?.width ?? 0)).toBeLessThanOrEqual(PHONE.width);
+    const download = await page.request.get((await links.nth(index).getAttribute('href')) ?? '');
+    expect(download.status()).toBe(200);
+    expect(Object.keys(unzipSync(new Uint8Array(await download.body()))).length).toBeGreaterThan(0);
+  }
+  expect(await noSidewaysScroll(page)).toBe(true);
+  expect(await seriousAxeViolations(page)).toEqual([]);
 });
