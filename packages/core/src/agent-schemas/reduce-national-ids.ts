@@ -53,7 +53,7 @@ const AMOUNT =
  * code or an account right before it, and a 10-digit number that starts with 0 (a phone). These are cut only after a
  * label, where the number's place is the ID's. `holds_national_id` leaves the same numbers.
  */
-const OTHER_NUMBER_LABEL = /(?<!\p{L})(?:mst|ma so thue|so thue|tax code|tax id|stk|so tai khoan|tai khoan|account(?: no\.?| number)?|sdt|[dđ]t|[dđ]ien thoai|tel|hotline|phone)[^\p{L}\p{Nd}]{0,8}$|\+[^\S\n\r]?$/iu;
+const OTHER_NUMBER_LABEL = /[^\p{L}](?:mst|ma so thue|so thue|tax code|tax id|stk|so tai khoan|tai khoan|account(?: no\.?| number)?|sdt|[dđ]t|[dđ]ien thoai|tel|hotline|phone)[^\p{L}\p{Nd}]{0,8}$|\+(?:84[^\S\n\r]{0,3}|[^\S\n\r]?)$/iu;
 const LETTERS_BEFORE = /\p{L}+$/u;
 
 type Group = { readonly start: number; readonly end: number; readonly digits: string; readonly gap: string | null };
@@ -85,8 +85,14 @@ const asciiDigits = (text: string) => text.replace(/\p{Nd}/gu, (digit) => digit.
 
 /** The groups that start inside a match of `pattern`, such as the three groups of one date. */
 function groupsIn(text: string, groups: readonly Group[], pattern: RegExp): ReadonlySet<Group> {
-  const matches = [...text.matchAll(pattern)].map((m) => [m.index, m.index + m[0].length] as const);
-  return new Set(groups.filter((group) => matches.some(([from, to]) => group.start >= from && group.start < to)));
+  const found = new Set<Group>();
+  const matches = text.matchAll(pattern);
+  let next = matches.next();
+  for (const group of groups) {
+    while (!next.done && next.value.index + next.value[0].length <= group.start) next = matches.next();
+    if (!next.done && group.start >= next.value.index) found.add(group);
+  }
+  return found;
 }
 
 /**
@@ -114,7 +120,9 @@ function idSpans(original: string, idField: boolean): Span[] {
   const runOf = (from: number, length: number, join: RegExp): Group[] | undefined => {
     const run: Group[] = [];
     let total = 0;
-    for (const group of groups.slice(from)) {
+    for (let at = from; at < groups.length; at++) {
+      const group = groups[at];
+      if (group === undefined) break;
       if (run.length > 0 && (group.gap === null || !join.test(group.gap))) return undefined;
       run.push(group);
       total += group.digits.length;
@@ -128,11 +136,13 @@ function idSpans(original: string, idField: boolean): Span[] {
     return run.length === 2 && prefix !== undefined && last !== undefined && prefix.digits.length === 9 && last.digits.length <= 2 && /[\r\n]/u.test(last.gap ?? '');
   };
 
-  const isOtherNumber = (run: readonly Group[]) => {
+  const isOtherNumber = (from: number, run: readonly Group[]) => {
     const [first] = run;
     if (first === undefined) return false;
     const digits = run.map((group) => group.digits).join('');
-    return (digits.length === 10 && digits.startsWith('0')) || OTHER_NUMBER_LABEL.test(text.slice(0, first.start));
+    const next = groups[from + run.length];
+    const continues = next?.gap !== undefined && next.gap !== null && JOIN_AFTER_LABEL.test(next.gap) && !dates.has(next) && !amounts.has(next);
+    return (digits.length === 10 && digits.startsWith('0') && !continues) || OTHER_NUMBER_LABEL.test(` ${text.slice(Math.max(0, first.start - 32), first.start)}`);
   };
 
   const spans: Span[] = [];
@@ -149,10 +159,7 @@ function idSpans(original: string, idField: boolean): Span[] {
       if (run === undefined || last === undefined) continue;
       if (groups[from + run.length]?.gap === '.' || run.some((group) => dates.has(group) || amounts.has(group))) continue;
       if (needsLabel && !labelled && !beforeLabel(last.end)) continue;
-      if (needsLabel && !labelled && isOtherNumber(run)) {
-        from += run.length - 1;
-        break;
-      }
+      if (needsLabel && !labelled && isOtherNumber(from, run)) break;
       if (needsLabel && startsAnotherField(run, length)) continue;
       if (!needsLabel && codePrefixed(first)) continue;
       const lastChar = last.end - 1;
