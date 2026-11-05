@@ -18,11 +18,10 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 - The redesign is planned in `docs/plan/redesign-2026-11.md` (b2def8a7): six slices, RD-1 to RD-6, with its defaults listed under "Decisions taken as defaults".
 - #365's fix round 1 had never pushed. The previous owner stopped after merging main locally (840b881e in `/tmp/owner-data-trust-a/wt`). A fresh owner took it over.
 
-## Open items (updated 2026-11-02, paused)
+## Open items (updated 2026-11-05)
 
 - **Merged since 2026-11-01:** #368 (d2016c5a) design foundation; #376 (496542e4) e2e clock pinned to 2026-11-01T10:00+07:00; #374 (2bbf8891) the shell; #375 (a19892e9) sign-in and onboarding brand layer; #383 (32991ea4) axe judges resting colours, one shared helper (closes #373); #381 (9a898a45) Tài sản workbench. Lows open: #372, #377, #378, #379, #380, #382.
-- **#384 (RD-3 Thu tiền), fix round 1 paused 2026-11-02 at Ryan's request to save usage.** PR branch esta/rd-3-collections-board is at 748f6bae (ci green there). The stopped owner's work is on branch esta/rd-3-ff1-wip at 712fe40e: a754d2c3 "Đã thu" from monthCollected (Ryan ruled: match Tổng quan), c259259e row actions in view from 960 without sideways scroll (#377), 7e525c93 e2e at 960 and 1280, then an unverified WIP commit (re-indent after removing a wrapper). Next: a fresh Sonnet owner with briefs/rd-3-ff1.md plus this state: fetch esta/rd-3-ff1-wip into /tmp/owner-rd-3/wt (or a new worktree), check the WIP, finish the red-then-green evidence and verification, push to the PR branch, get green ci. Then a scoped Sonnet reader of 748f6bae..head, then merge. Slot 3 is stopped. Lows in #385.
-- **Next: RD-3, Thu tiền board and recording a payment** (plan row: data table with phone list, totals, bulk bar; money input with `=` and words; sheet footer states; signed, unknown, zero). It reuses SummaryStrip, FilterTabs and EmptyState from #381 (apps/web/src/components). Money input and payment recording make it rigorous: name the tier before spawning (standing orders rule 6: an Opus owner for rigorous work, or a Sonnet owner with an Opus audit as RD-1 and RD-2 had; RD-2 on Sonnet needed two fix rounds). Include #377 (Thu tiền cramped at 960) and the desktop badge wrapping. Write briefs/rd-3.md from briefs/rd-2.md.
+- **#384 (RD-3 Thu tiền), fix round 1 resumed 2026-11-05 on a Sonnet owner** from `briefs/rd-3-ff1.md`, in /tmp/owner-rd-3/wt on slot 3, from 712fe40e (the origin PR branch is still at 748f6bae until its push). Next: scoped Sonnet reader of the round, then merge on CLEAN and green `ci`. Lows are in #385.
 - **Then:** RD-4 (Tổng quan and the Trợ lý thread), RD-5 (property tabs, documents, reports, Cài đặt, wizard). Then Mẹ's session (Ryan's step), P5-09, P5-14, P5-15, P5-16b, P5-10, Phase 6.
 - **Tripwire cleared** 2026-11-02 (lean rules, item 4). Set it again only when a test fails beside another run and passes alone.
 - **#386 merged** 2026-11-02: pushes to main that touch only the notes files skip CI.
@@ -54,6 +53,8 @@ Ruled 2026-11-02: Thu tiền "Đã thu" counts payments toward this month's rent
 - Each member reads only her own conversations and their audit rows. The operator does not either.
 
 ## Budget
+
+Week at 65% on 2026-11-05 15:30 +07, resets 2026-11-07 11:00 +07. This run was paused from 2026-11-02, when the week stood near 18%, so most of that is other work. Ryan said "ok im back, lets continue" and was told the figure.
 
 Week at 18% at 02:50 on 2026-11-02 (17% at 00:57) (9% at 23:25 the night before). The root pauses new spawns at 30% of the week and tells Ryan; running agents finish.
 
