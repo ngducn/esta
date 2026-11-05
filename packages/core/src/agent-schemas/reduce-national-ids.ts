@@ -131,7 +131,7 @@ function idSpans(original: string, idField: boolean): Span[] {
     return undefined;
   };
   const codePrefixed = (first: Group) => CODE_PREFIXES.has(LETTERS_BEFORE.exec(text.slice(0, first.start))?.[0].toUpperCase() ?? '');
-  const startsAnotherField = (run: readonly Group[], length: number) => {
+  const startsAnotherField = (run: readonly Group[]) => {
     const [prefix, last] = run;
     return run.length === 2 && prefix !== undefined && last !== undefined && prefix.digits.length === 9 && last.digits.length <= 2 && /[\r\n]/u.test(last.gap ?? '');
   };
@@ -160,7 +160,7 @@ function idSpans(original: string, idField: boolean): Span[] {
       if (groups[from + run.length]?.gap === '.' || run.some((group) => dates.has(group) || amounts.has(group))) continue;
       if (needsLabel && !labelled && !beforeLabel(last.end)) continue;
       if (needsLabel && !labelled && isOtherNumber(from, run)) break;
-      if (needsLabel && startsAnotherField(run, length)) continue;
+      if (needsLabel && startsAnotherField(run)) continue;
       if (!needsLabel && codePrefixed(first)) continue;
       const lastChar = last.end - 1;
       const fromAt = folded.from[first.start];
