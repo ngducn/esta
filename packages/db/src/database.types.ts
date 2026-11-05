@@ -1185,6 +1185,7 @@ export type Database = {
           household_id: string
           id: string
           invoicing: Json
+          onboarding: Json
           updated_at: string
         }
         Insert: {
@@ -1194,6 +1195,7 @@ export type Database = {
           household_id: string
           id?: string
           invoicing?: Json
+          onboarding?: Json
           updated_at?: string
         }
         Update: {
@@ -1203,6 +1205,7 @@ export type Database = {
           household_id?: string
           id?: string
           invoicing?: Json
+          onboarding?: Json
           updated_at?: string
         }
         Relationships: [

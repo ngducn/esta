@@ -2361,5 +2361,19 @@
     "taxEstimate": "Estimate, not tax advice",
     "downloadPdf": "Download PDF",
     "downloadFailed": "Could not download. Check your connection and try again."
+  },
+  "firstRun": {
+    "title": "Get started with Esta",
+    "addPropertyTitle": "Add the first property",
+    "addPropertyAction": "Add property",
+    "addBankAccountTitle": "Add a receiving account",
+    "addBankAccountAction": "Add account",
+    "inviteMemberTitle": "Invite someone from the family",
+    "inviteMemberAction": "Invite member",
+    "hide": "Hide the guide",
+    "hidden": "Guide hidden.",
+    "hideFailed": "Could not hide it. Check the connection and try again.",
+    "restoreFailed": "Could not undo. Check the connection and try again.",
+    "done": "Done"
   }
 }

@@ -1,6 +1,6 @@
 import type { IsoDate } from '@esta/core/date';
 import { daysBetween } from '@esta/core/date/calendar';
-import { formatCount, formatDate } from '@esta/core/format';
+import { formatCount, formatDate, formatVnd } from '@esta/core/format';
 import { LEASE_STATUSES } from '@esta/core/lease';
 import { estaUri } from '@esta/core/links';
 import { paymentBehavior } from '@esta/core/reports';
@@ -40,8 +40,8 @@ export function listLeasesTool({ reads, locale, asOf, cite, properties }: ReadTo
             unit_label: lease.unit,
             tenant_name: lease.tenant?.full_name ?? null,
             status: lease.status,
-            rent_display: lease.rent_display,
-            deposit_held_display: lease.held_deposit_display,
+            rent_display: lease.rent_vnd === null ? null : formatVnd(lease.rent_vnd, locale),
+            deposit_held_display: formatVnd(lease.held_deposit_vnd, locale),
             start_date_display: lease.start_date === null ? null : formatDate(lease.start_date, locale),
             end_date_display: lease.end_date === null ? null : formatDate(lease.end_date, locale),
             days_until_end_display: days === null || days < 0 ? null : formatCount(days, locale),

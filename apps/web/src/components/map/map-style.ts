@@ -5,8 +5,10 @@ export const MAP_STYLES = { light: 'positron', dark: 'dark' } as const satisfies
 
 export const FALLBACK_STYLE = MAP_STYLES.light;
 
+export const TILE_HOST = 'https://tiles.openfreemap.org';
+
 export function mapStyleUrl(name: (typeof MAP_STYLES)[Theme]): string {
-  return `https://tiles.openfreemap.org/styles/${name}`;
+  return `${TILE_HOST}/styles/${name}`;
 }
 
 /** WebGL layers and terra-draw take hex strings, so map colors are derived from the same tokens the CSS uses. */

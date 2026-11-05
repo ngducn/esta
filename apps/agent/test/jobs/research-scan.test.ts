@@ -193,13 +193,15 @@ describe('what the model types is checked before Mẹ reads it (#323)', () => {
     expect(seen).toEqual(['q', PAGE]);
   });
 
-  it('runs source_name through the number guard, with the page host for a name that holds a digit', async () => {
+  it('runs source_name through the number guard, and falls back to the page host for a name the guard would refuse (#329)', async () => {
+    for (const source_name of ['Báo 24h Demo', 'Hai mươi bốn giờ', 'Báo {{f0.host_label}} 24']) {
+      const { call, items } = await scan();
+      expect(await call('add_research_item', item({ source_name })), source_name).toEqual({ text: '{"saved":true}', isError: false });
+      expect(items(), source_name).toMatchObject([{ source_name: 'tintuc.example.vn' }]);
+    }
     const { call, items } = await scan();
-    const typed = await call('add_research_item', item({ source_name: 'Báo 24h Demo' }));
-    expect(typed.isError).toBe(true);
-    expect(typed.text).toMatch(/"24[^"]*": .*Fix these and call add_research_item again/s);
-    expect(await call('add_research_item', item({ source_name: '{{f0.host_label}}' }))).toEqual({ text: '{"saved":true}', isError: false });
-    expect(items()).toMatchObject([{ source_name: 'tintuc.example.vn' }]);
+    await call('add_research_item', item({ source_name: 'Tin tức Demo' }));
+    expect(items()).toMatchObject([{ source_name: 'Tin tức Demo' }]);
   });
 
   it('drops an item whose publication date the page does not show, and stores an effective date the page does not show as null', async () => {
@@ -224,6 +226,58 @@ describe('what the model types is checked before Mẹ reads it (#323)', () => {
     prepared.observe?.({ name: 'WebFetch', input: { url: PAGE, prompt: 'x' }, result: { code: 200, codeText: 'OK', result: PAGE_TEXT, url: `${landed}?utm_source=zalo`, bytes: 1, durationMs: 1 } });
     expect(await call('add_research_item', item({ source_url: `${PAGE}?utm_source=zalo#top` }))).toEqual({ text: '{"saved":true}', isError: false });
     expect(items()).toMatchObject([{ source_url: landed, url_normalized: PAGE }]);
+  });
+});
+
+describe('one article, one item, whichever link of its redirect the model cites (#329)', () => {
+  const landed = 'https://tintuc.example.vn/tin/vanh-dai-3-moi';
+  async function redirected(stored: Row[] = []) {
+    const run = await scan({ pages: {} });
+    (run.tables.research_items ??= []).push(...stored);
+    run.prepared.observe?.({ name: 'WebFetch', input: { url: PAGE, prompt: 'x' }, result: { code: 200, codeText: 'OK', result: PAGE_TEXT, url: landed, bytes: 1, durationMs: 1 } });
+    return run;
+  }
+  const dropped = async (run: Awaited<ReturnType<typeof redirected>>) => JSON.parse((await run.call('add_research_item', item({ source_url: landed }))).text);
+
+  it('drops the post-redirect link of an article stored under its pre-redirect link', async () => {
+    const run = await redirected();
+    expect(await run.call('add_research_item', item({ source_url: PAGE }))).toEqual({ text: '{"saved":true}', isError: false });
+    expect(await dropped(run)).toMatchObject({ saved: false, dropped: 'duplicate_url' });
+    expect(run.items()).toHaveLength(1);
+  });
+
+  it('drops the pre-redirect link of an article stored under its post-redirect link, and stores the landing link as the key (#329)', async () => {
+    const run = await redirected();
+    run.prepared.observe?.({ name: 'WebFetch', input: { url: landed, prompt: 'x' }, result: { code: 200, codeText: 'OK', result: PAGE_TEXT, url: landed, bytes: 1, durationMs: 1 } });
+    expect(await run.call('add_research_item', item({ source_url: PAGE }))).toEqual({ text: '{"saved":true}', isError: false });
+    expect(run.items()).toMatchObject([{ url_normalized: landed, source_url: landed }]);
+    expect(await dropped(run)).toMatchObject({ saved: false, dropped: 'duplicate_url' });
+    expect(run.items()).toHaveLength(1);
+  });
+
+  it('drops the post-redirect link on a later day, when the model first cited the pre-redirect link and the page is now read directly', async () => {
+    const day1 = await redirected();
+    await day1.call('add_research_item', item({ source_url: PAGE }));
+    const stored = day1.items().map((row) => ({ ...row, household_id: RESEARCH_HOUSEHOLD }));
+    const day2 = await scan({ pages: { [landed]: PAGE_TEXT } });
+    (day2.tables.research_items ??= []).push(...stored);
+    expect(JSON.parse((await day2.call('add_research_item', item({ source_url: landed }))).text)).toMatchObject({ saved: false, dropped: 'duplicate_url' });
+    expect(day2.items()).toHaveLength(1);
+  });
+
+  it('keeps one item when two articles redirect to one landing page, as the text read, dated and quoted is the landing page’s', async () => {
+    const run = await redirected();
+    const other = 'https://tintuc.example.vn/bai-khac';
+    run.prepared.observe?.({ name: 'WebFetch', input: { url: other, prompt: 'x' }, result: { code: 200, codeText: 'OK', result: PAGE_TEXT, url: landed, bytes: 1, durationMs: 1 } });
+    expect(await run.call('add_research_item', item({ source_url: PAGE }))).toEqual({ text: '{"saved":true}', isError: false });
+    expect(JSON.parse((await run.call('add_research_item', item({ source_url: other }))).text)).toMatchObject({ saved: false, dropped: 'duplicate_url' });
+    expect(run.items()).toMatchObject([{ url_normalized: landed, source_url: landed }]);
+  });
+
+  it('finds the article stored on an earlier day under the link it was first reached by', async () => {
+    const run = await redirected([{ household_id: RESEARCH_HOUSEHOLD, url_normalized: PAGE, source_url: landed, title_vi: 'Cũ', created_at: '2026-10-04T00:00:00.000Z' }]);
+    expect(await dropped(run)).toMatchObject({ saved: false, dropped: 'duplicate_url' });
+    expect(run.items()).toHaveLength(1);
   });
 });
 

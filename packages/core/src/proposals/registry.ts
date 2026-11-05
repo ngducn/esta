@@ -14,6 +14,9 @@ const subject = z.uuid().nullable().default(null);
 const createTask = z.strictObject({ title, due_on: isoDateSchema.nullable().default(null), property_id: subject, lease_id: subject });
 const flagDataIssue = z.strictObject({ title, property_id: subject, lease_id: subject });
 const draftReminder = z.strictObject({ title, lease_id: z.uuid() });
+/** A suggested rent stays this share of the rent it replaces; `private.proposal_refusal` holds the same bounds (ESTA_RENT_CHANGE_RANGE) and judges them against the rent in force then. */
+export const RENT_CHANGE_RANGE = { minPercent: 50, maxPercent: 200 } as const;
+
 const suggestRentChange = z.strictObject({
   title,
   lease_id: z.uuid(),

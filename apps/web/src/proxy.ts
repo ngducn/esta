@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { openLinkTarget } from '@/server/agent/open-link';
 import { parseEnv } from '@/server/env-schema';
 import { isAuthPage, isPublicPath } from '@/server/public-paths';
+import { buildCsp } from '@/server/security/csp';
 import { sessionCookie } from '@/server/supabase/session';
 
 const env = parseEnv(process.env);
@@ -77,9 +78,24 @@ async function isHiddenPage(request: NextRequest, session: Session): Promise<boo
   return false;
 }
 
+/** Next reads the nonce from the request's CSP header and puts it on its own scripts. */
+function withCsp(request: NextRequest): string {
+  const nonce = btoa(crypto.randomUUID());
+  const policy = buildCsp({ nonce, supabaseUrl: env.NEXT_PUBLIC_SUPABASE_URL, development: process.env.NODE_ENV !== 'production' });
+  request.headers.set('content-security-policy', policy);
+  return policy;
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   if (SIGNED_PREFIXES.some((prefix) => pathname.startsWith(prefix))) return rewriteSigned(request);
+  const policy = withCsp(request);
+  const response = await handle(request, pathname);
+  response.headers.set('content-security-policy', policy);
+  return response;
+}
+
+async function handle(request: NextRequest, pathname: string): Promise<NextResponse> {
   let response = NextResponse.next({ request });
   const supabase = createServerClient<Database>(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
     cookies: {

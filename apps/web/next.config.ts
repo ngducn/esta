@@ -1,6 +1,7 @@
 import type { NextConfig } from 'next';
 import createNextIntlPlugin from 'next-intl/plugin';
 import { parseEnv } from './src/server/env-schema';
+import { SECURITY_HEADERS } from './src/server/security/headers';
 
 const env = parseEnv(process.env);
 
@@ -11,6 +12,7 @@ const nextConfig: NextConfig = {
   devIndicators: false,
   // satori loads its yoga and harfbuzz wasm at run time; bundled, `next build` cannot find them (spike S7).
   serverExternalPackages: ['satori', '@resvg/resvg-js'],
+  headers: async () => [{ source: '/:path*', headers: SECURITY_HEADERS.map((header) => ({ ...header })) }],
   // The receipt fonts are read from process.cwd() at run time, which the tracer cannot see.
   outputFileTracingIncludes: { '/api/invoices/*/receipt': ['./src/server/receipts/fonts/**'], '/q/*': ['./src/server/receipts/fonts/**'], '/api/export/*': ['./src/server/receipts/fonts/**'] },
 };

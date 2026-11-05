@@ -62,7 +62,7 @@ const CATALOG = {
   },
   collections: {
     description:
-      'Return the collections board for one month: {"year", "month": 1 to 12, "property": a handle from list_properties, optional}. Each bill due that month, and each earlier bill still owed (carried_over), has its unit, tenant, status (overdue, due, notDue or paid), days overdue, due date and amount; one record per status gives its count and total.',
+      'Return the collections board for one month: {"year", "month": 1 to 12, "property": a handle from list_properties, optional}. Each bill due that month, and each earlier bill still owed (carried_over), has its unit, tenant, status (overdue, due, notDue or paid), days overdue, due date and amount; one record per status gives its count and, except for paid, its total; month_collected is the board\'s Đã thu X / Y and the only figure for what was collected.',
     input: { year: z.number().int(), month: z.number().int(), property: z.string().optional() },
   },
   tax_position: {

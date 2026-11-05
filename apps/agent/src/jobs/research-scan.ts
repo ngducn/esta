@@ -30,7 +30,7 @@ const fetchResult = z.object({ code: z.number(), result: z.string(), url: z.stri
  * A WebFetch call that read its page: the page text, under its link as asked and as it ended after any redirect,
  * normalized, and the link it ended on as `research_items.source_url` stores it.
  */
-export function fetchedPage({ name, input, result }: BuiltInResult): (FetchedPage & { readonly urls: readonly string[] }) | null {
+export function fetchedPage({ name, input, result }: BuiltInResult): FetchedPage | null {
   const page = fetchResult.safeParse(result);
   if (name !== 'WebFetch' || !page.success || page.data.code < 200 || page.data.code > 299) return null;
   const links = [page.data.url, input.url].flatMap((link) => (typeof link === 'string' ? [link] : []));
@@ -61,7 +61,7 @@ export function researchScanRequest(input: ScanRequestInput): PreparedJob {
     caps: { ...input.caps },
     observe(call) {
       const page = fetchedPage(call);
-      if (page !== null) for (const url of page.urls) fetched.set(url, { text: page.text, link: page.link });
+      if (page !== null) for (const url of page.urls) fetched.set(url, page);
     },
     async finish() {
       if (!topics.wasRead()) throw new Error('The model ended without reading research_topics');

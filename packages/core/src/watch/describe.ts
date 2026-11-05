@@ -1,6 +1,6 @@
 import { dateParts } from '../date/calendar';
 import type { IsoDate } from '../date/iso-date';
-import { formatBps, formatCount, formatDate, formatDays, formatMonthYear, formatVnd, formatVndCompact, formatYear, type Locale } from '../format';
+import { formatBps, formatCount, formatDate, formatDays, formatMonthYear, formatVnd, formatVndCompact, formatYear, wholePercent, type Locale } from '../format';
 import { vnd } from '../money/vnd';
 import { WATCH_RULES } from './registry';
 import type { WatchFact, WatchSnapshot } from './types';
@@ -75,7 +75,7 @@ function displays(name: string, value: number | IsoDate | null, locale: Locale):
       [`${base}_compact`, formatVndCompact(vnd(value), locale)],
     ];
   }
-  if (name.endsWith('_bp')) return [[`${name.slice(0, -'_bp'.length)}_display`, formatBps(value, locale)]];
+  if (name.endsWith('_bp')) return [[`${name.slice(0, -'_bp'.length)}_display`, `${wholePercent(value)}%`]];
   if (name.endsWith('_percent')) return [[`${name.slice(0, -'_percent'.length)}_display`, formatBps(value * 100, locale)]];
   if (name.startsWith('days_')) return [[`${name}_display`, formatDays(value, locale)]];
   if (name === 'year') return [['year_display', formatYear(value)]];
