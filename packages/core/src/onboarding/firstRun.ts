@@ -4,7 +4,7 @@ export type FirstRunSnapshot = {
   readonly role: FirstRunRole;
   readonly propertyCount: number;
   readonly bankAccountCount: number;
-  /** Every `household_members` row, claimed or still pending: the invite is Ryan's part of the step. */
+  /** Every `household_members` row, claimed or still pending: the person who invites has done their part. */
   readonly memberCount: number;
   readonly dismissedAt: string | null;
 };
