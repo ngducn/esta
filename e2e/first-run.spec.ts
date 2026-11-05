@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
+import { memberRest } from './helpers/auth-api';
 import { signIn } from './helpers/inbucket';
 import { open, PHONE, serviceGet, serviceUpsert, seriousAxeViolations, startWizard, toast } from './helpers/wizard';
 
@@ -57,9 +58,34 @@ test('a new household sees three steps, adds a property, hides the guide and und
 });
 
 async function householdIds(page: Page): Promise<string> {
-  const rows = await serviceGet<{ id: string }[]>(page, 'households?name=eq.Gia đình Demo Mới&select=id&order=created_at.desc&limit=1');
+  const rows = await memberRest<{ id: string }[]>(page, 'GET', 'households?select=id');
   return rows[0]?.id ?? '';
 }
+
+test('each step opens its section on Cài đặt, scrolled into view on a phone', async ({ page }) => {
+  await newHousehold(page);
+  for (const [index, section] of [[1, 'accounts'], [2, 'members']] as const) {
+    await page.goto('/');
+    await page.getByTestId('first-run-action').nth(index).click();
+    await expect(page).toHaveURL(new RegExp(`/settings#${section}$`));
+    await expect(page.locator(`#${section}`)).toHaveCount(1);
+    await expect(page.locator(`#${section}`)).toBeInViewport();
+    await expect(page.locator(`#${section}-heading`)).toBeInViewport();
+  }
+});
+
+test('at 130% text a row title keeps its width and the button drops under it', async ({ page }) => {
+  await newHousehold(page);
+  const [member] = await memberRest<{ id: string }[]>(page, 'GET', 'household_members?select=id');
+  await memberRest(page, 'PATCH', `household_members?id=eq.${member?.id}`, { text_scale: 130 });
+  await page.goto('/');
+  const row = steps(page).nth(1);
+  const title = row.locator('span').nth(1);
+  await expect(title).toBeVisible();
+  const lineHeight = await title.evaluate((node) => parseFloat(getComputedStyle(node).lineHeight));
+  expect((await title.boundingBox())?.height ?? Infinity, 'the title wraps by phrase, not one word per line').toBeLessThanOrEqual(lineHeight * 2.2);
+  await page.screenshot({ path: '/tmp/owner-p6-03a/first-run-130.png' });
+});
 
 test('an invite counts as done the moment it is sent, before it is claimed', async ({ page }) => {
   await newHousehold(page);
