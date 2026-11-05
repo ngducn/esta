@@ -85,6 +85,17 @@ jobs:
         run: pnpm --filter web test:integration
       - name: Generated database types match the migrations
         run: pnpm db:types && git diff --exit-code packages/db/src/database.types.ts
+      - name: Export a household, load it into an empty database and compare row counts (PLT-2)
+        # Last, because it resets the database: db:reset:empty leaves the migrations and no household rows.
+        run: |
+          pnpm exec tsx scripts/roundtrip-checks.ts odd-names ryan.lane9@demo.esta.test
+          pnpm exec tsx scripts/export-household.ts ryan.lane9@demo.esta.test "$RUNNER_TEMP/export"
+          pnpm db:reset:empty
+          pnpm exec tsx scripts/roundtrip-checks.ts rollback "$RUNNER_TEMP/export"
+          pnpm exec tsx scripts/roundtrip-checks.ts refused "$RUNNER_TEMP/export"
+          node scripts/import-export.ts "$RUNNER_TEMP/export"
+          node scripts/row-counts.ts "$RUNNER_TEMP/export" | tee "$RUNNER_TEMP/row-counts.log"
+          grep -q '^tables and files match what this export holds' "$RUNNER_TEMP/row-counts.log"
 
   e2e:
     name: e2e (${{ matrix.id }})

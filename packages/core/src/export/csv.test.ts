@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { vnd } from '../money/vnd';
-import { toCsv } from './csv';
+import { csvHead, csvRows, recordsToCsv, toCsv } from './csv';
 import { countCell, textCell, vndCell, type ExportTable } from './table';
 
 const table: ExportTable = {
@@ -57,5 +57,42 @@ describe('toCsv', () => {
   it('leaves negative amounts and ordinary text alone', () => {
     const csv = toCsv({ columns: [{ id: 'c', label: 'Thu' }], rows: [{ key: 'a', cells: [vndCell(vnd(-750_000))] }], totals: { key: 'total', cells: [textCell('Tổng - cả năm')] } });
     expect(csv.slice(1)).toBe('Thu\r\n-750000\r\nTổng - cả năm\r\n');
+  });
+});
+
+describe('recordsToCsv', () => {
+  const columns = ['id', 'title', 'amount_vnd', 'tags', 'note'];
+  const csv = recordsToCsv(columns, [
+    { id: 'a', title: 'Sửa mái, "nhà"\nbếp', amount_vnd: -1_500_000, tags: ['x', 'y'], note: null },
+    { id: 'b', title: '=SUM(A1:A9)', amount_vnd: 0, tags: [], note: '@home' },
+    { id: 'c', title: '+84 90', amount_vnd: 12, tags: [], note: '-1' },
+  ]);
+
+  it('starts with the byte order mark and writes the header from the columns', () => {
+    expect(csv.startsWith('﻿id,title,amount_vnd,tags,note\r\n')).toBe(true);
+  });
+
+  it('quotes commas, quotes and newlines and keeps Vietnamese text as written', () => {
+    expect(csv).toContain('a,"Sửa mái, ""nhà""\nbếp",-1500000,"[""x"",""y""]",\r\n');
+  });
+
+  it('leaves money as a plain integer, minus sign included, and writes null as empty', () => {
+    expect(csv).toContain(',-1500000,');
+    expect(csv).not.toContain('null');
+  });
+
+  it('makes a text cell that starts with = + - or @ safe for Excel and leaves numbers alone', () => {
+    expect(csv).toContain("b,'=SUM(A1:A9),0,[],'@home\r\n");
+    expect(csv).toContain("c,'+84 90,12,[],'-1\r\n");
+  });
+
+  it('quotes a semicolon, the list separator of Excel in Vietnamese, so a cell cannot split into a second formula cell', () => {
+    const quoted = recordsToCsv(['note'], [{ note: 'a;=1+1' }, { note: '\tx' }]);
+    expect(quoted).toContain('"a;=1+1"\r\n');
+    expect(quoted).toContain("'\tx\r\n");
+  });
+
+  it('writes a head and rows apart so a long table streams', () => {
+    expect(csvHead(columns) + csvRows(columns, [{ id: 'a', title: 't', amount_vnd: 1, tags: [], note: null }])).toBe(recordsToCsv(columns, [{ id: 'a', title: 't', amount_vnd: 1, tags: [], note: null }]));
   });
 });

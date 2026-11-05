@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { basename, join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import { bindingWarning, exposedListeners, listListeners } from './bindings.ts';
 import { slotPendingMigrations } from './pending-migrations.ts';
 import { authDrifts, parseSlot, slotPorts, writeSlotWorkdir } from './slot.ts';
@@ -31,7 +31,9 @@ function splitSeedFlags(args: readonly string[]): { seed: string[]; rest: string
 }
 
 const repoRoot = join(import.meta.dirname, '..');
-const [command, ...flags] = process.argv.slice(2);
+const [command, ...allFlags] = process.argv.slice(2);
+const empty = command === 'reset' && allFlags.includes('--empty');
+const flags = allFlags.filter((flag) => flag !== '--empty');
 const args = command === undefined ? undefined : COMMANDS[command];
 if (args === undefined) {
   console.error(`Usage: node scripts/db.ts <${Object.keys(COMMANDS).join('|')}> [seed flags] [supabase flags]`);
@@ -82,13 +84,18 @@ if (seeds) {
   const seedPath = /^sql_paths = \["\.\/([^"]+)"\]$/m.exec(readFileSync(join(repoRoot, 'supabase', 'config.toml'), 'utf8'))?.[1];
   if (seedPath === undefined) throw new Error('supabase/config.toml must name exactly one [db.seed] sql_paths file');
   const out = join(workdir, 'supabase', seedPath);
-  const generator = spawnSync(
-    join(repoRoot, 'node_modules', '.bin', 'tsx'),
-    [join(repoRoot, 'supabase', 'seed', 'generator', 'index.ts'), ...seedFlags, '--out', out],
-    { stdio: 'inherit' },
-  );
-  if (generator.error) throw generator.error;
-  if (generator.status !== 0) process.exit(generator.status ?? 1);
+  if (empty) {
+    mkdirSync(dirname(out), { recursive: true });
+    writeFileSync(out, '-- pnpm db:reset:empty: no household rows.\n');
+  } else {
+    const generator = spawnSync(
+      join(repoRoot, 'node_modules', '.bin', 'tsx'),
+      [join(repoRoot, 'supabase', 'seed', 'generator', 'index.ts'), ...seedFlags, '--out', out],
+      { stdio: 'inherit' },
+    );
+    if (generator.error) throw generator.error;
+    if (generator.status !== 0) process.exit(generator.status ?? 1);
+  }
 }
 
 const capture = command === 'types';
@@ -114,7 +121,7 @@ if (result.status === 0 && command === 'start') {
     process.exit(0);
   }
 }
-if (result.status === 0 && seeds) {
+if (result.status === 0 && seeds && !empty) {
   for (const script of ['seed-photos.ts', 'seed-documents.ts']) {
     const seeded = spawnSync(join(repoRoot, 'node_modules', '.bin', 'tsx'), [join(repoRoot, 'scripts', script)], {
       stdio: 'inherit',

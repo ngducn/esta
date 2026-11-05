@@ -1537,7 +1537,7 @@
     "emptyBody": "Open a property, then add a photo of the certificate, a contract or a bill on its Documents tab.",
     "emptyAction": "Choose a property",
     "emptyBodyProperty": "Add a photo of the certificate, a contract or a bill.",
-    "stripLabel": "Documents summary",
+    "stripLabel": "Pages taken",
     "figureTotal": "All documents",
     "figureTotalSub": "Saved for the whole family",
     "figureExpiring": "Expiring soon",
@@ -1627,7 +1627,6 @@
     "pagesCaptured": "{count, plural, =0 {No pages yet.} one {# page so far.} other {# pages so far.}}",
     "processingPhoto": "Preparing the photo…",
     "pageLimit": "A document holds at most 20 pages.",
-    "stripLabel": "Pages taken",
     "pageNumber": "Page {number}",
     "pageAlt": "Photo of page {number}",
     "moveUp": "Up",
@@ -2363,6 +2362,20 @@
     "taxEstimate": "Estimate, not tax advice",
     "downloadPdf": "Download PDF",
     "downloadFailed": "Could not download. Check your connection and try again."
+  },
+  "dataExport": {
+    "title": "Download your information",
+    "intro": "One ZIP file with the information and every document that this account can see.",
+    "withheldTitle": "This file leaves out:",
+    "withheldOperator": "technical notes and the assistant's background jobs, with their edit history (only the technical lead can see them)",
+    "withheldChats": "other people's conversations with the assistant, with their edit history (each person sees only their own)",
+    "start": "Download everything",
+    "preparing": "Preparing the file...",
+    "ready": "Download ZIP file (expires in {minutes, plural, one {# minute} other {# minutes}})",
+    "readyPart": "Download ZIP file part {part}/{total} (expires in {minutes, plural, one {# minute} other {# minutes}})",
+    "manyParts": "There is a lot of information, so it is split into {total} files. Download all {total} files.",
+    "sensitive": "The file holds sensitive documents, such as ID card photos. Keep it somewhere safe.",
+    "failed": "Could not download the information. Check the network, then tap again in a few minutes."
   },
   "firstRun": {
     "title": "Get started with Esta",

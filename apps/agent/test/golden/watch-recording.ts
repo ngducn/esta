@@ -66,6 +66,9 @@ const isHandWritten = (file: string): boolean => {
   }
 };
 
+/** The shared system prompt, which holds the locale and date, so a case recording finds its prompt after the task text changes. */
+const beforeTask = (prompt: string): string => prompt.split('Task: the morning watch.')[0] ?? prompt;
+
 /**
  * Rewrites each locale's recording under the hash of the prompt the worker sends today, removes the hand-written ones
  * it replaces and leaves every other file in the folder alone, and moves each failure case recording of the same
@@ -91,7 +94,7 @@ export function rewriteWatchRecordings({ replay, cases }: { readonly replay: str
     if (!existsSync(caseDir)) continue;
     for (const file of readdirSync(caseDir).map((entry) => join(caseDir, entry))) {
       const recording = recordingSchema.parse(JSON.parse(readFileSync(file, 'utf8')));
-      const input = inputs.find((candidate) => candidate.prompt === recording.input.prompt);
+      const input = inputs.find((candidate) => beforeTask(candidate.prompt) === beforeTask(recording.input.prompt));
       if (input === undefined) continue;
       const written = writeRecording(join(cases, name), { ...recording, inputHash: inputHash(input), input });
       if (written !== file) rmSync(file);

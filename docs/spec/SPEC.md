@@ -325,6 +325,7 @@ Environment variables (names are part of the contract; `.env.example` lists them
 | `ESTA_BACKUP_DIR` | agent | Nightly backup target |
 | `EMAIL_TRANSPORT`, `SMTP_URL`, `ESTA_EMAIL_FROM` | web, agent | `smtp` to Inbucket in dev; production sender set at the Phase 6 gate |
 | `ESTA_SIGNED_URL_TTL_SECONDS` | web | Default 300 |
+| `ESTA_EXPORT_PART_MB` | web | Default 45; an export past it continues in a second ZIP |
 | `ESTA_GOOGLE_AUTH` | web | `off` until the Phase 6 gate |
 | `ESTA_ENV` | all | `development` (default), `test`, `preview`, `production`. Test-only routes and frozen clocks are disabled in `production` |
 | `ESTA_FROZEN_NOW` | all | Initial test clock (FND-9); refused when `ESTA_ENV=production` |
