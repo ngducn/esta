@@ -34,6 +34,12 @@ const address = z.object({ province_code: z.string() });
 const date = (text: string | null): IsoDate | null => (text !== null && isIsoDate(text) ? text : null);
 const TOPIC_ORDER = ['province:', 'commune:', 'national:'];
 
+/** Province topics first, then commune, then national: the order the Thị trường tab and Cài đặt list them. */
+export function topicLabels(rows: readonly { topic_key: string; label: string }[]): readonly string[] {
+  const rank = (key: string) => TOPIC_ORDER.findIndex((prefix) => key.startsWith(prefix));
+  return rows.toSorted((a, b) => rank(a.topic_key) - rank(b.topic_key)).map((row) => row.label);
+}
+
 /** The Thị trường tab: the household's research items newest first, its properties for the filter, and its active topics (DESIGN-BRIEF §6.11). */
 export async function loadMarket(householdId: string, now: Instant, timezone: string): Promise<Market> {
   const supabase = await createSessionClient();
@@ -78,9 +84,7 @@ export async function loadMarket(householdId: string, now: Instant, timezone: st
           ];
     }),
     properties: (properties.data ?? []).map((row) => ({ id: row.id, nickname: row.nickname, provinceCode: address.safeParse(row.current_address).data?.province_code ?? null })),
-    topics: (topics.data ?? [])
-      .toSorted((a, b) => TOPIC_ORDER.findIndex((prefix) => a.topic_key.startsWith(prefix)) - TOPIC_ORDER.findIndex((prefix) => b.topic_key.startsWith(prefix)))
-      .map((row) => row.label),
+    topics: topicLabels(topics.data ?? []),
     scanToday: failed.data !== null ? { failed: true, title: failed.data.title } : quietToday,
   };
 }
