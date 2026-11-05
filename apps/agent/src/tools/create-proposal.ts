@@ -1,5 +1,5 @@
 import { estaUri, parseEstaUri, type EstaLinkType } from '@esta/core/links';
-import { parseProposal, PROPOSAL_TYPES, isProposalType, type Proposal } from '@esta/core/proposals';
+import { parseProposal, PROPOSAL_TYPES, RENT_CHANGE_RANGE, isProposalType, type Proposal } from '@esta/core/proposals';
 import { normalizeUrl } from '@esta/core/research';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
@@ -37,7 +37,7 @@ const REFUSALS: Readonly<Record<string, string>> = {
   ESTA_AMENDMENT_ALREADY_BILLED: 'effective_period_start: that period is already billed or paid; use a later period start',
   ESTA_AMENDMENT_DUPLICATE: 'effective_period_start: the lease already changes on that date',
   ESTA_AMENDMENT_NOT_A_PERIOD_START: 'effective_period_start: not a period start of this lease',
-  ESTA_RENT_CHANGE_RANGE: 'rent_vnd: keep the new monthly rent between half and double the rent it replaces',
+  ESTA_RENT_CHANGE_RANGE: `rent_vnd: keep the new monthly rent between ${RENT_CHANGE_RANGE.minPercent}% and ${RENT_CHANGE_RANGE.maxPercent}% of the rent it replaces. A change outside that range is not for a suggestion card: tell the family member to change the rent on the lease itself.`,
   ESTA_LEASE_NOT_RENEWABLE: 'lease_id: only an active or ended lease renews',
   ESTA_LEASE_OPEN_ENDED: 'lease_id: an open-ended lease has no end to renew from',
   ESTA_LEASE_ALREADY_RENEWED: 'lease_id: the lease already has a renewal',

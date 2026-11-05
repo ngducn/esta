@@ -53,6 +53,11 @@ export function formatBps(bps: number, locale: Locale): string {
   return `${formatDecimal(bps / 100, 2, locale)}%`;
 }
 
+/** A share of a threshold in whole percent, rounded down so 99,9% never reads as reached; the tax card and Hỏi's tax answer both say this figure. */
+export function wholePercent(bps: number): number {
+  return Math.floor(bps / 100);
+}
+
 export function formatArea(squareMeters: number, locale: Locale): string {
   return `${formatDecimal(squareMeters, 2, locale)} m²`;
 }
