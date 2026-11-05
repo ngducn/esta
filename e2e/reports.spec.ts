@@ -43,8 +43,11 @@ test('lane 1: Ryan opens Báo cáo, and each property P&L income for 2026 is the
     'GET',
     `allocation_facts?household_id=eq.${laneHousehold(1)}&received_on=gte.2026-01-01&received_on=lte.2026-12-31&select=property_id,amount_vnd`,
   );
+  // The last row, when there is one, carries the income of properties archived since: every fact no other row owns.
+  const listed = new Set(table.rows.map((row) => row.key));
   for (const row of table.rows) {
-    expect(row.amounts.income, row.cells['#0']).toBe(sum(facts.filter((fact) => fact.property_id === row.key).map((fact) => fact.amount_vnd)));
+    const own = row.key === 'archived' ? facts.filter((fact) => !listed.has(fact.property_id)) : facts.filter((fact) => fact.property_id === row.key);
+    expect(row.amounts.income, row.cells['#0']).toBe(sum(own.map((fact) => fact.amount_vnd)));
   }
   expect(table.rows.find((row) => row.key === laneProperty(1, 'di-an'))?.amounts.income, 'the seed received rent at Dĩ An').toBeGreaterThan(0);
   expectAmountTotals(table);
