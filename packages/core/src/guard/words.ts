@@ -9,11 +9,17 @@ export type WordRow = {
   readonly passesBeforeCapitalized?: readonly string[];
   readonly passesNearDate?: true;
   readonly bannedOnlyAfter?: readonly string[];
+  /** With `bannedOnlyAfter`: a capitalized spelling beside a date placeholder is banned too (`May {{f1.due_date_display}}`). */
+  readonly alsoBannedNearDate?: true;
+  /** The word after it that turns a pass by `passesAfter` into a count (`cả năm phòng` is five rooms). */
+  readonly countedBefore?: readonly string[];
   readonly bannedOnlyNearNumber?: true;
 };
 
 const plain = (kind: WordKind, words: string): Array<[string, WordRow]> => words.split(' ').map((word) => [word, { kind }]);
 const letters = (kind: WordKind, words: string): Array<[string, WordRow]> => words.split(' ').map((word) => [word, { kind, bannedOnlyNearNumber: true }]);
+
+const COUNTED = 'phòng căn nhà người khách hợp lô thửa tầng dãy khu bên tòa đất sổ hộ cửa gian chỗ xe ngày tuần tháng giờ lần khoản bản trang dòng mục điều'.split(' ');
 
 const EXCEPTIONS: Readonly<Record<string, WordRow>> = {
   ty: { kind: 'amount', passesAfter: ['công'] },
@@ -32,10 +38,11 @@ const EXCEPTIONS: Readonly<Record<string, WordRow>> = {
     kind: 'number',
     passesNearDate: true,
     passesAfter: ['hằng', 'hàng', 'mỗi', 'cả', 'trong', 'cuối', 'đầu', 'giữa', 'của', 'các', 'nhiều', 'theo', 'từng', 'lâu', 'vài', 'mấy', 'quanh', 'một'],
-    passesBefore: ['nay', 'ngoái', 'sau', 'tới', 'trước', 'qua', 'rồi', 'mới', 'kia', 'đó', 'này', 'nữa', 'dương', 'âm', 'tính', 'tài', 'học', 'đầu', 'cuối', 'thuế', 'vừa'],
+    countedBefore: COUNTED,
+    passesBefore: ['nay', 'ngoái', 'sau', 'tới', 'trước', 'qua', 'rồi', 'mới', 'kia', 'đó', 'này', 'dương', 'âm', 'tính', 'tài', 'học', 'đầu', 'cuối', 'thuế', 'vừa'],
     passesBeforeCapitalized: ['Căn'],
   },
-  một: { kind: 'number', bannedOnlyAfter: ['mùng', 'mồng', 'tháng'], passesBefore: ['lần'] },
+  một: { kind: 'number', bannedOnlyAfter: ['mùng', 'mồng', 'tháng', 'quận', 'số'], passesBefore: ['lần'] },
   mốt: { kind: 'number', passesAfter: ['ngày'] },
   nhất: { kind: 'number', bannedOnlyAfter: ['thứ'] },
   nhật: { kind: 'date', bannedOnlyAfter: ['chủ'] },
@@ -45,6 +52,7 @@ const EXCEPTIONS: Readonly<Record<string, WordRow>> = {
   second: { kind: 'number', passesBefore: ['opinion', 'opinions'] },
   double: { kind: 'number', passesBefore: ['check', 'checks', 'checked', 'checking'] },
   lẻ: { kind: 'number', passesAfter: ['bán'] },
+  may: { kind: 'date', bannedOnlyAfter: ['in', 'of', 'by', 'until', 'till', 'since', 'during', 'from', 'last', 'next', 'mid', 'before', 'after'], alsoBannedNearDate: true },
   đôi: { kind: 'number', passesBefore: ['khi', 'chút'] },
 };
 
@@ -67,3 +75,29 @@ export const WORDS: ReadonlyMap<string, WordRow> = new Map([
 
 export const ROMAN_LABELS: ReadonlySet<string> = new Set('quý tầng dãy khu phòng điều khoản phần đoạn quận phase part article section room floor'.split(' '));
 export const ROMAN_ACRONYMS: ReadonlySet<string> = new Set('MIX CD CV DC MC MD XL'.split(' '));
+
+const SEGMENT_KINDS: ReadonlySet<WordKind> = new Set(['number', 'amount', 'currency']);
+const SEGMENTS: ReadonlySet<string> = new Set([
+  ...[...WORDS].filter(([word, row]) => SEGMENT_KINDS.has(row.kind) && row.bannedOnlyNearNumber !== true && (word.length >= 3 || word === 'ba')).map(([word]) => word),
+  'một',
+  'one',
+]);
+const ARTICLES: ReadonlySet<string> = new Set(['một', 'one']);
+const LONGEST_SEGMENT = Math.max(...[...SEGMENTS].map((word) => word.length));
+
+export function isGluedNumber(word: string): boolean {
+  if (word.length < 5 || WORDS.has(word)) return false;
+  const reach: Array<readonly string[] | undefined> = [[]];
+  for (let end = 1; end <= word.length; end += 1) {
+    for (let start = Math.max(0, end - LONGEST_SEGMENT); start < end; start += 1) {
+      const before = reach[start];
+      const segment = word.slice(start, end);
+      if (before !== undefined && SEGMENTS.has(segment)) {
+        reach[end] = [...before, segment];
+        break;
+      }
+    }
+  }
+  const parts = reach[word.length];
+  return parts !== undefined && parts.length >= 2 && parts.some((part) => !ARTICLES.has(part));
+}

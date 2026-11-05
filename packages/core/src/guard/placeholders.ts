@@ -29,8 +29,8 @@ export const MAX_VALUE_LENGTH = 200;
 /** The first rule a cell breaks, in this order. */
 const FILL_RULES: ReadonlyArray<{ readonly rule: NoteRule; readonly breaks: (cell: Cell) => boolean }> = [
   { rule: 'unknown_handle', breaks: ({ record }) => record === undefined },
-  { rule: 'unknown_field', breaks: ({ record, field }) => record === undefined || !Object.hasOwn(record, field) },
-  { rule: 'not_citable', breaks: ({ field, value }) => typeof value !== 'string' || !CITABLE.test(field) },
+  { rule: 'unknown_field', breaks: ({ record, field }) => record !== undefined && !Object.hasOwn(record, field) },
+  { rule: 'not_citable', breaks: ({ field }) => !CITABLE.test(field) },
   { rule: 'unsafe_value', breaks: ({ value }) => typeof value === 'string' && (UNSAFE.test(value) || value.length > MAX_VALUE_LENGTH) },
   { rule: 'empty_value', breaks: ({ value }) => typeof value === 'string' && value.trim() === '' },
 ];
@@ -40,7 +40,8 @@ export function fillValue({ handle, field }: Occurrence, sheet: FactSheet): Resu
   const record = sheet.get(handle);
   const cell: Cell = { record, field, value: record?.[field] };
   const broken = FILL_RULES.find(({ breaks }) => breaks(cell));
-  if (broken !== undefined || typeof cell.value !== 'string') return { ok: false, reason: broken?.rule ?? 'not_citable' };
+  if (broken !== undefined) return { ok: false, reason: broken.rule };
+  if (typeof cell.value !== 'string') return { ok: false, reason: 'not_citable' };
   return { ok: true, value: cell.value.replace(/[\r\n\u2028\u2029]+/gu, ' ').trim() };
 }
 
