@@ -46,10 +46,10 @@ const isDateMask = (token: Token, isDate: (mask: string) => boolean) => IS_MASK.
 
 function passes(row: WordRow, { neighbors, spacedBefore, spacedBeforeThat, spacedAfter, capitalized, isDate }: Context): boolean {
   if (row.bannedOnlyAfter !== undefined && !row.bannedOnlyAfter.includes(spacedBefore?.lower ?? '')) {
-    return !(row.alsoBannedNearDate === true && capitalized && neighbors.some((token) => isDateMask(token, isDate)));
+    return !(row.bannedBesideDateMask === true && capitalized && neighbors.some((token) => isDateMask(token, isDate)));
   }
   if (row.bannedOnlyNearNumber === true && !neighbors.some(isNumberWord)) return true;
-  const counted = spacedAfter !== undefined && row.countedBefore?.includes(spacedAfter.lower) === true;
+  const counted = spacedAfter !== undefined && row.notPassIfCountedNounFollows?.includes(spacedAfter.lower) === true;
   if (!counted && spacedBefore !== undefined && row.passesAfter?.includes(spacedBefore.lower) === true) return true;
   if (spacedBefore !== undefined && spacedBeforeThat !== undefined && row.passesAfterPhrase?.includes(`${spacedBeforeThat.lower} ${spacedBefore.lower}`) === true) return true;
   if (spacedAfter !== undefined && (row.passesBefore?.includes(spacedAfter.lower) === true || (capitalized && row.passesBeforeCapitalized?.includes(spacedAfter.word) === true))) return true;

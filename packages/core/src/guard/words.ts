@@ -9,10 +9,8 @@ export type WordRow = {
   readonly passesBeforeCapitalized?: readonly string[];
   readonly passesNearDate?: true;
   readonly bannedOnlyAfter?: readonly string[];
-  /** With `bannedOnlyAfter`: a capitalized spelling beside a date placeholder is banned too (`May {{f1.due_date_display}}`). */
-  readonly alsoBannedNearDate?: true;
-  /** The word after it that turns a pass by `passesAfter` into a count (`cả năm phòng` is five rooms). */
-  readonly countedBefore?: readonly string[];
+  readonly bannedBesideDateMask?: true;
+  readonly notPassIfCountedNounFollows?: readonly string[];
   readonly bannedOnlyNearNumber?: true;
 };
 
@@ -38,7 +36,7 @@ const EXCEPTIONS: Readonly<Record<string, WordRow>> = {
     kind: 'number',
     passesNearDate: true,
     passesAfter: ['hằng', 'hàng', 'mỗi', 'cả', 'trong', 'cuối', 'đầu', 'giữa', 'của', 'các', 'nhiều', 'theo', 'từng', 'lâu', 'vài', 'mấy', 'quanh', 'một'],
-    countedBefore: COUNTED,
+    notPassIfCountedNounFollows: COUNTED,
     passesBefore: ['nay', 'ngoái', 'sau', 'tới', 'trước', 'qua', 'rồi', 'mới', 'kia', 'đó', 'này', 'dương', 'âm', 'tính', 'tài', 'học', 'đầu', 'cuối', 'thuế', 'vừa'],
     passesBeforeCapitalized: ['Căn'],
   },
@@ -52,7 +50,7 @@ const EXCEPTIONS: Readonly<Record<string, WordRow>> = {
   second: { kind: 'number', passesBefore: ['opinion', 'opinions'] },
   double: { kind: 'number', passesBefore: ['check', 'checks', 'checked', 'checking'] },
   lẻ: { kind: 'number', passesAfter: ['bán'] },
-  may: { kind: 'date', bannedOnlyAfter: ['in', 'of', 'by', 'until', 'till', 'since', 'during', 'from', 'last', 'next', 'mid', 'before', 'after'], alsoBannedNearDate: true },
+  may: { kind: 'date', bannedOnlyAfter: ['in', 'of', 'by', 'until', 'till', 'since', 'during', 'from', 'last', 'next', 'mid', 'before', 'after'], bannedBesideDateMask: true },
   đôi: { kind: 'number', passesBefore: ['khi', 'chút'] },
 };
 
