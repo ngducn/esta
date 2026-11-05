@@ -28,7 +28,8 @@ type MortgageInput = { bank_party_id: string; amount_vnd: Vnd; registered_on?: I
 
 /**
  * `mortgaged` needs an open mortgage. Any other status keeps a mortgage only as a released one, so its release date is
- * required there, and empty fields mean no mortgage at all.
+ * required there, and empty fields mean no mortgage at all. Only the registration date can be unreadable on its own: a shown
+ * release date that is unreadable reads as null, so the release check refuses it, and a mortgaged status hides the field.
  */
 export function readMortgage(status: CertificateStatus, draft: MortgageDraft): { ok: true; value: MortgageInput | null } | { ok: false; invalid: MortgageInvalid } {
   const empty = draft.bankId === '' && draft.amountText.trim() === '';
@@ -36,7 +37,7 @@ export function readMortgage(status: CertificateStatus, draft: MortgageDraft): {
   if (draft.bankId === '') return { ok: false, invalid: 'bank' };
   const amount = parseVndInput(draft.amountText);
   if (!amount.ok) return { ok: false, invalid: 'amount' };
-  if (draft.registeredOn.unreadable || draft.releasedOn.unreadable) return { ok: false, invalid: 'date' };
+  if (draft.registeredOn.unreadable) return { ok: false, invalid: 'date' };
   if (status !== 'mortgaged' && draft.releasedOn.value === null) return { ok: false, invalid: 'released' };
   return {
     ok: true,

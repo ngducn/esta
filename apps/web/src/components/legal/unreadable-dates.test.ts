@@ -14,6 +14,11 @@ describe('legal drafts with a date that is not on the calendar', () => {
     expect(readMortgage('mortgaged', { ...draft, releasedOn: dateReading(null) })).toEqual({ ok: false, invalid: 'date' });
   });
 
+  it('ignores the hidden release date of a mortgaged certificate', () => {
+    const draft = { ...mortgageDraft(null), bankId: 'bank-1', amountText: '1.000.000', releasedOn: unreadable };
+    expect(readMortgage('mortgaged', draft)).toEqual({ ok: true, value: { bank_party_id: 'bank-1', amount_vnd: 1_000_000 } });
+  });
+
   it('keeps an empty registration date as no date', () => {
     const draft = { ...mortgageDraft(null), bankId: 'bank-1', amountText: '1.000.000' };
     expect(readMortgage('mortgaged', draft)).toMatchObject({ ok: true });
