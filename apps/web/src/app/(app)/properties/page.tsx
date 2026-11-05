@@ -142,7 +142,7 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
           </>
         }
         actions={
-          addAction === undefined ? undefined : (
+          addAction === undefined || list.householdCount === 0 ? undefined : (
             <Link href={addAction.href} data-testid="add-property" className={buttonVariants({ variant: 'primary' })}>
               <Plus aria-hidden="true" />
               {addAction.label}

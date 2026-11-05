@@ -1,6 +1,7 @@
 'use client';
 
 import { FilePlus2, FileText, Upload } from 'lucide-react';
+import { sectionIcons } from '@/components/shell/section-icons';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -222,7 +223,7 @@ export function DocumentVault({
             ? {}
             : empty.action.href === null
               ? { cta: uploadButton(empty.action.label) }
-              : { action: { label: empty.action.label, href: empty.action.href, icon: FilePlus2, testId: 'add-document' } })}
+              : { action: { label: empty.action.label, href: empty.action.href, icon: sectionIcons.properties, testId: 'add-document' } })}
         />
       ) : (
         <>

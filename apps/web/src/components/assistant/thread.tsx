@@ -8,6 +8,7 @@ import { MAX_QUESTION_LENGTH } from '@esta/ops';
 import { getTranslations } from 'next-intl/server';
 import { MessageSquare } from 'lucide-react';
 import Link from 'next/link';
+import { FocusComposerButton } from '@/components/assistant/focus-composer-button';
 import { RegistryEmptyState } from '@/components/registry-empty-state';
 import { SafeMarkdown } from '@/components/markdown/safe-markdown';
 import { buttonVariants } from '@/components/ui/button-variants';
@@ -231,7 +232,7 @@ export async function ThreadView({
       )}
       {thread.entries.length === 0 ? (
         <div data-testid="thread-empty">
-          <RegistryEmptyState surface="assistantThread" ctx={{ canWrite: true }} icon={MessageSquare} />
+          <RegistryEmptyState surface="assistantThread" ctx={{ canWrite: true }} icon={MessageSquare} cta={(label) => <FocusComposerButton label={label} />} />
         </div>
       ) : (
         <ol className="flex flex-col gap-4">

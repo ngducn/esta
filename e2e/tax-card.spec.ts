@@ -171,7 +171,8 @@ test('rule 10: in English at 130% the card reads in English with the same figure
 test('rule 11: a household with no owner yet is told where to add one, and the card shows no figure', async ({ page }) => {
   await openNewHousehold(page, 'light', PHONE);
   await page.goto('/reports/tax');
-  await expect(page.getByTestId('tax-no-owners')).toHaveText('Chưa có ai được ghi là chủ sở hữu. Thêm chủ sở hữu ở tab Pháp lý của một tài sản.');
+  await expect(page.getByTestId('tax-no-owners')).toContainText('Chưa có ai được ghi là chủ sở hữu. Thêm chủ sở hữu ở tab Pháp lý của một tài sản.');
+  await expect(page.getByTestId('tax-no-owners').getByRole('link', { name: 'Mở Tài sản' })).toHaveAttribute('href', '/properties');
   await expect(page.getByTestId('tax-position')).toHaveCount(0);
   await expect(page.getByTestId('tax-owners')).toHaveCount(0);
 });

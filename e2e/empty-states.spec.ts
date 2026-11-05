@@ -8,6 +8,8 @@ const UNREACHABLE: Partial<Record<EmptySurface, string>> = {
   propertyActivity: 'a property always has its creation entry',
   leaseDocuments: 'a new household has no lease',
   settingsHistory: 'the change history is for the operator',
+  collectionsMonth: 'a household with a lease; collections.spec.ts covers it',
+  propertyExpenses: 'only with income and no expenses; the property has neither here',
 };
 
 const REPORT_SURFACE = {
@@ -43,14 +45,25 @@ test('a new household sees one message and one action on every empty screen', as
   };
   await openNewHousehold(page, 'light', PHONE);
 
+  await page.goto('/');
+  await expect(page.getByTestId('first-run'), 'the guide stands in for the empty message while it shows').toBeVisible({ timeout: 30_000 });
+  await expect(page.locator('[data-surface="home"]')).toHaveCount(0);
+  await page.getByTestId('first-run-hide').click();
+  await expect(page.getByTestId('first-run')).toHaveCount(0);
   await check('/', ['home']);
   await check('/properties', ['properties']);
+  await expect(page.locator('main').getByRole('link', { name: 'Thêm tài sản' }), 'the same action is not shown twice').toHaveCount(1);
   await check('/properties/archived', ['propertiesArchived']);
   await check('/collections', ['collections']);
   await check('/collections/import', ['statementImport']);
   await check('/documents', ['documents']);
   await check('/assistant', ['assistantThread']);
+  const compose = page.locator('[data-surface="assistantThread"]').getByRole('button', { name: 'Nhắn cho Trợ lý' });
+  await expect(page.locator('main [data-testid="composer-send"]'), 'Gửi stays the one primary button').toHaveCount(1);
+  await compose.click();
+  await expect(page.getByTestId('composer-message')).toBeFocused();
   await check('/assistant/market', ['assistantMarket']);
+  await check('/reports/tax', ['taxNoOwners']);
   await check('/settings', ['settingsAccounts']);
   for (const [report, surface] of Object.entries(REPORT_SURFACE)) await check(`/reports?report=${report}`, [surface]);
   expect(await seriousAxeViolations(page)).toEqual([]);
@@ -61,6 +74,7 @@ test('a new household sees one message and one action on every empty screen', as
   await check(`${property}/rental`, ['propertyRentalAccounts']);
   await check(`${property}/rental/meters`, ['propertyMeters']);
   await check(`${property}/documents`, ['propertyDocuments']);
+  await check(`${property}/finance`, ['propertyFinance']);
   expect(await seriousAxeViolations(page)).toEqual([]);
 
   const missing = Object.keys(EMPTY_STATES).filter((surface) => !visited.has(surface) && !(surface in UNREACHABLE));
@@ -72,9 +86,9 @@ const FAILING = [
   { route: '/properties', title: 'Chưa tải được thông tin tài sản', surface: 'properties' },
   { route: '/collections', title: 'Chưa tải được bảng thu tiền', surface: 'collections' },
   { route: '/documents', title: 'Chưa tải được tài liệu', surface: 'documents' },
-  { route: '/assistant', title: 'Chưa tải được', surface: 'assistantThread' },
-  { route: '/reports', title: 'Chưa tải được', surface: 'reportsPnl' },
-  { route: '/settings', title: 'Chưa tải được', surface: 'settingsAccounts' },
+  { route: '/assistant', title: 'Chưa tải được', surface: 'assistantThread', page: 'Trợ lý' },
+  { route: '/reports', title: 'Chưa tải được', surface: 'reportsPnl', page: 'Báo cáo' },
+  { route: '/settings', title: 'Chưa tải được', surface: 'settingsAccounts', page: 'Cài đặt' },
 ] as const;
 
 test('a failed load says so with a retry, never the empty message', async ({ page, baseURL }) => {
@@ -82,12 +96,14 @@ test('a failed load says so with a retry, never the empty message', async ({ pag
   test.setTimeout(240_000);
   await openNewHousehold(page, 'light', PHONE);
   const fault = { name: 'esta_fault', value: 'reads', url: baseURL ?? '' };
-  for (const { route, title, surface } of FAILING) {
+  for (const { route, title, surface, ...rest } of FAILING) {
     await page.context().addCookies([fault]);
     await page.goto(route);
     const alert = page.getByRole('alert').filter({ hasText: title });
     await expect(alert, `${route} could not load`).toBeVisible({ timeout: 30_000 });
     await expect(alert.getByRole('button', { name: 'Thử lại' })).toBeVisible();
+    await expect(alert).not.toContainText('khoản');
+    if ('page' in rest) await expect(page.getByRole('heading', { level: 1, name: rest.page }), `${route} keeps its page title`).toBeVisible();
     await expect(page.locator('[data-slot="empty-state"]'), `${route} does not look empty`).toHaveCount(0);
     if (route === '/documents') expect(await seriousAxeViolations(page)).toEqual([]);
     await page.context().clearCookies({ name: 'esta_fault' });

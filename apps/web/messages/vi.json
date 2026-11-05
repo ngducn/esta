@@ -7,7 +7,7 @@
   },
   "loadFailed": {
     "title": "Chưa tải được",
-    "body": "Kiểm tra kết nối mạng rồi thử lại. Các khoản đã ghi nhận vẫn được lưu.",
+    "body": "Kiểm tra kết nối mạng rồi thử lại. Thông tin đã lưu vẫn còn nguyên.",
     "retry": "Thử lại"
   },
   "notFound": {
@@ -1125,7 +1125,7 @@
     "author": "Trợ lý",
     "thread": "Tin nhắn với Trợ lý",
     "threadEmpty": "Trợ lý sẽ để lại ghi chú đầu tiên vào sáng mai lúc 07:00.",
-    "threadEmptyBody": "Mẹ cũng có thể nhắn cho Trợ lý ngay bây giờ.",
+    "threadEmptyBody": "Cũng có thể nhắn cho Trợ lý ngay bây giờ.",
     "threadEmptyAction": "Nhắn cho Trợ lý",
     "threadOlder": "Xem tin cũ hơn",
     "threadNewest": "Xem tin mới nhất",
@@ -1477,6 +1477,7 @@
     "owners": "Chủ sở hữu",
     "years": "Năm",
     "noOwners": "Chưa có ai được ghi là chủ sở hữu. Thêm chủ sở hữu ở tab Pháp lý của một tài sản.",
+    "noOwnersAction": "Mở Tài sản",
     "projected": "Doanh thu cho thuê dự kiến cả năm {year}",
     "progress": "Đạt {percent}% ngưỡng {threshold}",
     "over": "Vượt ngưỡng {threshold}",
@@ -1997,6 +1998,7 @@
     "sheet": "Thu chi {year}",
     "empty": "Chưa có khoản thu hay chi nào trong năm {year}.",
     "emptyAction": "Tiền thuê hiện ở đây khi ghi nhận thanh toán.",
+    "emptyAdd": "Thêm chi phí",
     "stripLabel": "Tóm tắt thu chi năm {year}",
     "unknownFigure": "Chưa có số liệu"
   },

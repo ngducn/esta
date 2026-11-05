@@ -9,6 +9,7 @@ import { notFound } from 'next/navigation';
 import { ChoiceLinks } from '@/components/choice-links';
 import { ExpenseActions } from '@/components/expenses/expense-actions';
 import { ExpenseList } from '@/components/expenses/expense-list';
+import { RegistryEmptyState } from '@/components/registry-empty-state';
 import { MoneyDisplay } from '@/components/money/money-display';
 import { SummaryStrip } from '@/components/summary-strip';
 import { ReportTable } from '@/components/reports/report-table';
@@ -28,13 +29,7 @@ const total = (table: ExportTable, column: string) => {
   return cell?.kind === 'vnd' ? cell.value : vnd(0);
 };
 
-export default async function PropertyFinancePage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ id: string }>;
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
+export default async function PropertyFinancePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const [{ id }, query] = await Promise.all([params, searchParams]);
   const property = await loadPropertyDetail(id);
   if (property === null) notFound();
@@ -55,6 +50,7 @@ export default async function PropertyFinancePage({
     getLocale(),
   ]);
   const shown = rows.filter((row) => row.paidOn.startsWith(`${year}-`));
+  const nothingYet = ledger.empty && shown.length === 0;
   const expenseTotal = vnd(shown.reduce((sum, row) => sum + row.amountVnd, 0));
   const exportHref = (format: 'csv' | 'xlsx') => `/api/export/ledger?propertyId=${id}&year=${year}&format=${format}`;
 
@@ -78,14 +74,24 @@ export default async function PropertyFinancePage({
         </div>
         <ChoiceLinks
           label={t('years')}
-          choices={years.map((option) => ({ key: String(option), label: String(option), href: `/properties/${id}/finance?year=${option}`, current: option === year }))}
+          choices={years.map((option) => ({
+            key: String(option),
+            label: String(option),
+            href: `/properties/${id}/finance?year=${option}`,
+            current: option === year,
+          }))}
         />
-        {ledger.empty ? (
-          <div data-testid="ledger-empty" className="flex flex-col gap-1 text-body">
-            <p className="font-medium text-text">{tLedger('empty', { year })}</p>
-            <p className="text-text-secondary">{tLedger('emptyAction')}</p>
+        {nothingYet ? (
+          <div data-testid="ledger-empty">
+            <RegistryEmptyState
+              surface="propertyFinance"
+              ctx={{ canWrite: canEdit }}
+              values={{ year }}
+              className="border-0 shadow-none"
+              cta={(label) => <ExpenseActions labels={{ add: label, photo: '' }} primary withPhoto={false} />}
+            />
           </div>
-        ) : (
+        ) : ledger.empty ? null : (
           <>
             <ReportTable
               table={ledger.table}
@@ -110,29 +116,33 @@ export default async function PropertyFinancePage({
           </>
         )}
       </section>
-      <section aria-labelledby="expenses-title" data-testid="expense-section" className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
-          <div className="flex min-w-0 flex-col gap-1">
-            <h2 id="expenses-title" className="text-title-3 text-text">
-              {t('sectionTitle', { year })}
-            </h2>
-            {shown.length === 0 ? null : (
-              <p data-testid="expense-total" className="text-body text-text-secondary num">
-                {t('yearTotal', { count: shown.length, amount: formatVnd(expenseTotal, locale) })}
-              </p>
-            )}
+      {nothingYet ? null : (
+        <section aria-labelledby="expenses-title" data-testid="expense-section" className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+            <div className="flex min-w-0 flex-col gap-1">
+              <h2 id="expenses-title" className="text-title-3 text-text">
+                {t('sectionTitle', { year })}
+              </h2>
+              {shown.length === 0 ? null : (
+                <p data-testid="expense-total" className="text-body text-text-secondary num">
+                  {t('yearTotal', {
+                    count: shown.length,
+                    amount: formatVnd(expenseTotal, locale),
+                  })}
+                </p>
+              )}
+            </div>
+            {canEdit ? <ExpenseActions labels={{ add: t('add'), photo: t('photo') }} primary /> : null}
           </div>
-          {canEdit ? <ExpenseActions labels={{ add: t('add'), photo: t('photo') }} primary /> : null}
-        </div>
-        {shown.length === 0 ? (
-          <div data-testid="expense-empty" className="flex flex-col gap-1 text-body">
-            <p className="font-medium text-text">{t('empty', { year })}</p>
-            {canEdit ? <p className="text-text-secondary">{t('emptyAction')}</p> : null}
-          </div>
-        ) : (
-          <ExpenseList rows={shown} canEdit={canEdit} />
-        )}
-      </section>
+          {shown.length === 0 ? (
+            <div data-testid="expense-empty">
+              <RegistryEmptyState surface="propertyExpenses" ctx={{ canWrite: canEdit }} values={{ year }} className="border-0 shadow-none" />
+            </div>
+          ) : (
+            <ExpenseList rows={shown} canEdit={canEdit} />
+          )}
+        </section>
+      )}
     </PropertyDetailFrame>
   );
 }

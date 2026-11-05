@@ -21,7 +21,7 @@ type EmptyEntry = {
   readonly body?: string;
   readonly viewerTitle?: string;
   readonly viewerBody?: string;
-  readonly action: EmptyAction;
+  readonly action: EmptyAction | null;
 };
 
 const propertyHref = (tail: string) => (ctx: EmptyContext) => `/properties/${ctx.propertyId ?? ''}${tail}`;
@@ -57,13 +57,17 @@ export const EMPTY_STATES = {
   },
   propertyMeters: { ns: 'meters', title: 'empty', body: 'emptyBody', action: { label: 'emptyAction', href: propertyHref('/rental'), write: true } },
   propertyDocuments: { ns: 'documents', title: 'empty', body: 'emptyBodyProperty', action: { label: 'add', href: null, write: true } },
+  propertyFinance: { ns: 'ledger', title: 'empty', body: 'emptyAction', action: { label: 'emptyAdd', href: null, write: true } },
+  propertyExpenses: { ns: 'expenses', title: 'empty', action: null },
+  taxNoOwners: { ns: 'taxCard', title: 'noOwners', action: { label: 'noOwnersAction', href: () => '/properties', write: false } },
   propertyActivity: { ns: 'propertyDetail', title: 'activityEmpty', body: 'activityEmptyBody', action: { label: 'activityEmptyAction', href: propertyHref('/edit'), write: true } },
   leaseDocuments: { ns: 'leases', title: 'documentsEmpty', body: 'documentsEmptyBody', viewerBody: 'documentsViewerEmpty', action: { label: 'uploadContract', href: null, write: true } },
   collections: { ns: 'collections', title: 'empty', body: 'emptyBody', action: { label: 'emptyAction', href: () => '/properties', write: false } },
+  collectionsMonth: { ns: 'collections', title: 'empty', action: null },
   statementImport: { ns: 'statements', title: 'noAccountTitle', body: 'noAccountBody', action: { label: 'noAccountAction', href: () => '/collections', write: false } },
   documents: { ns: 'documents', title: 'empty', body: 'emptyBody', action: { label: 'emptyAction', href: () => '/properties', write: true } },
-  assistantThread: { ns: 'assistant', title: 'threadEmpty', body: 'threadEmptyBody', action: { label: 'threadEmptyAction', href: () => '/assistant#composer', write: false } },
-  assistantMarket: { ns: 'assistant', title: 'market.empty', action: { label: 'threadEmptyAction', href: () => '/assistant#composer', write: false } },
+  assistantThread: { ns: 'assistant', title: 'threadEmpty', body: 'threadEmptyBody', action: { label: 'threadEmptyAction', href: null, write: false } },
+  assistantMarket: { ns: 'assistant', title: 'market.empty', action: { label: 'threadEmptyAction', href: () => '/assistant', write: false } },
   reportsPnl: report('pnl'),
   reportsRentRoll: report('rentRoll'),
   reportsCollections: report('collections'),
@@ -92,6 +96,6 @@ export function emptyState(surface: EmptySurface, t: Translate, ctx: EmptyContex
   return {
     title: t(title, values),
     ...(body === undefined ? {} : { body: t(body, values) }),
-    ...(entry.action.write && readOnly ? {} : { action: { label: t(entry.action.label), href: entry.action.href === null ? null : entry.action.href(ctx) } }),
+    ...(entry.action === null || (entry.action.write && readOnly) ? {} : { action: { label: t(entry.action.label), href: entry.action.href === null ? null : entry.action.href(ctx) } }),
   };
 }

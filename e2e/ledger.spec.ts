@@ -102,7 +102,9 @@ test('Đất vườn Long An has no income or expenses in 2026: no table, and Th
   await page.goto(finance(8, 'long-an'));
   await expect(ledger(page).getByTestId('ledger-empty')).toContainText('Chưa có khoản thu hay chi nào trong năm 2026.');
   await expect(ledger(page).getByRole('table')).toHaveCount(0);
-  await expect(page.getByTestId('expense-section').getByRole('button', { name: 'Thêm chi phí' })).toBeVisible();
+  await expect(page.getByTestId('ledger-empty').getByRole('button', { name: 'Thêm chi phí' })).toBeVisible();
+  await expect(page.getByTestId('expense-section'), 'one message, not a second empty one below').toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Thêm chi phí' })).toHaveCount(1);
   expect(await axe(page)).toEqual([]);
 });
 

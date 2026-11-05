@@ -7,7 +7,7 @@
   },
   "loadFailed": {
     "title": "Could not load",
-    "body": "Check the network connection and try again. What you already recorded is saved.",
+    "body": "Check the network connection and try again. What you saved is still there.",
     "retry": "Try again"
   },
   "notFound": {
@@ -1477,6 +1477,7 @@
     "owners": "Owner",
     "years": "Year",
     "noOwners": "No one is recorded as an owner yet. Add owners on a property’s Legal tab.",
+    "noOwnersAction": "Open Properties",
     "projected": "Projected rental revenue for {year}",
     "progress": "{percent}% of the {threshold} threshold",
     "over": "Over the {threshold} threshold",
@@ -1997,6 +1998,7 @@
     "sheet": "Ledger {year}",
     "empty": "No income or expenses in {year}.",
     "emptyAction": "Rent shows here once payments are recorded.",
+    "emptyAdd": "Add expense",
     "stripLabel": "Income and spending summary for {year}",
     "unknownFigure": "No figure yet"
   },
