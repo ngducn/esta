@@ -41,7 +41,8 @@ test('Ryan invites a relative as a viewer, who signs in and finds nothing to cha
   await expect(again).toBeHidden();
   expect((await roles(page)).filter((row) => row.invited_email === email)).toHaveLength(1);
 
-  const guest = await browser.newContext({ baseURL: test.info().project.use.baseURL, viewport: PHONE });
+  const baseURL = test.info().project.use.baseURL;
+  const guest = await browser.newContext({ ...(baseURL === undefined ? {} : { baseURL }), viewport: PHONE });
   const viewer = await guest.newPage();
   await signIn(viewer, email);
   await viewer.goto('/settings');

@@ -1,6 +1,5 @@
-import type { Result } from '@esta/core/result';
 import { z } from 'zod';
-import { dbRefusal, idSchema, type CommonRefusal, type DatabaseError } from './kit';
+import { dbRefusal, idSchema, writtenRow, type Written } from './kit';
 import { change, defineOp, refuse, unchanged, type OpContext } from './op';
 
 const ROLES = ['admin', 'member', 'viewer'] as const;
@@ -30,14 +29,7 @@ async function storedMember(ctx: OpContext, id: string) {
   return data;
 }
 
-type Written = { readonly data: readonly { id: string }[] | null; readonly error: DatabaseError | null };
-
-/** RLS hides a write a non-admin attempts while the row still reads, so no row back from a stored member is `forbidden`. */
-async function settled(ctx: OpContext, id: string, { data, error }: Written): Promise<Result<MemberSaved, MemberRefusal | CommonRefusal>> {
-  if (error) return refuse(dbRefusal(error, SENTINELS));
-  if (data !== null && data.length > 0) return { ok: true, value: { id } };
-  return refuse((await storedMember(ctx, id)) === null ? { kind: 'not_found' } : { kind: 'forbidden' });
-}
+const settled = (ctx: OpContext, id: string, written: Written) => writtenRow(id, written, async () => (await storedMember(ctx, id)) !== null, SENTINELS);
 
 /** The household's name on every screen. Only an admin renames it; RLS refuses anyone else as `forbidden`. */
 export const householdRename = defineOp<Rename, Rename, MemberSaved, MemberRefusal>({

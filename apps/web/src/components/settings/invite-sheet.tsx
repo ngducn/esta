@@ -61,11 +61,11 @@ export default function InviteSheet({
           />
         </div>
         <SheetFooter
-          error={refusal === null || FIELD_REFUSALS.has(refusal) ? null : labels.refusals[refusal]}
-          labels={{ cancel: labels.close, save: labels.save, saving: labels.saving }}
-          pending={pending}
-          onSave={() => run(() => inviteMember({ email, role: 'viewer' }))}
           testId="invite"
+          onSave={() => run(() => inviteMember({ email, role: 'viewer' }))}
+          pending={pending}
+          labels={{ cancel: labels.close, save: labels.save, saving: labels.saving }}
+          error={refusal === null || FIELD_REFUSALS.has(refusal) ? null : labels.refusals[refusal]}
         />
       </SheetContent>
     </Sheet>

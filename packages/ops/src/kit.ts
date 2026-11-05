@@ -1,4 +1,5 @@
 import { isDeepStrictEqual } from 'node:util';
+import type { Result } from '@esta/core/result';
 import { z } from 'zod';
 
 export const idSchema = z.uuid();
@@ -81,4 +82,21 @@ export async function readAll<T>(what: string, page: (from: number, to: number) 
     rows.push(...(data ?? []));
     if ((data ?? []).length < PAGE_SIZE) return rows;
   }
+}
+
+export type Written = { readonly data: readonly { id: string }[] | null; readonly error: DatabaseError | null };
+
+/**
+ * The result of an update or delete that selected `id` back. RLS hides a write a non-admin attempts while the row still
+ * reads, so no row back from a row that is still there is `forbidden`.
+ */
+export async function writtenRow<S extends Refusal = never>(
+  id: string,
+  { data, error }: Written,
+  stillThere: () => Promise<boolean>,
+  sentinels?: Readonly<Record<string, S>>,
+): Promise<Result<{ readonly id: string }, S | CommonRefusal>> {
+  if (error) return { ok: false, reason: dbRefusal(error, sentinels) };
+  if (data !== null && data.length > 0) return { ok: true, value: { id } };
+  return { ok: false, reason: (await stillThere()) ? { kind: 'forbidden' } : { kind: 'not_found' } };
 }
