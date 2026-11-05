@@ -9,6 +9,7 @@ import { givenInitial } from '@/components/ui/avatar';
 import { AccountTrigger, AvatarMenu } from '@/components/shell/avatar-menu';
 import type { SettingGroup } from '@/components/shell/account-settings';
 import { accountSections, operatorSections, primarySections, type NavItem } from '@/components/shell/nav';
+import { OfflineGuard } from '@/components/shell/offline-guard';
 import { PrefetchTabs } from '@/components/shell/prefetch-tabs';
 import { Sidebar } from '@/components/shell/sidebar';
 import { TabBar } from '@/components/shell/tab-bar';
@@ -83,6 +84,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
               <WorkerStatusLine status={worker} />
             </div>
           ) : null}
+          <OfflineGuard message={shell('offlineBlocked')} />
           <SectionErrorBoundary labels={{ title: failed('title'), body: failed('body'), retry: failed('retry') }}>{children}</SectionErrorBoundary>
         </main>
         <TabBar items={tabs} label={shell('sections')} />

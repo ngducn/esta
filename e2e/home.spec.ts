@@ -239,13 +239,13 @@ test('a new household has no property, so Home shows the first-run guide, and on
   expect(await seriousAxeViolations(page)).toEqual([]);
 });
 
-test('offline, Home says it could not load and keeps the last list', async ({ page }) => {
+test('offline, Home says it is the last load and keeps the last list', async ({ page }) => {
   await open(page, MOM, 'light', PHONE);
   await expect(item(page, PHONG_5)).toBeVisible();
   await expect(page.getByTestId('home-offline')).toHaveCount(0);
   await page.context().setOffline(true);
   try {
-    await expect(page.getByTestId('home-offline')).toHaveText('Chưa tải được. Kiểm tra mạng rồi thử lại.');
+    await expect(page.getByTestId('home-offline')).toHaveText('Đang mất mạng. Danh sách bên dưới là lần tải gần nhất; có mạng lại thì tải lại trang.');
     await expect(item(page, PHONG_5)).toBeVisible();
   } finally {
     await page.context().setOffline(false);

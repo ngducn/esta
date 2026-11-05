@@ -153,7 +153,7 @@
     "mapTitle": "Bản đồ tài sản",
     "mapOpen": "Mở bản đồ",
     "mapLabel": "Bản đồ {count, plural, other {# tài sản đã ghim}}",
-    "offline": "Chưa tải được. Kiểm tra mạng rồi thử lại.",
+    "offline": "Đang mất mạng. Danh sách bên dưới là lần tải gần nhất; có mạng lại thì tải lại trang.",
     "errorTitle": "Chưa tải được Tổng quan",
     "errorBody": "Kiểm tra mạng rồi thử lại. Các khoản đã ghi nhận vẫn được lưu.",
     "retry": "Thử lại",
@@ -432,7 +432,8 @@
     "accountOf": "Tài khoản: {name}",
     "signOut": "Đăng xuất",
     "more": "Khác",
-    "close": "Đóng"
+    "close": "Đóng",
+    "offlineBlocked": "Đang mất mạng nên chưa mở được trang này. Có mạng lại thì bấm lại."
   },
   "sections": {
     "documents": "Tài liệu sẽ cất sổ đỏ, hợp đồng và CCCD ở một chỗ, tìm được ngay bằng một ô tìm kiếm.",
