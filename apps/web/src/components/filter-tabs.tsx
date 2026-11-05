@@ -3,7 +3,6 @@ import { cn } from '@/lib/utils';
 
 export type FilterTab = { key: string; label: string; count: number | null; href: string; current: boolean };
 
-/** `ariaCurrent` is `page` when the tabs are the page's own navigation, as on Báo cáo. */
 export function FilterTabs({ label, tabs, testId, ariaCurrent = 'true' }: { label: string; tabs: readonly FilterTab[]; testId?: string; ariaCurrent?: 'true' | 'page' }) {
   return (
     <nav aria-label={label} data-testid={testId} className="inline-flex max-w-full flex-wrap gap-0.5 rounded-md bg-segment-track p-0.5">

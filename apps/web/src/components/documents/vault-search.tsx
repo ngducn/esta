@@ -29,7 +29,6 @@ export function VaultSearch({
 }: {
   initial: SearchState;
   propertyId: string | null;
-  /** Controls that sit beside the search in the filter bar. */
   actions?: ReactNode;
   children: (state: SearchState) => ReactNode;
 }) {

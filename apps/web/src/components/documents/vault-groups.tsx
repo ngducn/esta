@@ -40,7 +40,6 @@ export function groupTiles(tiles: readonly VaultTile[], by: GroupBy, noProperty:
 
 const LazyVirtualVault = dynamic(() => import('./virtual-vault-rows').then((module) => module.VirtualVaultRows));
 
-/** `Theo tài sản` or `Theo loại`, styled as the screen's other filter tabs. */
 export function GroupByToggle({ by, onChange }: { by: GroupBy; onChange: (by: GroupBy) => void }) {
   const t = useTranslations('documents');
   return (
