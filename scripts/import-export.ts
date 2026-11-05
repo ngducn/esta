@@ -7,7 +7,6 @@ import { localTarget, readExport, runSql, type ExportSource } from './export-sou
 
 const CONTENT_TYPES: Record<string, string> = { pdf: 'application/pdf', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', avif: 'image/avif' };
 
-/** A dollar-quote tag that appears nowhere in the text it wraps, so the text cannot close its own string. */
 export function quoteTag(base: string, text: string): string {
   let tag = base;
   while (text.includes(`$${tag}$`)) tag += 'x';

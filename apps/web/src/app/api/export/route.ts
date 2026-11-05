@@ -14,11 +14,6 @@ const BYTES_PER_MB = 1024 * 1024;
 
 const refuse = (status: number) => new NextResponse(null, { status, headers: NO_STORE });
 
-/**
- * `Xuất toàn bộ dữ liệu`: the household's tables and files as one ZIP (more when it passes `ESTA_EXPORT_PART_MB`), kept
- * in the private `exports` bucket and answered as signed links. It reads and writes on the admin's own session, so RLS
- * decides what goes in and who can fetch it back.
- */
 export async function POST() {
   const member = await getCurrentMember();
   if (member === null) return refuse(401);

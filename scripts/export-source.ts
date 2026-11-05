@@ -20,7 +20,6 @@ export type Manifest = z.infer<typeof manifestSchema>;
 export type ExportSource = {
   readonly manifest: Manifest;
   readonly tables: ReadonlyMap<string, Record<string, unknown>[]>;
-  /** `files/` entries by path under it: `<bucket>/<household id>/...`. */
   readonly files: ReadonlyMap<string, Uint8Array>;
 };
 
@@ -48,7 +47,6 @@ function readEntries(path: string): Map<string, Uint8Array> {
   return entries;
 }
 
-/** An export as a ZIP, as the folder it unzips to, or as the several ZIPs of a large one. */
 export function readExport(paths: readonly string[]): ExportSource {
   const entries = new Map<string, Uint8Array>();
   for (const path of paths) for (const [entry, bytes] of readEntries(path)) entries.set(entry, bytes);
@@ -71,7 +69,6 @@ export function readExport(paths: readonly string[]): ExportSource {
 
 export type TargetDatabase = { readonly slot: number; readonly dbUrl: string; readonly apiUrl: string; readonly serviceKey: string };
 
-/** The slot's database and Storage, refused unless both are local. */
 export function localTarget(): TargetDatabase {
   const slot = parseSlot(process.env.ESTA_SLOT);
   const env = slotEnv(join(import.meta.dirname, '..'), slot);

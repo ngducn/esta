@@ -18,7 +18,6 @@ export type DataExportLabels = {
   readonly ready: string;
   /** Holds `{part}` and `{total}` for the client to fill, since the part count comes with the answer. */
   readonly readyPart: string;
-  /** Holds `{total}`. */
   readonly manyParts: string;
   readonly failed: string;
 };
@@ -33,7 +32,6 @@ async function requestExport(): Promise<Result<Parts>> {
 
 const fill = (template: string, values: Readonly<Record<string, number>>) => template.replace(/\{(\w+)\}/g, (match, key: string) => String(values[key] ?? match));
 
-/** `Xuất toàn bộ dữ liệu`, then one signed link per ZIP part; the links expire, so a second tap makes new ones. */
 export function DataExport({ labels }: { labels: DataExportLabels }) {
   const [stage, setStage] = useState<Stage>({ kind: 'idle' });
   const { pending, run } = useAction();

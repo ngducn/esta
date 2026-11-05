@@ -32,7 +32,6 @@ function splitSeedFlags(args: readonly string[]): { seed: string[]; rest: string
 
 const repoRoot = join(import.meta.dirname, '..');
 const [command, ...allFlags] = process.argv.slice(2);
-/** `pnpm db:reset:empty`: the migrations and their reference data, and no household rows, to load an export into. */
 const empty = command === 'reset' && allFlags.includes('--empty');
 const flags = allFlags.filter((flag) => flag !== '--empty');
 const args = command === undefined ? undefined : COMMANDS[command];

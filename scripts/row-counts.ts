@@ -3,7 +3,6 @@ import { localTarget, readExport, runSql, type Manifest } from './export-source.
 
 export type Difference = { readonly what: string; readonly exported: number; readonly live: number };
 
-/** What the database holds that the manifest does not say, or the other way round; an empty list is a match. */
 export function differences(manifest: Manifest, live: ReadonlyMap<string, number>): Difference[] {
   const tables = EXPORT_TABLES.map(({ name }) => ({ what: name, exported: manifest.tables[name] ?? 0, live: live.get(name) ?? 0 }));
   return [...tables, { what: 'files', exported: manifest.files, live: live.get('files') ?? 0 }].filter((row) => row.exported !== row.live);

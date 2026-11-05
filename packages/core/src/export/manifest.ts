@@ -6,7 +6,6 @@ export type ExportManifest = {
   readonly schemaVersion: number;
   readonly exportedAt: string;
   readonly householdId: string;
-  /** Rows written per table. */
   readonly tables: Readonly<Record<string, number>>;
   readonly files: number;
   /** Every ZIP of this export, in order; the manifest itself sits in the last one. */

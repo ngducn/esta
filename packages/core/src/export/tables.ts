@@ -1,6 +1,5 @@
 export type HouseholdTable = {
   readonly name: string;
-  /** Household tables this one points at, so a restore loads them first. */
   readonly parents: readonly string[];
   readonly columns: readonly string[];
   /** The column that holds the household's id: `households` is its own household. */

@@ -16,7 +16,6 @@ export type WriteExportOptions = { readonly clock: Clock };
 
 export type WrittenExport = {
   readonly manifest: ExportManifest;
-  /** The documents whose file went into the export; each is one download in the access log. */
   readonly documentIds: readonly string[];
 };
 
@@ -65,10 +64,6 @@ async function* objectsUnder(client: SupabaseClient, bucket: string, prefix: str
   }
 }
 
-/**
- * Every household table as JSON and CSV, every storage object under `{household_id}/`, then the manifest. It reads
- * through the client it is given, so the web's session client exports what its RLS lets the member read.
- */
 export async function writeExport(client: SupabaseClient, householdId: string, sink: ExportSink, { clock }: WriteExportOptions): Promise<WrittenExport> {
   const counts: { table: string; rows: number }[] = [];
   const documentPaths = new Map<string, string>();

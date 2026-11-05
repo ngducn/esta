@@ -4,7 +4,6 @@ import { env } from '@/server/env';
 import type { Member } from '@/server/member';
 import { DataExport } from './data-export';
 
-/** `Dữ liệu`: admins only. A viewer or a member sees no section, and the route refuses them as well. */
 export async function DataSection({ member }: { member: Member }) {
   if (member.role !== 'admin') return null;
   const t = await getTranslations('dataExport');

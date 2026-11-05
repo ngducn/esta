@@ -19,14 +19,12 @@ export function toCsv(table: ExportTable): string {
   return BOM + lines.map((line) => `${line.join(',')}\r\n`).join('');
 }
 
-/** One database cell: numbers as plain integers, null as empty, arrays and objects as JSON, text guarded like `field`. */
 const record = (value: unknown): string => {
   if (value === null || value === undefined) return '';
   if (typeof value === 'number' || typeof value === 'boolean') return String(value);
   return field(typeof value === 'string' ? value : JSON.stringify(value));
 };
 
-/** The byte order mark and the header line of a table's CSV; `csvRows` writes the rows, a page at a time. */
 export const csvHead = (columns: readonly string[]): string => `${BOM}${columns.map(field).join(',')}\r\n`;
 
 export const csvRows = (columns: readonly string[], rows: readonly Readonly<Record<string, unknown>>[]): string =>
