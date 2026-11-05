@@ -61,7 +61,7 @@ async function startInWizard(page: Page, nickname: string, kind: string) {
 
 async function openNewForm(page: Page, nickname: string, kind: string) {
   await page.goto('/properties');
-  await page.getByTestId('add-property').click();
+  await page.locator('main').getByRole('link', { name: 'Thêm tài sản' }).first().click();
   await startInWizard(page, nickname, kind);
 }
 
