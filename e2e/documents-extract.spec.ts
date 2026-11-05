@@ -269,7 +269,7 @@ test('rule 7: a blank page fails after every attempt, the tile reads Không đ�
   expect(items).toEqual([{ severity: 'info', proposal: expect.objectContaining({ type: 'retry_job', min_role: 'admin' }) }]);
   await page.goto('/assistant');
   const item = page.getByTestId('inbox-item').filter({ hasText: 'Trợ lý không đọc được Trang trống lane 7.' }).last();
-  await expect(item.getByText('Bạn có thể nhập tay.', { exact: true })).toBeVisible();
+  await expect(item.getByText('Có thể nhập tay.', { exact: true })).toBeVisible();
   await expect(item).not.toContainText('thử lại');
 });
 
