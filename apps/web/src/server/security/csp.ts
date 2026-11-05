@@ -24,7 +24,7 @@ export function cspDirectives({ nonce, supabaseUrl, tileHost = TILE_HOST, develo
     'img-src': ["'self'", 'blob:', 'data:', supabase, tileHost],
     'font-src': ["'self'"],
     'connect-src': ["'self'", supabase, socketOrigin(supabase), tileHost],
-    'worker-src': ["'self'", 'blob:'],
+    'worker-src': ["'self'"],
     'frame-ancestors': ["'none'"],
     'base-uri': ["'self'"],
     'form-action': ["'self'"],
@@ -36,13 +36,4 @@ export function buildCsp(options: CspOptions): string {
   return Object.entries(cspDirectives(options))
     .map(([name, sources]) => `${name} ${sources.join(' ')}`)
     .join('; ');
-}
-
-export function parseCsp(policy: string): Record<string, string[]> {
-  return Object.fromEntries(
-    policy.split(';').map((part) => {
-      const [name = '', ...sources] = part.trim().split(/\s+/);
-      return [name, sources];
-    }),
-  );
 }

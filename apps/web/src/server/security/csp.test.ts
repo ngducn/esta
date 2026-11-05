@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { buildCsp, parseCsp } from './csp';
+import { buildCsp, cspDirectives } from './csp';
 import { SECURITY_HEADERS } from './headers';
 
 const options = { nonce: 'abc123', supabaseUrl: 'https://abc.supabase.co', tileHost: 'https://tiles.openfreemap.org', development: false };
-const directives = (overrides: Partial<typeof options> = {}) => parseCsp(buildCsp({ ...options, ...overrides }));
+const directives = (overrides: Partial<typeof options> = {}) => cspDirectives({ ...options, ...overrides });
 
 describe('buildCsp', () => {
   it('allows scripts from the app and this request only', () => {
@@ -13,7 +13,7 @@ describe('buildCsp', () => {
   it.each([
     ['default-src', ["'self'"]],
     ['font-src', ["'self'"]],
-    ['worker-src', ["'self'", 'blob:']],
+    ['worker-src', ["'self'"]],
     ['frame-ancestors', ["'none'"]],
     ['base-uri', ["'self'"]],
     ['form-action', ["'self'"]],

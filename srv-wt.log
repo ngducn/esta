@@ -1,0 +1,10 @@
+ESTA_SLOT=8 web=http://localhost:4802 api=http://127.0.0.1:55121
+▲ Next.js 16.3.8
+- Local:         http://localhost:4802
+- Network:       http://192.168.1.11:4802
+✓ Ready in 86ms
+✓ Running next.config.ts took 134ms
+⨯ Error: The destination stream closed early.
+    at ignore-listed frames {
+  digest: '3118940221'
+}

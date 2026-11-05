@@ -1,5 +1,8 @@
 import { expect, test } from '@playwright/test';
-import { parseCsp } from '../../apps/web/src/server/security/csp';
+
+function parseCsp(policy: string): Record<string, string[]> {
+  return Object.fromEntries(policy.split(';').map((part) => { const [name = '', ...sources] = part.trim().split(/\s+/); return [name, sources]; }));
+}
 
 const STATIC_HEADERS = {
   'strict-transport-security': 'max-age=63072000; includeSubDomains',
