@@ -23,7 +23,7 @@ export { householdRename, memberInvite, memberRemove, memberSetRole, type Member
 export { firstRunSetDismissed, type FirstRunDismissed } from './onboarding-ops';
 export { bankAccountCreate, bankAccountDelete, bankAccountEdit, bankAccountSetDefault, type BankAccountRefusal, type BankAccountSaved } from './bank-account-ops';
 export { readClock, type ClockEnv } from './clock';
-export { readCollectionRows, type CollectionRow } from './collections';
+export { readCollectionRows, readMonthCollected, type CollectionRow } from './collections';
 export { readCompleteness, type PropertyCompleteness } from './completeness';
 export { depositRecord, type DepositRecorded, type DepositRefusal } from './deposit-ops';
 export { documentAttach, type AttachRefusal } from './document-attach';

@@ -37,7 +37,7 @@ export async function readReportSnapshot(db: Db, householdId: string, { from, to
   const year = Number(from.slice(0, 4));
   const [properties, facts, invoices, leases, units, valuations, tax, otherRevenue] = await Promise.all([
     db.from('properties').select('id, name:nickname').eq('household_id', householdId).is('deleted_at', null).order('nickname').order('id'),
-    readLedgerFacts(db, householdId, { from, to }),
+    readLedgerFacts(db, householdId, { from, to, keepArchivedIncome: true }),
     readInvoices(db, householdId, { issuedDueFrom: from, issuedDueTo: to }),
     readLeases(db, householdId),
     readRentalUnits(db, householdId),

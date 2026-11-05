@@ -1,4 +1,5 @@
-import { groupCollections, monthCollected } from '@esta/core/collections';
+import { monthCollected } from '@esta/core/collections';
+import { billsDueIn, type ReportInvoice } from '@esta/core/reports';
 import { isoDate } from '@esta/core/date';
 import { formatCount, formatVnd } from '@esta/core/format';
 import { vnd } from '@esta/core/money';
@@ -42,12 +43,12 @@ describe('the household reads count what the screens count (AGENT.md §4)', () =
     expect(overview.deposits_held_display).toBe(formatVnd(vnd(Number(fact('q4', 'deposits held'))), 'vi'));
   });
 
-  it("states the month's collected and billed amounts as the board's Đã thu X / Y, each payment capped at its bill", async () => {
-    const recorded = RECORDED['collections["2026-10-01"]'] as Array<Record<string, unknown>>;
-    const overpaid = { ...recorded[0], invoiceId: '00000000-0000-4000-8000-0000000a7c31', dueDate: '2026-10-05', totalVnd: 1_000_000, allocatedVnd: 1_500_000, outstandingVnd: 0, paymentStatus: 'paid' };
-    const rows = [...recorded, overpaid];
-    const { context } = await tools({ ...replayedReads(RECORDED), collections: async () => rows as never });
-    const board = monthCollected(groupCollections(rows as never, isoDate('2026-10-01'), ASOF));
+  it("states the month's collected and billed amounts as the bills due in it add up, each payment capped at its bill", async () => {
+    const report = RECORDED['report[2026]'] as { invoices: Array<Record<string, unknown>> };
+    const overpaid = { ...report.invoices.find((invoice) => invoice.status === 'issued' && String(invoice.dueDate).startsWith('2026-10')), id: '00000000-0000-4000-8000-0000000a7c31', totalVnd: 1_000_000, allocatedVnd: 1_500_000, outstandingVnd: 0, paymentStatus: 'overpaid' };
+    const withOverpaid = { ...RECORDED, 'report[2026]': { ...report, invoices: [...report.invoices, overpaid] } };
+    const { context } = await tools(replayedReads(withOverpaid));
+    const board = monthCollected(billsDueIn((withOverpaid['report[2026]'] as typeof report).invoices as ReportInvoice[], isoDate('2026-10-01')));
     const answer = await collectionsTool(context)({ year: 2026, month: 10 });
     expect(answer.month_collected).toMatchObject({ month_date_display: '10/2026', collected_display: formatVnd(board.collectedVnd, 'vi'), billed_display: formatVnd(board.billedVnd, 'vi') });
     expect(answer.totals.find((total) => total.status === 'paid')).not.toHaveProperty('total_display');

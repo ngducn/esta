@@ -22,9 +22,14 @@ export type LedgerFacts = { readonly incomes: readonly (IncomeFact & OfProperty)
 
 /**
  * Income and live expenses dated from `from` to `to`, both inclusive, of one property or, without one, of every live
- * property, as Reports counts the household: an archived property's money leaves the household totals.
+ * property, as Reports counts the household: an archived property's expenses leave the household totals. Its income stays
+ * when `keepArchivedIncome` is set, because archiving never changes money already collected (Báo cáo asks for it).
  */
-export async function readLedgerFacts(db: Db, householdId: string, { propertyId, from, to }: { propertyId?: string; from: IsoDate; to: IsoDate }): Promise<LedgerFacts> {
+export async function readLedgerFacts(
+  db: Db,
+  householdId: string,
+  { propertyId, from, to, keepArchivedIncome = false }: { propertyId?: string; from: IsoDate; to: IsoDate; keepArchivedIncome?: boolean },
+): Promise<LedgerFacts> {
   const scope = propertyId === undefined ? { household_id: householdId } : { household_id: householdId, property_id: propertyId };
   const [live, incomes, expenses] = await Promise.all([
     propertyId === undefined ? readLivePropertyIds(db, householdId).then((ids) => new Set(ids)) : null,
@@ -52,7 +57,7 @@ export async function readLedgerFacts(db: Db, householdId: string, { propertyId,
     ),
   ]);
   const kept = <T extends OfProperty>(facts: T[]) => (live === null ? facts : facts.filter((fact) => live.has(fact.propertyId)));
-  return { incomes: kept(z.array(incomeSchema).parse(incomes)), expenses: kept(z.array(expenseSchema).parse(expenses)) };
+  return { incomes: keepArchivedIncome ? z.array(incomeSchema).parse(incomes) : kept(z.array(incomeSchema).parse(incomes)), expenses: kept(z.array(expenseSchema).parse(expenses)) };
 }
 
 /** The day of the first income or live expense of one property or, without one, of every property; null when there is none. */

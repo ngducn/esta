@@ -4,6 +4,7 @@ import { formatBps, formatCount, formatDate, formatMonthYear, formatVnd } from '
 import { estaUri } from '@esta/core/links';
 import { holdsUnit } from '@esta/core/lease';
 import { vnd } from '@esta/core/money';
+import { billsDueIn } from '@esta/core/reports';
 import { portfolioValue } from '@esta/core/valuations';
 import { z } from 'zod';
 import { monthStart, type ReadToolContext } from './ask-reads';
@@ -41,7 +42,9 @@ export function collectionsTool({ reads, locale, asOf, cite, properties }: ReadT
     const totals = groups.map((group) =>
       cite({ status: group.key, count_display: formatCount(group.items.length, locale), ...(group.key === 'paid' ? {} : { total_display: formatVnd(group.totalVnd, locale) }) }),
     );
-    const { collectedVnd, billedVnd } = monthCollected(groups);
+    // The month's figure counts every bill due in it, archived property or not, as Báo cáo does; a live property's own rows hold all of its bills.
+    const own = groups.flatMap((group) => group.items).filter((item) => item.carriedFrom === null).map((item) => item.row);
+    const { collectedVnd, billedVnd } = monthCollected(scope === null ? billsDueIn((await reads.report(year)).invoices, start) : own);
     const month_collected = cite({ month_date_display: formatMonthYear(start, locale), collected_display: formatVnd(collectedVnd, locale), billed_display: formatVnd(billedVnd, locale) });
     return { bills, totals, month_collected };
   });
@@ -51,9 +54,9 @@ export function collectionsTool({ reads, locale, asOf, cite, properties }: ReadT
 export function portfolioOverviewTool({ reads, locale, asOf, cite }: ReadToolContext) {
   return sameAnswer(async () => {
     const month = firstOfMonth(asOf);
-    const [report, rows, leases] = await Promise.all([reads.report(Number(asOf.slice(0, 4))), reads.collections(month), reads.leases()]);
+    const [report, leases] = await Promise.all([reads.report(Number(asOf.slice(0, 4))), reads.leases()]);
     const leased = report.units.filter((unit) => report.tenancies.some((lease) => lease.unitId === unit.id && holdsUnit(lease, asOf))).length;
-    const { collectedVnd, billedVnd } = monthCollected(groupCollections(rows, month, asOf));
+    const { collectedVnd, billedVnd } = monthCollected(billsDueIn(report.invoices, month));
     const value = portfolioValue(
       report.properties.map((property) => property.id),
       report.valuations,

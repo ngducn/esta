@@ -1,5 +1,5 @@
 import 'server-only';
-import { groupCollections, monthCollected, type CollectionGroup, type MonthCollected } from '@esta/core/collections';
+import { groupCollections, type CollectionGroup, type MonthCollected } from '@esta/core/collections';
 import type { IsoDate } from '@esta/core/date';
 import { firstOfMonth } from '@esta/core/date/calendar';
 import { isoDateSchema } from '@esta/core/schemas/legal';
@@ -9,7 +9,7 @@ import { z } from 'zod';
 import type { MapPin } from '@/components/map/property-pins';
 import type { PaymentAccount } from '@/components/payments/RecordPaymentSheet';
 import type { CollectionRow } from '@esta/ops';
-import { loadCollectionRows, loadOpenInvoices, type PaymentInvoice } from '@/server/collections/load';
+import { loadCollectionRows, loadMonthCollected, loadOpenInvoices, type PaymentInvoice } from '@/server/collections/load';
 import { loadReceivingAccount } from '@/server/invoices/qr';
 import { createSessionClient } from '@/server/supabase/server';
 import { loadOpenTasks } from '@/server/tasks/load';
@@ -118,8 +118,9 @@ async function mapPins(db: Db, householdId: string): Promise<MapPin[]> {
 export async function loadHome(householdId: string, asOf: IsoDate, canRecord: boolean): Promise<HomeView> {
   const db = await createSessionClient();
   const month = firstOfMonth(asOf);
-  const [bills, leases, documents, reviews, tasks, pins] = await Promise.all([
+  const [bills, collected, leases, documents, reviews, tasks, pins] = await Promise.all([
     loadCollectionRows(householdId, month),
+    loadMonthCollected(householdId, month),
     endingLeases(db, householdId, asOf),
     expiringDocuments(db, householdId, asOf),
     waitingReviews(db, householdId),
@@ -133,7 +134,7 @@ export async function loadHome(householdId: string, asOf: IsoDate, canRecord: bo
   return {
     month,
     board,
-    collected: monthCollected(board),
+    collected,
     today,
     payment: canRecord ? { openInvoices, account: account === null ? null : { id: account.id, bankName: account.bankName, accountNo: account.accountNo } } : null,
     pins,

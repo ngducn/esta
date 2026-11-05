@@ -1,7 +1,8 @@
 import { isoDate } from '@esta/core/date';
-import { checkReportInvariants, holds, monthlyCollections, occupancy, ownerSummary, portfolioSummary, propertyPnl, rentRoll, yearPeriod } from '@esta/core/reports';
+import { monthCollected } from '@esta/core/collections';
+import { billsDueIn, checkReportInvariants, holds, monthlyCollections, occupancy, ownerSummary, portfolioSummary, propertyPnl, rentRoll, yearPeriod } from '@esta/core/reports';
 import { computeTaxPosition } from '@esta/core/tax';
-import { readReportSnapshot, readTaxInputs } from '@esta/ops';
+import { readMonthCollected, readReportSnapshot, readTaxInputs } from '@esta/ops';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { integrationLane } from '@/test/lanes';
 import { memberClient } from '@/test/member-client';
@@ -9,7 +10,7 @@ import { signedInAs } from '@/test/stack';
 
 const PERIOD = { from: isoDate('2025-10-01'), to: isoDate('2026-10-31'), asOf: isoDate('2026-10-07') };
 const label = (text: string) => text;
-const pnlLabels = { property: 'p', income: 'i', expenses: 'e', noi: 'n', total: 't' };
+const pnlLabels = { property: 'p', income: 'i', expenses: 'e', noi: 'n', total: 't', archived: 'a' };
 const rollLabels = { place: 'p', tenant: 't', rent: 'r', cycle: 'c', paidThrough: 'pt', nextDue: 'nd', deposit: 'd', endDate: 'e', total: 't', placeName: label, cycleMonths: String, date: label, none: '-', openEnded: 'o' };
 const collectionLabels = { month: 'm', monthName: label, billed: 'b', collected: 'c', outstanding: 'o', total: 't' };
 const occupancyLabels = { place: 'p', occupied: 'o', vacant: 'v', rate: 'r', vacantFor: 'f', total: 't', placeName: label, percent: String, leased: 'leased', none: '-' };
@@ -138,29 +139,57 @@ describe('readReportSnapshot as leases end and properties go (FIN-4, SPEC §5.4)
     expect(cell(portfolioSummary(year, portfolioLabels), later.propertyId, 3), "a later termination still owes this year's rent").toBe(48_000_000);
   }, 30_000);
 
-  it("keeps a paid October bill in the collected figure after its property is archived, and the database agrees", async () => {
+  it("shows the same billed, collected and still-owed figures for October on every screen before and after its property is archived, and the database agrees", async () => {
     const gone = await letTownhouseOwingOctober();
     const owed = (await readReportSnapshot(client, HOUSEHOLD, PERIOD)).invoices.find((invoice) => invoice.leaseId === gone.leaseId && invoice.outstandingVnd > 0);
     if (owed === undefined) throw new Error("October's bill is unpaid");
     const paid = await recordPayment({ invoiceId: owed.id, owedVnd: owed.outstandingVnd, amount: '4.000.000', method: 'bank_transfer', receivedOn: '07/10/2026', idempotencyKey: crypto.randomUUID(), invoiceIds: null });
     expect(paid.ok).toBe(true);
 
-    const collectedInSql = async () => {
-      const { data, error } = await client.from('invoice_balances').select('allocated_vnd').eq('household_id', HOUSEHOLD).eq('status', 'issued').gte('due_date', '2026-10-01').lte('due_date', '2026-10-31');
-      if (error) throw error;
-      return data.reduce((total, bill) => total + (bill.allocated_vnd ?? 0), 0);
+    const october = isoDate('2026-10-01');
+    const read = async () => {
+      const snapshot = await readReportSnapshot(client, HOUSEHOLD, PERIOD);
+      const row = monthlyCollections(snapshot, collectionLabels).rows.find((one) => one.key === '2026-10');
+      const [, billed, collected, outstanding] = row?.cells.map((one) => Number(one.value)) ?? [];
+      const year = await readReportSnapshot(client, HOUSEHOLD, YEAR);
+      return {
+        report: { billedVnd: billed, collectedVnd: collected, outstandingVnd: outstanding },
+        home: await readMonthCollected(client, HOUSEHOLD, october),
+        ask: monthCollected(billsDueIn(snapshot.invoices, october)),
+        pnlIncome: propertyPnl(year, pnlLabels).totals.cells[1]?.value,
+        ownersIncome: ownerSummary(year, ownerLabels).totals.cells[2]?.value,
+      };
     };
-    const collectedOnReport = async () => {
-      const row = monthlyCollections(await readReportSnapshot(client, HOUSEHOLD, PERIOD), collectionLabels).rows.find((one) => one.key === '2026-10');
-      return row?.cells[2]?.value;
+    const inSql = async () => {
+      const bills = await client.from('invoice_balances').select('total_vnd, allocated_vnd, outstanding_vnd').eq('household_id', HOUSEHOLD).eq('status', 'issued').gte('due_date', '2026-10-01').lte('due_date', '2026-10-31');
+      if (bills.error) throw bills.error;
+      const facts = await client.from('allocation_facts').select('amount_vnd').eq('household_id', HOUSEHOLD).gte('received_on', YEAR.from).lte('received_on', YEAR.to);
+      if (facts.error) throw facts.error;
+      const sum = (values: (number | null)[]) => values.reduce<number>((total, value) => total + (value ?? 0), 0);
+      return {
+        billedVnd: sum(bills.data.map((bill) => bill.total_vnd)),
+        collectedVnd: sum(bills.data.map((bill) => Math.min(bill.allocated_vnd ?? 0, bill.total_vnd ?? 0))),
+        outstandingVnd: sum(bills.data.map((bill) => bill.outstanding_vnd)),
+        received: sum(facts.data.map((fact) => fact.amount_vnd)),
+      };
     };
-    const before = { sql: await collectedInSql(), report: await collectedOnReport() };
-    expect(before.report).toBe(before.sql);
+    const agree = (screens: Awaited<ReturnType<typeof read>>, sql: Awaited<ReturnType<typeof inSql>>) => {
+      const figures = { billedVnd: sql.billedVnd, collectedVnd: sql.collectedVnd };
+      expect(screens.report, 'Báo cáo').toEqual({ ...figures, outstandingVnd: sql.outstandingVnd });
+      expect(screens.home, 'Tổng quan and Thu tiền').toEqual(figures);
+      expect(screens.ask, 'Hỏi').toEqual(figures);
+      expect(screens.pnlIncome, 'Lãi lỗ Thu').toBe(sql.received);
+      expect(screens.ownersIncome, 'the owner summary').toBe(sql.received);
+    };
+    const before = { screens: await read(), sql: await inSql() };
+    agree(before.screens, before.sql);
 
     const archived = await client.from('properties').update({ deleted_at: '2026-10-07T02:00:00Z' }).eq('id', gone.propertyId);
     if (archived.error) throw archived.error;
-    expect({ sql: await collectedInSql(), report: await collectedOnReport() }).toEqual(before);
-  }, 30_000);
+    const after = { screens: await read(), sql: await inSql() };
+    expect(after, 'archiving changes no figure').toEqual(before);
+    agree(after.screens, after.sql);
+  }, 60_000);
 
   it("counts a deleted property's unpaid bill in October's collections, as the board does, and leaves its rooms out of occupancy", async () => {
     const gone = await letTownhouseOwingOctober();
@@ -176,14 +205,12 @@ describe('readReportSnapshot as leases end and properties go (FIN-4, SPEC §5.4)
     expect(portfolioSummary(snapshot, portfolioLabels).rows.map((row) => row.key), 'and the portfolio').not.toContain(gone.propertyId);
     const { data, error } = await client.rpc('collection_candidates', { p_month: '2026-10-01' });
     if (error) throw error;
-    const october = data.filter((bill) => bill.due_date >= '2026-10-01');
-    const sum = (key: 'total_vnd' | 'allocated_vnd' | 'outstanding_vnd') => october.reduce((total, bill) => total + bill[key], 0);
-    expect(october.filter((bill) => bill.lease_id === gone.leaseId).map((bill) => bill.outstanding_vnd), 'the board lists it').toEqual(owed.map((invoice) => invoice.outstandingVnd));
+    expect(data.filter((bill) => bill.lease_id === gone.leaseId).map((bill) => bill.outstanding_vnd), 'the board lists it').toEqual(owed.map((invoice) => invoice.outstandingVnd));
+    const bills = await client.from('invoice_balances').select('total_vnd, allocated_vnd, outstanding_vnd').eq('household_id', HOUSEHOLD).eq('status', 'issued').gte('due_date', '2026-10-01').lte('due_date', '2026-10-31');
+    if (bills.error) throw bills.error;
+    const sum = (key: 'total_vnd' | 'allocated_vnd' | 'outstanding_vnd') => bills.data.reduce((total, bill) => total + (bill[key] ?? 0), 0);
     const row = monthlyCollections(snapshot, collectionLabels).rows.find((one) => one.key === '2026-10');
-    const [, billed, collected, outstanding] = row?.cells.map((cell) => Number(cell.value)) ?? [];
-    expect(outstanding, 'the report owes what the board lists').toBe(sum('outstanding_vnd'));
-    expect(billed, 'the report also holds bills the board no longer lists').toBeGreaterThanOrEqual(sum('total_vnd'));
-    expect(collected, 'and what they collected').toBeGreaterThanOrEqual(sum('allocated_vnd'));
+    expect(row?.cells.map((one) => one.value), 'the report is the database, bill for bill').toEqual(['2026-10-01', sum('total_vnd'), sum('allocated_vnd'), sum('outstanding_vnd')]);
     const without = monthlyCollections({ ...snapshot, invoices: snapshot.invoices.filter((invoice) => invoice.leaseId !== gone.leaseId) }, collectionLabels).rows.find((one) => one.key === '2026-10');
     expect(row?.cells[3]?.value, "the deleted property's bill is in the owed total").toBe(Number(without?.cells[3]?.value) + owed.reduce((total, invoice) => total + invoice.outstandingVnd, 0));
   }, 30_000);
