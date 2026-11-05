@@ -24,7 +24,7 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 - **#384 merged** 2026-11-05 (4848b778): Thu tiền on the new design. Lows in #385.
 - **Tonight (2026-11-05, Ryan: "i want to make a lot of progress tonight, and stop at like 85% usage so I can finish it off tomorrow after work"):** RD-4 and RD-5 split by screen so each session stays short, all Sonnet, briefs in `briefs/rd-4a.md`, `rd-4b.md`, `rd-5a.md`, `rd-5b.md`, `rd-5c.md`. Slots: 3 (#384 round), 7, 8, 9; lanes on 14. Then, as budget allows: Cài đặt with P6-01b, P6-05, P6-02, P5-16b. **Stop spawning at 80% of the week, pause owners with a clean push at 85%.**
 - **Then:** Mẹ's session (Ryan's step, before more assistant features), P5-09, P5-14, P5-15, P5-10, P6-03, P6-04, P6-06, P6-07.
-- **Tripwire cleared** 2026-11-02 (lean rules, item 4). Set it again only when a test fails beside another run and passes alone.
+- **Tripwire set** 2026-11-05 17:05: completeness rule 5 failed once beside other specs and passed alone. Clear with `rm /tmp/ci-local/one-at-a-time` when the flake is understood.
 - **#386 merged** 2026-11-02: pushes to main that touch only the notes files skip CI.
 - **Watch:** shell and auth-password specs lost a poll-until-pass in #383; a random failure there means a title-flicker wait, not a retry loop.
 
