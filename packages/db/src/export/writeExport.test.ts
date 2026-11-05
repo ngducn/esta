@@ -21,6 +21,8 @@ type Fake = {
   between?: (rows: Record<string, unknown>[]) => void;
   /** Added to the exact count, to model rows the pages did not reach. */
   countDrift?: number;
+  /** Document files of erased ID cards that Storage still holds. */
+  waiting?: readonly string[];
 };
 
 function fakeClient(files: Record<string, string>, fake: Fake = {}) {
@@ -57,6 +59,7 @@ function fakeClient(files: Record<string, string>, fake: Fake = {}) {
       };
       return query;
     },
+    rpc: (name: string) => Promise.resolve(name === 'pending_file_removal_names' ? { data: fake.waiting ?? [], error: null } : { data: null, error: { message: `unexpected ${name}` } }),
     storage: fakeStorage(files),
   };
   return { client: client as unknown as SupabaseClient, reads };
@@ -125,6 +128,15 @@ describe('writeExport', () => {
     ]);
     expect(manifest.files).toBe(3);
     expect(documentIds).toEqual(['doc-1']);
+  });
+
+  it('leaves out the files of erased ID cards that are waiting to be removed', async () => {
+    const waiting = `${HOUSEHOLD}/doc-erased/front.jpg`;
+    const { client } = fakeClient({ [`documents/${waiting}`]: 'ID PHOTO', [`documents/${HOUSEHOLD}/doc-1/so-hong.pdf`]: 'PDF' }, { waiting: [waiting] });
+    const { sink, entries } = recordingSink();
+    const { manifest } = await writeExport(client, HOUSEHOLD, sink, { clock, exporter });
+    expect([...entries.keys()].filter((name) => name.startsWith('files/'))).toEqual([`files/documents/${HOUSEHOLD}/doc-1/so-hong.pdf`]);
+    expect(manifest.files).toBe(1);
   });
 
   it('writes the manifest last, with the Clock date', async () => {

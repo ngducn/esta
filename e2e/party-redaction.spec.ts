@@ -172,6 +172,8 @@ test('an erase that stopped before the files went hides them from a viewer, and 
   const cardId = randomUUID();
   const name = `${HOUSEHOLD}/${cardId}/front.jpg`;
   await serviceUpsert(page, 'parties', { id, household_id: HOUSEHOLD, kind: 'individual', full_name: 'Đã xóa', tags: ['tenant'] });
+  const [room] = query<{ property_id: string; id: string }>(workdir, `select property_id::text as property_id, id::text as id from public.units where household_id = '${HOUSEHOLD}' and kind = 'room' order by id limit 1`);
+  await serviceUpsert(page, 'leases', { id: randomUUID(), household_id: HOUSEHOLD, property_id: room?.property_id, unit_id: room?.id, tenant_party_id: id, start_date: '2019-01-01', end_date: '2019-12-31', rent_vnd: 2_000_000, deposit_vnd: 0, status: 'ended' });
   const upload = await page.request.post(`${rest.replace('/rest/v1', '/storage/v1')}/object/documents/${name}`, { headers: { ...service, 'content-type': 'image/jpeg' }, data: Buffer.from('jpeg') });
   expect(upload.ok(), await upload.text()).toBe(true);
   query(workdir, `insert into private.file_removals (name, household_id, party_id) values ('${name}', '${HOUSEHOLD}', '${id}') returning 1`);

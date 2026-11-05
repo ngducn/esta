@@ -60,8 +60,8 @@ describe('partyRedact', () => {
     expect(sent.some((request) => request.table.startsWith('/storage/v1/object/documents'))).toBe(true);
   });
 
-  it('turns the two ES002 refusals into kinds a screen reads, and removes no file', async () => {
-    for (const [message, kind] of [['ESTA_PARTY_ACTIVE_LEASE', 'active_lease'], ['ESTA_PARTY_DEPOSIT_HELD', 'deposit_held']] as const) {
+  it('turns the four ES002 refusals into kinds a screen reads, and removes no file', async () => {
+    for (const [message, kind] of [['ESTA_PARTY_ACTIVE_LEASE', 'active_lease'], ['ESTA_PARTY_DRAFT_LEASE', 'draft_lease'], ['ESTA_PARTY_NOT_TENANT', 'not_tenant'], ['ESTA_PARTY_DEPOSIT_HELD', 'deposit_held']] as const) {
       const { db, sent } = world({ raised: message });
       expect(await partyRedact.apply(opContext(db), { id: TENANT })).toEqual({ ok: false, reason: { kind } });
       expect(sent.some((request) => request.table.startsWith('/storage/'))).toBe(false);

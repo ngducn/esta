@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(38);
+select plan(40);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 
@@ -20,11 +20,14 @@ insert into public.parties (id, household_id, kind, full_name, short_name, phone
   ('00000000-0000-4000-8000-00000000a0a1', :'a', 'individual', 'Lê Thị Gone Demo', 'Gone', '+84903000001', '+84903000001', 'gone@demo.test', '1234', '12 Đường Demo', 'Ghi chú Gone', array['tenant']),
   ('00000000-0000-4000-8000-00000000a0a2', :'a', 'individual', 'Trần Văn Live Demo', 'Live', '+84903000002', null, null, '2222', null, null, array['tenant']),
   ('00000000-0000-4000-8000-00000000a0a3', :'a', 'individual', 'Phạm Held Demo', null, '+84903000003', null, null, '3333', null, null, array['tenant']),
-  ('00000000-0000-4000-8000-00000000b0b1', :'b', 'individual', 'Người thuê B Demo', null, '+84903000009', null, null, '9999', null, null, array['tenant']);
+  ('00000000-0000-4000-8000-00000000b0b1', :'b', 'individual', 'Người thuê B Demo', null, '+84903000009', null, null, '9999', null, null, array['tenant']),
+  ('00000000-0000-4000-8000-00000000a0a4', :'a', 'individual', 'Chủ nhà Demo', null, '+84903000004', null, null, '4444', null, null, array['owner']),
+  ('00000000-0000-4000-8000-00000000a0a5', :'a', 'individual', 'Người sắp thuê Demo', null, '+84903000005', null, null, '5555', null, null, array['tenant']);
 insert into public.leases (id, household_id, property_id, unit_id, tenant_party_id, start_date, end_date, rent_vnd, deposit_vnd, status) values
   ('00000000-0000-4000-8000-00000000e0a1', :'a', '00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-000000000a13', '00000000-0000-4000-8000-00000000a0a1', '2025-09-16', '2026-09-15', 2800000, 2800000, 'ended'),
   ('00000000-0000-4000-8000-00000000e0a2', :'a', '00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-000000000a15', '00000000-0000-4000-8000-00000000a0a2', '2026-01-01', '2026-10-31', 3000000, 3000000, 'active'),
   ('00000000-0000-4000-8000-00000000e0a3', :'a', '00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-000000000a17', '00000000-0000-4000-8000-00000000a0a3', '2025-09-16', '2026-09-15', 2800000, 2800000, 'ended'),
+  ('00000000-0000-4000-8000-00000000e0a5', :'a', '00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-000000000a13', '00000000-0000-4000-8000-00000000a0a5', '2026-12-01', '2027-11-30', 2800000, 2800000, 'draft'),
   ('00000000-0000-4000-8000-00000000e0b1', :'b', '00000000-0000-4000-8000-0000000000b1', private.whole_unit_id('00000000-0000-4000-8000-0000000000b1'), '00000000-0000-4000-8000-00000000b0b1', '2026-01-01', null, 9000000, 9000000, 'active');
 insert into public.invoices (id, household_id, lease_id, period_start, period_end, due_date, issue_on, number, status, issued_at) values
   ('00000000-0000-4000-8000-0000000f0a01', :'a', '00000000-0000-4000-8000-00000000e0a1', '2026-08-16', '2026-09-15', '2026-08-16', '2026-08-16', 'DIAN-202608-003', 'issued', '2026-08-16T00:30:00+07:00');
@@ -80,6 +83,8 @@ select throws_ok($$ select public.redact_party('00000000-0000-4000-8000-00000000
 select tests.act_as('admin.a@test.esta.test');
 select throws_ok(format($$ select public.redact_party(%L, '2026-10-07') $$, :live), 'ES002', 'ESTA_PARTY_ACTIVE_LEASE', 'a party with a running lease is refused');
 select throws_ok(format($$ select public.redact_party(%L, '2026-10-31') $$, :live), 'ES002', 'ESTA_PARTY_ACTIVE_LEASE', 'the day a lease ends it still runs');
+select throws_ok($$ select public.redact_party('00000000-0000-4000-8000-00000000a0a5', '2026-10-07') $$, 'ES002', 'ESTA_PARTY_DRAFT_LEASE', 'a draft lease counts as running, with its own refusal');
+select throws_ok($$ select public.redact_party('00000000-0000-4000-8000-00000000a0a4', '2026-10-07') $$, 'ES002', 'ESTA_PARTY_NOT_TENANT', 'a party that was never a tenant is refused');
 select throws_ok(format($$ select public.redact_party(%L, '2026-10-07') $$, :held), 'ES002', 'ESTA_PARTY_DEPOSIT_HELD', 'a party whose old lease still holds a deposit is refused');
 select is((select full_name from public.parties where id = :held), 'Phạm Held Demo', 'a refusal changes nothing');
 select is((select count(*)::int from public.documents where party_id = :live and category = 'id_card'), 1, 'a refused party keeps its ID card documents');
@@ -117,7 +122,7 @@ select is((select count(*)::int from public.document_access_log where document_i
 
 reset role;
 select is(pg_temp.footprint(), current_setting('tests.before'), 'leases, invoices, payments, deposit entries and billed and paid totals are unchanged');
-select ok(current_setting('tests.before') ~ '^3\|1\|1\|', 'and the footprint compared is not empty');
+select ok(current_setting('tests.before') ~ '^4\|1\|1\|', 'and the footprint compared is not empty');
 select is((select tenant_party_id from public.leases where id = '00000000-0000-4000-8000-00000000e0a1'), '00000000-0000-4000-8000-00000000a0a1'::uuid, 'the lease still names the party');
 
 select is((select count(*)::int from public.audit_log where table_name = 'parties' and row_id = :gone::uuid and diff::text ~ 'Lê Thị|Gone|903000001|demo\.test|1234|Đường Demo'), 0,

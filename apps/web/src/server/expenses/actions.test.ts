@@ -112,7 +112,7 @@ describe.skipIf(!stackUp)(`expense actions against ${stackName}`, () => {
   test('a receipt that never reached Storage saves nothing', async () => {
     const receipt = { ...(await sentReceipt()), size: 4096 };
     const input = { ...sheet('1tr'), receipt };
-    expect(await saveExpense(input)).toEqual({ ok: false, reason: 'failed' });
+    expect(await saveExpense(input)).toEqual({ ok: false, reason: 'file_gone' });
     expect(await rows('expenses', input.id)).toEqual([]);
     expect(await rows('documents', receipt.documentId)).toEqual([]);
   });

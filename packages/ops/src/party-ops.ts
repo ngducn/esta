@@ -10,11 +10,13 @@ const REMOVE_ATTEMPTS = 3;
 const partyRedactInputSchema = z.strictObject({ id: idSchema });
 type PartyRedactInput = z.output<typeof partyRedactInputSchema>;
 export type PartyRedacted = { readonly id: string; readonly removedFiles: number };
-export type PartyRefusal = { readonly kind: 'active_lease' | 'deposit_held' | 'files_left' };
+export type PartyRefusal = { readonly kind: 'active_lease' | 'draft_lease' | 'deposit_held' | 'files_left' | 'not_tenant' };
 
 const SENTINELS: Readonly<Record<string, PartyRefusal | CommonRefusal>> = {
   ESTA_PARTY_ACTIVE_LEASE: { kind: 'active_lease' },
   ESTA_PARTY_DEPOSIT_HELD: { kind: 'deposit_held' },
+  ESTA_PARTY_DRAFT_LEASE: { kind: 'draft_lease' },
+  ESTA_PARTY_NOT_TENANT: { kind: 'not_tenant' },
 };
 
 async function leftToErase(ctx: OpContext, partyId: string): Promise<boolean> {
