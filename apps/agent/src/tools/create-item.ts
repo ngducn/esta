@@ -143,7 +143,6 @@ export function watchNoteWriter(binding: NoteBinding) {
     const facts = related.flatMap((handle) => binding.facts.get(handle) ?? []);
     const action = facts.find(({ fact }) => fact.severity === 'action');
     if (action !== undefined && facts.some(({ fact }) => fact.severity !== 'action')) throw new ToolRejection(`${handles(related)}: a note about action facts holds action facts only. Put the watch and info facts in the grouped note.`);
-    // An action note is keyed by its rule's group, so a rerun that splits the facts another way finds the note it wrote.
     const group = action === undefined ? undefined : groupActionFacts([...binding.facts].map(([handle, { fact }]) => ({ handle, fact })), binding.asOf).find(({ handles: members }) => members.includes(related[0] ?? ''));
     if (group !== undefined && (related.length !== group.handles.length || !group.handles.every((handle) => related.includes(handle)))) {
       throw new ToolRejection(`${handles(related)}: the ${group.ruleId} action facts are told in one note. Relate exactly ${handles(group.handles)}.`);
