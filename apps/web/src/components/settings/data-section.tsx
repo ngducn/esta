@@ -31,6 +31,9 @@ export async function DataSection({ member }: { member: Member }) {
             ))}
           </ul>
         </div>
+        <p data-testid="export-backup" className="text-body-sm text-text-muted">
+          {t('backup')}
+        </p>
         <DataExport labels={labels} />
         <p className="text-body-sm text-text-muted">{t('sensitive')}</p>
       </Card>

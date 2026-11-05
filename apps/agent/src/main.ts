@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
 import agentPackage from '../package.json' with { type: 'json' };
 import { readClock } from '@esta/ops';
-import { assertStartAllowed, parseAgentEnv } from './env';
+import { assertStartAllowed, backupDirFor, parseAgentEnv } from './env';
 import { startHeartbeat } from './heartbeat';
 import { DEFAULT_REPLAY_DIR } from './replay/store';
 import { pollOnce, type Worker } from './runner';
@@ -40,6 +40,7 @@ function start(): { worker: Worker; stop: () => void } {
     configDir,
     replayDir: env.ESTA_REPLAY_DIR ?? DEFAULT_REPLAY_DIR,
     timezone: env.ESTA_TIMEZONE,
+    backupDir: backupDirFor(env, home),
     clock,
     setState: heartbeat.setState,
   };

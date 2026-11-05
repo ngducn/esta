@@ -26,6 +26,12 @@ export function quoteTag(base: string, text: string): string {
   return `$${tag}$`;
 }
 
+/** A job the export caught mid-run (the backup's own row) would be reclaimed by a worker on the new database, so it lands failed; the schedule queues the next night's job. */
+const settleRunningJob = (row: Record<string, unknown>): Record<string, unknown> =>
+  row.status === 'running'
+    ? { ...row, status: 'failed', locked_by: null, locked_at: null, finished_at: row.finished_at ?? row.locked_at ?? row.updated_at ?? null, error: 'Was running when this copy was taken, so it was not run again after the data was restored' }
+    : row;
+
 /**
  * One `do` block, so one statement and one transaction (the CLI sends a script as a single prepared statement).
  * `session_replication_role = replica` skips the audit and guard triggers and the foreign keys, so the rows land
@@ -34,7 +40,7 @@ export function quoteTag(base: string, text: string): string {
  */
 export function importScript({ tables }: ExportSource): string {
   const statements = EXPORT_TABLES.map((table) => {
-    const rows = (tables.get(table.name) ?? []).map((row) => (table.name === 'household_members' ? { ...row, user_id: null } : row));
+    const rows = (tables.get(table.name) ?? []).map((row) => (table.name === 'household_members' ? { ...row, user_id: null } : table.name === 'agent_jobs' ? settleRunningJob(row) : row));
     if (rows.length === 0) return '';
     const json = JSON.stringify(rows);
     const tag = quoteTag('esta', json);

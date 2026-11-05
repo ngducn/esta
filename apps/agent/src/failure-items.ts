@@ -3,7 +3,7 @@ import { scheduledPeriod } from '@esta/core/agent-schedule';
 import { failedJobKey } from '@esta/core/assistant';
 import type { Locale } from '@esta/core/format';
 import type { TablesInsert } from '@esta/db';
-import type { AgentJob, JobSpec } from './jobs/registry';
+import type { AgentJob, JobSpec, PlainJobSpec } from './jobs/registry';
 import type { Failure } from './sdk/result';
 import type { AgentDb } from './supabase';
 import { householdLocale } from './tools/household-info';
@@ -19,7 +19,7 @@ const AUTH_ITEM = {
   },
 } as const satisfies Record<Locale, Record<string, string>>;
 
-type Binding = { readonly db: AgentDb; readonly job: AgentJob; readonly spec: JobSpec | undefined; readonly clock: Clock; readonly timezone: string };
+type Binding = { readonly db: AgentDb; readonly job: AgentJob; readonly spec: (Pick<JobSpec | PlainJobSpec, 'failedTitle'> & { readonly failedAudience?: 'operator' }) | undefined; readonly clock: Clock; readonly timezone: string };
 
 async function upsertItem(db: AgentDb, item: TablesInsert<'agent_items'>): Promise<void> {
   const { error } = await db.from('agent_items').upsert(item, { onConflict: 'household_id,dedupe_key', ignoreDuplicates: true });
@@ -37,8 +37,8 @@ export async function writeFailureItems({ db, job, spec, clock, timezone }: Bind
   const locale = await householdLocale(db, job.household_id);
   const base = { household_id: job.household_id, severity: 'info', job_id: job.id, created_at: clock.now() } as const;
   if (retryable !== undefined) {
-    // A note the number guard held back is the operator's alone (AGENT.md §9), and so is its retry.
-    const audience = failure.kind === 'number_guard' ? 'operator' : 'all';
+    // A note the number guard held back is the operator's alone (AGENT.md §9), and so is its retry, as is a kind whose failure only the operator can mend.
+    const audience = failure.kind === 'number_guard' || spec?.failedAudience === 'operator' ? 'operator' : 'all';
     await upsertItem(db, { ...base, kind: 'alert', audience, title: retryable[locale], proposal: { type: 'retry_job', params: { job_id: job.id }, min_role: 'admin' }, dedupe_key: failedJobKey(job.kind, scheduledPeriod(job.idempotency_key) ?? businessDate(parseInstant(job.created_at), timezone), job.id) });
   }
   if (failure.kind === 'auth_error') {

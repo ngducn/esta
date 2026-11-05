@@ -51,4 +51,10 @@ describe('buildManifest', () => {
     const operator = buildManifest({ clock, householdId: 'h', counts: [], files: 0, parts: ['a.zip'], exporter: { role: 'admin', isOperator: true } });
     expect(operator.withheld.map((entry) => entry.table)).toEqual(['audit_log', 'conversations', 'messages']);
   });
+
+  it('says complete and withholds nothing for the backup, which reads every row with the service role', () => {
+    const backup = buildManifest({ clock, householdId: 'h', counts: [], files: 0, parts: ['2026-10-07'], exporter: { role: 'service', isOperator: true }, complete: true });
+    expect(backup.complete).toBe(true);
+    expect(backup.withheld).toEqual([]);
+  });
 });
