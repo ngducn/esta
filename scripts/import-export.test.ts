@@ -5,7 +5,7 @@ import { contentTypeFor, documentMimes, importScript, quoteTag } from './import-
 import { differences, missingFiles, report } from './row-counts.ts';
 
 const HOUSEHOLD = '00000000-0000-4000-8000-0000000000aa';
-const manifest = { schemaVersion: 1 as const, exportedAt: '2026-11-01T03:00:00.000Z', householdId: HOUSEHOLD, tables: {}, files: 0, parts: ['export.zip'], exporter: { role: 'admin', isOperator: true }, complete: false as const, withheld: [{ table: 'conversations', rule: 'x' }] };
+const manifest = { schemaVersion: 1 as const, exportedAt: '2026-11-01T03:00:00.000Z', householdId: HOUSEHOLD, tables: {}, files: 0, parts: ['export.zip'], exporter: { role: 'admin', isOperator: true }, complete: false, withheld: [{ table: 'conversations', rule: 'x' }] };
 const source = (tables: Record<string, Record<string, unknown>[]>): ExportSource => ({ manifest, tables: new Map(Object.entries(tables)), files: new Map() });
 
 describe('assertLocal', () => {
@@ -112,6 +112,16 @@ describe('report', () => {
     expect(lines[0]).toBe('tables and files match what this export holds (1 tables, 3 files)');
     expect(lines.join('\n')).toContain('left out of this export, so not compared: conversations');
     expect(lines.join('\n')).not.toMatch(/all tables match/);
+  });
+
+  it('says all tables and files match, with nothing withheld, for the nightly backup', () => {
+    const backup = { ...manifest, tables: { properties: 7 }, files: 3, exporter: { role: 'service', isOperator: true }, complete: true, withheld: [] };
+    expect(report(backup, [], [])).toEqual(['all tables and files match (1 tables, 3 files)', 'nothing was withheld: this is the complete copy']);
+  });
+
+  it('still names a difference in a complete copy', () => {
+    const backup = { ...manifest, files: 3, complete: true, withheld: [] };
+    expect(report(backup, [{ what: 'files', exported: 3, live: 2 }], []).join('\n')).toContain('files: exported 3, database 2');
   });
 
   it('says nothing matches while a file is missing', () => {

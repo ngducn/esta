@@ -6,6 +6,7 @@ import type { AgentDb } from '../supabase';
 import type { BuiltInResult } from '../sdk/session';
 import type { EstaToolName, EstaTools } from '../tools/server';
 import { failAsk, prepareAsk } from './ask';
+import { runBackupExport } from './backup_export';
 import { failExtractDocument, prepareExtractDocument } from './extract-document';
 import { preparePing } from './ping';
 import { prepareMorningBrief } from './morning-brief';
@@ -71,6 +72,23 @@ export type JobSpec = {
     /** Runs once the job has no attempt left, so the household sees the failure (AGENT.md §9). */
     onFailed?(context: Pick<JobContext, 'db' | 'job' | 'clock'>, error: string): Promise<void>;
   };
+};
+
+export type PlainJobContext = {
+  readonly db: AgentDb;
+  readonly job: AgentJob;
+  readonly clock: Clock;
+  /** `ESTA_BACKUP_DIR`, or null where it is unset and the worker may not guess a place (production). */
+  readonly backupDir: string | null;
+};
+
+/** A scheduled kind that runs code and never a model: no session, no tools, nothing to replay (AGENT.md §3). */
+export type PlainJobSpec = {
+  readonly kind: string;
+  readonly timeoutMs: number;
+  readonly schedule: Omit<ScheduledJob, 'kind'>;
+  readonly failedTitle: Readonly<Record<Locale, string>>;
+  run(context: PlainJobContext): Promise<Json>;
 };
 
 /** Timeouts mirror `private.agent_job_timeout` in SQL, which reclaims a crashed worker's job (AGENT.md §3). */
@@ -150,7 +168,23 @@ export const JOBS = {
   },
 } as const satisfies Record<string, JobSpec>;
 
-export const SCHEDULED_JOBS: readonly ScheduledJob[] = Object.values(JOBS as Record<string, JobSpec>).flatMap((spec) => (spec.schedule === undefined ? [] : [{ kind: spec.kind, ...spec.schedule }]));
+export const PLAIN_JOBS = {
+  backup_export: {
+    kind: 'backup_export',
+    timeoutMs: 20 * 60_000,
+    schedule: { at: '02:00' },
+    failedTitle: { vi: 'Chưa lưu được bản sao đêm qua', en: "Last night's backup did not finish" },
+    run: runBackupExport,
+  },
+} as const satisfies Record<string, PlainJobSpec>;
+
+export const SCHEDULED_JOBS: readonly ScheduledJob[] = [...Object.values(JOBS as Record<string, JobSpec>), ...Object.values(PLAIN_JOBS as Record<string, PlainJobSpec | JobSpec>)].flatMap((spec) =>
+  spec.schedule === undefined ? [] : [{ kind: spec.kind, ...spec.schedule }],
+);
+
+export function plainJobSpec(kind: string): PlainJobSpec | undefined {
+  return Object.hasOwn(PLAIN_JOBS, kind) ? PLAIN_JOBS[kind as keyof typeof PLAIN_JOBS] : undefined;
+}
 
 export function jobSpec(kind: string): JobSpec | undefined {
   return Object.hasOwn(JOBS, kind) ? JOBS[kind as keyof typeof JOBS] : undefined;

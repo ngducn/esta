@@ -14,6 +14,8 @@ export const envSchema = z.object({
   ESTA_MODEL_DEEP: text,
   ESTA_AGENT_HOME: text,
   ESTA_REPLAY_DIR: text,
+  /** Where `backup_export` writes `{household_id}/{date}/`; unset, a worker outside production falls back to a folder under the temp dir and production refuses the job. */
+  ESTA_BACKUP_DIR: text,
   ESTA_ENV: z.enum(['development', 'test', 'preview', 'production']).optional(),
   ESTA_FROZEN_NOW: text,
   ESTA_TIMEZONE: z.string().default('Asia/Ho_Chi_Minh'),
@@ -61,4 +63,9 @@ export function assertStartAllowed(env: AgentEnv): RunMode {
     throw new Error('Refusing to start: ESTA_AGENT_MODE=live needs ESTA_MODEL_ROUTINE, which is not set');
   }
   return { agentMode: 'live', authMode: env.ESTA_AUTH_MODE, credential: { name, value }, model: env.ESTA_MODEL_ROUTINE, deepModel: env.ESTA_MODEL_DEEP ?? null };
+}
+
+/** Production gets no guessed place for a family's backups: unset there, the job refuses. Elsewhere a folder under the worker's home keeps local runs working. */
+export function backupDirFor(env: Pick<AgentEnv, 'ESTA_BACKUP_DIR' | 'ESTA_ENV'>, home: string): string | null {
+  return env.ESTA_BACKUP_DIR ?? (env.ESTA_ENV === 'production' ? null : `${home}/backups`);
 }

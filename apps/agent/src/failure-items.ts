@@ -3,7 +3,7 @@ import { scheduledPeriod } from '@esta/core/agent-schedule';
 import { failedJobKey } from '@esta/core/assistant';
 import type { Locale } from '@esta/core/format';
 import type { TablesInsert } from '@esta/db';
-import type { AgentJob, JobSpec } from './jobs/registry';
+import type { AgentJob, JobSpec, PlainJobSpec } from './jobs/registry';
 import type { Failure } from './sdk/result';
 import type { AgentDb } from './supabase';
 import { householdLocale } from './tools/household-info';
@@ -19,7 +19,7 @@ const AUTH_ITEM = {
   },
 } as const satisfies Record<Locale, Record<string, string>>;
 
-type Binding = { readonly db: AgentDb; readonly job: AgentJob; readonly spec: JobSpec | undefined; readonly clock: Clock; readonly timezone: string };
+type Binding = { readonly db: AgentDb; readonly job: AgentJob; readonly spec: Pick<JobSpec | PlainJobSpec, 'failedTitle'> | undefined; readonly clock: Clock; readonly timezone: string };
 
 async function upsertItem(db: AgentDb, item: TablesInsert<'agent_items'>): Promise<void> {
   const { error } = await db.from('agent_items').upsert(item, { onConflict: 'household_id,dedupe_key', ignoreDuplicates: true });
