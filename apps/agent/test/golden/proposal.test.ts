@@ -97,4 +97,13 @@ describe('create_proposal validation (AGENT.md §7)', () => {
     await expect(writer.write(task({ title: 'Gọi khách' }, 'Khách nợ 2 tháng.'))).rejects.toBeInstanceOf(NumberGuardError);
     expect(tables.agent_items).toEqual([expect.objectContaining({ kind: 'system', audience: 'operator', dedupe_key: 'number_guard:job-propose' })]);
   });
+
+  it('gives proposals about other subjects a repair turn each, and fails the same subject on its second slip', async () => {
+    const { tables, writer } = await setup();
+    const call = (type: string, params: Record<string, unknown>) => writer.write({ type, params, rationale: 'Khách chưa đóng tiền tháng này.' });
+    await expect(call('create_task', { title: 'Gọi người thuê Phòng 5', due_on: '2026-10-07', property_id: 'f1' })).rejects.toBeInstanceOf(ToolRejection);
+    await expect(call('create_task', { title: 'Gọi người thuê Phòng 6', due_on: '2026-10-07' })).rejects.toBeInstanceOf(ToolRejection);
+    await expect(call('create_task', { title: 'Gọi người thuê Phòng 7', due_on: '2026-10-07', property_id: 'f1' })).rejects.toBeInstanceOf(NumberGuardError);
+    expect(tables.agent_items).toEqual([expect.objectContaining({ kind: 'system', dedupe_key: 'number_guard:job-propose' })]);
+  });
 });

@@ -2,7 +2,7 @@ import type { Clock } from '@esta/core';
 import { MAX_SUMMARY_TOKENS, researchItemDraftSchema, wordCount, type ResearchItemDraft } from '@esta/core/agent-schemas';
 import type { IsoDate } from '@esta/core/date';
 import { formatDate, type Locale } from '@esta/core/format';
-import type { FactSheet, FilledNote } from '@esta/core/guard';
+import { checkNote, type FactSheet, type FilledNote } from '@esta/core/guard';
 import { datesInText, publishedDates } from '@esta/core/parse/page-dates';
 import { keepRule, MIN_QUOTE_WORDS, normalizeUrl, quoteOnPage, type DropReason } from '@esta/core/research';
 import type { AgentDb } from '../supabase';
@@ -33,8 +33,6 @@ export type Kept = { readonly id: string; readonly url_normalized: string; reado
 const SIMILAR_TITLE = 0.6;
 const MAX_SOURCE_NAME = 120;
 const HOST_NAME = '{{f0.host_label}}';
-/** A source name with a digit of its own, such as `24h`, can only fail the guard; the page host names the source instead. */
-const typedDigit = (name: string) => /\d/u.test(name.replace(/\{\{[^}]*\}\}/gu, ''));
 const DEDUPE_DAYS = 30;
 
 const DROPPED_HINT: Readonly<Record<Dropped['reason'], string>> = {
@@ -96,12 +94,14 @@ export function researchItemWriter(binding: ResearchBinding) {
     if (!url.ok) throw new ToolRejection(`source_url: ${url.reason === 'not_https' ? 'cite an https page' : 'not a link'}.`);
     const page = binding.fetched.get(url.value);
     if (page === undefined) return drop(draft.source_url, 'not_fetched');
+    // The link the page ended on, so a redirect's two links find one row whichever the model cites.
+    const key = page.urls[0] ?? url.value;
     if (!publishedDates(page.text).has(draft.published_on)) return drop(draft.source_url, 'date_unconfirmed');
     const onPage = datesInText(page.text);
     const effectiveOn = draft.effective_on !== null && onPage.has(draft.effective_on) ? draft.effective_on : null;
     const keep = keepRule({ publishedOn: draft.published_on, effectiveOn }, { today: binding.asOf, lastSuccessOn: binding.lastSuccessOn });
     if (!keep.ok) return drop(draft.source_url, keep.reason);
-    const stored = await binding.db.from('research_items').select('id').eq('household_id', binding.householdId).in('url_normalized', [...new Set([url.value, ...page.urls])]).limit(1);
+    const stored = await binding.db.from('research_items').select('id').eq('household_id', binding.householdId).in('url_normalized', page.urls).limit(1);
     if (stored.error) throw new Error(`add_research_item failed: ${stored.error.message}`);
     if (stored.data.length > 0) return drop(draft.source_url, 'duplicate_url');
     handlesIn(draft.topics, binding.topics, 'research_topics');
@@ -111,8 +111,10 @@ export function researchItemWriter(binding: ResearchBinding) {
     sheet.clear();
     for (const [handle, record] of binding.sheet) sheet.set(handle, record);
     sheet.set('f0', sourceRecord(draft, new URL(url.value), page.text, binding.locale));
+    // An outlet name the guard would refuse, such as `24h`, can only fail it again; the page host names the source instead.
+    const sourceTemplate = checkNote(draft.source_name, sheet, 'plain').ok ? draft.source_name : HOST_NAME;
     const [source, title, summary, why] = await guard.fill(
-      [typedDigit(draft.source_name) ? HOST_NAME : draft.source_name, draft.title_vi, draft.summary_vi, draft.why_it_matters_vi].map((template) => ({ template, format: 'plain' as const })),
+      [sourceTemplate, draft.title_vi, draft.summary_vi, draft.why_it_matters_vi].map((template) => ({ template, format: 'plain' as const })),
       JSON.stringify(draft, null, 2),
     );
     const sourceName = source?.text ?? '';
@@ -130,7 +132,7 @@ export function researchItemWriter(binding: ResearchBinding) {
       .upsert(
         {
           household_id: binding.householdId,
-          url_normalized: url.value,
+          url_normalized: key,
           source_url: page.link,
           source_name: sourceName,
           published_on: draft.published_on,
@@ -151,7 +153,7 @@ export function researchItemWriter(binding: ResearchBinding) {
     if (error) throw new Error(`add_research_item failed: ${error.message}`);
     const [row] = data;
     if (row === undefined) return drop(draft.source_url, 'duplicate_url');
-    kept.push({ id: row.id, url_normalized: url.value, title: title?.text ?? '', relevance: draft.relevance, cited: [source, title, summary, why].flatMap((note) => note?.cited ?? []) });
+    kept.push({ id: row.id, url_normalized: key, title: title?.text ?? '', relevance: draft.relevance, cited: [source, title, summary, why].flatMap((note) => note?.cited ?? []) });
     return { saved: true };
   }
 

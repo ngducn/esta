@@ -61,7 +61,7 @@ export function researchScanRequest(input: ScanRequestInput): PreparedJob {
     caps: { ...input.caps },
     observe(call) {
       const page = fetchedPage(call);
-      if (page !== null) for (const url of page.urls) fetched.set(url, { text: page.text, link: page.link, urls: page.urls });
+      if (page !== null) for (const url of page.urls) fetched.set(url, page);
     },
     async finish() {
       if (!topics.wasRead()) throw new Error('The model ended without reading research_topics');

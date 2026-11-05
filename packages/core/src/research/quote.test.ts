@@ -38,10 +38,21 @@ describe('quoteOnPage (AGENT.md §5.2)', () => {
 
   it('reads a hyphen between digits and a leading minus as part of the number, so a range or a sign is not cut (#329)', () => {
     const page = 'Giá từ 3-5 tỷ đồng cho căn hộ, giảm -5 tỷ đồng so với kỳ trước.';
-    expect(quoteOnPage('giá từ 3', page)).toEqual({ ok: false, reason: 'not_on_page' });
+    expect(quoteOnPage('Giá từ 3', page)).toEqual({ ok: false, reason: 'not_on_page' });
     expect(quoteOnPage('5 tỷ đồng cho', page)).toEqual({ ok: false, reason: 'not_on_page' });
     expect(quoteOnPage('5 tỷ đồng so', page)).toEqual({ ok: false, reason: 'not_on_page' });
     expect(quoteOnPage('Giá từ 3-5 tỷ đồng', page)).toEqual({ ok: true, value: 'Giá từ 3-5 tỷ đồng' });
     expect(quoteOnPage('giảm -5 tỷ đồng', page)).toEqual({ ok: true, value: 'giảm -5 tỷ đồng' });
+  });
+
+  it('reads the en dash, the non-breaking hyphen and the minus sign as the hyphen is read (#329)', () => {
+    for (const [dash, name] of [['\u2013', 'en dash'], ['\u2011', 'non-breaking hyphen']] as const) {
+      const range = `Giá từ 3${dash}5 tỷ đồng cho căn hộ.`;
+      expect(quoteOnPage('5 tỷ đồng cho', range), name).toEqual({ ok: false, reason: 'not_on_page' });
+      expect(quoteOnPage(`Giá từ 3${dash}5 tỷ đồng`, range), name).toEqual({ ok: true, value: `Giá từ 3${dash}5 tỷ đồng` });
+    }
+    const minus = 'Giá giảm \u22125 tỷ đồng so với kỳ trước.';
+    expect(quoteOnPage('5 tỷ đồng so', minus)).toEqual({ ok: false, reason: 'not_on_page' });
+    expect(quoteOnPage('giảm \u22125 tỷ đồng', minus)).toEqual({ ok: true, value: 'giảm \u22125 tỷ đồng' });
   });
 });

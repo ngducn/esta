@@ -77,7 +77,8 @@ export type GuardedText = { readonly template: string; readonly format: NoteForm
 /**
  * The number guard as every write tool runs it (AGENT.md §6.3). `fill` checks all of a call's texts against the run's
  * sheet: a call with a violation gets a repair turn, and a violation in the call right after it fails the job and
- * leaves the operator note. A passing call clears the count, so the next note has its own repair turn.
+ * leaves the operator note. The count is the writer's own and never resets, so a caller that writes several notes
+ * makes one writer for each (`watchNoteWriter` per dedupe key, `researchItemWriter` per page).
  * `save` writes one item for the household under its dedupe key, so a rerun the same day adds nothing; it answers
  * whether it added the row.
  */
@@ -93,7 +94,6 @@ export function guardedWriter(binding: GuardBinding, tool: string) {
         await writeGuardItem(binding, draft, found);
         throw new NumberGuardError(`number_guard: ${tool} still held text the number guard rejects after its repair turn; the operator note has it`);
       }
-      violations = 0;
       return checks.flatMap((check) => (check.ok ? [check.value] : []));
     },
     async save(item: ItemRow): Promise<boolean> {
@@ -120,7 +120,15 @@ const handles = (list: readonly string[]) => list.join(', ');
 export function watchNoteWriter(binding: NoteBinding) {
   const covered = new Set<string>();
   const written: WrittenNote[] = [];
-  const guard = guardedWriter(binding, 'create_item');
+  const guards = new Map<string, ReturnType<typeof guardedWriter>>();
+  const guardFor = (dedupeKey: string) => {
+    let guard = guards.get(dedupeKey);
+    if (guard === undefined) {
+      guard = guardedWriter(binding, 'create_item');
+      guards.set(dedupeKey, guard);
+    }
+    return guard;
+  };
   let digest = false;
 
   async function write(raw: Record<string, unknown>): Promise<{ saved: true }> {
@@ -140,16 +148,17 @@ export function watchNoteWriter(binding: NoteBinding) {
 
     if (LINK.test(note.title) || LINK.test(note.body_md)) throw new ToolRejection('A note holds no link: the app links the records itself. Take out the link and call create_item again.');
 
-    const [title, body] = await guard.fill(
+    const dedupeKey = action === undefined ? `watch_digest:${binding.asOf}` : watchDedupeKey(action.fact, binding.asOf);
+    const [title, body] = await guardFor(dedupeKey).fill(
       [
         { template: note.title, format: 'plain' },
         { template: note.body_md, format: 'markdown' },
       ],
       `${note.title}\n\n${note.body_md}`,
     );
-    if ((title?.text.length ?? 0) > MAX_TITLE) throw new ToolRejection(`The title reads ${title?.text.length} characters once filled; keep it to ${MAX_TITLE} and call create_item again.`);
-    const dedupeKey = action === undefined ? `watch_digest:${binding.asOf}` : watchDedupeKey(action.fact, binding.asOf);
-    const added = await guard.save({
+    const titleLength = title?.text.length ?? 0;
+    if (titleLength > MAX_TITLE) throw new ToolRejection(`The title reads ${titleLength} characters once filled; keep it to ${MAX_TITLE} and call create_item again.`);
+    const added = await guardFor(dedupeKey).save({
       kind: 'alert',
       severity: severityOf(facts),
       title: title?.text ?? '',

@@ -153,6 +153,16 @@ describe('create_brief', () => {
     expect(String(tables.agent_items?.[0]?.body_md)).toContain('Có hai việc.');
   });
 
+  it('counts a slip, a pass a later check refuses, and a second slip as two violations, so the job ends as number_guard', async () => {
+    const { tables, call } = tools();
+    await call('watch_facts');
+    expect((await call('create_brief', draft({ summary: 'Có 3 việc cần làm.' }))).isError).toBe(true);
+    const refused = await call('create_brief', draft({ todo: TODO.map((told) => ({ ...told, text: `${'chữ '.repeat(50)}${told.text}` })), watch: WATCH.map((told) => ({ ...told, text: `${'chữ '.repeat(50)}${told.text}` })) }));
+    expect(refused).toEqual({ text: expect.stringContaining('Shorten the brief'), isError: true });
+    await expect(call('create_brief', draft({ summary: 'Có 4 việc cần làm.' }))).rejects.toBeInstanceOf(NumberGuardError);
+    expect(tables.agent_items).toEqual([expect.objectContaining({ kind: 'system', dedupe_key: 'number_guard:job-brief' })]);
+  });
+
   it('names an action fact left out while the todo list has room, and a fact no tool returned', async () => {
     const { call } = tools();
     await call('watch_facts');

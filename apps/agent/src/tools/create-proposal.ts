@@ -75,6 +75,9 @@ function subjectIds(params: Readonly<Record<string, unknown>>, sheet: ProposalBi
   );
 }
 
+/** The proposals of one run that name the same type and subject share a repair turn; two about other subjects each get their own. */
+const guardKey = (type: string, params: Readonly<Record<string, unknown>>) => JSON.stringify([type, ...Object.keys(SUBJECT_PARAMS).map((key) => params[key] ?? null)]);
+
 /** The same proposal twice is one item: the key hashes the type and the params as Esta stores them. */
 const dedupeKey = (proposal: Proposal) => `proposal:${proposal.type}:${createHash('sha256').update(JSON.stringify(proposal.params)).digest('hex').slice(0, 32)}`;
 
@@ -84,10 +87,20 @@ const dedupeKey = (proposal: Proposal) => `proposal:${proposal.type}:${createHas
  * through the same writer as create_item before anything is stored.
  */
 export function proposalWriter(binding: ProposalBinding) {
-  const guard = guardedWriter(binding, 'create_proposal');
+  const guards = new Map<string, ReturnType<typeof guardedWriter>>();
   const { citing, cap } = binding;
   const saved: string[] = [];
   let stored = cap?.earlier ?? 0;
+
+  const guardFor = (type: string, params: Readonly<Record<string, unknown>>) => {
+    const key = guardKey(type, params);
+    let guard = guards.get(key);
+    if (guard === undefined) {
+      guard = guardedWriter(binding, 'create_proposal');
+      guards.set(key, guard);
+    }
+    return guard;
+  };
 
   async function write(raw: Record<string, unknown>): Promise<{ saved: true; added: boolean; dedupe_key: string }> {
     const input = inputSchema.safeParse(raw);
@@ -102,6 +115,7 @@ export function proposalWriter(binding: ProposalBinding) {
       const template = params[key];
       return typeof template === 'string' ? [{ key, template }] : [];
     });
+    const guard = guardFor(type, params);
     const filled = await guard.fill(
       [...texts.map(({ template }) => ({ template, format: 'plain' as const })), { template: rationale, format: 'markdown' as const }],
       JSON.stringify(raw, null, 2),

@@ -179,6 +179,35 @@ describe('create_item for portfolio_watch', () => {
     expect(items(tables)).toHaveLength(2);
   });
 
+  it('gives two notes that each slip once back to back a repair turn each, without failing the job (#318)', async () => {
+    const { call, tables } = setup();
+    await call('watch_facts');
+    expect((await call('create_item', { title: 'Phòng 5 quá hạn', body_md: '{{f1.place_label}}', related: ['f1'] })).isError).toBe(true);
+    expect((await call('create_item', { title: 'Phòng 7 quá hạn', body_md: '{{f2.place_label}}', related: ['f2'] })).isError).toBe(true);
+    expect((await call('create_item', { title: 'Quá hạn', body_md: '{{f1.place_label}}', related: ['f1'] })).isError).toBe(false);
+    expect((await call('create_item', { title: 'Sắp hết hạn', body_md: '{{f2.place_label}}', related: ['f2'] })).isError).toBe(false);
+    expect(items(tables)).toHaveLength(2);
+  });
+
+  it('gives parallel calls in one message a repair turn each (#318)', async () => {
+    const { call, tables } = setup();
+    await call('watch_facts');
+    const slips = await Promise.all(['f1', 'f2'].map((handle) => call('create_item', { title: 'Phòng 5 quá hạn', body_md: `{{${handle}.place_label}}`, related: [handle] })));
+    expect(slips.map((answer) => answer.isError)).toEqual([true, true]);
+    const fixed = await Promise.all(['f1', 'f2'].map((handle) => call('create_item', { title: 'Quá hạn', body_md: `{{${handle}.place_label}}`, related: [handle] })));
+    expect(fixed.map((answer) => answer.isError)).toEqual([false, false]);
+    expect(items(tables)).toHaveLength(2);
+  });
+
+  it('counts a note refused twice even when another note passed between the two (#318)', async () => {
+    const { call, tables } = setup();
+    await call('watch_facts');
+    expect((await call('create_item', { title: 'Phòng 5 quá hạn', body_md: '{{f1.place_label}}', related: ['f1'] })).isError).toBe(true);
+    expect((await call('create_item', { title: 'Quá hạn', body_md: '{{f2.place_label}}', related: ['f2'] })).isError).toBe(false);
+    await expect(call('create_item', { title: 'Phòng 6 quá hạn', body_md: '{{f1.place_label}}', related: ['f1'] })).rejects.toThrow(NumberGuardError);
+    expect(items(tables).filter((item) => item.kind === 'system')).toHaveLength(1);
+  });
+
   it('still fails a note that breaks the guard again right after its repair turn (#318)', async () => {
     const { call } = setup();
     await call('watch_facts');
@@ -203,7 +232,7 @@ describe('create_item for portfolio_watch', () => {
   it('refuses a link in a note, which the prompt forbids and the page would render (#318)', async () => {
     const { call, tables } = setup();
     await call('watch_facts');
-    for (const body_md of ['Xem [đây](https://example.com/x).', 'Vào www.example.com nhé.', 'Xem <https://example.com>.']) {
+    for (const body_md of ['Xem [đây](https://example.com/x).', 'Vào www.example.com nhé.', 'Xem <https://example.com>.', 'Xem [đây](esta://lease/x).']) {
       const answer = await call('create_item', { title: 'Quá hạn', body_md, related: ['f1'] });
       expect(answer.isError, body_md).toBe(true);
       expect(answer.text).toMatch(/link/i);
@@ -216,8 +245,7 @@ describe('create_item for portfolio_watch', () => {
     await call('watch_facts');
     for (const handle of ['f1', 'f2', 'f6']) await call('create_item', { title: 'Việc', body_md: `{{${handle}.place_label}}`, related: [handle] });
     const result = (await prepared.finish({ reply: 'xong', model: 'm' })) as { left_out: string[] };
-    expect(result.left_out.length).toBeGreaterThan(0);
-    expect(result.left_out.join(' ')).toMatch(/^f\d+ \(/);
+    expect(result.left_out).toEqual(['f3 (W4)', 'f4 (W4)', 'f5 (W5)', 'f7 (W7)', 'f8 (W11)']);
   });
 
   it('fails the job when the model never reads the facts', async () => {
