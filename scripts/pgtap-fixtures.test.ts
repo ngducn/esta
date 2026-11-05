@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { MAX_AMOUNT_VND } from '../packages/core/src/money/vnd.ts';
+import { RENT_CHANGE_RANGE } from '../packages/core/src/proposals/registry.ts';
 
 const tests = join(import.meta.dirname, '..', 'supabase', 'tests');
 
@@ -38,5 +39,16 @@ describe('extraction_schema_parity.test.sql', () => {
     const sql = readFileSync(join(tests, 'extraction_schema_parity.test.sql'), 'utf8');
     const rows = [...sql.matchAll(/\('(\w+)', (?:'(\w+)'|null)\)/g)].map(([, category, schema]) => `${category},${schema ?? ''}`);
     expect(rows).toEqual(csv);
+  });
+});
+
+describe('proposal_effects.test.sql', () => {
+  it('tries the rent change range at each edge of RENT_CHANGE_RANGE for the 2.500.000 ₫ rent it replaces', () => {
+    const rent = 2_500_000;
+    const low = (rent * RENT_CHANGE_RANGE.minPercent) / 100;
+    const high = (rent * RENT_CHANGE_RANGE.maxPercent) / 100;
+    const sql = readFileSync(join(tests, 'proposal_effects.test.sql'), 'utf8');
+    const outcome = (amount: number) => sql.match(new RegExp(`'rent_vnd', ${amount}\\)\\), (null|'ESTA_RENT_CHANGE_RANGE')`))?.[1];
+    expect([low - 1, low, high, high + 1].map(outcome)).toEqual(["'ESTA_RENT_CHANGE_RANGE'", 'null', 'null', "'ESTA_RENT_CHANGE_RANGE'"]);
   });
 });

@@ -5,6 +5,7 @@ import type { Locale } from '@esta/core/format';
 import type { Json, TablesUpdate } from '@esta/db';
 import { z } from 'zod';
 import { askFollowUpPrompt, askPrompt, askRepairPrompt, type AskedTurn } from '../prompts/ask';
+import { replyLanguage } from '../prompts/language';
 import type { AgentDb } from '../supabase';
 import { askReads, type AskReads } from '../tools/ask-reads';
 import { NumberGuardError, writeGuardItem } from '../tools/create-item';
@@ -90,12 +91,13 @@ export async function askRequest(input: AskInput): Promise<PreparedJob> {
   const stream = answerStream({ sheet, write: ({ content, refs }) => writeAnswer(input, { content_md: content, refs: [...refs] }) });
   let repaired = false;
   let answer: Answer | null = null;
+  const labels = await householdLabels(db, householdId);
+  const answerLocale = replyLanguage(input.question, locale, labels);
   const tools = new Map([
-    ...readTools(db, householdId, { reads, locale, asOf, cite }),
+    ...readTools(db, householdId, { reads, locale: answerLocale, asOf, cite }),
     estaTool('create_proposal', proposalWriter({ db, householdId, jobId: input.jobId, locale, sheet, clock: input.clock }).write),
   ]);
   const topic = earlier === null && input.topic !== null ? await loadTopic(tools, input.topic, { reads, asOf }) : null;
-  const labels = await householdLabels(db, householdId);
   return {
     prompt:
       earlier === null

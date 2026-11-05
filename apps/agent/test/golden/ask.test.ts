@@ -1,5 +1,5 @@
 import { isoDate } from '@esta/core/date';
-import { formatBps, formatDate, formatVnd } from '@esta/core/format';
+import { formatBps, formatDate, formatVnd, type Locale } from '@esta/core/format';
 import { vnd } from '@esta/core/money';
 import { existingLinks } from '@esta/ops';
 import { readFileSync } from 'node:fs';
@@ -22,7 +22,7 @@ const fact = (question: string, figure: string) => {
   if (row === undefined) throw new Error(`ask-ground-truth.sql has no ${question} ${figure}`);
   return row.value;
 };
-const money = (question: string, figure: string) => formatVnd(vnd(Number(fact(question, figure))), 'vi');
+const money = (question: string, figure: string, locale: Locale = 'vi') => formatVnd(vnd(Number(fact(question, figure))), locale);
 const day = (question: string, figure: string) => formatDate(isoDate(fact(question, figure)), 'vi');
 
 const jobDir = tempJobDir('esta-ask-golden-');
@@ -76,7 +76,7 @@ type Asked = {
 };
 
 const overdueInEnglish = () =>
-  `In Dãy trọ Dĩ An, only ${fact('q2', 'di-an units overdue')} is overdue: ${fact('q2', 'di-an days overdue')} days late, with ${money('q2', 'di-an amount overdue')} still owed.\n\nSee [the bill for ${fact('q2', 'di-an units overdue')}](esta://invoice/…).`;
+  `In Dãy trọ Dĩ An, only ${fact('q2', 'di-an units overdue')} is overdue: ${fact('q2', 'di-an days overdue')} days late, with ${money('q2', 'di-an amount overdue', 'en')} still owed.\n\nSee [the bill for ${fact('q2', 'di-an units overdue')}](esta://invoice/…).`;
 
 const EXPECTED: Readonly<Record<string, () => string>> = {
   'q1-di-an-income': () => `Từ đầu tháng 10/2026 đến nay, Dãy trọ Dĩ An đã thu ${money('q1', 'di-an income received in October 2026')} tiền thuê.\n\nXem từng khoản trong [sổ thu chi của Dãy trọ Dĩ An](esta://ledger/…).`,
@@ -89,7 +89,7 @@ const EXPECTED: Readonly<Record<string, () => string>> = {
     `Trong thời gian đó có một hợp đồng hết hạn:\n\n| Tài sản | Người thuê | Ngày hết hạn | Còn lại |\n| --- | --- | --- | --- |\n| [${fact('q3', 'leases ending within 60 days')}](esta://lease/…) | Phạm Thị Lan Demo | ${day('q3', 'their end dates')} | ${fact('q3', 'their days left')} ngày |`,
   'q4-deposits-held': () => `Gia đình đang giữ tổng cộng ${money('q4', 'deposits held')} tiền cọc của người thuê, tính cả tiền cọc của hợp đồng đã kết thúc mà chưa hoàn lại.`,
   'q5-tax-threshold': () =>
-    `Năm 2026, doanh thu cho thuê tính cho Nguyễn Thị Demo đến nay là ${money('q5', 'Nguyễn Thị Demo accrued 2026')}, dự kiến cả kỳ là ${money('q5', 'Nguyễn Thị Demo projected 2026')}.\n\nSo với ngưỡng ${formatVnd(vnd(500_000_000), 'vi')}, doanh thu dự kiến còn cách ${money('q5', 'remaining to the 500 million threshold')} và đã đạt 96,53% ngưỡng. Xem [thông tin thuế của Nguyễn Thị Demo](esta://party/…).`,
+    `Năm 2026, doanh thu cho thuê tính cho Nguyễn Thị Demo đến nay là ${money('q5', 'Nguyễn Thị Demo accrued 2026')}, dự kiến cả kỳ là ${money('q5', 'Nguyễn Thị Demo projected 2026')}.\n\nSo với ngưỡng ${formatVnd(vnd(500_000_000), 'vi')}, doanh thu dự kiến còn cách ${money('q5', 'remaining to the 500 million threshold')} và đã đạt 96% ngưỡng. Xem [thông tin thuế của Nguyễn Thị Demo](esta://party/…).`,
   'q6-bien-hoa-vacant': () => `Kho Biên Hòa đã để trống ${fact('q6', 'bien-hoa days empty')} ngày, từ ngày ${day('q6', 'bien-hoa empty since')}.\n\nXem [hồ sơ Kho Biên Hòa](esta://property/…).`,
   'q7-q7-repairs': () => `Năm 2026, chi phí sửa chữa của Nhà phố Q7 là ${money('q7', 'q7 repairs paid in 2026')}.\n\nXem từng khoản trong [sổ thu chi của Nhà phố Q7](esta://ledger/…).`,
   'q8-bao-loc-mortgage': () =>
