@@ -9,7 +9,7 @@ function setup() {
   renderInLocale(<DateInput label="Ngày bắt đầu" name="start" onValueChange={onValueChange} />);
   const input = screen.getByLabelText('Ngày bắt đầu');
   const type = (text: string) => fireEvent.change(input, { target: { value: text } });
-  const message = () => document.getElementById(input.getAttribute('aria-describedby')?.split(' ')[1] ?? '');
+  const message = () => document.getElementById(input.getAttribute('aria-describedby')?.split(' ')[0] ?? '');
   const hidden = () => document.querySelector<HTMLInputElement>('input[type="hidden"][name="start"]');
   return { input, type, message, hidden, onValueChange };
 }

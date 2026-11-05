@@ -46,7 +46,7 @@ async function listPhotos(page: Page, lane: number, id: string): Promise<{ name:
   return (await listed.json()) as { name: string; metadata: { size: number } }[];
 }
 
-const kindSelect = (page: Page) => page.getByTestId('kind-select');
+const chooseKind = (page: Page, label: string) => page.getByTestId('kind-select').getByLabel(label, { exact: true }).check({ force: true });
 
 /** Since P2-08 a property starts in the add-property wizard: its first step creates it, and its details step is this form. */
 async function startInWizard(page: Page, nickname: string, kind: string) {
@@ -54,7 +54,7 @@ async function startInWizard(page: Page, nickname: string, kind: string) {
   await expect(page.getByTestId('skip-photo')).toBeEnabled();
   await page.getByTestId('skip-photo').click();
   await page.getByTestId('nickname').fill(nickname);
-  await kindSelect(page).selectOption({ label: kind });
+  await chooseKind(page, kind);
   await page.getByTestId('wizard-start').click();
   await expect(page.getByTestId('property-form')).toBeVisible({ timeout: 15_000 });
 }
@@ -79,7 +79,7 @@ async function save(page: Page) {
 
 async function apartmentWithFee(page: Page, words: { kind: string; fee: string; floorLabel: string }) {
   await page.getByTestId('nickname').fill('Căn hộ Demo Bình Thọ');
-  await kindSelect(page).selectOption({ label: words.kind });
+  await chooseKind(page, words.kind);
   const fields = page.getByTestId('kind-fields');
   await expect(fields).toHaveAttribute('data-kind', 'apartment');
   for (const key of ['building_name', 'block', 'floor', 'unit_no', 'management_fee_vnd']) await expect(page.getByTestId(`detail-${key}`)).toBeVisible();
@@ -104,7 +104,7 @@ test('rule 1: Mẹ adds a townhouse, picks the ward the Dĩ An, Bình Dương su
   expect(await seriousAxeViolations(page)).toEqual([]);
 
   await page.getByTestId('nickname').fill('Nhà phố Demo Dĩ An');
-  await kindSelect(page).selectOption({ label: 'Nhà phố' });
+  await chooseKind(page, 'Nhà phố');
   await expect(page.getByTestId('kind-fields')).toHaveCount(0);
   await expect(page.getByTestId('code')).toHaveValue('NPDDA');
   await page.getByTestId('province-select').selectOption({ label: 'Thành phố Hồ Chí Minh' });
@@ -353,7 +353,7 @@ test('on a slow phone the form takes no typing until it is ready, then keeps wha
     await expect(nickname).toBeEnabled({ timeout: 90_000 });
     await expect(page.getByTestId('form-loading')).toHaveCount(0);
     await nickname.fill('Nhà Demo chậm mạng');
-    await kindSelect(page).selectOption({ label: 'Dãy trọ' });
+    await chooseKind(page, 'Dãy trọ');
     await page.getByTestId('detail-room_count').fill('8');
     await expect(nickname).toHaveValue('Nhà Demo chậm mạng');
     await expect(page.getByTestId('detail-room_count')).toHaveValue('8');
