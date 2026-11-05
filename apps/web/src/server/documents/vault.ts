@@ -25,7 +25,6 @@ export type VaultData = {
   readonly expiring: readonly ExpiringItem[];
   readonly search: SearchState;
   readonly statuses: DocumentStatuses;
-  /** Null when the status read failed; `statuses` then holds an empty fallback for the vault below. */
   readonly awaitingReview: number | null;
 };
 

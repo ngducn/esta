@@ -8,7 +8,6 @@ export type DocumentStatuses = {
   readonly offlineSince?: string | null;
 };
 
-/** How many documents wait for a person to check the reading; null when the status read failed, so no screen shows a false zero. */
 export function awaitingReview(read: DocumentStatuses | null): number | null {
   return read === null ? null : Object.values(read.statuses).filter((status) => status === 'needs_review').length;
 }
