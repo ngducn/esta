@@ -4,8 +4,6 @@ import { parseVndInput } from '@esta/core/parse/vnd-input';
 import {
   ACQUISITION_KINDS,
   LEGAL_STATUSES,
-  PROPERTY_KINDS,
-  USE_MODES,
   readKindDetails,
   suggestPropertyCode,
   type KindDetailKey,
@@ -27,6 +25,8 @@ import { useHydrated } from '@/lib/use-hydrated';
 import type { CurrentUnitSuggestion } from '@esta/ops';
 import type { AdminUnitOption } from '@/server/address/suggest';
 import { AddressPicker, FormSelect } from './address-picker';
+import { KindCards } from './kind-cards';
+import { UseModeCards } from './use-mode-cards';
 import { KindFields } from './kind-fields';
 import type { PropertyFormValues } from './property-form-values';
 import { LegacyAddressSuggest } from './legacy-address-suggest';
@@ -181,26 +181,15 @@ export function PropertyForm({
             error={invalid?.field === 'nickname' ? t('nicknameRequired') : null}
             onChange={(text) => set('nickname', text)}
           />
-          <FormSelect
-            label={t('kind')}
-            testId="kind-select"
-            value={values.kind}
-            options={PROPERTY_KINDS.map((kind) => ({ value: kind, label: tp('kind', { kind }) }))}
-            onChange={(kind) => set('kind', PROPERTY_KINDS.find((option) => option === kind) ?? values.kind)}
-          />
+          <KindCards value={values.kind} onChange={(kind) => set('kind', kind)} />
           <KindFields
             kind={values.kind}
             texts={values.kindTexts}
             invalid={invalid?.field === 'detail' ? invalid.key : null}
             onChange={(key, text) => set('kindTexts', { ...values.kindTexts, [key]: text })}
           />
+          <UseModeCards value={values.useMode} onChange={(use) => set('useMode', use)} />
           <div className="grid gap-4 sm:grid-cols-2">
-            <FormSelect
-              label={t('useMode')}
-              value={values.useMode}
-              options={USE_MODES.map((use) => ({ value: use, label: tp('use', { use }) }))}
-              onChange={(use) => set('useMode', USE_MODES.find((option) => option === use) ?? values.useMode)}
-            />
             <FormSelect
               label={t('legalStatus')}
               value={values.legalStatus}
@@ -279,20 +268,22 @@ export function PropertyForm({
   );
 }
 
+const NOTES_LIMIT = 4000;
+
 function NotesField({ label, value, onChange }: { label: string; value: string; onChange: (text: string) => void }) {
   const id = useId();
   return (
-    <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-body font-medium text-text">
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={id} className="text-label text-text">
         {label}
       </label>
       <textarea
         id={id}
         value={value}
-        rows={3}
-        maxLength={4000}
+        rows={2}
+        maxLength={NOTES_LIMIT}
         onChange={(event) => onChange(event.target.value)}
-        className="mt-1 min-h-touch w-full rounded-md border border-border-field bg-surface px-3.5 py-2.5 text-body text-text hover:border-border-field disabled:cursor-not-allowed disabled:border-border disabled:bg-fill-disabled disabled:text-text-muted"
+        className="max-h-40 min-h-touch w-full resize-y rounded-md border border-border-field bg-surface px-3.5 py-2.5 text-body text-text [field-sizing:content] hover:border-text-muted disabled:cursor-not-allowed disabled:border-border disabled:bg-fill-disabled disabled:text-text-muted"
       />
     </div>
   );

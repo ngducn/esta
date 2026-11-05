@@ -177,7 +177,7 @@ export async function startWizard(
     await expect(page.getByTestId('upload-preview')).toBeVisible({ timeout: 30_000 });
   }
   await page.getByTestId('nickname').fill(nickname);
-  await page.getByTestId('kind-select').selectOption(kind);
+  await page.getByTestId(`kind-select-${kind}`).check({ force: true });
   await beforeStart?.();
   await page.getByTestId('wizard-start').click();
   const duplicate = page.getByTestId('duplicate-dialog');

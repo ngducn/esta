@@ -1,3 +1,4 @@
+import { MapPin, ScrollText } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 
@@ -20,13 +21,19 @@ export function AddressBlock({ legal, current }: { legal: string | null; current
   if (lines.length === 0) return <p className="text-body text-text-muted">{t('none')}</p>;
 
   return (
-    <dl className="grid gap-x-4 gap-y-2 sm:grid-cols-[auto_1fr]">
-      {lines.map((line) => (
-        <div key={line.key} data-line={line.key} className="grid gap-x-4 sm:col-span-2 sm:grid-cols-subgrid">
-          <dt className="text-body-sm text-text-muted sm:pt-0.5">{line.label}</dt>
-          <dd className={cn('break-words', line.muted ? 'text-body-sm text-text-muted' : 'text-body text-text')}>{line.text}</dd>
-        </div>
-      ))}
+    <dl className="flex flex-col gap-3">
+      {lines.map((line) => {
+        const Icon = line.key === 'current' ? MapPin : ScrollText;
+        return (
+          <div key={line.key} data-line={line.key} className="flex flex-col pl-8">
+            <dt className="relative text-caption text-text-muted">
+              <Icon className="absolute -left-8 top-0 size-icon-md text-text-secondary" strokeWidth={1.8} aria-hidden="true" />
+              {line.label}
+            </dt>
+            <dd className={cn('break-words', line.muted ? 'text-body-sm text-text-secondary' : 'text-body text-text')}>{line.text}</dd>
+          </div>
+        );
+      })}
     </dl>
   );
 }

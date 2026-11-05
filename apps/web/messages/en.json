@@ -169,9 +169,9 @@
       }
     },
     "date": {
-      "examples": "Enter day/month/year, for example 07/10/2026",
+      "examples": "Example 07/10/2026",
       "placeholder": "dd/mm/yyyy",
-      "pick": "Pick a date",
+      "pick": "Open calendar",
       "invalid": "The date is not right.",
       "reasons": {
         "invalid": "Use day/month/year, for example 07/10/2026.",
@@ -1024,7 +1024,8 @@
     "archiveHint": "An archived property leaves the list. Restore it any time from Archived.",
     "archive": "Archive property",
     "saveAndContinue": "Save and continue",
-    "later": "Later"
+    "later": "Later",
+    "useModeHelp": "{use, select, rental {Rented out or about to be.} owner_occupied {The family lives here.} family_use {Relatives live or work here, no rent.} own_business {The family runs a business here.} held {Not in use, kept for now.} under_renovation {Being repaired, not usable yet.} other {Other.}}"
   },
   "propertyWizard": {
     "pageTitle": "Add a property",

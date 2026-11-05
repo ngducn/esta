@@ -1,5 +1,5 @@
-import type { PropertyKind } from '@esta/core/properties';
-import { BedDouble, Building, Building2, Hotel, House, LandPlot, MapPin, Sprout, Store, Warehouse, type LucideIcon } from 'lucide-react';
+import type { PropertyKind, UseMode } from '@esta/core/properties';
+import { BedDouble, Building, Building2, Hammer, Hourglass, Hotel, House, KeyRound, LandPlot, MapPin, Sprout, Store, Users, Warehouse, type LucideIcon } from 'lucide-react';
 
 export const kindIcons = {
   townhouse: House,
@@ -13,3 +13,12 @@ export const kindIcons = {
   mixed: Building,
   other: MapPin,
 } as const satisfies Record<PropertyKind, LucideIcon>;
+
+export const useModeIcons = {
+  rental: KeyRound,
+  owner_occupied: House,
+  family_use: Users,
+  own_business: Store,
+  held: Hourglass,
+  under_renovation: Hammer,
+} as const satisfies Record<UseMode, LucideIcon>;
