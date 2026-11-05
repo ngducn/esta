@@ -22,7 +22,8 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 
 - **Merged since 2026-11-01:** #368 (d2016c5a) design foundation; #376 (496542e4) e2e clock pinned to 2026-11-01T10:00+07:00; #374 (2bbf8891) the shell; #375 (a19892e9) sign-in and onboarding brand layer; #383 (32991ea4) axe judges resting colours, one shared helper (closes #373); #381 (9a898a45) Tài sản workbench. Lows open: #372, #377, #378, #379, #380, #382.
 - **#384 (RD-3 Thu tiền), fix round 1 resumed 2026-11-05 on a Sonnet owner** from `briefs/rd-3-ff1.md`, in /tmp/owner-rd-3/wt on slot 3, from 712fe40e (the origin PR branch is still at 748f6bae until its push). Next: scoped Sonnet reader of the round, then merge on CLEAN and green `ci`. Lows are in #385.
-- **Then:** RD-4 (Tổng quan and the Trợ lý thread), RD-5 (property tabs, documents, reports, Cài đặt, wizard). Then Mẹ's session (Ryan's step), P5-09, P5-14, P5-15, P5-16b, P5-10, Phase 6.
+- **Tonight (2026-11-05, Ryan: "i want to make a lot of progress tonight, and stop at like 85% usage so I can finish it off tomorrow after work"):** RD-4 and RD-5 split by screen so each session stays short, all Sonnet, briefs in `briefs/rd-4a.md`, `rd-4b.md`, `rd-5a.md`, `rd-5b.md`, `rd-5c.md`. Slots: 3 (#384 round), 7, 8, 9; lanes on 14. Then, as budget allows: Cài đặt with P6-01b, P6-05, P6-02, P5-16b. **Stop spawning at 80% of the week, pause owners with a clean push at 85%.**
+- **Then:** Mẹ's session (Ryan's step, before more assistant features), P5-09, P5-14, P5-15, P5-10, P6-03, P6-04, P6-06, P6-07.
 - **Tripwire cleared** 2026-11-02 (lean rules, item 4). Set it again only when a test fails beside another run and passes alone.
 - **#386 merged** 2026-11-02: pushes to main that touch only the notes files skip CI.
 - **Watch:** shell and auth-password specs lost a poll-until-pass in #383; a random failure there means a title-flicker wait, not a retry loop.
