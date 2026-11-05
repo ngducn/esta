@@ -66,7 +66,7 @@ export async function AssistantNote({ note, time, actions }: { note: InboxNote; 
   const unread = note.status === 'new';
   const label = KIND_LABEL[note.kind];
   return (
-    <article data-testid="inbox-item" data-status={note.status} data-kind={note.kind === 'note' ? undefined : note.kind} className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
+    <article data-testid="inbox-item" data-status={note.status} data-kind={note.kind === 'note' ? undefined : note.kind} className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4 sm:p-5">
       <header className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <AssistantMonogram />
         <span className="text-body-sm font-medium text-text">{t('author')}</span>

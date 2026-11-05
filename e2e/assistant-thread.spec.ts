@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { formatVnd } from '../packages/core/src/format/index.ts';
 import { vnd as money } from '../packages/core/src/money/vnd.ts';
 import { seedId } from '../supabase/seed/generator/ids.ts';
@@ -45,6 +45,19 @@ async function sendAndTimeFirstSentence(page: Page, message: string, label?: str
   await pause(page);
   return firstSentence;
 }
+
+test('a suggested reply has a visible outline at rest and the send button keeps none', async ({ page }) => {
+  await servicePatch(page, `agent_items?id=in.(${Object.values(NOTES).map(({ id }) => id).join(',')})`, { status: 'new' });
+  await open(page, `me.lane${NOTE_LANE}@demo.esta.test`, 'light', PHONE);
+  await page.goto('/assistant');
+  const borderColor = (locator: Locator) => locator.evaluate((el) => getComputedStyle(el).borderTopColor);
+  const chip = page.getByTestId('composer-suggestion').first();
+  await expect(chip).toBeVisible();
+  const outline = await borderColor(chip);
+  expect(outline, 'a secondary button draws its border-strong edge').not.toMatch(/^rgba\(0, 0, 0, 0\)$|^transparent$/);
+  expect(await borderColor(page.getByTestId('composer-send')), 'a primary button has no visible edge').toMatch(/^rgba\(0, 0, 0, 0\)$|^transparent$/);
+  expect(await seriousAxeViolations(page)).toEqual([]);
+});
 
 test('Mẹ reads Trợ lý’s notes in time order, marks one read, hides one, undoes it and finds it again as one muted line', async ({ page }) => {
   await servicePatch(page, `agent_items?id=in.(${Object.values(NOTES).map(({ id }) => id).join(',')})`, { status: 'new' });

@@ -6,7 +6,9 @@ import { visibleText } from '@esta/core/guard';
 import { PROPOSAL_TYPES } from '@esta/core/proposals';
 import { MAX_QUESTION_LENGTH } from '@esta/ops';
 import { getTranslations } from 'next-intl/server';
+import { MessageSquare } from 'lucide-react';
 import Link from 'next/link';
+import { EmptyState } from '@/components/empty-state';
 import { SafeMarkdown } from '@/components/markdown/safe-markdown';
 import { buttonVariants } from '@/components/ui/button-variants';
 import type { ConversationMessage } from '@/server/agent/conversations';
@@ -138,7 +140,7 @@ function Question({ message, time, t, ask }: { message: ConversationMessage; tim
           {topicLine(topic, ask)}
         </Link>
       )}
-      <p className="max-w-prose rounded-lg bg-accent-subtle px-4 py-3 text-body break-words whitespace-pre-line text-text">{message.content}</p>
+      <p className="max-w-prose rounded-lg border border-border bg-bg-subtle px-4 py-3 text-body break-words whitespace-pre-line text-text">{message.content}</p>
     </div>
   );
 }
@@ -156,7 +158,7 @@ function Answer({ message, time, t, ask }: { message: ConversationMessage; time:
       </AnswerView>
     );
   return (
-    <article className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
+    <article className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4 sm:p-5">
       <header className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <AssistantMonogram />
         <span className="text-body-sm font-medium text-text">{t('author')}</span>
@@ -218,7 +220,7 @@ export async function ThreadView({
     return <AssistantNote note={entry.note} time={time} actions={actionsFor(entry.note, canDecide, proposals, t)} />;
   };
   return (
-    <section id="thread" aria-labelledby="thread-heading" data-testid="thread" className="flex max-w-3xl flex-col gap-4">
+    <section id="thread" aria-labelledby="thread-heading" data-testid="thread" className="flex max-w-reading flex-col gap-4">
       <h2 id="thread-heading" className="sr-only">
         {t('thread')}
       </h2>
@@ -228,9 +230,9 @@ export async function ThreadView({
         </Link>
       )}
       {thread.entries.length === 0 ? (
-        <p data-testid="thread-empty" className="rounded-lg border border-border bg-surface p-5 text-body text-pretty text-text-secondary shadow-xs sm:p-6">
-          {t('threadEmpty')}
-        </p>
+        <div data-testid="thread-empty">
+          <EmptyState title={t('threadEmpty')} body={t('threadEmptyBody')} icon={MessageSquare} />
+        </div>
       ) : (
         <ol className="flex flex-col gap-4">
           {thread.entries.map((entry) => (
