@@ -7,29 +7,32 @@ import { localTarget, readExport, runSql, type ExportSource } from './export-sou
 
 const CONTENT_TYPES: Record<string, string> = { pdf: 'application/pdf', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', avif: 'image/avif' };
 
-/** A dollar-quote tag that appears nowhere in the data, so the JSON cannot close its own string. */
-export function quoteTag(json: string): string {
-  let tag = 'esta';
-  while (json.includes(`$${tag}$`)) tag += 'x';
+/** A dollar-quote tag that appears nowhere in the text it wraps, so the text cannot close its own string. */
+export function quoteTag(base: string, text: string): string {
+  let tag = base;
+  while (text.includes(`$${tag}$`)) tag += 'x';
   return `$${tag}$`;
 }
 
 /**
- * One script, one transaction. `session_replication_role = replica` skips the audit and guard triggers and the foreign
- * keys, so the rows land exactly as exported, `audit_log` included, and a row may point at a user this database lacks.
- * Members lose their `user_id`; each reclaims the row at first sign-in through `invited_email`.
+ * One `do` block, so one statement and one transaction (the CLI sends a script as a single prepared statement).
+ * `session_replication_role = replica` skips the audit and guard triggers and the foreign keys, so the rows land
+ * exactly as exported, `audit_log` included, and a row may point at a user this database lacks. Members lose their
+ * `user_id`; each reclaims the row at first sign-in through `invited_email`.
  */
 export function importScript({ tables }: ExportSource): string {
   const statements = EXPORT_TABLES.map((table) => {
     const rows = (tables.get(table.name) ?? []).map((row) => (table.name === 'household_members' ? { ...row, user_id: null } : row));
     if (rows.length === 0) return '';
     const json = JSON.stringify(rows);
-    const tag = quoteTag(json);
+    const tag = quoteTag('esta', json);
     const columns = table.columns.map((column) => `"${column}"`).join(', ');
     return `insert into public.${table.name} (${columns}) overriding system value\nselect ${columns} from jsonb_populate_recordset(null::public.${table.name}, ${tag}${json}${tag}::jsonb);`;
   });
-  const sequence = "select setval(pg_get_serial_sequence('public.audit_log', 'id'), greatest((select max(id) from public.audit_log), 1));";
-  return ['begin;', 'set local session_replication_role = replica;', ...statements, sequence, 'commit;'].join('\n');
+  const sequence = "perform setval(pg_get_serial_sequence('public.audit_log', 'id'), greatest((select max(id) from public.audit_log), 1));";
+  const body = ['set local session_replication_role = replica;', ...statements, sequence].join('\n');
+  const outer = quoteTag('import', body);
+  return `do ${outer}\nbegin\n${body}\nend\n${outer};`;
 }
 
 async function uploadFiles(source: ExportSource, apiUrl: string, serviceKey: string): Promise<number> {

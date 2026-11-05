@@ -4,7 +4,7 @@ import { basename, join, relative } from 'node:path';
 import { unzipSync } from 'fflate';
 import { z } from 'zod';
 import { EXPORT_TABLES } from '../packages/core/src/export/tables.ts';
-import { parseSlot, slotPorts } from './slot.ts';
+import { parseSlot, slotPorts, slotWorkdir } from './slot.ts';
 import { slotEnv } from './slot-env.ts';
 
 const manifestSchema = z.object({
@@ -82,15 +82,16 @@ export function localTarget(): TargetDatabase {
   return { slot, dbUrl, apiUrl, serviceKey: env.SUPABASE_SERVICE_ROLE_KEY ?? '' };
 }
 
-/** Runs SQL over the connection string with the Supabase CLI, which sends a `--file` as one script. */
+/** Runs SQL over the connection string with the Supabase CLI, which sends a `--file` as one script. The slot's workdir makes it treat this database as local and skip TLS. */
 export function runSql<Row>(dbUrl: string, sql: string, { file = false } = {}): Row[] {
   const args = file ? ['--file', sql] : [sql];
-  const result = spawnSync('supabase', ['db', 'query', '--db-url', dbUrl, '--agent=no', '-o', 'json', ...args], {
+  const workdir = slotWorkdir(join(import.meta.dirname, '..'), parseSlot(process.env.ESTA_SLOT));
+  const result = spawnSync('supabase', ['db', 'query', '--workdir', workdir, '--db-url', dbUrl, '--agent=no', '-o', 'json', ...args], {
     encoding: 'utf8',
     maxBuffer: 1 << 30,
     env: { ...process.env, SUPABASE_TELEMETRY_DISABLED: '1' },
   });
   if (result.error) throw result.error;
   if (result.status !== 0) throw new Error(`supabase db query failed:\n${result.stderr}`);
-  return result.stdout.trim() === '' ? [] : (JSON.parse(result.stdout) as Row[]);
+  return result.stdout.trimStart().startsWith('[') ? (JSON.parse(result.stdout) as Row[]) : [];
 }
