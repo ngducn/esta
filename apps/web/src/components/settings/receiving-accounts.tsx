@@ -2,6 +2,7 @@ import { Check } from 'lucide-react';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { QrAction } from '@/components/invoices/QrAction';
 import { ReceivingAccountButton } from '@/components/invoices/ReceivingAccountButton';
+import { RegistryEmptyState } from '@/components/registry-empty-state';
 import { Card } from '@/components/ui/card';
 import type { Member } from '@/server/member';
 import { loadAccountSheet } from '@/server/invoices/labels';
@@ -37,11 +38,15 @@ export async function ReceivingAccounts({ member }: { member: Member }) {
         {admin ? null : <p className="text-text-muted">{t('accountsReadOnly')}</p>}
       </div>
       {accounts.length === 0 ? (
-        <Card>
-          <p data-testid="accounts-empty" className="text-body text-text-secondary">
-            {t(admin ? 'accountsEmpty' : 'accountsEmptyReadOnly')}
-          </p>
-        </Card>
+        <div data-testid="accounts-empty">
+          <RegistryEmptyState
+            surface="settingsAccounts"
+            ctx={{ canWrite: admin }}
+            cta={(label) =>
+              sheet === null ? null : <ReceivingAccountButton label={label} banks={sheet.banks} labels={sheet.labels} mode={{ kind: 'add', becomesDefault: true }} />
+            }
+          />
+        </div>
       ) : (
         <Card className="p-0 sm:p-0">
           <ul className="flex flex-col divide-y divide-border">
@@ -95,7 +100,7 @@ export async function ReceivingAccounts({ member }: { member: Member }) {
           </ul>
         </Card>
       )}
-      {sheet === null ? null : (
+      {sheet === null || accounts.length === 0 ? null : (
         <ReceivingAccountButton
           label={t('accountAdd')}
           banks={sheet.banks}

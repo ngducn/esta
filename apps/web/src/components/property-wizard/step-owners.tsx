@@ -40,25 +40,26 @@ export async function StepOwners({ propertyId, documentId, next, back }: { prope
     loadParties(),
     loadPropertyLegal(propertyId),
   ]);
-  const read =
+  const extraction =
     documentId === null
       ? null
-      : (
-          await supabase
-            .from('document_extractions')
-            .select('id, status, accepted_fields')
-            .eq('household_id', member.household.id)
-            .eq('document_id', documentId)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle()
-        ).data;
+      : await supabase
+          .from('document_extractions')
+          .select('id, status, accepted_fields')
+          .eq('household_id', member.household.id)
+          .eq('document_id', documentId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+  if (extraction?.error) throw new Error(`Reading the extraction failed: ${extraction.error.message}`);
+  const read = extraction?.data ?? null;
   let proposed = saved;
   if (saved.length === 0 && read?.status === 'accepted') {
-    const [{ data: rows }, { data: certificate }] = await Promise.all([
+    const [{ data: rows, error: partiesError }, { data: certificate, error: certificateError }] = await Promise.all([
       supabase.from('parties').select('id, full_name, id_last4').eq('household_id', member.household.id),
       supabase.from('certificates').select('holder_party_ids').eq('household_id', member.household.id).eq('extraction_id', read.id).maybeSingle(),
     ]);
+    if (partiesError || certificateError) throw new Error(`Reading the certificate holders failed: ${(partiesError ?? certificateError)?.message}`);
     proposed = ownersFromHolders(
       holdersOf(read.accepted_fields),
       (rows ?? []).map((row) => ({ id: row.id, fullName: row.full_name, idLast4: row.id_last4 })),

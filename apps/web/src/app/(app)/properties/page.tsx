@@ -21,6 +21,7 @@ import { statusPills, statusWords } from '@/components/properties/status-pills';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { z } from 'zod';
 import { EmptyState } from '@/components/empty-state';
+import { RegistryEmptyState } from '@/components/registry-empty-state';
 import { FilterTabs } from '@/components/filter-tabs';
 import { MoneyDisplay } from '@/components/money/money-display';
 import { SummaryStrip } from '@/components/summary-strip';
@@ -152,13 +153,7 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
       {archivedId === null || archived === null ? null : <ArchivedPropertyToast id={archivedId} nickname={archived} />}
 
       {list.householdCount === 0 ? (
-        <EmptyState
-          icon={sectionIcons.properties}
-          title={t('empty')}
-          body={t('emptyBody')}
-          className="max-w-3xl"
-          {...(addAction === undefined ? {} : { action: addAction })}
-        />
+        <RegistryEmptyState surface="properties" ctx={{ canWrite: canEdit }} icon={sectionIcons.properties} className="max-w-3xl" />
       ) : (
         <>
           <SummaryStrip

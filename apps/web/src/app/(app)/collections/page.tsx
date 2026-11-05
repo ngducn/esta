@@ -8,6 +8,7 @@ import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { CollectionsBoard } from '@/components/collections/CollectionsBoard';
 import { EmptyState } from '@/components/empty-state';
+import { RegistryEmptyState } from '@/components/registry-empty-state';
 import { FilterTabs } from '@/components/filter-tabs';
 import { MoneyDisplay } from '@/components/money/money-display';
 import { SummaryStrip } from '@/components/summary-strip';
@@ -117,7 +118,7 @@ export default async function CollectionsPage({ searchParams }: { searchParams: 
       >
         {rows.length === 0 ? (
           <div data-testid="collections-empty" className="max-w-3xl">
-            <EmptyState title={t('empty', { month: monthLabel })} />
+            <RegistryEmptyState surface="collections" ctx={{ canWrite: canEdit }} values={{ month: monthLabel }} />
           </div>
         ) : (
           <div className="flex flex-col gap-stack">

@@ -3,6 +3,7 @@ import { getLocale, getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { AssistantHeader, assistantStatus } from '@/components/assistant/assistant-header';
 import { MarketItem } from '@/components/assistant/market-item';
+import { RegistryEmptyState } from '@/components/registry-empty-state';
 import { isLocale } from '@/i18n/locale';
 import { cn } from '@/lib/utils';
 import { loadMarket, type MarketProperty } from '@/server/agent/research';
@@ -80,9 +81,13 @@ export default async function MarketPage({ searchParams }: { searchParams: Promi
               ))}
             </ul>
           ) : selected === null && market.scanToday !== null ? null : (
-            <p data-testid="market-empty" className={card}>
-              {selected === null ? t('empty') : t('emptyFor', { property: selected.nickname })}
-            </p>
+            <div data-testid="market-empty">
+              {selected === null ? (
+                <RegistryEmptyState surface="assistantMarket" ctx={{ canWrite: true }} />
+              ) : (
+                <p className={card}>{t('emptyFor', { property: selected.nickname })}</p>
+              )}
+            </div>
           )}
         </section>
         <aside aria-labelledby="topics-heading" data-testid="topics" className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">

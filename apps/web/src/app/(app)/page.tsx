@@ -1,3 +1,4 @@
+import { readLivePropertyIds } from '@esta/ops';
 import { PageHeader } from '@/components/page-header';
 import { getTranslations } from 'next-intl/server';
 import { businessDate } from '@esta/core';
@@ -8,7 +9,9 @@ import { HomeBrief } from '@/components/home/HomeBrief';
 import { HomeMapStrip } from '@/components/home/HomeMapStrip';
 import { MonthCollection } from '@/components/home/MonthCollection';
 import { PortfolioFigure } from '@/components/home/PortfolioFigure';
+import { RegistryEmptyState } from '@/components/registry-empty-state';
 import { TodayList } from '@/components/home/TodayList';
+import { sectionIcons } from '@/components/shell/section-icons';
 import { SectionErrorBoundary } from '@/components/section-error-boundary';
 import { SkeletonHome } from '@/components/skeleton';
 import { ToastHost } from '@/components/undo-toast';
@@ -17,6 +20,7 @@ import { getClock } from '@/server/clock';
 import { env } from '@/server/env';
 import { loadHome } from '@/server/home/load';
 import { requireMember } from '@/server/member';
+import { createSessionClient } from '@/server/supabase/server';
 import { loadPortfolio } from '@/server/valuations/load';
 import { mapIslandIntl, paymentIslandIntl } from '@/server/properties/island-messages';
 import { getThemePreference } from '@/server/theme';
@@ -31,14 +35,23 @@ async function Home() {
   ]);
   const asOf = clock.today();
   const canRecord = member.role !== 'viewer';
-  const [home, portfolio, paymentIntl, mapIntl, theme, brief] = await Promise.all([
+  const [home, portfolio, paymentIntl, mapIntl, theme, brief, propertyIds] = await Promise.all([
     loadHome(member.household.id, asOf, canRecord),
     loadPortfolio(member.household.id, asOf),
     canRecord ? paymentIslandIntl() : null,
     mapIslandIntl(),
     getThemePreference(),
     latestBrief(member.household.id, clock.now()),
+    createSessionClient().then((db) => readLivePropertyIds(db, member.household.id)),
   ]);
+  if (propertyIds.length === 0) {
+    return (
+      <div className="flex flex-col gap-stack">
+        <PageHeader title={member.household.name} />
+        <RegistryEmptyState surface="home" ctx={{ canWrite: canRecord }} icon={sectionIcons.properties} className="max-w-3xl" />
+      </div>
+    );
+  }
   const todaysBrief = brief !== null && businessDate(brief.createdAt, env.ESTA_TIMEZONE) === asOf ? brief : null;
   const payment = home.payment === null || paymentIntl === null ? null : { ...home.payment, intl: paymentIntl };
 

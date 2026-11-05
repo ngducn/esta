@@ -8,7 +8,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { z } from 'zod';
 import type { IsoDate } from '@esta/core/date';
-import { EmptyState } from '@/components/empty-state';
+import { RegistryEmptyState } from '@/components/registry-empty-state';
 import { PropertyIntl } from '@/components/properties/property-intl';
 import { SummaryStrip } from '@/components/summary-strip';
 import { UnitList, type UnitLease } from '@/components/rental/unit-list';
@@ -125,7 +125,7 @@ export default async function PropertyRentalPage({ params }: { params: Promise<{
               )}
             </div>
             {rental.accounts.length === 0 ? (
-              <EmptyState title={t('accountsEmpty')} body={t('accountsEmptyBody')} icon={Plug} {...(addAccount === null ? {} : { action: addAccount })} />
+              <RegistryEmptyState surface="propertyRentalAccounts" ctx={{ canWrite: canEdit, propertyId: id }} icon={Plug} />
             ) : (
               <UtilityAccountList propertyId={id} accounts={rental.accounts} units={rental.units} canEdit={canEdit} />
             )}

@@ -1,7 +1,6 @@
 import type { ActivityEvent } from '@esta/core/activity';
-import { Archive, History, ArchiveRestore, FilePen, House, ImageUp, MapPin, MapPinOff, PenLine, Plus, Scale, Shapes, SquareDashed, Tag, Trash2, type LucideIcon } from 'lucide-react';
+import { Archive, ArchiveRestore, FilePen, House, ImageUp, MapPin, MapPinOff, PenLine, Plus, Scale, Shapes, SquareDashed, Tag, Trash2, type LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { EmptyState } from '@/components/empty-state';
 
 const eventIcons = {
   created: Plus,
@@ -25,8 +24,7 @@ const eventIcons = {
 
 export type ActivityListEntry = { readonly id: number; readonly event: ActivityEvent; readonly line: ReactNode };
 
-export function ActivityList({ entries, title, empty, emptyBody }: { entries: readonly ActivityListEntry[]; title: string; empty: string; emptyBody: string }) {
-  if (entries.length === 0) return <EmptyState icon={History} title={empty} body={emptyBody} />;
+export function ActivityList({ entries, title }: { entries: readonly ActivityListEntry[]; title: string }) {
   return (
     <section aria-labelledby="activity-title" className="rounded-lg border border-border bg-surface p-5 shadow-xs lg:p-6">
       <h2 id="activity-title" className="mb-2 text-title-3 text-text">

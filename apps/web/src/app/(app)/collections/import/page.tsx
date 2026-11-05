@@ -1,7 +1,7 @@
 import { Landmark } from 'lucide-react';
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
-import { EmptyState } from '@/components/empty-state';
+import { RegistryEmptyState } from '@/components/registry-empty-state';
 import { BackLink } from '@/components/properties/back-link';
 import { PropertyIntl } from '@/components/properties/property-intl';
 import { StatementUpload } from '@/components/statements/StatementUpload';
@@ -46,7 +46,7 @@ export default async function StatementImportPage() {
     <div className="flex flex-col gap-5">
       {heading}
       {accounts.length === 0 ? (
-        <EmptyState title={t('noAccountTitle')} body={t('noAccountBody')} icon={Landmark} action={{ label: t('noAccountAction'), href: '/collections' }} />
+        <RegistryEmptyState surface="statementImport" ctx={{ canWrite: true }} icon={Landmark} />
       ) : (
         <PropertyIntl locale={intl.locale} messages={intl.messages}>
           <StatementUpload

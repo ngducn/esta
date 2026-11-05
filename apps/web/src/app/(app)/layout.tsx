@@ -4,6 +4,7 @@ import { workerStatus } from '@esta/core/agent';
 import { formatDateLong } from '@esta/core/format';
 import { WorkerStatusLine } from '@/components/assistant/worker-status-line';
 import { BrandMark, BrandTile } from '@/components/brand-mark';
+import { SectionErrorBoundary } from '@/components/section-error-boundary';
 import { givenInitial } from '@/components/ui/avatar';
 import { AccountTrigger, AvatarMenu } from '@/components/shell/avatar-menu';
 import type { SettingGroup } from '@/components/shell/account-settings';
@@ -20,7 +21,7 @@ import { requireMember } from '@/server/member';
 import { getThemePreference, themePreferences } from '@/server/theme';
 
 export default async function AppLayout({ children }: Readonly<{ children: ReactNode }>) {
-  const [member, clock, heartbeat, locale, theme, nav, shell, settings, onboarding, app] = await Promise.all([
+  const [member, clock, heartbeat, locale, theme, nav, shell, settings, onboarding, app, failed] = await Promise.all([
     requireMember(),
     getClock(),
     getClock().then((current) => getWorkerHeartbeat(current.now())),
@@ -31,6 +32,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
     getTranslations('settings'),
     getTranslations('onboarding'),
     getTranslations('app'),
+    getTranslations('loadFailed'),
   ]);
 
   const worker = workerStatus(heartbeat, clock.now(), env.ESTA_TIMEZONE);
@@ -81,7 +83,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
               <WorkerStatusLine status={worker} />
             </div>
           ) : null}
-          {children}
+          <SectionErrorBoundary labels={{ title: failed('title'), body: failed('body'), retry: failed('retry') }}>{children}</SectionErrorBoundary>
         </main>
         <TabBar items={tabs} label={shell('sections')} />
       </div>

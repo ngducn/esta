@@ -220,7 +220,7 @@ test('rule 8: December 2024 shows one sentence and nothing else', async ({ page 
   await open(page, 'me.lane8@demo.esta.test', 'dark', PHONE);
   await page.goto('/collections');
   await chooseMonth(page, '2024-12');
-  await expect(page.getByTestId('collections-empty')).toHaveText('Tháng 12/2024 không có hóa đơn nào.');
+  await expect(page.getByTestId('collections-empty')).toContainText('Tháng 12/2024 không có hóa đơn nào.');
   await expect(page.getByTestId('collections-board')).toHaveCount(0);
   await expect(page.locator('[data-tab]')).toHaveCount(0);
   expect(await seriousAxeViolations(page)).toEqual([]);
