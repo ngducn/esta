@@ -32,6 +32,7 @@ Phase 0 makes every command below real. Keep this list accurate as the repo evol
 | `pnpm clock:set <iso>` | Set or advance the test clock to an ISO date-time with a required offset, such as `2026-10-07T09:00:00+07:00` (`pnpm clock:set off` clears it); writes only to a Supabase on 127.0.0.1 or localhost |
 | `pnpm db:start` / `pnpm db:stop` / `pnpm db:status` | Local Supabase (Docker) for the slot |
 | `pnpm db:reset` | Apply migrations and the generated `full` seed with 10 lane households; `pnpm db:reset:northstar` for the north-star variant; takes `--households N`, `--as-of <iso>` and `--variant` (`supabase/seed/README.md`) |
+| `pnpm db:reset:empty` | Migrations and reference data with no household rows, to load an export into: `node scripts/import-export.ts <zip or dir>...` loads it (local database only, one transaction) and `node scripts/row-counts.ts <zip or dir>...` prints `all tables match`; `pnpm exec tsx scripts/export-household.ts <seeded email> <dir>` writes a seeded household's export without the web app |
 | `pnpm db:checksum` / `pnpm db:seed:check` | One md5 per public table and per seeded auth table; reset twice and fail on any checksum difference (FND-7) |
 | `pnpm db:types` | Regenerate `packages/db` types |
 | `pnpm db:test` | pgTAP tests (RLS and constraints), then fails on a public table without RLS or a pgTAP file naming it; takes `supabase/tests/<name>.test.sql` paths to run only those files |

@@ -7,7 +7,7 @@ const FORMULA_START = /^[=+\-@\t\r]/;
 
 const field = (text: string) => {
   const value = FORMULA_START.test(text) ? `'${text}` : text;
-  return /[",\r\n]/.test(value) ? `"${value.replaceAll('"', '""')}"` : value;
+  return /[",;\r\n]/.test(value) ? `"${value.replaceAll('"', '""')}"` : value;
 };
 
 /** Only text gets the formula guard: money and counts are numbers, so a negative amount keeps its minus sign. */
@@ -18,3 +18,16 @@ export function toCsv(table: ExportTable): string {
   const lines = [table.columns.map((column) => field(column.label)), ...[...table.rows, table.totals].map((row) => row.cells.map(cell))];
   return BOM + lines.map((line) => `${line.join(',')}\r\n`).join('');
 }
+
+const record = (value: unknown): string => {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  return field(typeof value === 'string' ? value : JSON.stringify(value));
+};
+
+export const csvHead = (columns: readonly string[]): string => `${BOM}${columns.map(field).join(',')}\r\n`;
+
+export const csvRows = (columns: readonly string[], rows: readonly Readonly<Record<string, unknown>>[]): string =>
+  rows.map((row) => `${columns.map((column) => record(row[column])).join(',')}\r\n`).join('');
+
+export const recordsToCsv = (columns: readonly string[], rows: readonly Readonly<Record<string, unknown>>[]): string => csvHead(columns) + csvRows(columns, rows);

@@ -5,6 +5,7 @@ import { IntentLink } from '@/components/shell/intent-link';
 import { PageHeader } from '@/components/page-header';
 import { sectionMetadata } from '@/components/shell/section-page';
 import { AssistantSection } from '@/components/settings/assistant-section';
+import { DataSection } from '@/components/settings/data-section';
 import { HouseholdSection } from '@/components/settings/household-section';
 import { MembersSection } from '@/components/settings/members-section';
 import { ReceivingAccounts } from '@/components/settings/receiving-accounts';
@@ -35,6 +36,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
       <MembersSection member={member} />
       <ReceivingAccounts member={member} />
       <AssistantSection member={member} />
+      <DataSection member={member} />
       <DisplaySettingsForm
         settings={{ locale, textScale: member.textScale, density: member.density, theme }}
         status={parseStatus(status)}

@@ -14,6 +14,7 @@ describe('parseEnv', () => {
       ...required,
       EMAIL_TRANSPORT: 'smtp',
       ESTA_SIGNED_URL_TTL_SECONDS: 300,
+      ESTA_EXPORT_PART_MB: 45,
       ESTA_GOOGLE_AUTH: 'off',
       ESTA_ENV: 'development',
       ESTA_TIMEZONE: 'Asia/Ho_Chi_Minh',
