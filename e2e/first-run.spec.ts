@@ -74,7 +74,25 @@ test('each step opens its section on Cài đặt, scrolled into view on a phone'
   }
 });
 
-test('at 130% text a row title keeps its width and the button drops under it', async ({ page }) => {
+async function rowLayout(page: Page, index: number) {
+  const row = steps(page).nth(index);
+  await expect(row.getByTestId('first-run-action')).toBeVisible();
+  const title = await row.locator('span').nth(1).boundingBox();
+  const action = await row.getByTestId('first-run-action').boundingBox();
+  return { title, action };
+}
+
+test('at 100% text every action button sits beside its title', async ({ page }, testInfo) => {
+  await newHousehold(page);
+  await expect(steps(page)).toHaveCount(3);
+  for (let index = 0; index < 3; index += 1) {
+    const { title, action } = await rowLayout(page, index);
+    expect(action?.y ?? Infinity, `row ${index}: the button shares its title's line`).toBeLessThan((title?.y ?? 0) + (title?.height ?? 0));
+  }
+  await page.screenshot({ path: testInfo.outputPath('first-run-100.png') });
+});
+
+test('at 130% text a row title keeps its width and the button drops under it', async ({ page }, testInfo) => {
   await newHousehold(page);
   const [member] = await memberRest<{ id: string }[]>(page, 'GET', 'household_members?select=id');
   await memberRest(page, 'PATCH', `household_members?id=eq.${member?.id}`, { text_scale: 130 });
@@ -84,7 +102,9 @@ test('at 130% text a row title keeps its width and the button drops under it', a
   await expect(title).toBeVisible();
   const lineHeight = await title.evaluate((node) => parseFloat(getComputedStyle(node).lineHeight));
   expect((await title.boundingBox())?.height ?? Infinity, 'the title wraps by phrase, not one word per line').toBeLessThanOrEqual(lineHeight * 2.2);
-  await page.screenshot({ path: '/tmp/owner-p6-03a/first-run-130.png' });
+  const { title: box, action } = await rowLayout(page, 1);
+  expect(action?.y ?? 0, 'the button drops under the title').toBeGreaterThanOrEqual((box?.y ?? Infinity) + (box?.height ?? 0));
+  await page.screenshot({ path: testInfo.outputPath('first-run-130.png') });
 });
 
 test('an invite counts as done the moment it is sent, before it is claimed', async ({ page }) => {

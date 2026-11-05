@@ -49,7 +49,7 @@ export function FirstRunChecklist({ rows, labels }: { rows: readonly FirstRunRow
             >
               {row.done ? <Check className="size-4" strokeWidth={2.4} /> : null}
             </span>
-            <span className={cn('min-w-0 flex-1 basis-40 text-body break-words', row.done ? 'text-text-muted' : 'text-text')}>
+            <span className={cn('min-w-0 flex-1 basis-32 text-body break-words', row.done ? 'text-text-muted' : 'text-text')}>
               {row.title}
               {row.done ? <span className="sr-only"> {labels.done}</span> : null}
             </span>
