@@ -11,6 +11,7 @@ import { UndoBatchRow } from '@/components/history/undo-batch-row';
 import { BackLink } from '@/components/properties/back-link';
 import { PropertyIntl } from '@/components/properties/property-intl';
 import { env } from '@/server/env';
+import { RegistryEmptyState } from '@/components/registry-empty-state';
 import { requireMember } from '@/server/member';
 import { historyIslandIntl } from '@/server/properties/island-messages';
 import { createSessionClient } from '@/server/supabase/server';
@@ -49,7 +50,7 @@ export default async function ChangeHistoryPage() {
         <p className="max-w-prose text-text-secondary">{t('intro')}</p>
       </div>
       {batches.length === 0 ? (
-        <p className="max-w-3xl rounded-lg border border-border bg-surface p-5 text-body text-text-secondary shadow-xs">{t('empty')}</p>
+        <RegistryEmptyState surface="settingsHistory" ctx={{ canWrite: true }} className="max-w-3xl" />
       ) : (
         <PropertyIntl locale={intl.locale} messages={intl.messages}>
           <ul data-testid="batch-list" className="flex max-w-3xl flex-col divide-y divide-border rounded-lg border border-border bg-surface shadow-xs">

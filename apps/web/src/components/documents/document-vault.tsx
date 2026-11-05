@@ -1,10 +1,12 @@
 'use client';
 
 import { FilePlus2, FileText, Upload } from 'lucide-react';
+import { sectionIcons } from '@/components/shell/section-icons';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { lazy, useState, type DragEvent, type ReactNode } from 'react';
+import { emptyState, looseTranslate } from '@/app/empty-states';
 import { EmptyState } from '@/components/empty-state';
 import { StatusShape, statusBadge, statusMarks } from '@/components/status-shape';
 import { Button } from '@/components/ui/button';
@@ -162,6 +164,24 @@ export function DocumentVault({
     });
   };
 
+  const uploadButton = (label: string) => (
+    <Button
+      id="upload"
+      data-testid="add-document"
+      disabled={!hydrated}
+      {...upload.triggerProps}
+      onClick={() => {
+        setDroppedFile(null);
+        upload.triggerProps.onClick();
+      }}
+    >
+      <FilePlus2 aria-hidden="true" />
+      {label}
+    </Button>
+  );
+  const surface = scope.kind === 'property' ? 'propertyDocuments' : 'documents';
+  const empty = emptyState(surface, looseTranslate(t), { canWrite: canEdit });
+
   return (
     <section aria-labelledby={scope.kind === 'property' ? 'documents-title' : undefined} data-testid="documents" className="flex flex-col gap-5">
       {scope.kind === 'property' ? (
@@ -169,21 +189,7 @@ export function DocumentVault({
           <h2 id="documents-title" className="text-title-3 text-text">
             {t('tabTitle')}
           </h2>
-          {uploads ? (
-            <Button
-              id="upload"
-              data-testid="add-document"
-              disabled={!hydrated}
-              {...upload.triggerProps}
-              onClick={() => {
-                setDroppedFile(null);
-                upload.triggerProps.onClick();
-              }}
-            >
-              <FilePlus2 aria-hidden="true" />
-              {t('add')}
-            </Button>
-          ) : null}
+          {uploads && tiles.length > 0 ? uploadButton(t('add')) : null}
         </div>
       ) : null}
       {uploads ? (
@@ -208,11 +214,16 @@ export function DocumentVault({
       {tiles.length === 0 ? (
         <EmptyState
           icon={FileText}
-          title={t('empty')}
-          body={scope.kind === 'household' ? t('emptyBody') : t('emptyBodyProperty')}
+          title={empty.title}
           testId="documents-empty"
+          surface={surface}
           className="max-w-3xl"
-          {...(scope.kind === 'household' && canEdit ? { action: { label: t('emptyAction'), href: '/properties', icon: FilePlus2, testId: 'add-document' } } : {})}
+          {...(empty.body === undefined ? {} : { body: empty.body })}
+          {...(empty.action === undefined
+            ? {}
+            : empty.action.href === null
+              ? { cta: uploadButton(empty.action.label) }
+              : { action: { label: empty.action.label, href: empty.action.href, icon: sectionIcons.properties, testId: 'add-document' } })}
         />
       ) : (
         <>

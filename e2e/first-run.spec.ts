@@ -31,8 +31,9 @@ test('a new household sees three steps, adds a property, hides the guide and und
   await expect(page.getByTestId('first-run-action').nth(0)).toHaveAttribute('href', '/properties/new');
   await expect(page.getByTestId('first-run-action').nth(1)).toHaveAttribute('href', '/settings#accounts');
   await expect(page.getByTestId('first-run-action').nth(2)).toHaveAttribute('href', '/settings#members');
-  const box = await page.getByRole('heading', { name: /Đã thu tháng/ }).boundingBox();
-  expect(box?.y ?? Infinity, 'the stat cards stay on the first phone screen').toBeLessThan(PHONE.height);
+  await expect(page.locator('[data-surface="home"]'), 'the guide stands in for the empty message').toHaveCount(0);
+  const box = await checklist(page).boundingBox();
+  expect((box?.y ?? Infinity) + (box?.height ?? Infinity), 'the whole guide fits the first phone screen').toBeLessThan(PHONE.height);
   expect(await seriousAxeViolations(page)).toEqual([]);
 
   await startWizard(page, { nickname: 'Nhà Đầu Tiên Demo', kind: 'townhouse', photo: null });

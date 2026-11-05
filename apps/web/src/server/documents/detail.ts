@@ -42,13 +42,14 @@ export async function loadDocumentPage(documentId: string): Promise<DocumentPage
   if (!z.uuid().safeParse(documentId).success) return null;
   const member = await requireMember();
   const supabase = await createSessionClient();
-  const { data: row } = await supabase
+  const { data: row, error } = await supabase
     .from('documents')
     .select('id, title, category, mime, page_count, property_id, expires_on, tags, properties(nickname)')
     .eq('household_id', member.household.id)
     .eq('id', documentId)
     .is('deleted_at', null)
     .maybeSingle();
+  if (error) throw new Error(`Reading the document failed: ${error.message}`);
   if (row === null || !isDocumentCategory(row.category)) return null;
   const [fileUrl, previews, statuses, properties, clock, t, locale] = await Promise.all([
     openDocument(documentId, 'view'),
@@ -59,6 +60,7 @@ export async function loadDocumentPage(documentId: string): Promise<DocumentPage
     getTranslations('documents'),
     getLocale(),
   ]);
+  if (properties.error) throw new Error(`Reading the properties failed: ${properties.error.message}`);
   const expiresOn = row.expires_on !== null && isIsoDate(row.expires_on) ? row.expires_on : null;
   const expiry = documentExpiry(expiresOn, clock.today());
   const expiryText =

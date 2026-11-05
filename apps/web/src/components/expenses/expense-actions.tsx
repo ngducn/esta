@@ -11,7 +11,7 @@ import { useOpenExpense, warmExpenseSheet } from './expense-host';
  * on the Thu chi tab; elsewhere both stay outline so each tab keeps its own primary action. Both wait for hydration:
  * a photo taken before React owns the input would come back to no change handler and be lost.
  */
-export function ExpenseActions({ labels, primary = false }: { labels: { add: string; photo: string }; primary?: boolean }) {
+export function ExpenseActions({ labels, primary = false, withPhoto = true }: { labels: { add: string; photo: string }; primary?: boolean; withPhoto?: boolean }) {
   const open = useOpenExpense();
   const hydrated = useHydrated();
   return (
@@ -23,34 +23,38 @@ export function ExpenseActions({ labels, primary = false }: { labels: { add: str
         onPointerDown={warmExpenseSheet}
         disabled={!hydrated}
         onClick={() => open({ kind: 'new', receipt: null })}
-        className={buttonVariants({ variant: primary ? 'primary' : 'secondary' })}
+        className={buttonVariants({
+          variant: primary ? 'primary' : 'secondary',
+        })}
       >
         <Plus aria-hidden="true" />
         {labels.add}
       </button>
-      <label
-        className={buttonVariants({
-          variant: 'secondary',
-          className: 'relative cursor-pointer has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus-ring',
-        })}
-        onPointerDown={warmExpenseSheet}
-      >
-        <Camera aria-hidden="true" />
-        {labels.photo}
-        <input
-          type="file"
-          accept="image/*"
-          capture="environment"
-          data-testid="receipt-camera"
-          disabled={!hydrated}
-          className="absolute inset-0 cursor-pointer opacity-0"
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            event.target.value = '';
-            if (file !== undefined) open({ kind: 'new', receipt: file });
-          }}
-        />
-      </label>
+      {withPhoto ? (
+        <label
+          className={buttonVariants({
+            variant: 'secondary',
+            className: 'relative cursor-pointer has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-focus-ring',
+          })}
+          onPointerDown={warmExpenseSheet}
+        >
+          <Camera aria-hidden="true" />
+          {labels.photo}
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            data-testid="receipt-camera"
+            disabled={!hydrated}
+            className="absolute inset-0 cursor-pointer opacity-0"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              event.target.value = '';
+              if (file !== undefined) open({ kind: 'new', receipt: file });
+            }}
+          />
+        </label>
+      ) : null}
     </div>
   );
 }

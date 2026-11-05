@@ -1,7 +1,8 @@
 import { formatCell, numberOf } from '@esta/core/export';
 import { FileSpreadsheet } from 'lucide-react';
 import { getLocale, getTranslations } from 'next-intl/server';
-import { EmptyState } from '@/components/empty-state';
+import { RegistryEmptyState } from '@/components/registry-empty-state';
+import type { EmptySurface } from '@/app/empty-states';
 import { EstimatePill } from '@/components/estimate-pill';
 import { FilterTabs } from '@/components/filter-tabs';
 import { MoneyDisplay } from '@/components/money/money-display';
@@ -15,9 +16,18 @@ import { getClock } from '@/server/clock';
 import { queryParam } from '@/server/documents/vault';
 import { loadLedgerYears } from '@/server/ledger/load';
 import { requireMember } from '@/server/member';
-import { isReportKind, loadReport, REPORTS } from '@/server/reports/load';
+import { isReportKind, loadReport, REPORTS, type ReportKind } from '@/server/reports/load';
 
 export const generateMetadata = () => sectionMetadata('reports');
+
+const REPORT_EMPTY: Readonly<Record<ReportKind, EmptySurface>> = {
+  pnl: 'reportsPnl',
+  owners: 'reportsOwners',
+  'rent-roll': 'reportsRentRoll',
+  collections: 'reportsCollections',
+  occupancy: 'reportsOccupancy',
+  portfolio: 'reportsPortfolio',
+};
 
 export default async function ReportsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const [query, member, clock, nav, t, locale] = await Promise.all([searchParams, requireMember(), getClock(), getTranslations('nav'), getTranslations('reports'), getLocale()]);
@@ -44,7 +54,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
   return (
     <div className="flex flex-col gap-stack">
       <PageHeader title={nav('reports')} meta={<p>{t('lead')}</p>} />
-      {view.empty === null && figures.length >= 2 ? <SummaryStrip label={t('stripLabel')} unknownLabel={t('none')} figures={figures.slice(0, 4)} /> : null}
+      {!view.empty && figures.length >= 2 ? <SummaryStrip label={t('stripLabel')} unknownLabel={t('none')} figures={figures.slice(0, 4)} /> : null}
       <div className="flex flex-wrap items-center gap-2 lg:gap-3">
         <ReportPicker current={kind} />
         {years.length < 2 ? null : (
@@ -65,13 +75,13 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
           </div>
           <p className="text-body text-text-secondary">{view.basis}</p>
         </div>
-        {view.empty === null ? (
+        {!view.empty ? (
           <>
             <ReportTable table={table} caption={view.title} {...(view.strong === null ? {} : { strong: view.strong })} />
             <ReportDownloads failedLabel={t('downloadFailed')} downloads={downloads} />
           </>
         ) : (
-          <EmptyState icon={FileSpreadsheet} title={view.empty} testId="report-empty" className="border-0 shadow-none" />
+          <RegistryEmptyState surface={REPORT_EMPTY[kind]} ctx={{ canWrite: true }} values={{ year }} icon={FileSpreadsheet} className="border-0 shadow-none" />
         )}
       </section>
     </div>

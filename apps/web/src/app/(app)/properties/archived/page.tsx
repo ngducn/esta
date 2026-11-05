@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
+import { RegistryEmptyState } from '@/components/registry-empty-state';
 import { RestoreButton } from '@/components/properties/archive-button';
 import { BackLink } from '@/components/properties/back-link';
 import { kindIcons } from '@/components/properties/kind-icons';
@@ -26,7 +27,7 @@ export default async function ArchivedPropertiesPage() {
       <BackLink href="/properties" label={nav('properties')} />
       <h1 className="text-title-2 break-words lg:text-title-1">{t('archivedTitle')}</h1>
       {archived.length === 0 ? (
-        <p className="rounded-lg border border-border bg-surface p-5 text-body text-text-secondary shadow-xs">{t('archivedEmpty')}</p>
+        <RegistryEmptyState surface="propertiesArchived" ctx={{ canWrite: member.role !== 'viewer' }} className="max-w-3xl" />
       ) : (
         <PropertyIntl locale={intl.locale} messages={intl.messages}>
           <ul data-testid="archived-list" className="flex max-w-3xl flex-col divide-y divide-border rounded-lg border border-border bg-surface shadow-xs">

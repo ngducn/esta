@@ -156,7 +156,7 @@ export type ReportView = {
   readonly title: string;
   readonly basis: string;
   readonly estimate: string | null;
-  readonly empty: string | null;
+  readonly empty: boolean;
   readonly strong: string | null;
   readonly sheet: string;
   readonly file: string;
@@ -178,7 +178,7 @@ export async function loadReport(householdId: string, kind: ReportKind, year: nu
     title: t(`${report.key}Title`, { year, date: formatDate(periodThrough(snapshot), locale) }),
     basis: t(`${report.key}Basis`),
     estimate: report.estimate === null ? null : t(report.estimate),
-    empty: report.empty(snapshot) ? t(`${report.key}Empty`, { year }) : null,
+    empty: report.empty(snapshot),
     strong: report.strong,
     sheet: t(`${report.key}Sheet`, { year }),
     file: report.file(year, today),

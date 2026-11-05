@@ -1,8 +1,11 @@
 import { activityTime, describeActivity, type ActivityActor } from '@esta/core/activity';
 import { getTranslations } from 'next-intl/server';
 import { notFound } from 'next/navigation';
+import { History } from 'lucide-react';
+import { RegistryEmptyState } from '@/components/registry-empty-state';
 import { ActivityList, type ActivityListEntry } from '@/components/properties/activity-list';
 import { env } from '@/server/env';
+import { requireMember } from '@/server/member';
 import { loadPropertyActivity, loadPropertyDetail } from '@/server/properties/detail';
 import { PropertyDetailFrame } from '../detail-frame';
 
@@ -10,7 +13,7 @@ export default async function PropertyActivityPage({ params }: { params: Promise
   const { id } = await params;
   const property = await loadPropertyDetail(id);
   if (property === null) notFound();
-  const [t, rows] = await Promise.all([getTranslations('propertyDetail'), loadPropertyActivity(id)]);
+  const [t, rows, member] = await Promise.all([getTranslations('propertyDetail'), loadPropertyActivity(id), requireMember()]);
 
   const actorLabel = (actor: ActivityActor) =>
     actor.kind === 'member' ? (actor.name ?? t('actor', { actor: 'member' })) : t('actor', { actor: actor.kind });
@@ -38,7 +41,11 @@ export default async function PropertyActivityPage({ params }: { params: Promise
 
   return (
     <PropertyDetailFrame property={property} tab="activity">
-      <ActivityList entries={entries} title={t('activityTitle')} empty={t('activityEmpty')} emptyBody={t('activityEmptyBody')} />
+      {entries.length === 0 ? (
+        <RegistryEmptyState surface="propertyActivity" ctx={{ canWrite: member.role !== 'viewer', propertyId: id }} icon={History} />
+      ) : (
+        <ActivityList entries={entries} title={t('activityTitle')} />
+      )}
     </PropertyDetailFrame>
   );
 }
