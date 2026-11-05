@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Browser, type Page } from '@playwright/test';
 import { strFromU8, unzipSync } from 'fflate';
 import { randomUUID } from 'node:crypto';
 import sharp from 'sharp';
@@ -19,6 +19,18 @@ const ME = `ryan.lane${LANE}@demo.esta.test`;
 test.beforeEach(() => {
   test.skip(test.info().project.name !== 'desktop' && !test.info().title.includes('phone'), 'one viewport reads the same rows');
 });
+
+async function asViewer(page: Page, browser: Browser, viewport: { width: number; height: number }, check: (viewer: Page) => Promise<void>) {
+  const invited = `viewer.party.lane${LANE}@demo.esta.test`;
+  await serviceUpsert(page, 'household_members', { household_id: HOUSEHOLD, invited_email: invited, role: 'viewer' }).catch(() => undefined);
+  const viewer = await browser.newPage();
+  try {
+    await open(viewer, invited, 'light', viewport);
+    await check(viewer);
+  } finally {
+    await viewer.close();
+  }
+}
 
 const partyNamed = (name: string) => {
   const [row] = query<{ id: string }>(workdir, `select id::text as id from public.parties where household_id = '${HOUSEHOLD}' and full_name = '${name}'`);
@@ -81,16 +93,10 @@ test('the tenant page offers the export and answers 404 to a viewer and to a per
   expect((await page.goto(`/tenants/${stranger}`))?.status()).toBe(404);
   expect((await page.request.post(`/api/export/party/${stranger}`)).status()).toBe(404);
 
-  const invited = `viewer.party.lane${LANE}@demo.esta.test`;
-  await serviceUpsert(page, 'household_members', { household_id: HOUSEHOLD, invited_email: invited, role: 'viewer' }).catch(() => undefined);
-  const viewer = await browser.newPage();
-  try {
-    await open(viewer, invited, 'light', DESKTOP);
+  await asViewer(page, browser, DESKTOP, async (viewer) => {
     expect((await viewer.goto(`/tenants/${tenant}`))?.status()).toBe(404);
     expect((await viewer.request.post(`/api/export/party/${tenant}`)).status()).toBe(403);
-  } finally {
-    await viewer.close();
-  }
+  });
 });
 
 test('erasing is refused with a way forward while a lease runs or a deposit is held, and nothing changes', async ({ page }) => {
@@ -168,20 +174,14 @@ test('an erase that stopped before the files went hides them from a viewer, and 
   await serviceUpsert(page, 'parties', { id, household_id: HOUSEHOLD, kind: 'individual', full_name: 'Đã xóa', tags: ['tenant'] });
   const upload = await page.request.post(`${rest.replace('/rest/v1', '/storage/v1')}/object/documents/${name}`, { headers: { ...service, 'content-type': 'image/jpeg' }, data: Buffer.from('jpeg') });
   expect(upload.ok(), await upload.text()).toBe(true);
-  query(workdir, `insert into private.file_removals (name, household_id, party_id) values ('${name}', '${HOUSEHOLD}', '${id}')`);
+  query(workdir, `insert into private.file_removals (name, household_id, party_id) values ('${name}', '${HOUSEHOLD}', '${id}') returning 1`);
   const stored = () => query<{ n: number }>(workdir, `select count(*)::int as n from storage.objects where bucket_id = 'documents' and name = '${name}'`)[0]?.n;
   expect(stored()).toBe(1);
 
-  const invited = `viewer.party.lane${LANE}@demo.esta.test`;
-  await serviceUpsert(page, 'household_members', { household_id: HOUSEHOLD, invited_email: invited, role: 'viewer' }).catch(() => undefined);
-  const viewer = await browser.newPage();
-  try {
-    await open(viewer, invited, 'light', PHONE);
+  await asViewer(page, browser, PHONE, async (viewer) => {
     const read = await viewer.request.get(`${rest.replace('/rest/v1', '/storage/v1')}/object/authenticated/documents/${name}`, { headers: { authorization: `Bearer ${await accessToken(viewer)}`, apikey: service.apikey ?? '' } });
     expect(read.status(), 'a viewer gets no file').toBeGreaterThanOrEqual(400);
-  } finally {
-    await viewer.close();
-  }
+  });
 
   await page.goto(`/tenants/${id}`);
   await expect(page.getByTestId('tenant-erased')).toBeVisible();

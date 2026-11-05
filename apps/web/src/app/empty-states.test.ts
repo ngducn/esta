@@ -80,6 +80,7 @@ const ROUTES: Readonly<Record<string, readonly EmptySurface[] | string>> = {
   reports: ['reportsPnl', 'reportsRentRoll', 'reportsCollections', 'reportsOwners', 'reportsOccupancy', 'reportsPortfolio'],
   'reports/tax': ['taxNoOwners'],
   'settings/history': ['settingsHistory'],
+  'tenants/[partyId]': 'a tenant always has a name, contact details and the export; a person with no lease reads one plain sentence',
   settings: ['settingsAccounts'],
 };
 

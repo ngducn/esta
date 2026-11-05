@@ -29,6 +29,12 @@ export default async function TenantPage({ params }: { params: Params }) {
     { key: 'address', label: t('address'), value: tenant.addressText },
     { key: 'notes', label: t('notes'), value: tenant.notes },
   ];
+  const refusals = {
+    active_lease: t('refusal', { reason: 'active_lease', name }),
+    deposit_held: t('refusal', { reason: 'deposit_held', name }),
+    files_left: t('refusal', { reason: 'files_left', name }),
+    failed: t('refusal', { reason: 'other', name }),
+  };
   const labels: TenantActionLabels = {
     export: {
       start: t('exportStart'),
@@ -52,12 +58,7 @@ export default async function TenantPage({ params }: { params: Params }) {
       confirm: t('finishConfirm'),
       cancel: t('eraseCancel'),
       working: t('eraseWorking'),
-      refusals: {
-        active_lease: t('refusal', { reason: 'active_lease', name }),
-        deposit_held: t('refusal', { reason: 'deposit_held', name }),
-        files_left: t('refusal', { reason: 'files_left', name }),
-        failed: t('refusal', { reason: 'other', name }),
-      },
+      refusals,
     },
     erase: {
       question: t('eraseQuestion', { name }),
@@ -65,12 +66,7 @@ export default async function TenantPage({ params }: { params: Params }) {
       confirm: t('eraseConfirm'),
       cancel: t('eraseCancel'),
       working: t('eraseWorking'),
-      refusals: {
-        active_lease: t('refusal', { reason: 'active_lease', name }),
-        deposit_held: t('refusal', { reason: 'deposit_held', name }),
-        files_left: t('refusal', { reason: 'files_left', name }),
-        failed: t('refusal', { reason: 'other', name }),
-      },
+      refusals,
     },
   };
   return (
