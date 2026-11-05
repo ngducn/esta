@@ -1,5 +1,6 @@
 'use client';
 
+import type { Result } from '@esta/core/result';
 import { Download, FileArchive } from 'lucide-react';
 import { useState } from 'react';
 import { z } from 'zod';
@@ -23,13 +24,11 @@ export type DataExportLabels = {
 };
 
 type Stage = { readonly kind: 'idle' } | { readonly kind: 'ready'; readonly parts: Parts } | { readonly kind: 'failed' };
-type Answer = { readonly ok: true; readonly parts: Parts } | { readonly ok: false };
-
-async function requestExport(): Promise<Answer> {
+async function requestExport(): Promise<Result<Parts>> {
   const response = await fetch('/api/export', { method: 'POST' });
-  if (!response.ok) return { ok: false };
+  if (!response.ok) return { ok: false, reason: 'refused' };
   const parsed = exportSchema.safeParse(await response.json());
-  return parsed.success ? { ok: true, parts: parsed.data.parts } : { ok: false };
+  return parsed.success ? { ok: true, value: parsed.data.parts } : { ok: false, reason: 'unreadable' };
 }
 
 const fill = (template: string, values: Readonly<Record<string, number>>) => template.replace(/\{(\w+)\}/g, (match, key: string) => String(values[key] ?? match));
@@ -38,7 +37,7 @@ const fill = (template: string, values: Readonly<Record<string, number>>) => tem
 export function DataExport({ labels }: { labels: DataExportLabels }) {
   const [stage, setStage] = useState<Stage>({ kind: 'idle' });
   const { pending, run } = useAction();
-  const start = () => run(requestExport, (answer) => setStage(answer.ok ? { kind: 'ready', parts: answer.parts } : { kind: 'failed' }), { ok: false } as const);
+  const start = () => run(requestExport, (answer) => setStage(answer.ok ? { kind: 'ready', parts: answer.value } : { kind: 'failed' }));
 
   return (
     <div className="flex flex-col items-start gap-3">

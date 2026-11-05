@@ -1,12 +1,12 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { EXPORT_TABLES } from '@esta/core/export';
-import { parseInstant } from '@esta/core';
+import { isoDate, parseInstant } from '@esta/core';
 import { describe, expect, it } from 'vitest';
 import type { EntryData, ExportSink } from './sink';
 import { writeExport } from './writeExport';
 
 const HOUSEHOLD = '00000000-0000-4000-8000-0000000000aa';
-const clock = { source: 'table', now: () => parseInstant('2026-10-07T02:00:00Z'), today: () => '2026-10-07' } as const;
+const clock = { source: 'table', now: () => parseInstant('2026-10-07T02:00:00Z'), today: () => isoDate('2026-10-07') } as const;
 
 const decoder = new TextDecoder('utf-8', { ignoreBOM: true });
 

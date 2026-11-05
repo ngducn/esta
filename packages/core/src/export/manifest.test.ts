@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { parseInstant } from '../clock/resolve';
+import { isoDate } from '../date/iso-date';
 import { buildManifest, EXPORT_SCHEMA_VERSION } from './manifest';
 
-const clock = { source: 'table', now: () => parseInstant('2026-10-07T02:00:00Z'), today: () => '2026-10-07' } as const;
+const clock = { source: 'table', now: () => parseInstant('2026-10-07T02:00:00Z'), today: () => isoDate('2026-10-07') } as const;
 
 describe('buildManifest', () => {
   const manifest = buildManifest({

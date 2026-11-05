@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { EXPORT_TABLES } from './tables';
 
@@ -6,7 +7,7 @@ const GENERATED_COLUMNS: Readonly<Record<string, readonly string[]>> = { documen
 
 /** Every table and its Row columns from the generated types, the way `pnpm db:types` wrote them. */
 function generatedTables(): ReadonlyMap<string, readonly string[]> {
-  const source = readFileSync(new URL('../../../db/src/database.types.ts', import.meta.url), 'utf8');
+  const source = readFileSync(join(import.meta.dirname, '../../../db/src/database.types.ts'), 'utf8');
   const publicSchema = source.slice(source.indexOf('  public: {'));
   const tables = publicSchema.slice(publicSchema.indexOf('Tables: {'), publicSchema.indexOf('Views: {'));
   const found = new Map<string, readonly string[]>();
