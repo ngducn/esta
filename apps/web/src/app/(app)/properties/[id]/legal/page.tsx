@@ -12,6 +12,7 @@ import { OwnershipSheet } from '@/components/legal/ownership-sheet';
 import { ParcelList, ParcelTotal } from '@/components/legal/parcel-list';
 import { StructureList } from '@/components/legal/structure-list';
 import { PropertyIntl } from '@/components/properties/property-intl';
+import { SummaryStrip, type Figure } from '@/components/summary-strip';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { requireMember } from '@/server/member';
 import { loadPropertyDetail } from '@/server/properties/detail';
@@ -56,6 +57,9 @@ function Section({
   );
 }
 
+const countFigure = (label: string, count: number, value: (count: number) => string, none: string): Figure =>
+  count === 0 ? { label, value: null, sub: none } : { label, value: value(count) };
+
 export default async function PropertyLegalPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const property = await loadPropertyDetail(id);
@@ -94,6 +98,15 @@ export default async function PropertyLegalPage({ params }: { params: Promise<{ 
   return (
     <PropertyDetailFrame property={property} tab="legal">
       <FocusAnchor />
+      <SummaryStrip
+        label={t('stripLabel')}
+        unknownLabel={t('unknownFigure')}
+        figures={[
+          countFigure(t('figureCertificates'), legal.certificates.length, (count) => t('figureCertificatesValue', { count }), t('figureSubNone')),
+          countFigure(t('figureParcels'), legal.parcels.length, (count) => t('figureParcelsValue', { count }), t('figureSubNone')),
+          countFigure(t('figureStructures'), legal.structures.length, (count) => t('figureStructuresValue', { count }), t('figureSubNone')),
+        ]}
+      />
       <PropertyIntl locale={locale} messages={{ components: { date }, propertyLegal: partyMessages, propertyOwners: messages.propertyOwners }}>
         <div className="grid gap-8 lg:grid-cols-2 lg:items-start">
           <div className="flex flex-col gap-8">

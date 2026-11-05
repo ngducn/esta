@@ -665,7 +665,16 @@
     "errorInvalid": "Còn ô chưa đúng. Sửa các ô có thông báo đỏ rồi lưu lại.",
     "errorNetwork": "Chưa lưu được. Kiểm tra kết nối rồi thử lại.",
     "formLoading": "Đang chuẩn bị biểu mẫu",
-    "itemName": "{kind, select, parcels {{name, select, none {thửa đất chưa có số} other {thửa đất số {name}}}} structures {{name}} other {{name, select, none {giấy chứng nhận} other {giấy chứng nhận số {name}}}}}"
+    "itemName": "{kind, select, parcels {{name, select, none {thửa đất chưa có số} other {thửa đất số {name}}}} structures {{name}} other {{name, select, none {giấy chứng nhận} other {giấy chứng nhận số {name}}}}}",
+    "stripLabel": "Tóm tắt giấy tờ pháp lý",
+    "figureCertificates": "Giấy chứng nhận",
+    "figureCertificatesValue": "{count} sổ",
+    "figureParcels": "Thửa đất",
+    "figureParcelsValue": "{count} thửa",
+    "figureStructures": "Công trình trên đất",
+    "figureStructuresValue": "{count} công trình",
+    "figureSubNone": "Thêm ở bên dưới",
+    "unknownFigure": "Chưa có số liệu"
   },
   "propertyRental": {
     "unitsTitle": "Phòng và đơn vị cho thuê",

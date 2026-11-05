@@ -665,7 +665,16 @@
     "errorInvalid": "Some fields are not right. Fix the fields marked in red and save again.",
     "errorNetwork": "Could not save. Check the connection and try again.",
     "formLoading": "Preparing the form",
-    "itemName": "{kind, select, parcels {{name, select, none {the parcel without a number} other {parcel {name}}}} structures {{name}} other {{name, select, none {the certificate} other {certificate {name}}}}}"
+    "itemName": "{kind, select, parcels {{name, select, none {the parcel without a number} other {parcel {name}}}} structures {{name}} other {{name, select, none {the certificate} other {certificate {name}}}}}",
+    "stripLabel": "Legal papers summary",
+    "figureCertificates": "Certificates",
+    "figureCertificatesValue": "{count, plural, one {# certificate} other {# certificates}}",
+    "figureParcels": "Land parcels",
+    "figureParcelsValue": "{count, plural, one {# parcel} other {# parcels}}",
+    "figureStructures": "Buildings on the land",
+    "figureStructuresValue": "{count, plural, one {# building} other {# buildings}}",
+    "figureSubNone": "Add one below",
+    "unknownFigure": "No figure yet"
   },
   "propertyRental": {
     "unitsTitle": "Units for rent",
