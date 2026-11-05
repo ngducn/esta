@@ -4,10 +4,10 @@ import { ANNOTATION_KINDS, type Annotation } from '@esta/core/schemas/legal';
 import { Plus, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { DateInput } from '@/components/date-input';
+import { dateInputProps, dateReading, type DateReading } from '@/components/use-date-field';
 import { TextField } from '@/components/form-parts';
 import { FormSelect } from '@/components/properties/address-picker';
 import { Button } from '@/components/ui/button';
-import { dateInputProps, dateReading, type DateReading } from '@/components/use-date-field';
 
 export type AnnotationDraft = { readonly key: number; readonly date: DateReading; readonly text: string; readonly kind: string };
 

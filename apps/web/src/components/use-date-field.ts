@@ -6,7 +6,6 @@ export type DateReading = { readonly value: IsoDate | null; readonly unreadable:
 
 export const dateReading = (value: IsoDate | null): DateReading => ({ value, unreadable: false });
 
-/** Props for `DateInput` that fill `reading` as Mẹ types. */
 export function dateInputProps(reading: DateReading, onChange: (reading: DateReading) => void) {
   return {
     ...(reading.value === null ? {} : { defaultValue: reading.value }),
