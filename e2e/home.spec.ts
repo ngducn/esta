@@ -136,6 +136,29 @@ test('Home’s figure and counts equal the board and invoice_balances, before an
   expect(paid.counts).toEqual({ overdue: 1, due: 0, notDue: 5, paid: 3 });
 });
 
+const exactVnd = (amount: number) => `${amount.toLocaleString('de-DE')}\u00A0₫`;
+
+test('the collected, billed and portfolio figures give a screen reader and a phone the exact amount, not the rounded one', async ({ page }) => {
+  await open(page, MOM, 'light', PHONE);
+  const { collected, billed } = await homeFigure(page);
+  const portfolio = Number(await page.getByTestId('portfolio-total').getAttribute('data-total-vnd'));
+  for (const [testId, amount, rounded] of [['month-figure', collected, '54 tr'], ['portfolio-total', portfolio, null]] as const) {
+    const names = (await page.getByTestId(testId).ariaSnapshot()).replace(/\s/g, ' ');
+    expect(names, testId).toContain(exactVnd(amount).replace(/\s/g, ' '));
+    if (rounded) expect(names, `${testId} is not announced rounded`).not.toContain(rounded);
+  }
+  expect((await page.getByTestId('month-figure').ariaSnapshot()).replace(/\s/g, ' '), 'billed').toContain(exactVnd(billed).replace(/\s/g, ' '));
+  const titles = await page.locator('[data-testid="month-figure"] data, [data-testid="portfolio-total"] data').evaluateAll((all) => all.map((node) => node.getAttribute('title')));
+  expect(titles).toEqual([exactVnd(collected), exactVnd(billed), exactVnd(portfolio)]);
+});
+
+test('Tổng quan’s collected figure equals the Đã thu on Thu tiền for the same month', async ({ page }) => {
+  await open(page, MOM, 'light', DESKTOP);
+  const { collected } = await homeFigure(page);
+  await page.goto('/collections');
+  await expect(page.getByTestId('figure-paid').locator('data')).toHaveAttribute('value', String(collected));
+});
+
 test('the meter’s share collected equals payments toward October’s rent read from the database, at 390 and 1440', async ({ page }) => {
   for (const [size, viewport] of [['390', PHONE], ['1440', DESKTOP]] as const) {
     await open(page, MOM, 'light', viewport);

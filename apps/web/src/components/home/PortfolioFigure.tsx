@@ -2,8 +2,8 @@ import { formatDate } from '@esta/core/format';
 import type { Portfolio } from '@esta/core/valuations';
 import { useLocale, useTranslations } from 'next-intl';
 import { EstimatePill } from '@/components/estimate-pill';
+import { MoneyDisplay } from '@/components/money/money-display';
 import { StatCard } from '@/components/stat-card';
-import { CompactAmount } from './Amount';
 
 export function PortfolioFigure({ portfolio }: { portfolio: Portfolio | null }) {
   const t = useTranslations('valuations');
@@ -19,7 +19,7 @@ export function PortfolioFigure({ portfolio }: { portfolio: Portfolio | null }) 
       value={
         portfolio === null ? null : (
           <span data-testid="portfolio-total" data-total-vnd={portfolio.totalVnd}>
-            <CompactAmount amount={portfolio.totalVnd} />
+            <MoneyDisplay amount={portfolio.totalVnd} variant="compact" className="text-start" />
           </span>
         )
       }

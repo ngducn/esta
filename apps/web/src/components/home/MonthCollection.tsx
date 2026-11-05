@@ -5,12 +5,12 @@ import { vnd } from '@esta/core/money';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { GROUP_MARKS } from '@/components/collections/CollectionsBoard';
+import { MoneyDisplay } from '@/components/money/money-display';
 import { StatCard } from '@/components/stat-card';
 import { StatusShape } from '@/components/status-shape';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { cn } from '@/lib/utils';
 import type { CollectionRow } from '@esta/ops';
-import { CompactAmount } from './Amount';
 
 /**
  * This month's collection as the hero stat card: collected against billed, a meter for the share, and the board's four
@@ -35,11 +35,11 @@ export function MonthCollection({ month, board, collected }: { month: IsoDate; b
       value={
         known ? (
           <span data-testid="month-figure" data-collected-vnd={collectedVnd} data-billed-vnd={billedVnd}>
-            <CompactAmount amount={collectedVnd} />
+            <MoneyDisplay amount={collectedVnd} variant="compact" className="text-start" />
             <span className="ms-2 text-headline font-medium text-text-secondary">
               <span aria-hidden="true">/ </span>
               <span className="sr-only">{t('monthOf')} </span>
-              <CompactAmount amount={billedVnd} />
+              <MoneyDisplay amount={billedVnd} variant="compact" className="text-start" />
             </span>
           </span>
         ) : null

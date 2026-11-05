@@ -58,7 +58,7 @@ test('lane 2: Ryan records a broker quote of 9ty5 on Mặt bằng Quận 1; the 
 
   await page.goto('/');
   await expect(page.getByTestId('portfolio-total')).toHaveAttribute('data-total-vnd', String(FULL_PORTFOLIO - 7_200_000_000 + 9_500_000_000));
-  await expect(page.getByTestId('portfolio-total')).toHaveText('47,55 tỷ');
+  await expect(page.getByTestId('portfolio-total').locator('[aria-hidden]')).toHaveText('47,55 tỷ');
 });
 
 test('lane 3: Mẹ opens Đất Bảo Lộc at 390 dark, reads the age of its seeded valuation, records a broker quote and sees Home change', async ({ page }) => {
@@ -67,7 +67,7 @@ test('lane 3: Mẹ opens Đất Bảo Lộc at 390 dark, reads the age of its se
   const [seeded] = await rest<{ as_of: string; value_vnd: number }[]>(page, 'GET', `valuations?property_id=eq.${baoLoc}&select=as_of,value_vnd&order=as_of.desc&limit=1`);
   expect(seeded?.as_of).toBe('2026-04-20');
   await page.goto('/');
-  await expect(page.getByTestId('portfolio-total')).toHaveText('45,25 tỷ');
+  await expect(page.getByTestId('portfolio-total').locator('[aria-hidden]')).toHaveText('45,25 tỷ');
   await expect(page.getByTestId('portfolio-basis')).toHaveText('Theo lần định giá gần nhất của từng bất động sản, cũ nhất ngày 15/11/2025.');
   await hold(page);
 
@@ -86,7 +86,7 @@ test('lane 3: Mẹ opens Đất Bảo Lộc at 390 dark, reads the age of its se
   await hold(page);
 
   await page.goto('/');
-  await expect(page.getByTestId('portfolio-total')).toHaveText('45,55 tỷ');
+  await expect(page.getByTestId('portfolio-total').locator('[aria-hidden]')).toHaveText('45,55 tỷ');
   await expect(page.getByTestId('portfolio-total')).toHaveAttribute('data-total-vnd', String(FULL_PORTFOLIO - 3_200_000_000 + 3_500_000_000));
   await hold(page);
 });
@@ -129,7 +129,7 @@ test('lane 5: Home at 1440 light shows the portfolio figure as an estimate with 
   const figure = page.getByTestId('portfolio-figure');
   await expect(figure.getByRole('heading', { name: 'Tổng giá trị bất động sản' })).toBeVisible();
   await expect(figure).toContainText('Ước tính');
-  await expect(page.getByTestId('portfolio-total')).toHaveText('45,25 tỷ');
+  await expect(page.getByTestId('portfolio-total').locator('[aria-hidden]')).toHaveText('45,25 tỷ');
   await expect(page.getByTestId('portfolio-basis')).toContainText('15/11/2025');
   await expect(page.getByTestId('portfolio-missing')).toHaveCount(0);
   expect(await seriousAxeViolations(page)).toEqual([]);
@@ -153,7 +153,7 @@ test('lane 6: deleting a property’s only valuation offers Hoàn tác, empties 
   await expect(block(page)).toContainText('Chưa có định giá cho bất động sản này.');
   try {
     await page.goto('/');
-    await expect(page.getByTestId('portfolio-total')).toHaveText('43,4 tỷ');
+    await expect(page.getByTestId('portfolio-total').locator('[aria-hidden]')).toHaveText('43,4 tỷ');
     await expect(page.getByTestId('portfolio-missing')).toHaveText('1 bất động sản chưa có định giá');
     await expect(page.getByTestId('portfolio-basis')).toContainText('01/02/2026');
   } finally {
@@ -176,7 +176,7 @@ test('lane 10: in English at 130% and dark, Home reads the portfolio figure with
     const figure = page.getByTestId('portfolio-figure');
     await expect(figure.getByRole('heading', { name: 'Total property value' })).toBeVisible();
     await expect(figure).toContainText('Estimate');
-    await expect(page.getByTestId('portfolio-total')).toHaveText('45.25B ₫');
+    await expect(page.getByTestId('portfolio-total').locator('[aria-hidden]')).toHaveText('45.25B ₫');
     await expect(page.getByTestId('portfolio-basis')).toHaveText("From each property's latest valuation, the oldest dated 15/11/2025.");
     expect(await noSidewaysScroll(page)).toBe(true);
     const box = await page.getByTestId('portfolio-total').boundingBox();
