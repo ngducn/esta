@@ -34,7 +34,7 @@ export function HomeMapStrip({ title, openLabel, map }: HomeMapStripProps) {
   const wide = useWide();
   const router = useRouter();
   return (
-    <section aria-labelledby="home-map-title" data-testid="home-map-strip" className="hidden flex-col gap-4 rounded-lg border border-border bg-surface p-6 shadow-xs lg:flex">
+    <section aria-labelledby="home-map-title" data-testid="home-map-strip" className="hidden flex-col gap-4 rounded-lg border border-border bg-surface p-card-pad shadow-xs lg:flex">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 id="home-map-title" className="text-title-3 text-text">
           {title}

@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-export type EmptyStateAction = { label: string; href: string; icon?: LucideIcon };
+export type EmptyStateAction = { label: string; href: string; icon?: LucideIcon; testId?: string };
 
 /** One sentence of what is missing or coming, and the single action that works now. With no such action, no button. */
 export function EmptyState({
@@ -15,6 +15,7 @@ export function EmptyState({
   media,
   tone,
   className,
+  testId,
 }: {
   title: string;
   body?: string;
@@ -23,10 +24,11 @@ export function EmptyState({
   media?: ReactNode;
   tone?: 'good';
   className?: string;
+  testId?: string;
 }) {
   const ActionIcon = action?.icon;
   return (
-    <section data-slot="empty-state" className={cn('overflow-hidden rounded-lg border border-border bg-surface shadow-xs', className)}>
+    <section data-slot="empty-state" data-testid={testId} className={cn('overflow-hidden rounded-lg border border-border bg-surface shadow-xs', className)}>
       {media}
       <div className="flex flex-col items-start gap-2 p-card-pad">
         <h2 className="flex items-start gap-2 text-headline text-text">
@@ -35,7 +37,7 @@ export function EmptyState({
         </h2>
         {body === undefined ? null : <p className="max-w-prose text-body text-pretty text-text-secondary">{body}</p>}
         {action ? (
-          <Link href={action.href} className={buttonVariants({ variant: 'primary', className: 'mt-2' })}>
+          <Link href={action.href} data-testid={action.testId} className={buttonVariants({ variant: 'primary', className: 'mt-2' })}>
             {ActionIcon ? <ActionIcon aria-hidden="true" /> : null}
             {action.label}
           </Link>

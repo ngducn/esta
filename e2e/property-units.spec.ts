@@ -162,7 +162,7 @@ test('rule 5: a new rooming house starts with Toàn bộ, and adding 4 rooms lea
   await expect(page.getByTestId('skip-photo')).toBeEnabled();
   await page.getByTestId('skip-photo').click();
   await page.getByTestId('nickname').fill(nickname);
-  await page.getByTestId('kind-select').selectOption({ label: 'Dãy trọ' });
+  await page.getByTestId('kind-select').getByLabel('Dãy trọ', { exact: true }).check({ force: true });
   await page.getByTestId('wizard-start').click();
   await expect(page.getByTestId('property-wizard')).toHaveAttribute('data-step', 'details', { timeout: 15_000 });
   const id = new URL(page.url()).searchParams.get('property') ?? '';

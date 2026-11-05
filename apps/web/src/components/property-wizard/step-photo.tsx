@@ -1,6 +1,6 @@
 'use client';
 
-import { PROPERTY_KINDS, suggestPropertyCode, type PropertyKind } from '@esta/core/properties/form';
+import { suggestPropertyCode, type PropertyKind } from '@esta/core/properties/form';
 import { Camera, Files, FolderOpen, RotateCw } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
@@ -10,7 +10,7 @@ import { LeaveConfirm, MultiPageCapture, type CombinedCapture } from '@/componen
 import { UploadProgress } from '@/components/documents/upload-progress';
 import { FieldMessage } from '@/components/field-message';
 import { Group, TextField } from '@/components/form-parts';
-import { FormSelect } from '@/components/properties/address-picker';
+import { KindCards } from '@/components/properties/kind-cards';
 import { Button } from '@/components/ui/button';
 import { useHydrated } from '@/lib/use-hydrated';
 import { useObjectUrl } from '@/lib/use-object-url';
@@ -43,7 +43,6 @@ export function StepPhoto({ otherCodes }: { otherCodes: readonly string[] }) {
   const t = useTranslations('propertyWizard');
   const td = useTranslations('documents');
   const tf = useTranslations('propertyForm');
-  const tp = useTranslations('properties');
   const locale = useLocale();
   const router = useRouter();
   const hydrated = useHydrated();
@@ -298,13 +297,7 @@ export function StepPhoto({ otherCodes }: { otherCodes: readonly string[] }) {
               error={nicknameMissing ? tf('nicknameRequired') : null}
               onChange={setNickname}
             />
-            <FormSelect
-              label={tf('kind')}
-              testId="kind-select"
-              value={kind}
-              options={PROPERTY_KINDS.map((option) => ({ value: option, label: tp('kind', { kind: option }) }))}
-              onChange={(next) => setKind(PROPERTY_KINDS.find((option) => option === next) ?? kind)}
-            />
+            <KindCards value={kind} onChange={setKind} />
           </Group>
         )}
       </fieldset>

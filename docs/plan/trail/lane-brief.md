@@ -26,7 +26,7 @@ You are one independent verifier lane for one PR of the Esta v1 stack (github.co
 - Heavy jobs share the machine under one lock (Ryan, 2026-11-01). Wrap every Playwright run (`pnpm e2e ...`), every Lighthouse run and every production build in `~/.claude/orchestrate/esta/bin/heavy.sh <command>`, which waits for the lock root CI also holds. Two Playwright runs narrowed to named spec files (`pnpm e2e e2e/x.spec.ts`) may share the machine; a full suite, `e2e:northstar`, a build, Lighthouse or a wrapper script runs alone, so call heavy.sh once per narrowed run, not around a script. Locally, run only the specs your change touches; the full suite runs in CI on every push and CI is the merge gate. Run the full suite locally only when GitHub Actions is down. If a test fails beside another run and passes alone, report it and `touch /tmp/ci-local/one-at-a-time`, which makes every job run alone again (concurrent runs swapped this machine on 2026-10-18).
 - Never prune or remove shared Docker resources (`docker system|image|builder|volume prune`, other projects' images or volumes). If the Docker disk fills, stop and report to the root, who asks the operator.
 - Keep every evidence file and scratch script outside the worktree (for example `/tmp/swarm-<pr id>-ev/`). Files left inside it are linted by `pnpm check` and fail the next lane that reuses the worktree.
-- Stop every process you started (dev server, browse daemon, local stack on your slot) before you return. Leave evidence files in place.
+- Stop every process you started (dev server, browse daemon, local stack on your slot, background watchers) before you return, and report once: a background job left running wakes you and makes you report again. Leave evidence files in place.
 
 ## Report
 
