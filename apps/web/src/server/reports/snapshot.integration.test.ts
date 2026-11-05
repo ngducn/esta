@@ -22,6 +22,7 @@ const READ = integrationLane(import.meta.url, 0);
 const { household: HOUSEHOLD, ryan } = integrationLane(import.meta.url, 1);
 const { client, signIn } = memberClient(ryan, HOUSEHOLD);
 const { activateLease, createTenant, saveLease, terminateLease } = await import('@/server/actions/leases');
+const { recordPayment } = await import('@/server/actions/payments');
 const created: string[] = [];
 
 async function letTownhouseOwingOctober(): Promise<{ propertyId: string; leaseId: string }> {
@@ -137,6 +138,30 @@ describe('readReportSnapshot as leases end and properties go (FIN-4, SPEC §5.4)
     expect(cell(portfolioSummary(year, portfolioLabels), later.propertyId, 3), "a later termination still owes this year's rent").toBe(48_000_000);
   }, 30_000);
 
+  it("keeps a paid October bill in the collected figure after its property is archived, and the database agrees", async () => {
+    const gone = await letTownhouseOwingOctober();
+    const owed = (await readReportSnapshot(client, HOUSEHOLD, PERIOD)).invoices.find((invoice) => invoice.leaseId === gone.leaseId && invoice.outstandingVnd > 0);
+    if (owed === undefined) throw new Error("October's bill is unpaid");
+    const paid = await recordPayment({ invoiceId: owed.id, owedVnd: owed.outstandingVnd, amount: '4.000.000', method: 'bank_transfer', receivedOn: '07/10/2026', idempotencyKey: crypto.randomUUID(), invoiceIds: null });
+    expect(paid.ok).toBe(true);
+
+    const collectedInSql = async () => {
+      const { data, error } = await client.from('invoice_balances').select('allocated_vnd').eq('household_id', HOUSEHOLD).eq('status', 'issued').gte('due_date', '2026-10-01').lte('due_date', '2026-10-31');
+      if (error) throw error;
+      return data.reduce((total, bill) => total + (bill.allocated_vnd ?? 0), 0);
+    };
+    const collectedOnReport = async () => {
+      const row = monthlyCollections(await readReportSnapshot(client, HOUSEHOLD, PERIOD), collectionLabels).rows.find((one) => one.key === '2026-10');
+      return row?.cells[2]?.value;
+    };
+    const before = { sql: await collectedInSql(), report: await collectedOnReport() };
+    expect(before.report).toBe(before.sql);
+
+    const archived = await client.from('properties').update({ deleted_at: '2026-10-07T02:00:00Z' }).eq('id', gone.propertyId);
+    if (archived.error) throw archived.error;
+    expect({ sql: await collectedInSql(), report: await collectedOnReport() }).toEqual(before);
+  }, 30_000);
+
   it("counts a deleted property's unpaid bill in October's collections, as the board does, and leaves its rooms out of occupancy", async () => {
     const gone = await letTownhouseOwingOctober();
     const before = await readReportSnapshot(client, HOUSEHOLD, PERIOD);
@@ -155,7 +180,10 @@ describe('readReportSnapshot as leases end and properties go (FIN-4, SPEC §5.4)
     const sum = (key: 'total_vnd' | 'allocated_vnd' | 'outstanding_vnd') => october.reduce((total, bill) => total + bill[key], 0);
     expect(october.filter((bill) => bill.lease_id === gone.leaseId).map((bill) => bill.outstanding_vnd), 'the board lists it').toEqual(owed.map((invoice) => invoice.outstandingVnd));
     const row = monthlyCollections(snapshot, collectionLabels).rows.find((one) => one.key === '2026-10');
-    expect(row?.cells.map((cell) => cell.value)).toEqual(['2026-10-01', sum('total_vnd'), sum('allocated_vnd'), sum('outstanding_vnd')]);
+    const [, billed, collected, outstanding] = row?.cells.map((cell) => Number(cell.value)) ?? [];
+    expect(outstanding, 'the report owes what the board lists').toBe(sum('outstanding_vnd'));
+    expect(billed, 'the report also holds bills the board no longer lists').toBeGreaterThanOrEqual(sum('total_vnd'));
+    expect(collected, 'and what they collected').toBeGreaterThanOrEqual(sum('allocated_vnd'));
     const without = monthlyCollections({ ...snapshot, invoices: snapshot.invoices.filter((invoice) => invoice.leaseId !== gone.leaseId) }, collectionLabels).rows.find((one) => one.key === '2026-10');
     expect(row?.cells[3]?.value, "the deleted property's bill is in the owed total").toBe(Number(without?.cells[3]?.value) + owed.reduce((total, invoice) => total + invoice.outstandingVnd, 0));
   }, 30_000);

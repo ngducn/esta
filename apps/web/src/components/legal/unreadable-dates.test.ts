@@ -1,3 +1,4 @@
+import { isoDate } from '@esta/core/date';
 import { describe, expect, it } from 'vitest';
 import { dateReading } from '@/components/use-date-field';
 import { annotationDraft, readAnnotations } from './annotation-list';
@@ -8,7 +9,7 @@ const unreadable = { value: null, unreadable: true } as const;
 
 describe('legal drafts with a date that is not on the calendar', () => {
   it('refuses a mortgage whose registration date is unreadable, even when released', () => {
-    const draft = { ...mortgageDraft(null), bankId: 'bank-1', amountText: '1.000.000', registeredOn: unreadable, releasedOn: dateReading('2026-09-30') };
+    const draft = { ...mortgageDraft(null), bankId: 'bank-1', amountText: '1.000.000', registeredOn: unreadable, releasedOn: dateReading(isoDate('2026-09-30')) };
     expect(readMortgage('valid', draft)).toEqual({ ok: false, invalid: 'date' });
     expect(readMortgage('mortgaged', { ...draft, releasedOn: dateReading(null) })).toEqual({ ok: false, invalid: 'date' });
   });
