@@ -44,11 +44,18 @@ async function Home() {
     latestBrief(member.household.id, clock.now()),
     createSessionClient().then((db) => readLivePropertyIds(db, member.household.id)),
   ]);
+  const signedIn = (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-body-sm">
+        <p className="text-text-secondary">{member.displayName === null ? t('signedIn') : t('signedInAs', { name: member.displayName })}</p>
+        <p className="rounded-full border border-border bg-surface px-3 py-1 font-medium text-text-muted">{t('role', { role: onboarding(`roles.${member.role}`) })}</p>
+      </div>
+  );
   if (propertyIds.length === 0) {
     return (
       <div className="flex flex-col gap-stack">
         <PageHeader title={member.household.name} />
         <RegistryEmptyState surface="home" ctx={{ canWrite: canRecord }} icon={sectionIcons.properties} className="max-w-3xl" />
+        {signedIn}
       </div>
     );
   }
@@ -78,10 +85,7 @@ async function Home() {
           <HomeMapStrip title={t('mapTitle')} openLabel={t('mapOpen')} map={{ ...mapIntl, theme, label: t('mapLabel', { count: home.pins.length }), pins: home.pins }} />
         )}
       </div>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-body-sm">
-        <p className="text-text-secondary">{member.displayName === null ? t('signedIn') : t('signedInAs', { name: member.displayName })}</p>
-        <p className="rounded-full border border-border bg-surface px-3 py-1 font-medium text-text-muted">{t('role', { role: onboarding(`roles.${member.role}`) })}</p>
-      </div>
+      {signedIn}
     </div>
   );
 }
