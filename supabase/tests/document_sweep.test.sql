@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(18);
+select plan(19);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 select set_config('esta.actor', 'system:test', true);
@@ -34,14 +34,14 @@ insert into public.documents (id, household_id, category, title, storage_path, m
 reset role;
 select tests.act_as_service('{"x-esta-actor": "system:test"}');
 
-select is(public.stray_document_files(now()), array[:'a' || '/' || :stray || '/front.jpg', :'a' || '/' || :stray || '/thumb.webp'],
+select is(public.stray_document_files(), array[:'a' || '/' || :stray || '/front.jpg', :'a' || '/' || :stray || '/thumb.webp'],
   'the sweep names the files of a folder with no document row that are older than a day');
-select ok(not (public.stray_document_files(now()) @> array[:'a' || '/' || :registered || '/thumb.webp']), 'it never names a file in a folder that has a document row, a thumbnail included');
-select ok(not (public.stray_document_files(now()) @> array[:'a' || '/' || :young || '/front.jpg']), 'it leaves a file younger than a day');
-select ok(public.stray_document_files(now() + interval '2 hours') @> array[:'a' || '/' || :young || '/front.jpg'], 'the same file is named once the injected clock is past a day');
-select ok(not (public.stray_document_files(now()) @> array['loose-file.jpg']), 'it leaves a name that is no folder-shaped path');
-select is((select count(*)::int from unnest(public.stray_document_files(now())) n where n like '%property-photos%'), 0, 'it reads the documents bucket only');
-select is(array_length(public.stray_document_files(now(), 1), 1), 1, 'it honours the limit');
+select ok(not (public.stray_document_files() @> array[:'a' || '/' || :registered || '/thumb.webp']), 'it never names a file in a folder that has a document row, a thumbnail included');
+select ok(not (public.stray_document_files() @> array[:'a' || '/' || :young || '/front.jpg']), 'it leaves a file younger than a day');
+select ok(not (public.stray_document_files() @> array[:'a' || '/' || :young || '/front.jpg']), 'and a test clock set a week ahead cannot make it older, as the query takes no clock');
+select ok(not (public.stray_document_files() @> array['loose-file.jpg']), 'it leaves a name that is no folder-shaped path');
+select is((select count(*)::int from unnest(public.stray_document_files()) n where n like '%property-photos%'), 0, 'it reads the documents bucket only');
+select is(array_length(public.stray_document_files(1), 1), 1, 'it honours the limit');
 
 select is(public.pending_file_removal_names(), array[:'a' || '/' || :erased || '/front.jpg'], 'the service role reads every file waiting to be removed, and not the name whose file is gone');
 select is(public.settle_file_removals(), 1, 'settling drops the name whose file is gone');
@@ -56,13 +56,15 @@ reset role;
 select is((select count(*)::int from private.file_removals), 0, 'so an interrupted erase leaves nothing behind');
 
 select tests.act_as('admin.a@test.esta.test');
-select is(has_function_privilege('authenticated', 'public.stray_document_files(timestamptz, integer)', 'execute'), false, 'a signed-in user cannot run the sweep query');
+select is(has_function_privilege('authenticated', 'public.stray_document_files(integer)', 'execute'), false, 'a signed-in user cannot run the sweep query');
 select is(has_function_privilege('authenticated', 'public.settle_file_removals()', 'execute'), false, 'a signed-in user cannot settle removals');
 select throws_ok($$ select public.pending_file_removal_names() $$, '42501', null, 'a signed-in member cannot ask for every household''s names');
-select is(public.pending_file_removal_names(:'a'), '{}'::text[], 'a member reads their household''s names');
+select is(public.pending_file_removal_names(:'a'), '{}'::text[], 'an admin reads their household''s names');
+select tests.act_as('viewer.a@test.esta.test');
+select throws_ok(format($$ select public.pending_file_removal_names(%L) $$, :'a'), '42501', null, 'a viewer cannot read the names of erased ID card files');
 select tests.act_as('admin.b@test.esta.test');
 select throws_ok(format($$ select public.pending_file_removal_names(%L) $$, :'a'), '42501', null, 'and not another household''s');
-select is(has_function_privilege('anon', 'public.stray_document_files(timestamptz, integer)', 'execute'), false, 'anon may not execute the sweep query');
+select is(has_function_privilege('anon', 'public.stray_document_files(integer)', 'execute'), false, 'anon may not execute the sweep query');
 
 select * from finish();
 rollback;

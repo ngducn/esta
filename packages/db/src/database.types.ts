@@ -3869,10 +3869,7 @@ export type Database = {
           state: string
         }[]
       }
-      stray_document_files: {
-        Args: { p_limit?: number; p_now: string }
-        Returns: string[]
-      }
+      stray_document_files: { Args: { p_limit?: number }; Returns: string[] }
       suggest_current_unit: {
         Args: { p_text: string }
         Returns: {

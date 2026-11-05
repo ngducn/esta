@@ -83,7 +83,7 @@ select throws_ok($$ select public.redact_party('00000000-0000-4000-8000-00000000
 select tests.act_as('admin.a@test.esta.test');
 select throws_ok(format($$ select public.redact_party(%L, '2026-10-07') $$, :live), 'ES002', 'ESTA_PARTY_ACTIVE_LEASE', 'a party with a running lease is refused');
 select throws_ok(format($$ select public.redact_party(%L, '2026-10-31') $$, :live), 'ES002', 'ESTA_PARTY_ACTIVE_LEASE', 'the day a lease ends it still runs');
-select throws_ok($$ select public.redact_party('00000000-0000-4000-8000-00000000a0a5', '2026-10-07') $$, 'ES002', 'ESTA_PARTY_ACTIVE_LEASE', 'a draft lease counts as running');
+select throws_ok($$ select public.redact_party('00000000-0000-4000-8000-00000000a0a5', '2026-10-07') $$, 'ES002', 'ESTA_PARTY_DRAFT_LEASE', 'a draft lease counts as running, with its own refusal');
 select throws_ok($$ select public.redact_party('00000000-0000-4000-8000-00000000a0a4', '2026-10-07') $$, 'ES002', 'ESTA_PARTY_NOT_TENANT', 'a party that was never a tenant is refused');
 select throws_ok(format($$ select public.redact_party(%L, '2026-10-07') $$, :held), 'ES002', 'ESTA_PARTY_DEPOSIT_HELD', 'a party whose old lease still holds a deposit is refused');
 select is((select full_name from public.parties where id = :held), 'Phạm Held Demo', 'a refusal changes nothing');

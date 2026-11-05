@@ -32,18 +32,25 @@ function fakeClient({ pending = [] as string[], strays = [] as string[], failing
 }
 
 describe('sweepDocumentFiles', () => {
-  it('removes erased files first, then strays older than a day by the Clock, then settles the names', async () => {
+  it('removes erased files first, then strays older than a day in Storage, then settles the names', async () => {
     const { client, calls, removed } = fakeClient({ pending: ['h/d1/front.jpg'], strays: ['h/d2/a.jpg', 'h/d2/b.jpg'] });
     const run = await sweepDocumentFiles(client, clock);
     expect(removed).toEqual([['h/d1/front.jpg'], ['h/d2/a.jpg', 'h/d2/b.jpg']]);
     expect(calls).toEqual([
       'pending_file_removal_names',
       'remove documents',
-      `stray_document_files ${JSON.stringify({ p_now: clock.now() })}`,
+      'stray_document_files',
       'remove documents',
       'settle_file_removals',
     ]);
     expect(run).toEqual({ ok: true, as_of: '2026-10-07', strays: 2, erased: 1, settled: 1 });
+  });
+
+  it('asks for strays without the Clock, so a clock set a week ahead names no younger file', async () => {
+    const ahead = clockAt({ kind: 'table', now: parseInstant('2026-10-14T09:00:00+07:00') }, 'Asia/Ho_Chi_Minh');
+    const { client, calls } = fakeClient();
+    await sweepDocumentFiles(client, ahead);
+    expect(calls.filter((call) => call.startsWith('stray_document_files'))).toEqual(['stray_document_files']);
   });
 
   it('removes nothing and makes no Storage call when there is nothing to remove', async () => {

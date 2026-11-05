@@ -23,7 +23,8 @@ async function removeFiles(client: CronClient, names: readonly string[]): Promis
 
 /**
  * Daily: finishes the removal of erased ID cards' files that an interrupted erase left behind, then removes files in
- * folders no document row names once they are a day old by the Clock (a cancelled upload, #207). A folder with a row,
+ * folders no document row names once Storage holds them for a day (a cancelled upload, #207). Age is Storage's own
+ * time, not the Clock, so a test clock jump cannot remove a fresh upload. A folder with a row,
  * another bucket and anything younger are never named by the database functions this calls.
  */
 export async function sweepDocumentFiles(client: CronClient, clock: Clock): Promise<DocumentSweepRun> {
@@ -31,7 +32,7 @@ export async function sweepDocumentFiles(client: CronClient, clock: Clock): Prom
   if (pending.error) throw new Error(`Reading the files waiting to be removed failed: ${pending.error.message}`);
   const erased = await removeFiles(client, pending.data);
 
-  const strays = await client.rpc('stray_document_files', { p_now: clock.now() });
+  const strays = await client.rpc('stray_document_files');
   if (strays.error) throw new Error(`Reading the unregistered files failed: ${strays.error.message}`);
   const swept = await removeFiles(client, strays.data);
 

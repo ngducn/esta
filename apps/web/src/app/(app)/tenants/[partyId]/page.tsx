@@ -31,6 +31,8 @@ export default async function TenantPage({ params }: { params: Params }) {
   ];
   const refusals = {
     active_lease: t('refusal', { reason: 'active_lease', name }),
+    draft_lease: t('refusal', { reason: 'draft_lease', name }),
+    not_tenant: t('refusal', { reason: 'not_tenant', name }),
     deposit_held: t('refusal', { reason: 'deposit_held', name }),
     files_left: t('refusal', { reason: 'files_left', name }),
     failed: t('refusal', { reason: 'other', name }),
