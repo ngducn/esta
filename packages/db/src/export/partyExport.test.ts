@@ -182,6 +182,23 @@ describe('writePartyExport', () => {
     expect([...entries.values()].join('\n')).not.toMatch(/p-other|NGUOI KHAC|FT123|i-other|a-split-other|a-paid-theirs/);
   });
 
+  it('carries no other payer, memo or bank reference of a transfer someone else paid in full for this tenant', async () => {
+    const paidInFull: Record<string, Table> = {
+      ...world,
+      payments: [
+        ...(world.payments ?? []),
+        { id: 'm-full', ...h, payer_party_id: other, amount_vnd: 3_000_000, memo: 'NGUOI KHAC DEMO TRA HO', bank_ref: 'FT999', statement_row_id: 'sr-1', idempotency_key: 'k-1', received_on: '2026-09-04' },
+      ],
+      payment_allocations: [...(world.payment_allocations ?? []), { id: 'a-full', ...h, payment_id: 'm-full', invoice_id: 'i-mine', amount_vnd: 3_000_000 }],
+    };
+    const { client } = fakeClient(paidInFull, files);
+    const { sink, entries } = recordingSink();
+    await writePartyExport(client, HOUSEHOLD, mine, sink, { clock });
+    const payments = JSON.parse(entries.get('tables/payments.json') ?? '[]') as Record<string, unknown>[];
+    expect(payments.find((row) => row.id === 'm-full')).toMatchObject({ amount_vnd: 3_000_000, received_on: '2026-09-04', payer_party_id: null, memo: null, bank_ref: null, statement_row_id: null });
+    expect([...entries.values()].join('\n')).not.toMatch(/p-other|NGUOI KHAC|FT999|k-1/);
+  });
+
   it('leaves the share link of an invoice out of the invoices file', async () => {
     const withToken: Record<string, Table> = { ...world, invoices: [{ id: 'i-mine', ...h, lease_id: 'l-mine', share_token: 'secret-token' }] };
     const { client } = fakeClient(withToken, files);

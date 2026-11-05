@@ -54,11 +54,10 @@ const OTHER_PAYER_FIELDS = ['payer_party_id', 'memo', 'bank_ref', 'statement_row
 
 const amountOf = (row: Row) => Number(row.amount_vnd);
 
-/** A transfer someone else split across rooms shows this person's share and date only, never the other payer or the bank's text. */
+/** A transfer someone else paid, whole or split across rooms, shows this person's share and date only, never the other payer or the bank's text. */
 function paymentFor(payment: Row, shares: readonly Row[], partyId: string): Row {
   const mineSum = shares.filter((share) => share.mine === true).reduce((sum, share) => sum + amountOf(share), 0);
-  const split = shares.some((share) => share.mine !== true);
-  if (!split || payment.payer_party_id === partyId) return payment;
+  if (payment.payer_party_id === partyId) return payment;
   const redacted: Row = { ...payment, amount_vnd: mineSum };
   for (const field of OTHER_PAYER_FIELDS) redacted[field] = null;
   return redacted;

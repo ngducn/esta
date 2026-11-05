@@ -3681,6 +3681,10 @@ export type Database = {
       }
       national_id_indexes: { Args: { p_values: Json }; Returns: number[] }
       party_pending_files: { Args: { p_party_id: string }; Returns: string[] }
+      pending_file_removal_names: {
+        Args: { p_household_id?: string }
+        Returns: string[]
+      }
       preview_activation: {
         Args: { p_lease_id: string; p_paid_through?: string }
         Returns: {
@@ -3848,6 +3852,7 @@ export type Database = {
         Args: { p_lat?: number; p_lng?: number; p_property_id: string }
         Returns: Json
       }
+      settle_file_removals: { Args: never; Returns: number }
       statement_import_lines: {
         Args: { p_import_id: string }
         Returns: {
@@ -3863,6 +3868,10 @@ export type Database = {
           row_index: number
           state: string
         }[]
+      }
+      stray_document_files: {
+        Args: { p_limit?: number; p_now: string }
+        Returns: string[]
       }
       suggest_current_unit: {
         Args: { p_text: string }
