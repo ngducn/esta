@@ -13,7 +13,7 @@ const CASES = join(import.meta.dirname, '..', 'fixtures', 'agent-replay-cases');
 const Q1 = 'Tháng này thu được bao nhiêu từ Dĩ An?';
 const SEPTEMBER = 'Còn tháng 9 thì sao?';
 const DEFERRED = 'Hôm nay Trợ lý đã trả lời đủ câu hỏi. Câu hỏi này sẽ được trả lời vào ngày mai.';
-const PAUSED = 'Trợ lý tạm dừng do hết hạn mức sử dụng. Việc mới sẽ chạy khi hạn mức mở lại.';
+const PAUSED = 'Trợ lý nghỉ vì hết hạn mức. Việc mới sẽ được làm khi hạn mức mở lại.';
 const WATCH_FAILED = 'Trợ lý chưa xem được danh mục hôm nay';
 const MIDNIGHT = '2026-10-08T00:00:00+07:00';
 const at = (time: string) => `2026-10-07T${time}:00+07:00`;

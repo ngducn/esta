@@ -1,11 +1,8 @@
 import { getTranslations } from 'next-intl/server';
+import { Avatar } from '@/components/ui/avatar';
 
-/** Trợ lý's mark on everything it writes: a ring in the accent with its initial (DESIGN-BRIEF §5.5). */
+/** Trợ lý's mark on everything it writes: the ringed `TL` avatar. */
 export async function AssistantMonogram() {
   const t = await getTranslations('assistant');
-  return (
-    <span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-full border-2 border-accent text-body-sm font-semibold text-accent-text">
-      {t('monogram')}
-    </span>
-  );
+  return <Avatar assistant size="sm" initial={t('monogram')} />;
 }

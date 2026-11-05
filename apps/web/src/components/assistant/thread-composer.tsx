@@ -82,7 +82,7 @@ export function ThreadComposer({
 
   const hint = error === null && state !== 'ready' ? labels[state] : null;
   return (
-    <form onSubmit={submit} data-testid="composer" data-state={state} className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4 shadow-xs sm:p-5">
+    <form onSubmit={submit} data-testid="composer" data-state={state} className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4 sm:p-5">
       <label htmlFor={id} className="text-body font-medium text-text">
         {labels.message}
       </label>
