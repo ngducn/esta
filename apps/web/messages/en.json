@@ -1878,7 +1878,6 @@
   "ledger": {
     "title": "Income and expenses {year}",
     "caption": "Income and expenses by month, {year}",
-    "summary": "Income {income}, expenses {expenses}, net {noi}",
     "basis": "Income counts in the month the money arrived.",
     "month": "Month",
     "monthName": "{month}",
@@ -1892,7 +1891,9 @@
     "downloads": "Download the ledger",
     "sheet": "Ledger {year}",
     "empty": "No income or expenses in {year}.",
-    "emptyAction": "Rent shows here once payments are recorded."
+    "emptyAction": "Rent shows here once payments are recorded.",
+    "stripLabel": "Income and spending summary for {year}",
+    "unknownFigure": "No figure yet"
   },
   "deposits": {
     "title": "Deposit",

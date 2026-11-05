@@ -1866,7 +1866,7 @@
     "cancel": "Huỷ",
     "delete": "Xoá chi phí",
     "networkError": "Chưa lưu được. Kiểm tra kết nối mạng rồi thử lại.",
-    "forbidden": "Bạn chỉ có quyền xem, nên chưa lưu được.",
+    "forbidden": "Tài khoản này chỉ được xem, nên chưa lưu được.",
     "receiptBlocking": "Ảnh hoá đơn chưa tải lên được. Tải lại ảnh hoặc bỏ ảnh rồi lưu.",
     "saved": "Đã ghi nhận chi phí {amount}.",
     "updated": "Đã lưu chi phí {amount}.",
@@ -1878,7 +1878,6 @@
   "ledger": {
     "title": "Thu chi năm {year}",
     "caption": "Thu chi từng tháng năm {year}",
-    "summary": "Thu {income}, chi {expenses}, còn lại {noi}",
     "basis": "Tiền thu tính vào tháng nhận được tiền.",
     "month": "Tháng",
     "monthName": "Tháng {month}",
@@ -1892,7 +1891,9 @@
     "downloads": "Tải bảng thu chi",
     "sheet": "Thu chi {year}",
     "empty": "Chưa có khoản thu hay chi nào trong năm {year}.",
-    "emptyAction": "Tiền thuê hiện ở đây khi ghi nhận thanh toán."
+    "emptyAction": "Tiền thuê hiện ở đây khi ghi nhận thanh toán.",
+    "stripLabel": "Tóm tắt thu chi năm {year}",
+    "unknownFigure": "Chưa có số liệu"
   },
   "deposits": {
     "title": "Tiền cọc",
