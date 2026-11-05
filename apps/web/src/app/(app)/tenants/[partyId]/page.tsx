@@ -43,6 +43,22 @@ export default async function TenantPage({ params }: { params: Params }) {
     eraseTitle: t('eraseTitle'),
     eraseIntro: t('eraseIntro'),
     eraseStart: t('eraseStart'),
+    finishTitle: t('finishTitle'),
+    finishIntro: t('finishIntro'),
+    finishStart: t('finishStart'),
+    finish: {
+      question: t('finishQuestion'),
+      body: t('finishBody'),
+      confirm: t('finishConfirm'),
+      cancel: t('eraseCancel'),
+      working: t('eraseWorking'),
+      refusals: {
+        active_lease: t('refusal', { reason: 'active_lease', name }),
+        deposit_held: t('refusal', { reason: 'deposit_held', name }),
+        files_left: t('refusal', { reason: 'files_left', name }),
+        failed: t('refusal', { reason: 'other', name }),
+      },
+    },
     erase: {
       question: t('eraseQuestion', { name }),
       body: t('eraseBody'),
@@ -106,7 +122,7 @@ export default async function TenantPage({ params }: { params: Params }) {
           </ul>
         )}
       </section>
-      <TenantActions partyId={tenant.id} canErase={!erased} labels={labels} />
+      <TenantActions partyId={tenant.id} canExport={!erased} canErase={!erased} canFinish={erased && tenant.filesLeft > 0} labels={labels} />
     </div>
   );
 }

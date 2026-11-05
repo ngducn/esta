@@ -1,17 +1,22 @@
 import { describe, expect, it } from 'vitest';
-import { fakeDb, opContext, TENANT, type Sent } from './test/fake-db';
+import { fakeDb, LEASE, opContext, TENANT, type Sent } from './test/fake-db';
 import { partyRedact } from './party-ops';
 
 const party = (full_name = 'Chị Lan Demo') => ({ id: TENANT, full_name, phone: null, id_last4: null });
 const NAMES = ['h/doc-1/front.jpg', 'h/doc-1/thumb.webp', 'h/doc-2/back.jpg'];
 
-function world({ name = 'Chị Lan Demo', cards = 0, removed = NAMES, rpc = NAMES, raised, removes = [1] }: { name?: string; cards?: number; removed?: string[]; rpc?: string[]; raised?: string; removes?: number[] } = {}) {
+function world({ name = 'Chị Lan Demo', cards = 0, removed = NAMES, rpc = NAMES, raised, removes = [1], pending = [] }: { name?: string; cards?: number; removed?: string[]; rpc?: string[]; raised?: string; removes?: (number | string[])[]; pending?: string[] } = {}) {
   let removeCalls = 0;
   const answer = (request: Sent): readonly unknown[] => {
     if (request.table === 'parties') return [party(name)];
+    if (request.table === 'leases') return [{ id: LEASE }];
+    if (request.table === 'rpc/party_pending_files') return pending;
     if (request.table === 'documents') return Array.from({ length: cards }, () => ({}));
     if (request.table === 'rpc/redact_party') return rpc;
-    if (request.table.startsWith('/storage/v1/object/documents')) return removes[Math.min(removeCalls++, removes.length - 1)] === 1 ? removed.map((n) => ({ name: n })) : [];
+    if (request.table.startsWith('/storage/v1/object/documents')) {
+      const step = removes[Math.min(removeCalls++, removes.length - 1)];
+      return (Array.isArray(step) ? step : step === 1 ? removed : []).map((n) => ({ name: n }));
+    }
     return [];
   };
   const failure = (request: Sent) => (raised !== undefined && request.table === 'rpc/redact_party' ? { code: raised === 'forbidden' ? '42501' : 'ES002', message: raised } : null);
@@ -27,6 +32,18 @@ describe('partyRedact', () => {
 
   it('plans again for an erased person who has a new ID card on file', async () => {
     const planned = await partyRedact.plan(opContext(world({ name: 'Đã xóa', cards: 1 }).db), { id: TENANT });
+    expect(planned).toMatchObject({ ok: true, value: { kind: 'change' } });
+  });
+
+  it('looks for ID cards filed on the person\'s lease as well as on the person', async () => {
+    const { db, sent } = world({ name: 'Đã xóa' });
+    await partyRedact.plan(opContext(db), { id: TENANT });
+    const cardRead = sent.find((request) => request.table === 'documents');
+    expect(cardRead?.query.get('or')).toBe(`(party_id.eq.${TENANT},lease_id.in.(${LEASE}))`);
+  });
+
+  it('plans again for an erased person whose files are still in Storage', async () => {
+    const planned = await partyRedact.plan(opContext(world({ name: 'Đã xóa', pending: NAMES }).db), { id: TENANT });
     expect(planned).toMatchObject({ ok: true, value: { kind: 'change' } });
   });
 
@@ -61,6 +78,11 @@ describe('partyRedact', () => {
     const failing = world({ removes: [0] });
     expect(await partyRedact.apply(opContext(failing.db), { id: TENANT })).toEqual({ ok: false, reason: { kind: 'files_left' } });
     expect(failing.sent.filter((request) => request.table.startsWith('/storage/v1/object/documents'))).toHaveLength(3);
+  });
+
+  it('counts a removal that finishes over two tries as done', async () => {
+    const twoTries = world({ removes: [['h/doc-1/front.jpg', 'h/doc-1/thumb.webp'], ['h/doc-2/back.jpg']] });
+    expect(await partyRedact.apply(opContext(twoTries.db), { id: TENANT })).toEqual({ ok: true, value: { id: TENANT, removedFiles: 3 } });
   });
 
   it('has no files to remove when the person held no ID card', async () => {

@@ -49,7 +49,7 @@ export default function ErasePersonDialog({ partyId, labels, open, onOpenChange,
       labels={{ cancel: labels.cancel, submit: labels.confirm, pending: labels.working }}
       submitTestId="erase-confirm"
       pending={pending}
-      onSubmit={refusal === 'files_left' ? null : confirm}
+      onSubmit={confirm}
       error={refusal === null ? null : <FormAlert message={labels.refusals[refusal]} data-testid="erase-refusal" data-reason={refusal} />}
     >
       {null}

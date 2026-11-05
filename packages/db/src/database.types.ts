@@ -3680,6 +3680,7 @@ export type Database = {
         Returns: number
       }
       national_id_indexes: { Args: { p_values: Json }; Returns: number[] }
+      party_pending_files: { Args: { p_party_id: string }; Returns: string[] }
       preview_activation: {
         Args: { p_lease_id: string; p_paid_through?: string }
         Returns: {

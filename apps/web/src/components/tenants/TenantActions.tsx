@@ -16,13 +16,19 @@ export type TenantActionLabels = {
   readonly eraseTitle: string;
   readonly eraseIntro: string;
   readonly eraseStart: string;
+  readonly finishTitle: string;
+  readonly finishIntro: string;
+  readonly finishStart: string;
   readonly erase: EraseLabels;
+  readonly finish: EraseLabels;
 };
 
-export function TenantActions({ partyId, canErase, labels }: { partyId: string; canErase: boolean; labels: TenantActionLabels }) {
+export function TenantActions({ partyId, canExport, canErase, canFinish, labels }: { partyId: string; canExport: boolean; canErase: boolean; canFinish: boolean; labels: TenantActionLabels }) {
   const erase = useDeferredDialog(loadErase);
+  const finish = useDeferredDialog(loadErase);
   return (
     <>
+      {canExport ? (
       <section aria-labelledby="tenant-export" className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
         <h2 id="tenant-export" className="text-headline font-semibold text-text">
           {labels.exportTitle}
@@ -30,6 +36,7 @@ export function TenantActions({ partyId, canErase, labels }: { partyId: string; 
         <p className="text-body text-text-secondary">{labels.exportIntro}</p>
         <DataExport labels={labels.export} endpoint={`/api/export/party/${partyId}`} />
       </section>
+      ) : null}
       {canErase ? (
         <section aria-labelledby="tenant-erase" className="flex flex-col items-start gap-3 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
           <h2 id="tenant-erase" className="text-headline font-semibold text-text">
@@ -40,6 +47,18 @@ export function TenantActions({ partyId, canErase, labels }: { partyId: string; 
             {labels.eraseStart}
           </Button>
           <DeferredPopup dialog={erase} popup={ErasePersonDialog} props={{ partyId, labels: labels.erase }} />
+        </section>
+      ) : null}
+      {canFinish ? (
+        <section aria-labelledby="tenant-finish" className="flex flex-col items-start gap-3 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
+          <h2 id="tenant-finish" className="text-headline font-semibold text-text">
+            {labels.finishTitle}
+          </h2>
+          <p className="text-body text-text-secondary">{labels.finishIntro}</p>
+          <Button type="button" variant="secondary" data-testid="finish-start" {...finish.triggerProps}>
+            {labels.finishStart}
+          </Button>
+          <DeferredPopup dialog={finish} popup={ErasePersonDialog} props={{ partyId, labels: labels.finish }} />
         </section>
       ) : null}
     </>

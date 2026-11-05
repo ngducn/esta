@@ -17,29 +17,42 @@ const SENTINELS: Readonly<Record<string, PartyRefusal | CommonRefusal>> = {
   ESTA_PARTY_DEPOSIT_HELD: { kind: 'deposit_held' },
 };
 
-async function holdsIdCard(ctx: OpContext, partyId: string): Promise<boolean> {
-  const { data, error } = await ctx.db.from('documents').select('id').eq('household_id', ctx.householdId).eq('party_id', partyId).eq('category', 'id_card').limit(1);
-  if (error) throw new Error(`Reading the party's documents failed: ${error.message}`);
-  return data.length > 0;
+async function leftToErase(ctx: OpContext, partyId: string): Promise<boolean> {
+  const leases = await ctx.db.from('leases').select('id').eq('household_id', ctx.householdId).eq('tenant_party_id', partyId);
+  if (leases.error) throw new Error(`Reading the party's leases failed: ${leases.error.message}`);
+  const onLease = leases.data.length === 0 ? '' : `,lease_id.in.(${leases.data.map((lease) => lease.id).join(',')})`;
+  const cards = await ctx.db.from('documents').select('id').eq('household_id', ctx.householdId).eq('category', 'id_card').or(`party_id.eq.${partyId}${onLease}`).limit(1);
+  if (cards.error) throw new Error(`Reading the party's documents failed: ${cards.error.message}`);
+  if (cards.data.length > 0) return true;
+  const pending = await ctx.db.rpc('party_pending_files', { p_party_id: partyId });
+  if (pending.error) throw new Error(`Reading the party's pending files failed: ${pending.error.message}`);
+  return pending.data.length > 0;
 }
 
+/** Each try removes what the last one left, so a removal that finishes over two tries is a success. */
 async function removeFiles(ctx: OpContext, names: readonly string[]): Promise<boolean> {
-  if (names.length === 0) return true;
-  for (let attempt = 0; attempt < REMOVE_ATTEMPTS; attempt += 1) {
-    const { data, error } = await ctx.db.storage.from(DOCUMENTS_BUCKET).remove([...names]);
-    if (!error && data.length === names.length) return true;
+  let left = [...names];
+  for (let attempt = 0; attempt < REMOVE_ATTEMPTS && left.length > 0; attempt += 1) {
+    const { data, error } = await ctx.db.storage.from(DOCUMENTS_BUCKET).remove(left);
+    if (error) continue;
+    const gone = new Set(data.map((object) => object.name));
+    left = left.filter((name) => !gone.has(name));
   }
-  return false;
+  return left.length === 0;
 }
 
-/** Storage refuses a delete from SQL, so the admin's session removes the ID card files once no document row names them. */
+/**
+ * Storage refuses a delete from SQL, so the admin's session removes the ID card files once no document row names them.
+ * The database keeps the names of files not yet removed, hides them from everyone but an admin, and hands them back to
+ * the next call, so an interrupted erase is finished by erasing again.
+ */
 export const partyRedact = defineOp<PartyRedactInput, PartyRedactInput, PartyRedacted, PartyRefusal>({
   creates: null,
   input: partyRedactInputSchema,
   async plan(ctx, input) {
     const [party] = await viewRows(ctx, 'parties', { id: input.id });
     if (party === undefined) return refuse({ kind: 'not_found' });
-    if (party.full_name === REDACTED_NAME && !(await holdsIdCard(ctx, input.id))) return unchanged({ id: input.id, removedFiles: 0 });
+    if (party.full_name === REDACTED_NAME && !(await leftToErase(ctx, input.id))) return unchanged({ id: input.id, removedFiles: 0 });
     return change(input);
   },
   async apply(ctx, { id }) {

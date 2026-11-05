@@ -154,4 +154,39 @@ describe('writePartyExport', () => {
     expect(idsIn(entries, 'parties')).toEqual([mine]);
     expect(JSON.parse(entries.get('tables/leases.json') ?? 'x')).toEqual([]);
   });
+
+  it('carries only this tenant\'s share of a transfer another tenant split across two rooms', async () => {
+    const split: Record<string, Table> = {
+      ...world,
+      invoices: [...(world.invoices ?? []), { id: 'i-mine-2', ...h, lease_id: 'l-mine', share_token: 'secret-token' }],
+      payments: [
+        ...(world.payments ?? []),
+        { id: 'm-split', ...h, payer_party_id: other, amount_vnd: 9_000_000, memo: 'NGUOI KHAC DEMO CK P3 P5', bank_ref: 'FT123', received_on: '2026-09-02' },
+        { id: 'm-i-paid-theirs', ...h, payer_party_id: mine, amount_vnd: 5_000_000, memo: 'TOI TRA P3 P5', received_on: '2026-09-03' },
+      ],
+      payment_allocations: [
+        ...(world.payment_allocations ?? []),
+        { id: 'a-split-mine', ...h, payment_id: 'm-split', invoice_id: 'i-mine', amount_vnd: 4_000_000 },
+        { id: 'a-split-other', ...h, payment_id: 'm-split', invoice_id: 'i-other', amount_vnd: 5_000_000 },
+        { id: 'a-paid-mine', ...h, payment_id: 'm-i-paid-theirs', invoice_id: 'i-mine-2', amount_vnd: 2_000_000 },
+        { id: 'a-paid-theirs', ...h, payment_id: 'm-i-paid-theirs', invoice_id: 'i-other', amount_vnd: 3_000_000 },
+      ],
+    };
+    const { client } = fakeClient(split, files);
+    const { sink, entries } = recordingSink();
+    await writePartyExport(client, HOUSEHOLD, mine, sink, { clock });
+    const payments = JSON.parse(entries.get('tables/payments.json') ?? '[]') as Record<string, unknown>[];
+    expect(payments.find((row) => row.id === 'm-split')).toMatchObject({ amount_vnd: 4_000_000, received_on: '2026-09-02', payer_party_id: null, memo: null, bank_ref: null });
+    expect(payments.find((row) => row.id === 'm-i-paid-theirs')).toMatchObject({ payer_party_id: mine, memo: 'TOI TRA P3 P5' });
+    expect(idsIn(entries, 'payment_allocations')).toEqual(['a-mine', 'a-paid-mine', 'a-relative', 'a-split-mine']);
+    expect([...entries.values()].join('\n')).not.toMatch(/p-other|NGUOI KHAC|FT123|i-other|a-split-other|a-paid-theirs/);
+  });
+
+  it('leaves the share link of an invoice out of the invoices file', async () => {
+    const withToken: Record<string, Table> = { ...world, invoices: [{ id: 'i-mine', ...h, lease_id: 'l-mine', share_token: 'secret-token' }] };
+    const { client } = fakeClient(withToken, files);
+    const { sink, entries } = recordingSink();
+    await writePartyExport(client, HOUSEHOLD, mine, sink, { clock });
+    expect([...entries.entries()].filter(([path]) => path.startsWith('tables/invoices')).map(([, text]) => text).join('\n')).not.toMatch(/share_token|secret-token/);
+  });
 });

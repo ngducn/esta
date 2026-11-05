@@ -1,6 +1,6 @@
 import 'server-only';
 import { isoDate, type IsoDate } from '@esta/core/date';
-import { idSchema } from '@esta/ops';
+import { idSchema, REDACTED_NAME } from '@esta/ops';
 import { cache } from 'react';
 import { createSessionClient } from '@/server/supabase/server';
 
@@ -23,6 +23,7 @@ export type TenantPage = {
   readonly addressText: string | null;
   readonly notes: string | null;
   readonly leases: readonly TenantLease[];
+  readonly filesLeft: number;
 };
 
 export const loadTenantPage = cache(async (rawId: string): Promise<TenantPage | null> => {
@@ -36,6 +37,8 @@ export const loadTenantPage = cache(async (rawId: string): Promise<TenantPage | 
   if (party.error) throw new Error(`Reading the person failed: ${party.error.message}`);
   if (leases.error) throw new Error(`Reading the person's leases failed: ${leases.error.message}`);
   if (party.data === null || !party.data.tags.includes('tenant')) return null;
+  const pending = party.data.full_name === REDACTED_NAME ? await db.rpc('party_pending_files', { p_party_id: id.data }) : null;
+  if (pending?.error) throw new Error(`Reading the person's pending files failed: ${pending.error.message}`);
   const [units, properties] = await Promise.all([
     db.from('units').select('id, label').in('id', leases.data.map((lease) => lease.unit_id)),
     db.from('properties').select('id, nickname').in('id', leases.data.map((lease) => lease.property_id)),
@@ -51,6 +54,7 @@ export const loadTenantPage = cache(async (rawId: string): Promise<TenantPage | 
     idLast4: party.data.id_last4,
     addressText: party.data.address_text,
     notes: party.data.notes,
+    filesLeft: pending?.data.length ?? 0,
     leases: leases.data.map((lease) => ({
       id: lease.id,
       propertyId: lease.property_id,

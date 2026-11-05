@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(30);
+select plan(38);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 
@@ -44,6 +44,9 @@ insert into public.documents (id, household_id, party_id, category, title, stora
   ('00000000-0000-4000-8000-00000000d0a2', :'a', '00000000-0000-4000-8000-00000000a0a1', 'id_card', 'CCCD Lê Thị Gone mặt sau', :'a' || '/00000000-0000-4000-8000-00000000d0a2/back.jpg', 'image/jpeg', 10, repeat('b', 64), 'sensitive'),
   ('00000000-0000-4000-8000-00000000d0a3', :'a', '00000000-0000-4000-8000-00000000a0a1', 'lease_contract', 'Hợp đồng Phòng 3', :'a' || '/00000000-0000-4000-8000-00000000d0a3/hd.pdf', 'application/pdf', 10, repeat('c', 64), 'normal'),
   ('00000000-0000-4000-8000-00000000d0a4', :'a', '00000000-0000-4000-8000-00000000a0a2', 'id_card', 'CCCD Live', :'a' || '/00000000-0000-4000-8000-00000000d0a4/front.jpg', 'image/jpeg', 10, repeat('d', 64), 'sensitive');
+insert into public.documents (id, household_id, property_id, lease_id, category, title, storage_path, mime, size_bytes, sha256, sensitivity) values
+  ('00000000-0000-4000-8000-00000000d0a5', :'a', '00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-00000000e0a1',
+   'id_card', 'CCCD Phòng 3', :'a' || '/00000000-0000-4000-8000-00000000d0a5/front.jpg', 'image/jpeg', 10, repeat('e', 64), 'sensitive');
 insert into public.document_access_log (household_id, document_id, user_id, action) values
   (:'a', '00000000-0000-4000-8000-00000000d0a1', tests.user_id('admin.a@test.esta.test'), 'view');
 insert into storage.objects (bucket_id, name) values
@@ -51,7 +54,8 @@ insert into storage.objects (bucket_id, name) values
   ('documents', :'a' || '/00000000-0000-4000-8000-00000000d0a1/thumb.webp'),
   ('documents', :'a' || '/00000000-0000-4000-8000-00000000d0a2/back.jpg'),
   ('documents', :'a' || '/00000000-0000-4000-8000-00000000d0a3/hd.pdf'),
-  ('documents', :'a' || '/00000000-0000-4000-8000-00000000d0a4/front.jpg');
+  ('documents', :'a' || '/00000000-0000-4000-8000-00000000d0a4/front.jpg'),
+  ('documents', :'a' || '/00000000-0000-4000-8000-00000000d0a5/front.jpg');
 
 reset role;
 \set gone '''00000000-0000-4000-8000-00000000a0a1'''
@@ -69,7 +73,9 @@ select throws_ok($$ select public.redact_party('00000000-0000-4000-8000-00000000
 select tests.clear_request();
 select throws_ok(format($$ select public.redact_party(%L, '2026-10-07') $$, :gone), '42501', null, 'a caller with no session cannot redact a party');
 select has_function('public', 'redact_party', array['uuid', 'date'], 'redact_party takes the party and the business date');
-select is((select count(*)::int from information_schema.routine_privileges where specific_schema = 'public' and routine_name = 'redact_party' and grantee in ('anon', 'public')), 0, 'neither anon nor public may execute it');
+select is(has_function_privilege('anon', 'public.redact_party(uuid, date)', 'execute'), false, 'anon may not execute it');
+select is((select count(*)::int from pg_proc p, aclexplode(p.proacl) a where p.oid = 'public.redact_party(uuid, date)'::regprocedure and a.grantee = 0), 0, 'public may not execute it');
+select throws_ok($$ select public.redact_party('00000000-0000-4000-8000-00000000a0a1', null) $$, '22004', null, 'a missing business date is refused, not read as no lease running');
 
 select tests.act_as('admin.a@test.esta.test');
 select throws_ok(format($$ select public.redact_party(%L, '2026-10-07') $$, :live), 'ES002', 'ESTA_PARTY_ACTIVE_LEASE', 'a party with a running lease is refused');
@@ -94,8 +100,8 @@ select tests.act_as('admin.a@test.esta.test');
 
 select results_eq(
   format($$ select array_length(public.redact_party(%L, '2026-10-07'), 1) $$, :gone),
-  $$ values (3) $$,
-  'redaction hands back the three storage objects of the two ID cards for the caller to remove');
+  $$ values (4) $$,
+  'redaction hands back the four storage objects of the three ID cards for the caller to remove');
 
 select results_eq(
   format($$ select full_name, short_name, phone, zalo_phone, email, id_last4, address_text, notes from public.parties where id = %L $$, :gone),
@@ -103,6 +109,8 @@ select results_eq(
   'the name reads Đã xóa and every contact field is cleared');
 select is((select tags from public.parties where id = :gone), array['tenant'], 'the party keeps its tag');
 select is((select count(*)::int from public.documents where party_id = :gone and category = 'id_card'), 0, 'the ID card documents are gone');
+select is((select count(*)::int from public.documents where id = '00000000-0000-4000-8000-00000000d0a5'), 0,
+  'an ID card filed on the person''s lease, as the upload sheet files it, is erased too');
 select is((select count(*)::int from public.documents where party_id = :gone and category = 'lease_contract'), 1, 'the lease contract stays');
 select is((select count(*)::int from public.documents where id = '00000000-0000-4000-8000-00000000d0a4'), 1, 'another party''s ID card stays');
 select is((select count(*)::int from public.document_access_log where document_id = '00000000-0000-4000-8000-00000000d0a1'), 0, 'the access log of an erased document goes with it');
@@ -112,9 +120,9 @@ select is(pg_temp.footprint(), current_setting('tests.before'), 'leases, invoice
 select ok(current_setting('tests.before') ~ '^3\|1\|1\|', 'and the footprint compared is not empty');
 select is((select tenant_party_id from public.leases where id = '00000000-0000-4000-8000-00000000e0a1'), '00000000-0000-4000-8000-00000000a0a1'::uuid, 'the lease still names the party');
 
-select is((select count(*)::int from public.audit_log where table_name = 'parties' and row_id = :gone::uuid and diff::text ~ 'Lê Thị|Gone|0903|demo\.test|1234|Đường Demo'), 0,
+select is((select count(*)::int from public.audit_log where table_name = 'parties' and row_id = :gone::uuid and diff::text ~ 'Lê Thị|Gone|903000001|demo\.test|1234|Đường Demo'), 0,
   'no audit row of the party keeps an erased value');
-select is((select count(*)::int from public.audit_log where table_name = 'documents' and row_id in ('00000000-0000-4000-8000-00000000d0a1', '00000000-0000-4000-8000-00000000d0a2') and diff::text ~ 'CCCD|front|back'), 0,
+select is((select count(*)::int from public.audit_log where table_name = 'documents' and row_id in ('00000000-0000-4000-8000-00000000d0a1', '00000000-0000-4000-8000-00000000d0a2', '00000000-0000-4000-8000-00000000d0a5') and diff::text ~ 'CCCD|front|back'), 0,
   'no audit row of an erased ID card keeps its title or path');
 select results_eq(
   format($$ select action, actor_kind, actor_id from public.audit_log where table_name = 'parties' and row_id = %L and diff ? 'full_name' order by id desc limit 1 $$, :gone),
@@ -124,19 +132,25 @@ select is((select diff -> 'full_name' from public.audit_log where table_name = '
   'it shows which field was erased and not what it held');
 
 select tests.act_as('admin.a@test.esta.test');
-select is((select array_length(public.redact_party(:gone, '2026-10-07'), 1)), null, 'erasing the party again is harmless and has nothing more to remove');
+select is((select array_length(public.redact_party(:gone, '2026-10-07'), 1)), 4, 'erasing the party again hands back the files still in Storage');
+select is((select array_length(public.party_pending_files(:gone), 1)), 4, 'the person''s page can ask which files are left');
 
-select set_config('storage.allow_delete_query', 'true', true);
+select tests.act_as('viewer.a@test.esta.test');
+select is_empty($$ select 1 from storage.objects where bucket_id = 'documents' and name like '%/00000000-0000-4000-8000-00000000d0a1/%' $$, 'a viewer reads no file of an erased ID card while it waits to be removed');
+select throws_ok(format($$ select public.party_pending_files(%L) $$, :gone), '42501', null, 'a viewer cannot ask which files are pending');
 select tests.act_as('member.a@test.esta.test');
+select is_empty($$ select 1 from storage.objects where bucket_id = 'documents' and name like '%/00000000-0000-4000-8000-00000000d0a5/%' $$, 'a member reads none either');
+select set_config('storage.allow_delete_query', 'true', true);
 select is_empty(format($$ delete from storage.objects where bucket_id = 'documents' and name = %L returning 1 $$, :'a' || '/00000000-0000-4000-8000-00000000d0a2/back.jpg'),
   'a member who is not an admin removes no file');
 select tests.act_as('admin.a@test.esta.test');
 select is_empty(format($$ delete from storage.objects where bucket_id = 'documents' and name = %L returning 1 $$, :'a' || '/00000000-0000-4000-8000-00000000d0a3/hd.pdf'),
   'an admin removes no file of a document that still has its row');
 select results_eq(
-  format($$ with d as (delete from storage.objects where bucket_id = 'documents' and split_part(name, '/', 2) in (%L, %L) returning 1) select count(*)::int from d $$,
-    '00000000-0000-4000-8000-00000000d0a1', '00000000-0000-4000-8000-00000000d0a2'),
-  $$ values (3) $$,
+  format($$ with d as (delete from storage.objects where bucket_id = 'documents' and split_part(name, '/', 2) in (%L, %L, %L) returning 1) select count(*)::int from d $$,
+    '00000000-0000-4000-8000-00000000d0a1', '00000000-0000-4000-8000-00000000d0a2', '00000000-0000-4000-8000-00000000d0a5'),
+  $$ values (4) $$,
   'an admin removes the files of the erased ID cards, thumbnail included');
+select is((select array_length(public.redact_party(:gone, '2026-10-07'), 1)), null, 'once the files are gone, erasing again has nothing to remove');
 
 select * from finish();

@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { strFromU8, unzipSync } from 'fflate';
 import { randomUUID } from 'node:crypto';
+import sharp from 'sharp';
 import { join } from 'node:path';
 import { query } from '../scripts/db-checksum.ts';
 import { e2eServiceHeaders } from '../scripts/e2e-service.ts';
@@ -110,15 +111,29 @@ test('erasing is refused with a way forward while a lease runs or a deposit is h
   }
 });
 
-test('Ryan erases a former tenant: the name reads Đã xóa, the ID card and its files go, and the money stays (phone)', async ({ page }) => {
+test('Ryan erases a former tenant: the name reads Đã xóa, the ID card he filed on their lease and its files go, and the money stays (phone)', async ({ page }) => {
   await open(page, ME, 'light', PHONE);
   const id = randomUUID();
-  const cardId = randomUUID();
-  const path = `${HOUSEHOLD}/${cardId}/front.jpg`;
+  const leaseId = randomUUID();
   await serviceUpsert(page, 'parties', { id, household_id: HOUSEHOLD, kind: 'individual', full_name: 'Demo Người Đi Rồi', phone: '+84903999888', email: 'di.roi@demo.test', id_last4: '4321', tags: ['tenant'] });
-  const upload = await page.request.post(`${rest.replace('/rest/v1', '/storage/v1')}/object/documents/${path}`, { headers: { ...service, 'content-type': 'image/jpeg' }, data: Buffer.from('jpeg') });
-  expect(upload.ok(), await upload.text()).toBe(true);
-  await serviceUpsert(page, 'documents', { id: cardId, household_id: HOUSEHOLD, party_id: id, category: 'id_card', title: 'CCCD Demo', storage_path: path, mime: 'image/jpeg', size_bytes: 4, sha256: 'b'.repeat(64), sensitivity: 'sensitive' });
+  const [room] = query<{ property_id: string; id: string }>(workdir, `select property_id::text as property_id, id::text as id from public.units where household_id = '${HOUSEHOLD}' and kind = 'room' order by id limit 1`);
+  await serviceUpsert(page, 'leases', { id: leaseId, household_id: HOUSEHOLD, property_id: room?.property_id, unit_id: room?.id, tenant_party_id: id, start_date: '2019-01-01', end_date: '2019-12-31', rent_vnd: 2_000_000, deposit_vnd: 0, status: 'ended' });
+
+  await page.goto(`/properties/${room?.property_id}/rental/leases/${leaseId}`);
+  await expect(page.getByTestId('lease-upload')).toBeEnabled({ timeout: 15_000 });
+  await page.getByTestId('lease-upload').click();
+  const card = await sharp({ create: { width: 640, height: 400, channels: 3, noise: { type: 'gaussian', mean: 128, sigma: 40 } } }).jpeg().toBuffer();
+  await page.getByTestId('camera-input').setInputFiles({ name: 'cccd.jpg', mimeType: 'image/jpeg', buffer: card });
+  await expect(page.getByTestId('upload-preview')).toBeVisible({ timeout: 30_000 });
+  await page.getByTestId('document-category').selectOption('id_card');
+  await page.getByTestId('document-title').fill('CCCD Demo Người Đi Rồi');
+  await page.getByTestId('save-document').click();
+  await expect(page.getByTestId('lease-document')).toHaveCount(1, { timeout: 30_000 });
+  const [filed] = query<{ id: string; party_id: string | null }>(workdir, `select id::text as id, party_id::text as party_id from public.documents where lease_id = '${leaseId}' and category = 'id_card'`);
+  const cardId = filed?.id ?? '';
+  expect(filed?.party_id, 'the upload sheet files the card on the lease, not on the person').toBeNull();
+  const filesOf = () => query<{ n: number }>(workdir, `select count(*)::int as n from storage.objects where bucket_id = 'documents' and name like '${HOUSEHOLD}/${cardId}/%'`)[0]?.n;
+  expect(filesOf(), 'the upload put the file and its previews in Storage').toBeGreaterThan(0);
   const totals = () => query<{ leases: number; invoices: number; payments: number }>(workdir, `select (select count(*) from public.leases where household_id = '${HOUSEHOLD}')::int as leases, (select count(*) from public.invoices where household_id = '${HOUSEHOLD}')::int as invoices, (select count(*) from public.payments where household_id = '${HOUSEHOLD}')::int as payments`)[0];
   const before = totals();
 
@@ -131,13 +146,48 @@ test('Ryan erases a former tenant: the name reads Đã xóa, the ID card and its
   await expect(page.getByTestId('tenant-erased')).toBeVisible();
   await expect(page.getByTestId('tenant-name')).toHaveText('Đã xóa');
   await expect(page.getByTestId('erase-start')).toHaveCount(0);
+  await expect(page.getByTestId('export-start'), 'nothing is left to export once the details are erased').toHaveCount(0);
+  await expect(page.getByTestId('finish-start')).toHaveCount(0);
   await shot(page, 'p6-02c-erased-390-light');
   expect(await noSidewaysScroll(page)).toBe(true);
   expect(await seriousAxeViolations(page)).toEqual([]);
 
   expect(query(workdir, `select full_name, phone, email, id_last4 from public.parties where id = '${id}'`)).toEqual([{ full_name: 'Đã xóa', phone: null, email: null, id_last4: null }]);
-  expect(query<{ n: number }>(workdir, `select count(*)::int as n from public.documents where id = '${cardId}'`)[0]?.n).toBe(0);
-  expect(query<{ n: number }>(workdir, `select count(*)::int as n from storage.objects where bucket_id = 'documents' and name like '${HOUSEHOLD}/${cardId}/%'`)[0]?.n, 'the file is gone from Storage').toBe(0);
+  expect(query<{ n: number }>(workdir, `select count(*)::int as n from public.documents where id = '${cardId}'`)[0]?.n, 'the ID card document is gone').toBe(0);
+  expect(filesOf(), 'the files are gone from Storage').toBe(0);
   expect(totals()).toEqual(before);
   expect(query<{ n: number }>(workdir, `select count(*)::int as n from public.audit_log where row_id = '${id}' and diff::text ~ 'Người Đi Rồi|di.roi|4321|903999888'`)[0]?.n, 'the audit trail keeps no erased value').toBe(0);
+});
+
+test('an erase that stopped before the files went hides them from a viewer, and the person\'s page finishes the job (phone)', async ({ page, browser }) => {
+  await open(page, ME, 'light', PHONE);
+  const id = randomUUID();
+  const cardId = randomUUID();
+  const name = `${HOUSEHOLD}/${cardId}/front.jpg`;
+  await serviceUpsert(page, 'parties', { id, household_id: HOUSEHOLD, kind: 'individual', full_name: 'Đã xóa', tags: ['tenant'] });
+  const upload = await page.request.post(`${rest.replace('/rest/v1', '/storage/v1')}/object/documents/${name}`, { headers: { ...service, 'content-type': 'image/jpeg' }, data: Buffer.from('jpeg') });
+  expect(upload.ok(), await upload.text()).toBe(true);
+  query(workdir, `insert into private.file_removals (name, household_id, party_id) values ('${name}', '${HOUSEHOLD}', '${id}')`);
+  const stored = () => query<{ n: number }>(workdir, `select count(*)::int as n from storage.objects where bucket_id = 'documents' and name = '${name}'`)[0]?.n;
+  expect(stored()).toBe(1);
+
+  const invited = `viewer.party.lane${LANE}@demo.esta.test`;
+  await serviceUpsert(page, 'household_members', { household_id: HOUSEHOLD, invited_email: invited, role: 'viewer' }).catch(() => undefined);
+  const viewer = await browser.newPage();
+  try {
+    await open(viewer, invited, 'light', PHONE);
+    const token = await viewer.evaluate(() => Object.values(localStorage).join(' '));
+    expect(token.length).toBeGreaterThanOrEqual(0);
+    const read = await viewer.request.get(`${rest.replace('/rest/v1', '/storage/v1')}/object/authenticated/documents/${name}`);
+    expect(read.status(), 'a viewer gets no file').toBeGreaterThanOrEqual(400);
+  } finally {
+    await viewer.close();
+  }
+
+  await page.goto(`/tenants/${id}`);
+  await expect(page.getByTestId('tenant-erased')).toBeVisible();
+  await page.getByTestId('finish-start').click();
+  await page.getByTestId('erase-confirm').click();
+  await expect(page.getByTestId('finish-start')).toHaveCount(0, { timeout: 15_000 });
+  expect(stored(), 'the retry removed the file').toBe(0);
 });

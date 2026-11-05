@@ -49,7 +49,22 @@ async function* once(rows: Row[]): AsyncGenerator<Row[]> {
   if (rows.length > 0) yield rows;
 }
 
-/** Another tenant's rows are never read: every read names this person's ids, and a payment or document joins only through them. */
+const WITHHELD_COLUMNS: Readonly<Record<string, readonly string[]>> = { invoices: ['share_token'] };
+const OTHER_PAYER_FIELDS = ['payer_party_id', 'memo', 'bank_ref', 'statement_row_id', 'idempotency_key'] as const;
+
+const amountOf = (row: Row) => Number(row.amount_vnd);
+
+/** A transfer someone else split across rooms shows this person's share and date only, never the other payer or the bank's text. */
+function paymentFor(payment: Row, shares: readonly Row[], partyId: string): Row {
+  const mineSum = shares.filter((share) => share.mine === true).reduce((sum, share) => sum + amountOf(share), 0);
+  const split = shares.some((share) => share.mine !== true);
+  if (!split || payment.payer_party_id === partyId) return payment;
+  const redacted: Row = { ...payment, amount_vnd: mineSum };
+  for (const field of OTHER_PAYER_FIELDS) redacted[field] = null;
+  return redacted;
+}
+
+/** Every write names this person's ids. Another tenant's allocations are read only to tell a split transfer, and none is written. */
 export async function writePartyExport(client: SupabaseClient, householdId: string, partyId: string, sink: ExportSink, { clock }: PartyExportOptions): Promise<WrittenPartyExport> {
   const read = (table: string, scope: Scope) => readWhere(client, householdId, table, scope);
   const parties = await read('parties', { column: 'id', values: [partyId] });
@@ -59,17 +74,24 @@ export async function writePartyExport(client: SupabaseClient, householdId: stri
   const invoiceIds = idsOf(invoices);
   const invoiceLines = await read('invoice_lines', { column: 'invoice_id', values: invoiceIds });
   const paid = await read('payments', { column: 'payer_party_id', values: [partyId] });
-  const allocations = union(await read('payment_allocations', { column: 'invoice_id', values: invoiceIds }), await read('payment_allocations', { column: 'payment_id', values: idsOf(paid) }));
-  const payments = union(paid, await read('payments', { column: 'id', values: [...new Set(allocations.map((row) => String(row.payment_id)))] }));
+  const mineAllocations = await read('payment_allocations', { column: 'invoice_id', values: invoiceIds });
+  const paymentIds = [...new Set([...idsOf(paid), ...mineAllocations.map((row) => String(row.payment_id))])];
+  const everyAllocation = await read('payment_allocations', { column: 'payment_id', values: paymentIds });
+  const mineIds = new Set(invoiceIds);
+  const allocations = everyAllocation.filter((row) => mineIds.has(String(row.invoice_id)));
+  const sharesOf = (paymentId: string) => everyAllocation.filter((row) => String(row.payment_id) === paymentId).map((row) => ({ ...row, mine: mineIds.has(String(row.invoice_id)) }));
+  const payments = union(paid, await read('payments', { column: 'id', values: paymentIds })).map((payment) => paymentFor(payment, sharesOf(String(payment.id)), partyId));
   const depositEntries = await read('deposit_entries', { column: 'lease_id', values: leaseIds });
   const documents = union(await read('documents', { column: 'party_id', values: [partyId] }), await read('documents', { column: 'lease_id', values: leaseIds }));
 
   const written: Record<string, Row[]> = { parties, leases, invoices, invoice_lines: invoiceLines, payments, payment_allocations: allocations, deposit_entries: depositEntries, documents };
   const counts: Record<string, number> = {};
   for (const [name, rows] of Object.entries(written)) {
-    const columns = EXPORT_TABLES.find((table) => table.name === name)?.columns ?? [];
-    await sink.add(`tables/${name}.json`, jsonChunks(once(rows), () => undefined));
-    await sink.add(`tables/${name}.csv`, csvChunks(once(rows), columns));
+    const withheld = WITHHELD_COLUMNS[name] ?? [];
+    const columns = (EXPORT_TABLES.find((table) => table.name === name)?.columns ?? []).filter((column) => !withheld.includes(column));
+    const shown = withheld.length === 0 ? rows : rows.map((row) => Object.fromEntries(Object.entries(row).filter(([key]) => !withheld.includes(key))));
+    await sink.add(`tables/${name}.json`, jsonChunks(once(shown), () => undefined));
+    await sink.add(`tables/${name}.csv`, csvChunks(once(shown), columns));
     counts[name] = rows.length;
   }
 
