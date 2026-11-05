@@ -14,7 +14,8 @@ import { useSettled } from '@/components/use-settled';
 type DateInputProps = {
   label: string;
   defaultValue?: IsoDate;
-  onValueChange?: (value: IsoDate | null) => void;
+  /** `readable` is false for text that is not a day on the calendar, which also gives a null value, as an empty field does. */
+  onValueChange?: (value: IsoDate | null, readable: boolean) => void;
   /** The text as typed, for a form that must tell an empty field from one that does not read as a date. */
   onTextChange?: (text: string) => void;
   name?: string;
@@ -37,7 +38,7 @@ export function DateInput({ label, defaultValue, onValueChange, onTextChange, na
     setText(next);
     onTextChange?.(next);
     const parsed = parseDateInput(next);
-    onValueChange?.(parsed.ok ? parsed.value : null);
+    onValueChange?.(parsed.ok ? parsed.value : null, parsed.ok || parsed.reason === 'empty');
   };
 
   return (

@@ -1,6 +1,5 @@
 'use client';
 
-import type { IsoDate } from '@esta/core/date';
 import { measureInputText, parseMeasureInput } from '@esta/core/parse/measure';
 import type { Purpose } from '@esta/core/schemas/legal';
 import { Plus, X } from 'lucide-react';
@@ -9,10 +8,11 @@ import { DateInput } from '@/components/date-input';
 import { TextField } from '@/components/form-parts';
 import { FormSelect } from '@/components/properties/address-picker';
 import { Button } from '@/components/ui/button';
+import { dateInputProps, dateReading, type DateReading } from '@/components/use-date-field';
 import type { LandUseCode } from '@/server/properties/legal';
 import { LandUseCodePicker } from './land-use-code-picker';
 
-export type PurposeDraft = { readonly key: number; readonly code: string; readonly areaText: string; readonly term: '' | 'long_term' | 'until'; readonly until: IsoDate | null };
+export type PurposeDraft = { readonly key: number; readonly code: string; readonly areaText: string; readonly term: '' | 'long_term' | 'until'; readonly until: DateReading };
 
 export function purposeDraft(key: number, purpose?: Purpose): PurposeDraft {
   const term = purpose?.term;
@@ -21,7 +21,7 @@ export function purposeDraft(key: number, purpose?: Purpose): PurposeDraft {
     code: purpose?.land_use_code ?? '',
     areaText: purpose?.area_m2 === undefined ? '' : measureInputText(purpose.area_m2),
     term: term === undefined ? '' : term === 'long_term' ? 'long_term' : 'until',
-    until: term === undefined || term === 'long_term' ? null : term,
+    until: dateReading(term === undefined || term === 'long_term' ? null : term),
   };
 }
 
@@ -34,11 +34,11 @@ export function readPurposes(drafts: readonly PurposeDraft[]): { ok: true; value
     if (code === '') return { ok: false, invalid: { key: draft.key, field: 'code' } };
     const area = draft.areaText.trim() === '' ? null : parseMeasureInput(draft.areaText, 'area');
     if (area !== null && !area.ok) return { ok: false, invalid: { key: draft.key, field: 'area' } };
-    if (draft.term === 'until' && draft.until === null) return { ok: false, invalid: { key: draft.key, field: 'until' } };
+    if (draft.term === 'until' && draft.until.value === null) return { ok: false, invalid: { key: draft.key, field: 'until' } };
     value.push({
       land_use_code: code,
       ...(area === null ? {} : { area_m2: area.value }),
-      ...(draft.term === 'long_term' ? { term: 'long_term' } : draft.term === 'until' && draft.until !== null ? { term: draft.until } : {}),
+      ...(draft.term === 'long_term' ? { term: 'long_term' } : draft.term === 'until' && draft.until.value !== null ? { term: draft.until.value } : {}),
     });
   }
   return { ok: true, value };
@@ -98,7 +98,7 @@ export function PurposeRows({
                 onChange={(term) => update(draft.key, { term: term === 'long_term' || term === 'until' ? term : '' })}
               />
               {draft.term === 'until' ? (
-                <DateInput label={t('purposeTermUntil')} {...(draft.until === null ? {} : { defaultValue: draft.until })} onValueChange={(until) => update(draft.key, { until })} />
+                <DateInput label={t('purposeTermUntil')} {...dateInputProps(draft.until, (until) => update(draft.key, { until }))} />
               ) : null}
             </div>
             <Button

@@ -1,11 +1,11 @@
 'use client';
 
-import type { IsoDate } from '@esta/core/date';
 import { acceptsMime, DOCUMENT_CATEGORY_IDS, defaultDocumentTitle, isDocumentCategory, type DocumentCategory } from '@esta/core/documents';
 import { Camera, Files, FolderOpen, RotateCw } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { DateInput } from '@/components/date-input';
+import { useDateField } from '@/components/use-date-field';
 import { FieldMessage } from '@/components/field-message';
 import { TextField } from '@/components/form-parts';
 import { FormSelect } from '@/components/properties/address-picker';
@@ -50,7 +50,7 @@ export default function UploadSheet({
   const prefix = (next: DocumentCategory) => defaultDocumentTitle(t('titlePrefix', { category: next }), nickname);
   const [titleOverride, setTitleOverride] = useState<string | null>(null);
   const title = titleOverride ?? prefix(category);
-  const [expiresOn, setExpiresOn] = useState<IsoDate | null>(null);
+  const expires = useDateField(null);
   const [titleMissing, setTitleMissing] = useState(false);
   const [fileMissing, setFileMissing] = useState(false);
   const [capturing, setCapturing] = useState(false);
@@ -65,7 +65,7 @@ export default function UploadSheet({
         propertyId,
         category,
         title,
-        expiresOn,
+        expiresOn: expires.reading.value,
         filename: file.name,
         mime: file.type,
         size: file.size,
@@ -119,7 +119,7 @@ export default function UploadSheet({
     const missingTitle = title.trim() === '';
     setTitleMissing(missingTitle);
     setFileMissing(prepared === null);
-    if (prepared === null || missingTitle || problem !== null) return;
+    if (prepared === null || missingTitle || problem !== null || expires.reading.unreadable) return;
     send({ propertyId, category });
   };
 
@@ -228,7 +228,7 @@ export default function UploadSheet({
             error={titleMissing ? t('titleRequired') : null}
             onChange={setTitleOverride}
           />
-          <DateInput label={t('expiresField')} onValueChange={setExpiresOn} />
+          <DateInput label={t('expiresField')} {...expires.input} />
           {upload.step === 'uploading' ? <UploadProgress loaded={upload.loaded} total={upload.total} /> : null}
           <FormAlert message={upload.step === 'failed' ? t('networkError') : null} data-testid="upload-error" />
           {leaving !== null && !capturing ? (

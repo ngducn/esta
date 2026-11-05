@@ -1,6 +1,5 @@
 'use client';
 
-import type { IsoDate } from '@esta/core/date';
 import { MAX_AMOUNT_VND } from '@esta/core/money';
 import { measureInputText, parseMeasureInput } from '@esta/core/parse/measure';
 import { parseVndInput } from '@esta/core/parse/vnd-input';
@@ -12,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { saveUnit } from '@/app/(app)/properties/[id]/rental/actions';
 import { DateInput } from '@/components/date-input';
+import { useDateField } from '@/components/use-date-field';
 import { TextField } from '@/components/form-parts';
 import { MoneyInput } from '@/components/money/money-input';
 import { FormSelect } from '@/components/properties/address-picker';
@@ -45,7 +45,7 @@ export default function UnitSheet({
   const [kind, setKind] = useState<UnitKind>(unit?.kind ?? 'room');
   const [area, setArea] = useState(unit === null || unit.area_m2 === null ? '' : measureInputText(unit.area_m2));
   const [rentText, setRentText] = useState(unit === null || unit.list_rent_vnd === null ? '' : vndInputText(unit.list_rent_vnd));
-  const [availableFrom, setAvailableFrom] = useState<IsoDate | null>(unit?.available_from ?? null);
+  const available = useDateField(unit?.available_from ?? null);
   const [invalid, setInvalid] = useState<Invalid>(null);
   const [error, setError] = useState<RentalFormErrorKind>(null);
   const { pending, run } = useAction();
@@ -57,12 +57,12 @@ export default function UnitSheet({
     const rentOk = rent.ok && (rent.value === null || rent.value <= MAX_AMOUNT_VND);
     const wrong: Invalid = label.trim() === '' ? 'label' : !areaValue.ok ? 'area' : !rentOk ? 'rent' : null;
     setInvalid(wrong);
-    if (wrong !== null || !areaValue.ok || !rent.ok) {
+    if (wrong !== null || !areaValue.ok || !rent.ok || available.reading.unreadable) {
       setError('invalid');
       return;
     }
     setError(null);
-    const value = { label, kind, area_m2: areaValue.value, list_rent_vnd: rent.value, available_from: availableFrom };
+    const value = { label, kind, area_m2: areaValue.value, list_rent_vnd: rent.value, available_from: available.reading.value };
     run(
       () => saveUnit(propertyId, unit?.id ?? null, value),
       (result) => {
@@ -127,7 +127,7 @@ export default function UnitSheet({
         onChange={setArea}
       />
       <MoneyInput label={t('rentField')} defaultText={rentText} onTextChange={setRentText} />
-      <DateInput label={t('availableField')} {...(availableFrom === null ? {} : { defaultValue: availableFrom })} onValueChange={setAvailableFrom} />
+      <DateInput label={t('availableField')} {...available.input} />
     </FormSheet>
   );
 }

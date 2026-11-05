@@ -8,18 +8,19 @@ import type { NewParty } from '@esta/core/schemas/party';
 import { useTranslations } from 'next-intl';
 import { DateInput } from '@/components/date-input';
 import { MoneyInput } from '@/components/money/money-input';
+import { dateInputProps, dateReading, type DateReading } from '@/components/use-date-field';
 import type { PartyOption } from '@/server/properties/legal';
 import { BankPicker } from './party-picker';
 
-export type MortgageDraft = { readonly bankId: string; readonly amountText: string; readonly registeredOn: IsoDate | null; readonly releasedOn: IsoDate | null };
-export type MortgageInvalid = 'bank' | 'amount' | 'released';
+export type MortgageDraft = { readonly bankId: string; readonly amountText: string; readonly registeredOn: DateReading; readonly releasedOn: DateReading };
+export type MortgageInvalid = 'bank' | 'amount' | 'released' | 'date';
 
 export function mortgageDraft(mortgage: Mortgage | null): MortgageDraft {
   return {
     bankId: mortgage?.bank_party_id ?? '',
     amountText: mortgage === null ? '' : String(mortgage.amount_vnd),
-    registeredOn: mortgage?.registered_on ?? null,
-    releasedOn: mortgage?.released_on ?? null,
+    registeredOn: dateReading(mortgage?.registered_on ?? null),
+    releasedOn: dateReading(mortgage?.released_on ?? null),
   };
 }
 
@@ -35,14 +36,15 @@ export function readMortgage(status: CertificateStatus, draft: MortgageDraft): {
   if (draft.bankId === '') return { ok: false, invalid: 'bank' };
   const amount = parseVndInput(draft.amountText);
   if (!amount.ok) return { ok: false, invalid: 'amount' };
-  if (status !== 'mortgaged' && draft.releasedOn === null) return { ok: false, invalid: 'released' };
+  if (draft.registeredOn.unreadable || draft.releasedOn.unreadable) return { ok: false, invalid: 'date' };
+  if (status !== 'mortgaged' && draft.releasedOn.value === null) return { ok: false, invalid: 'released' };
   return {
     ok: true,
     value: {
       bank_party_id: draft.bankId,
       amount_vnd: amount.value,
-      ...(draft.registeredOn === null ? {} : { registered_on: draft.registeredOn }),
-      ...(status === 'mortgaged' || draft.releasedOn === null ? {} : { released_on: draft.releasedOn }),
+      ...(draft.registeredOn.value === null ? {} : { registered_on: draft.registeredOn.value }),
+      ...(status === 'mortgaged' || draft.releasedOn.value === null ? {} : { released_on: draft.releasedOn.value }),
     },
   };
 }
@@ -76,15 +78,13 @@ export function MortgageFields({
       <div className="grid gap-4 sm:grid-cols-2">
         <DateInput
           label={t('registeredOnLabel')}
-          {...(draft.registeredOn === null ? {} : { defaultValue: draft.registeredOn })}
-          onValueChange={(registeredOn) => onChange({ ...draft, registeredOn })}
+          {...dateInputProps(draft.registeredOn, (registeredOn) => onChange({ ...draft, registeredOn }))}
         />
         {status === 'mortgaged' ? null : (
           <div className="flex flex-col gap-1">
             <DateInput
               label={t('releasedOnLabel')}
-              {...(draft.releasedOn === null ? {} : { defaultValue: draft.releasedOn })}
-              onValueChange={(releasedOn) => onChange({ ...draft, releasedOn })}
+              {...dateInputProps(draft.releasedOn, (releasedOn) => onChange({ ...draft, releasedOn }))}
             />
             {invalid === 'released' ? (
               <p role="alert" className="text-body-sm text-danger-text">
