@@ -57,7 +57,7 @@ export async function AssistantSection({ member }: { member: Member }) {
               ))}
             </ul>
           )}
-          <Link href="/assistant/diagnostics" className="w-fit text-body font-medium text-text-secondary underline underline-offset-4 hover:decoration-2">
+          <Link href="/assistant/diagnostics" className="inline-flex min-h-touch w-fit items-center text-body font-medium text-text-secondary underline underline-offset-4 hover:decoration-2">
             {t('runsAll')}
           </Link>
         </Card>

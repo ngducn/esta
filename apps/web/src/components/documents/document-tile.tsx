@@ -121,7 +121,7 @@ export function DocumentTile({
           href={`/documents/${document.id}`}
           prefetch={false}
           data-testid="document-link"
-          className="text-body font-medium break-words text-text underline-offset-4 hover:underline"
+          className="-my-2.5 block py-2.5 text-body font-medium break-words text-text underline-offset-4 hover:underline"
         >
           {document.title}
         </Link>

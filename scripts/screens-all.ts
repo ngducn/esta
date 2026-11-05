@@ -32,12 +32,15 @@ async function inspect(page: Page, phone: boolean): Promise<Finding[]> {
           if (!visible(element) || (element as HTMLInputElement).disabled) continue;
           const style = getComputedStyle(element);
           if (style.display === 'inline' && element.tagName === 'A') continue;
-          const rect = element.getBoundingClientRect();
+          const rect = (element.closest('label') ?? element).getBoundingClientRect();
+          if (rect.width <= 2 || rect.height <= 2) continue;
           if (rect.height < target) out.push({ kind: 'small-target', detail: `${label(element)} is ${Math.round(rect.width)} x ${Math.round(rect.height)}` });
         }
       }
       for (const element of document.querySelectorAll('main *, header *, nav *')) {
         if (!visible(element) || element.children.length > 0 || !element.textContent?.trim()) continue;
+        const box = element.getBoundingClientRect();
+        if (box.width <= 2 || box.height <= 2) continue;
         const style = getComputedStyle(element);
         const clips = style.overflowX === 'hidden' || style.overflowX === 'clip';
         if (clips && element.scrollWidth > element.clientWidth + 1 && style.textOverflow !== 'ellipsis') out.push({ kind: 'clipped-text', detail: label(element) });
@@ -63,14 +66,16 @@ async function main() {
       for (const theme of THEMES) {
         const context = await browser.newContext({ viewport: size, baseURL, ...(size.width < 500 ? { isMobile: true, hasTouch: true, deviceScaleFactor: 2 } : {}) });
         const page = await context.newPage();
+        await page.addInitScript('window.__name = (target) => target');
         for (const viewer of VIEWERS) {
           await startAs(page, baseURL, viewer, theme);
           for (const route of OPEN_ROUTES.filter((entry) => entry.viewer === viewer)) {
             await visit(page, route);
             await page.waitForTimeout(400);
             const file = `${route.id}-${size.width}-${theme}.png`;
+            const findings = await inspect(page, size.width < 500);
             await page.screenshot({ path: join(OUT, file), fullPage: true });
-            rows.push({ file, id: route.id, width: size.width, theme, findings: await inspect(page, size.width < 500) });
+            rows.push({ file, id: route.id, width: size.width, theme, findings });
             console.log(`${file} ${rows.at(-1)?.findings.length ?? 0}`);
           }
         }
