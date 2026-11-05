@@ -5,7 +5,7 @@ import type { IsoDate } from '@esta/core/date';
 import type { Locale } from '@esta/core/format';
 import { checkNote, repairMessage, type FactSheet, type FilledNote, type NoteFormat, type NoteViolation } from '@esta/core/guard';
 import type { TablesInsert } from '@esta/db';
-import { WATCH_SEVERITIES, watchDedupeKey, type DescribedFact, type WatchSeverity } from '@esta/core/watch';
+import { groupActionFacts, WATCH_SEVERITIES, type DescribedFact, type WatchSeverity } from '@esta/core/watch';
 import type { AgentDb } from '../supabase';
 import { ToolRejection } from './server';
 
@@ -114,7 +114,7 @@ const handles = (list: readonly string[]) => list.join(', ');
 
 /**
  * `create_item` for portfolio_watch. The model names the facts a note covers; the tool sets the note's severity from
- * them and its dedupe key from its one action fact, or the day's digest key, so a rerun on the same day adds nothing
+ * them and its dedupe key from the group of action facts it tells (all of one rule), or the day's digest key, so a rerun on the same day adds nothing
  * (AGENT.md §5.3). The title (plain text) and the body (Markdown) pass the number guard before anything is written.
  */
 export function watchNoteWriter(binding: NoteBinding) {
@@ -142,13 +142,17 @@ export function watchNoteWriter(binding: NoteBinding) {
     if (again.length > 0) throw new ToolRejection(`${handles(again)}: already in a note of this run. Relate each fact to one note.`);
     const facts = related.flatMap((handle) => binding.facts.get(handle) ?? []);
     const action = facts.find(({ fact }) => fact.severity === 'action');
-    // An action note is keyed by its one fact, so a rerun that groups the facts another way finds the note it wrote.
-    if (action !== undefined && related.length > 1) throw new ToolRejection(`${handles(related)}: a note about an action fact relates that fact alone. Write one note for each action fact, and put the watch and info facts in the grouped note.`);
+    if (action !== undefined && facts.some(({ fact }) => fact.severity !== 'action')) throw new ToolRejection(`${handles(related)}: a note about action facts holds action facts only. Put the watch and info facts in the grouped note.`);
+    // An action note is keyed by its rule's group, so a rerun that splits the facts another way finds the note it wrote.
+    const group = action === undefined ? undefined : groupActionFacts([...binding.facts].map(([handle, { fact }]) => ({ handle, fact })), binding.asOf).find(({ handles: members }) => members.includes(related[0] ?? ''));
+    if (group !== undefined && (related.length !== group.handles.length || !group.handles.every((handle) => related.includes(handle)))) {
+      throw new ToolRejection(`${handles(related)}: the ${group.ruleId} action facts are told in one note. Relate exactly ${handles(group.handles)}.`);
+    }
     if (action === undefined && digest) throw new ToolRejection('This run already wrote the grouped note. Put every watch and info fact in that one note.');
 
     if (LINK.test(note.title) || LINK.test(note.body_md)) throw new ToolRejection('A note holds no link: the app links the records itself. Take out the link and call create_item again.');
 
-    const dedupeKey = action === undefined ? `watch_digest:${binding.asOf}` : watchDedupeKey(action.fact, binding.asOf);
+    const dedupeKey = group?.dedupeKey ?? `watch_digest:${binding.asOf}`;
     const [title, body] = await guardFor(dedupeKey).fill(
       [
         { template: note.title, format: 'plain' },
