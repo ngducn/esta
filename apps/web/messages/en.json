@@ -505,16 +505,17 @@
     "noLocationBody": "Drop a pin on the map or paste a Google Maps link, so the family knows the way here.",
     "mapLabel": "Map of {nickname}",
     "activityTitle": "Change history",
-    "activityEmpty": "No changes yet.",
+    "activityEmpty": "No changes yet",
     "activityEntry": "<b>{actor}</b> {event} <when>at {time}, {date}</when>",
-    "actor": "{actor, select, assistant {Trợ lý} seed {Sample data} system {System} other {A member}}",
+    "actor": "{actor, select, assistant {Trợ lý} seed {Sample data} system {Esta, automatically} other {A member}}",
     "event": "{event, select, created {added the property} deleted {deleted the property} renamed {renamed it to {name}} location {updated the location} locationCleared {removed the location} boundary {updated the boundary} boundaryCleared {removed the boundary} address {updated the address} certificateAddress {updated the certificate address} photo {changed the photo} kind {changed the kind} kindDetails {updated the details} useMode {changed the use} legalStatus {updated the legal status} archived {archived the property} restored {restored the property} other {updated the details}}",
     "notFoundTitle": "Property not found",
     "notFoundBody": "It may have been archived, or it belongs to another household.",
     "notFoundAction": "Back to properties",
     "edit": "Edit details",
     "askAssistant": "Ask Trợ lý about this property",
-    "askAssistantShort": "Ask Trợ lý"
+    "askAssistantShort": "Ask Trợ lý",
+    "activityEmptyBody": "Each edit to the property details or photo is recorded here."
   },
   "completeness": {
     "title": "Completeness",
