@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 export async function HomeBrief({ summary, briefId, lastRun }: { summary: string | null; briefId: string | null; lastRun: WallClockStamp | null }) {
   const [t, assistant] = await Promise.all([getTranslations('home'), getTranslations('assistant')]);
   return (
-    <section aria-labelledby="home-brief-title" data-testid="home-brief" className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
+    <section aria-labelledby="home-brief-title" data-testid="home-brief" className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-card-pad shadow-xs">
       <header className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <AssistantMonogram />
         <h2 id="home-brief-title" className="text-body font-semibold text-text">

@@ -68,7 +68,7 @@ async function expectSeedHome(page: Page) {
   await expect(page.getByTestId('date-line')).toHaveText('Thứ Tư, 07/10/2026');
   await expect(page.getByRole('heading', { level: 2, name: 'Cần làm hôm nay' })).toBeVisible();
   expect(await titles(page)).toEqual([PHONG_5, THU_DUC, Q7_INSURANCE]);
-  expect(await actions(page)).toEqual(['Ghi nhận', 'Gia hạn', 'Xem tài liệu']);
+  expect(await actions(page)).toEqual(['Ghi nhận', 'Gia hạn', 'Xem giấy tờ']);
   await expect(item(page, PHONG_5).locator('[data-status="overdue"]')).toHaveText('Quá hạn 12 ngày');
   await expect(item(page, THU_DUC)).toContainText('Hợp đồng hết hạn 01/11/2026, còn 25 ngày');
   await expect(item(page, Q7_INSURANCE)).toContainText('Hết hạn sau 23 ngày');
@@ -136,6 +136,17 @@ test('Home’s figure and counts equal the board and invoice_balances, before an
   expect(paid.counts).toEqual({ overdue: 1, due: 0, notDue: 5, paid: 3 });
 });
 
+test('the meter’s share collected equals payments toward October’s rent read from the database, at 390 and 1440', async ({ page }) => {
+  for (const [size, viewport] of [['390', PHONE], ['1440', DESKTOP]] as const) {
+    await open(page, MOM, 'light', viewport);
+    const { collected, billed } = await balancesFor(page, DEMO, '2026-10-01', '2026-11-01');
+    const card = page.getByTestId('month-collection');
+    await expect(card.getByRole('meter'), size).toHaveAttribute('aria-valuenow', String(Math.floor((collected * 100) / billed)));
+    await expect(card.getByRole('img', { name: 'Chưa có số liệu' }), 'a known figure is never the dash').toHaveCount(0);
+    expect(await seriousAxeViolations(page), size).toEqual([]);
+  }
+});
+
 test('on 25/10 nine things are due and Home shows seven, with Xem tất cả ở Thu tiền', async ({ page, request }) => {
   await setClock(request, '2026-10-25T09:00:00+07:00');
   try {
@@ -177,13 +188,13 @@ test('Mẹ records Phòng 5 from Home: the item leaves, October’s figure stays
   await hold(page);
 });
 
-test('Gia hạn opens the Thủ Đức lease with the renew sheet ready, and Xem tài liệu opens the insurance', async ({ page }) => {
+test('Gia hạn opens the Thủ Đức lease with the renew sheet ready, and Xem giấy tờ opens the insurance', async ({ page }) => {
   await open(page, MOM, 'light', PHONE);
   await item(page, THU_DUC).getByRole('link', { name: 'Gia hạn' }).click();
   await expect(page).toHaveURL(/\/rental\/leases\/[0-9a-f-]+\?renew=1$/);
   await expect(page.getByTestId('renew-sheet')).toBeVisible();
   await page.goto('/');
-  await item(page, Q7_INSURANCE).getByRole('link', { name: 'Xem tài liệu' }).click();
+  await item(page, Q7_INSURANCE).getByRole('link', { name: 'Xem giấy tờ' }).click();
   await expect(page).toHaveURL(/\/documents\/[0-9a-f-]+$/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(Q7_INSURANCE);
 });
@@ -205,7 +216,7 @@ test('offline, Home says it could not load and keeps the last list', async ({ pa
   await expect(page.getByTestId('home-offline')).toHaveCount(0);
   await page.context().setOffline(true);
   try {
-    await expect(page.getByTestId('home-offline')).toHaveText('Chưa tải được. Kiểm tra kết nối mạng rồi thử lại.');
+    await expect(page.getByTestId('home-offline')).toHaveText('Chưa tải được. Kiểm tra mạng rồi thử lại.');
     await expect(item(page, PHONG_5)).toBeVisible();
   } finally {
     await page.context().setOffline(false);
@@ -220,7 +231,7 @@ test('in English at 130% the Phòng 5 item reads in English with its action, and
     await expect(page.getByRole('heading', { level: 2, name: 'To do today' })).toBeVisible();
     await expect(item(page, PHONG_5).locator('[data-status="overdue"]')).toHaveText('12 days overdue');
     await expect(item(page, PHONG_5).getByRole('button', { name: 'Record' })).toBeVisible();
-    await expect(page.getByTestId('month-figure')).toContainText('Collected');
+    await expect(page.getByTestId('month-collection')).toContainText('Collected');
     expect(await noSidewaysScroll(page)).toBe(true);
     const clipped = await page
       .getByTestId('month-figure')

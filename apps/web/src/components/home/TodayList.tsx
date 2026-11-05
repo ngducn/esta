@@ -171,7 +171,7 @@ function TodayRow({ item, titleId, asOf, payment }: { item: Item; titleId: strin
 export function TodayList({ today, asOf, payment }: { today: TodayListData<HomeSnapshot>; asOf: IsoDate; payment: TodayPayment | null }) {
   const t = useTranslations('home');
   return (
-    <section aria-labelledby="today-title" data-testid="today" className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
+    <section aria-labelledby="today-title" data-testid="today" className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-card-pad shadow-xs">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h2 id="today-title" className="text-title-3 text-text">
           {t('todayTitle')}

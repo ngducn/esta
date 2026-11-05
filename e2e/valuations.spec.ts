@@ -125,7 +125,7 @@ test('lane 5: Home at 1440 light shows the portfolio figure as an estimate with 
   await open(page, 'me.lane5@demo.esta.test', 'light', DESKTOP);
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 2, name: 'Cần làm hôm nay' })).toBeVisible();
-  await expect(page.getByTestId('month-figure')).toContainText('Đã thu');
+  await expect(page.getByTestId('month-collection')).toContainText('Đã thu');
   const figure = page.getByTestId('portfolio-figure');
   await expect(figure.getByRole('heading', { name: 'Tổng giá trị bất động sản' })).toBeVisible();
   await expect(figure).toContainText('Ước tính');
