@@ -506,16 +506,17 @@
     "noLocationBody": "Đặt ghim trên bản đồ hoặc dán liên kết Google Maps, để cả nhà biết đường tới đây.",
     "mapLabel": "Bản đồ vị trí {nickname}",
     "activityTitle": "Lịch sử thay đổi",
-    "activityEmpty": "Chưa có thay đổi nào.",
+    "activityEmpty": "Chưa có thay đổi nào",
     "activityEntry": "<b>{actor}</b> {event} <when>lúc {time}, {date}</when>",
-    "actor": "{actor, select, assistant {Trợ lý} seed {Dữ liệu mẫu} system {Hệ thống} other {Một thành viên}}",
+    "actor": "{actor, select, assistant {Trợ lý} seed {Số liệu mẫu} system {Esta tự động} other {Một thành viên}}",
     "event": "{event, select, created {đã thêm tài sản} deleted {đã xóa tài sản} renamed {đã đổi tên thành {name}} location {đã cập nhật vị trí} locationCleared {đã xóa vị trí} boundary {đã cập nhật ranh giới} boundaryCleared {đã xóa ranh giới} address {đã cập nhật địa chỉ} certificateAddress {đã cập nhật địa chỉ theo sổ} photo {đã đổi ảnh} kind {đã đổi loại tài sản} kindDetails {đã cập nhật chi tiết} useMode {đã đổi cách sử dụng} legalStatus {đã cập nhật pháp lý} archived {đã lưu trữ tài sản} restored {đã khôi phục tài sản} other {đã cập nhật thông tin}}",
     "notFoundTitle": "Không tìm thấy tài sản này",
     "notFoundBody": "Tài sản có thể đã được lưu trữ, hoặc không thuộc gia đình này.",
     "notFoundAction": "Về danh sách tài sản",
     "edit": "Sửa thông tin",
     "askAssistant": "Hỏi Trợ lý về tài sản này",
-    "askAssistantShort": "Hỏi Trợ lý"
+    "askAssistantShort": "Hỏi Trợ lý",
+    "activityEmptyBody": "Mỗi lần sửa thông tin hay đổi ảnh tài sản sẽ được ghi lại ở đây."
   },
   "completeness": {
     "title": "Mức đầy đủ",
@@ -666,7 +667,16 @@
     "errorInvalid": "Còn ô chưa đúng. Sửa các ô có thông báo đỏ rồi lưu lại.",
     "errorNetwork": "Chưa lưu được. Kiểm tra kết nối rồi thử lại.",
     "formLoading": "Đang chuẩn bị biểu mẫu",
-    "itemName": "{kind, select, parcels {{name, select, none {thửa đất chưa có số} other {thửa đất số {name}}}} structures {{name}} other {{name, select, none {giấy chứng nhận} other {giấy chứng nhận số {name}}}}}"
+    "itemName": "{kind, select, parcels {{name, select, none {thửa đất chưa có số} other {thửa đất số {name}}}} structures {{name}} other {{name, select, none {giấy chứng nhận} other {giấy chứng nhận số {name}}}}}",
+    "stripLabel": "Tóm tắt giấy tờ pháp lý",
+    "figureCertificates": "Giấy chứng nhận",
+    "figureCertificatesValue": "{count, plural, other {# sổ}}",
+    "figureParcels": "Thửa đất",
+    "figureParcelsValue": "{count, plural, other {# thửa}}",
+    "figureStructures": "Công trình trên đất",
+    "figureStructuresValue": "{count, plural, other {# công trình}}",
+    "figureSubNone": "Thêm ở bên dưới",
+    "unknownFigure": "Chưa có số liệu"
   },
   "propertyRental": {
     "unitsTitle": "Phòng và đơn vị cho thuê",
@@ -740,7 +750,7 @@
     "unitField": "Gắn với",
     "noteField": "Ghi chú",
     "formLoading": "Đang tải biểu mẫu…",
-    "errorWholeLeased": "Không thể chia nhỏ tài sản khi đang cho thuê nguyên căn.",
+    "errorWholeLeased": "Nhà này đang cho thuê nguyên căn. Kết thúc hợp đồng hiện tại rồi chia thành từng phòng.",
     "deleteHasLeases": "{label} có hợp đồng thuê nên không xóa được.",
     "addLease": "Thêm hợp đồng",
     "addLeaseLabel": "Thêm hợp đồng cho {label}",
@@ -752,7 +762,16 @@
     "nextDue": "Hạn thu {date}",
     "leaseEnds": "Kết thúc ngày {date}",
     "leasedCount": "Đang cho thuê {leased}/{total}",
-    "enterReadings": "Nhập chỉ số"
+    "enterReadings": "Nhập chỉ số",
+    "stripLabel": "Tóm tắt cho thuê",
+    "figureLeased": "Đang cho thuê",
+    "figureLeasedValue": "{leased}/{total}",
+    "figureLeasedSub": "phòng, căn có người thuê",
+    "figureOwed": "Cần thu",
+    "figureOwedValue": "{count, plural, other {# phòng}}",
+    "figureOwedNone": "Không có phòng nào quá hạn hay đến hạn",
+    "figureOwedSub": "quá hạn hoặc đến hạn",
+    "unknownFigure": "Chưa có số liệu"
   },
   "leases": {
     "newTitle": "Hợp đồng mới cho {unit}",
@@ -1878,7 +1897,7 @@
     "cancel": "Huỷ",
     "delete": "Xoá chi phí",
     "networkError": "Chưa lưu được. Kiểm tra kết nối mạng rồi thử lại.",
-    "forbidden": "Bạn chỉ có quyền xem, nên chưa lưu được.",
+    "forbidden": "Tài khoản này chỉ được xem, nên chưa lưu được.",
     "receiptBlocking": "Ảnh hoá đơn chưa tải lên được. Tải lại ảnh hoặc bỏ ảnh rồi lưu.",
     "saved": "Đã ghi nhận chi phí {amount}.",
     "updated": "Đã lưu chi phí {amount}.",
@@ -1890,7 +1909,6 @@
   "ledger": {
     "title": "Thu chi năm {year}",
     "caption": "Thu chi từng tháng năm {year}",
-    "summary": "Thu {income}, chi {expenses}, còn lại {noi}",
     "basis": "Tiền thu tính vào tháng nhận được tiền.",
     "month": "Tháng",
     "monthName": "Tháng {month}",
@@ -1904,7 +1922,9 @@
     "downloads": "Tải bảng thu chi",
     "sheet": "Thu chi {year}",
     "empty": "Chưa có khoản thu hay chi nào trong năm {year}.",
-    "emptyAction": "Tiền thuê hiện ở đây khi ghi nhận thanh toán."
+    "emptyAction": "Tiền thuê hiện ở đây khi ghi nhận thanh toán.",
+    "stripLabel": "Tóm tắt thu chi năm {year}",
+    "unknownFigure": "Chưa có số liệu"
   },
   "deposits": {
     "title": "Tiền cọc",

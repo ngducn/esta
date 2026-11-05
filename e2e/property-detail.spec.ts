@@ -85,7 +85,7 @@ test('rule 1: Mẹ taps Dãy trọ Dĩ An on Tài sản and the detail page lead
   await tabs(page).filter({ hasText: 'Hoạt động' }).click();
   await expect(page).toHaveURL(/\/activity$/);
   await expect(tabs(page).last()).toHaveAttribute('aria-current', 'page');
-  await expect(page.getByTestId('activity-entry').last()).toContainText('Dữ liệu mẫu đã thêm tài sản');
+  await expect(page.getByTestId('activity-entry').last()).toContainText('Số liệu mẫu đã thêm tài sản');
   expect(await seriousAxeViolations(page, { exclude: ['.maplibregl-canvas'] })).toEqual([]);
 });
 

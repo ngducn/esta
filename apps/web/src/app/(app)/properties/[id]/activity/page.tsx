@@ -38,7 +38,7 @@ export default async function PropertyActivityPage({ params }: { params: Promise
 
   return (
     <PropertyDetailFrame property={property} tab="activity">
-      <ActivityList entries={entries} title={t('activityTitle')} empty={t('activityEmpty')} />
+      <ActivityList entries={entries} title={t('activityTitle')} empty={t('activityEmpty')} emptyBody={t('activityEmptyBody')} />
     </PropertyDetailFrame>
   );
 }

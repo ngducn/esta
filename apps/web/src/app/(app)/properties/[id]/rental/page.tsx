@@ -10,6 +10,7 @@ import { z } from 'zod';
 import type { IsoDate } from '@esta/core/date';
 import { EmptyState } from '@/components/empty-state';
 import { PropertyIntl } from '@/components/properties/property-intl';
+import { SummaryStrip } from '@/components/summary-strip';
 import { UnitList, type UnitLease } from '@/components/rental/unit-list';
 import { UtilityAccountList } from '@/components/rental/utility-account-list';
 import { buttonVariants } from '@/components/ui/button-variants';
@@ -67,9 +68,23 @@ export default async function PropertyRentalPage({ params }: { params: Promise<{
   const onlyWhole = rental.units.length === 1 && rental.units[0]?.kind === 'whole';
   const addAccount = canEdit ? { href: `/properties/${id}/rental/accounts/new`, label: t('addAccount') } : null;
   const { money, date, status } = messages.components;
+  const unitLease = unitLeases(rental.units, leases, asOf);
+  const owed = Object.values(unitLease).filter(({ mark }) => mark.kind === 'overdue' || mark.kind === 'due').length;
 
   return (
     <PropertyDetailFrame property={property} tab="rental">
+      <SummaryStrip
+        label={t('stripLabel')}
+        unknownLabel={t('unknownFigure')}
+        figures={[
+          {
+            label: t('figureLeased'),
+            value: property.unitCount === 0 ? null : t('figureLeasedValue', { leased: property.leasedUnitCount, total: property.unitCount }),
+            sub: t('figureLeasedSub'),
+          },
+          { label: t('figureOwed'), value: t('figureOwedValue', { count: owed }), sub: owed === 0 ? t('figureOwedNone') : t('figureOwedSub') },
+        ]}
+      />
       <PropertyIntl locale={locale} messages={{ propertyRental: messages.propertyRental, components: { money, date, status } }}>
         <div className="grid gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
           <section aria-labelledby="rental-units" data-testid="rental-units" className="flex flex-col gap-3">
@@ -95,7 +110,7 @@ export default async function PropertyRentalPage({ params }: { params: Promise<{
               </p>
             )}
             {onlyWhole && canEdit ? <p className="max-w-prose text-body text-text-secondary">{t('wholeHint')}</p> : null}
-            <UnitList propertyId={id} units={rental.units} leases={unitLeases(rental.units, leases, asOf)} canEdit={canEdit} roomingHouse={roomingHouse} />
+            <UnitList propertyId={id} units={rental.units} leases={unitLease} canEdit={canEdit} roomingHouse={roomingHouse} />
           </section>
           <section aria-labelledby="rental-accounts" data-testid="rental-accounts" className="flex flex-col gap-3">
             <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">

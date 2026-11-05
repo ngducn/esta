@@ -506,16 +506,17 @@
     "noLocationBody": "Drop a pin on the map or paste a Google Maps link, so the family knows the way here.",
     "mapLabel": "Map of {nickname}",
     "activityTitle": "Change history",
-    "activityEmpty": "No changes yet.",
+    "activityEmpty": "No changes yet",
     "activityEntry": "<b>{actor}</b> {event} <when>at {time}, {date}</when>",
-    "actor": "{actor, select, assistant {Trợ lý} seed {Sample data} system {System} other {A member}}",
+    "actor": "{actor, select, assistant {Trợ lý} seed {Sample data} system {Esta, automatically} other {A member}}",
     "event": "{event, select, created {added the property} deleted {deleted the property} renamed {renamed it to {name}} location {updated the location} locationCleared {removed the location} boundary {updated the boundary} boundaryCleared {removed the boundary} address {updated the address} certificateAddress {updated the certificate address} photo {changed the photo} kind {changed the kind} kindDetails {updated the details} useMode {changed the use} legalStatus {updated the legal status} archived {archived the property} restored {restored the property} other {updated the details}}",
     "notFoundTitle": "Property not found",
     "notFoundBody": "It may have been archived, or it belongs to another household.",
     "notFoundAction": "Back to properties",
     "edit": "Edit details",
     "askAssistant": "Ask Trợ lý about this property",
-    "askAssistantShort": "Ask Trợ lý"
+    "askAssistantShort": "Ask Trợ lý",
+    "activityEmptyBody": "Each edit to the property details or photo is recorded here."
   },
   "completeness": {
     "title": "Completeness",
@@ -666,7 +667,16 @@
     "errorInvalid": "Some fields are not right. Fix the fields marked in red and save again.",
     "errorNetwork": "Could not save. Check the connection and try again.",
     "formLoading": "Preparing the form",
-    "itemName": "{kind, select, parcels {{name, select, none {the parcel without a number} other {parcel {name}}}} structures {{name}} other {{name, select, none {the certificate} other {certificate {name}}}}}"
+    "itemName": "{kind, select, parcels {{name, select, none {the parcel without a number} other {parcel {name}}}} structures {{name}} other {{name, select, none {the certificate} other {certificate {name}}}}}",
+    "stripLabel": "Legal papers summary",
+    "figureCertificates": "Certificates",
+    "figureCertificatesValue": "{count, plural, one {# certificate} other {# certificates}}",
+    "figureParcels": "Land parcels",
+    "figureParcelsValue": "{count, plural, one {# parcel} other {# parcels}}",
+    "figureStructures": "Buildings on the land",
+    "figureStructuresValue": "{count, plural, one {# building} other {# buildings}}",
+    "figureSubNone": "Add one below",
+    "unknownFigure": "No figure yet"
   },
   "propertyRental": {
     "unitsTitle": "Units for rent",
@@ -740,7 +750,7 @@
     "unitField": "Belongs to",
     "noteField": "Note",
     "formLoading": "Loading the form…",
-    "errorWholeLeased": "This property is let as a whole, so it can't be split into rooms.",
+    "errorWholeLeased": "This property is leased as a whole. End the current lease, then split it into rooms.",
     "deleteHasLeases": "{label} has leases, so it can't be deleted.",
     "addLease": "Add lease",
     "addLeaseLabel": "Add a lease for {label}",
@@ -752,7 +762,16 @@
     "nextDue": "Due {date}",
     "leaseEnds": "Ends on {date}",
     "leasedCount": "Let {leased}/{total}",
-    "enterReadings": "Enter readings"
+    "enterReadings": "Enter readings",
+    "stripLabel": "Rental summary",
+    "figureLeased": "Leased",
+    "figureLeasedValue": "{leased}/{total}",
+    "figureLeasedSub": "rooms or units with a tenant",
+    "figureOwed": "To collect",
+    "figureOwedValue": "{count, plural, one {# unit} other {# units}}",
+    "figureOwedNone": "No unit is overdue or due",
+    "figureOwedSub": "overdue or due",
+    "unknownFigure": "No figure yet"
   },
   "leases": {
     "newTitle": "New lease for {unit}",
@@ -1890,7 +1909,6 @@
   "ledger": {
     "title": "Income and expenses {year}",
     "caption": "Income and expenses by month, {year}",
-    "summary": "Income {income}, expenses {expenses}, net {noi}",
     "basis": "Income counts in the month the money arrived.",
     "month": "Month",
     "monthName": "{month}",
@@ -1904,7 +1922,9 @@
     "downloads": "Download the ledger",
     "sheet": "Ledger {year}",
     "empty": "No income or expenses in {year}.",
-    "emptyAction": "Rent shows here once payments are recorded."
+    "emptyAction": "Rent shows here once payments are recorded.",
+    "stripLabel": "Income and spending summary for {year}",
+    "unknownFigure": "No figure yet"
   },
   "deposits": {
     "title": "Deposit",

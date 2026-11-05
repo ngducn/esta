@@ -24,7 +24,7 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 - **#384 merged** 2026-11-05 (4848b778): Thu tiền on the new design. Lows in #385.
 - **Tonight (2026-11-05, Ryan: "i want to make a lot of progress tonight, and stop at like 85% usage so I can finish it off tomorrow after work"):** RD-4 and RD-5 split by screen so each session stays short, all Sonnet, briefs in `briefs/rd-4a.md`, `rd-4b.md`, `rd-5a.md`, `rd-5b.md`, `rd-5c.md`. Slots: 3 (#384 round), 7, 8, 9; lanes on 14. Then, as budget allows: Cài đặt with P6-01b, P6-05, P6-02, P5-16b. **Stop spawning at 80% of the week, pause owners with a clean push at 85%.**
 - **Then:** Mẹ's session (Ryan's step, before more assistant features), P5-09, P5-14, P5-15, P5-10, P6-03, P6-04, P6-06, P6-07.
-- **Tripwire set** 2026-11-05 17:05: completeness rule 5 failed once beside other specs and passed alone. Clear with `rm /tmp/ci-local/one-at-a-time` when the flake is understood.
+- **Tripwire set** 2026-11-05 22:57: completeness rule 5 failed once beside other specs and passed alone. Clear with `rm /tmp/ci-local/one-at-a-time` when the flake is understood.
 - **#386 merged** 2026-11-02: pushes to main that touch only the notes files skip CI.
 - **Watch:** shell and auth-password specs lost a poll-until-pass in #383; a random failure there means a title-flicker wait, not a retry loop.
 
@@ -55,7 +55,7 @@ Ruled 2026-11-02: Thu tiền "Đã thu" counts payments toward this month's rent
 
 ## Budget
 
-Week at 65% on 2026-11-05 15:30 +07, resets 2026-11-07 11:00 +07. This run was paused from 2026-11-02, when the week stood near 18%, so most of that is other work. Ryan said "ok im back, lets continue" and was told the figure.
+Week at 65% on 2026-11-05 22:30 +07, resets 2026-11-07 11:00 +07. This run was paused from 2026-11-02, when the week stood near 18%, so most of that is other work. Ryan said "ok im back, lets continue" and was told the figure.
 
 Week at 18% at 02:50 on 2026-11-02 (17% at 00:57) (9% at 23:25 the night before). The root pauses new spawns at 30% of the week and tells Ryan; running agents finish.
 
