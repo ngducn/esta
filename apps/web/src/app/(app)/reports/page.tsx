@@ -54,7 +54,6 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
             tabs={years.map((option) => ({ key: String(option), label: String(option), count: null, href: `/reports?report=${kind}&year=${option}`, current: option === year }))}
           />
         )}
-        {view.empty === null ? <ReportDownloads failedLabel={t('downloadFailed')} downloads={downloads} /> : null}
       </div>
       <section aria-labelledby="report-title" data-testid="report" data-report={kind} className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
         <div className="flex flex-col gap-1">
@@ -67,7 +66,10 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
           <p className="text-body text-text-secondary">{view.basis}</p>
         </div>
         {view.empty === null ? (
-          <ReportTable table={table} caption={view.title} {...(view.strong === null ? {} : { strong: view.strong })} />
+          <>
+            <ReportTable table={table} caption={view.title} {...(view.strong === null ? {} : { strong: view.strong })} />
+            <ReportDownloads failedLabel={t('downloadFailed')} downloads={downloads} />
+          </>
         ) : (
           <EmptyState icon={FileSpreadsheet} title={view.empty} testId="report-empty" className="border-0 shadow-none" />
         )}
