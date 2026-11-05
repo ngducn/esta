@@ -1,6 +1,6 @@
 export { monthlyCollections, type CollectionsLabels } from './collections';
 export { checkReportInvariants, holds, type InvariantCheck, type ReportTables } from './invariants';
-export { occupancy, vacantDays, vacantSince, type OccupancyLabels } from './occupancy';
+export { occupancy, vacantDays, type OccupancyLabels } from './occupancy';
 export { ownerSummary, UNATTRIBUTED, type OwnerSummaryLabels } from './ownerSummary';
 export { portfolioSummary, type PortfolioLabels } from './portfolio';
 export { propertyLedger, propertyPnl, type PnlLabels } from './propertyPnl';

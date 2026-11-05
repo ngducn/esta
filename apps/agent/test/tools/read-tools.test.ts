@@ -1,7 +1,8 @@
 import { groupCollections, monthCollected } from '@esta/core/collections';
 import { isoDate } from '@esta/core/date';
-import { formatVnd } from '@esta/core/format';
+import { formatCount, formatVnd } from '@esta/core/format';
 import { vnd } from '@esta/core/money';
+import { vacantDays } from '@esta/core/reports';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { fakeDb } from '../../src/test/fake-db';
@@ -58,6 +59,18 @@ describe('the household reads count what the screens count (AGENT.md §4)', () =
     const metrics = await propertyMetricsTool(context)({ property: handle('Kho Biên Hòa'), year: 2026 });
     expect(metrics.property.empty_since_date_display).toBe('30/07/2026');
     expect(metrics.units.map((unit) => unit.empty_days_display)).toEqual([fact('q6', 'bien-hoa days empty')]);
+  });
+
+  it('counts a unit’s empty days as the vacancy watch does, one figure for one room', async () => {
+    const { context, handle } = await tools();
+    const report = await context.reads.report(2026);
+    const propertyId = [...context.properties.values()].find((property) => property.property_label === 'Kho Biên Hòa')?.id;
+    const room = report.units.find((unit) => unit.propertyId === propertyId);
+    if (room === undefined) throw new Error('no Kho Biên Hòa unit');
+    const days = vacantDays(room, report.tenancies.filter((lease) => lease.unitId === room.id), ASOF);
+    if (typeof days !== 'number') throw new Error('Kho Biên Hòa is not empty');
+    const metrics = await propertyMetricsTool(context)({ property: handle('Kho Biên Hòa'), year: 2026 });
+    expect(metrics.units.map((unit) => unit.empty_days_display)).toEqual([formatCount(days, 'vi')]);
   });
 
   it('links a certificate to its property’s Pháp lý tab', async () => {
