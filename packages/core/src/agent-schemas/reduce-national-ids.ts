@@ -2,11 +2,15 @@
 const ID_KEY = /(?:^|_)(?:id|cccd|cmnd|cmtnd|idno|identity)(?:_|$)/i;
 
 /**
- * Words that announce an ID number. A 9- to 11-digit run counts as an ID when it starts within `LABEL_REACH` characters
- * after one, whatever stands between, so a phone number or a price that close is cut too.
+ * Words that announce an ID number, read on the folded text (`fold`): accents dropped, so `Chung minh nhan dan` and
+ * `CḾND` count, while `đ` stays and is matched as `d` too, so `CMNĐ` counts. A 9- to 11-digit run counts as an ID when it
+ * starts within `LABEL_REACH_AFTER` characters after one, whatever stands between, or ends within `LABEL_REACH_BEFORE`
+ * characters before one, so a phone number or a price that close is cut too. `holds_national_id` counts the same way.
  */
-const ID_LABEL = /cccd|cmtnd|cmnd|cmt|căn cước|chứng minh|định danh|đdcn|số thẻ|\bid\b/giu;
-const LABEL_REACH = 40;
+const ID_LABEL =
+  /c\.?c\.?c\.?[dđ]|c\.?m\.?t\.?n\.?[dđ]|c\.?m\.?n\.?[dđ]|cmt|can cuoc|chung minh|[dđ]inh [dđ]anh|[dđ][dđ]cn|so the|ho chieu|passport|\bid\b/giu;
+const LABEL_REACH_AFTER = 80;
+const LABEL_REACH_BEFORE = 40;
 const LABELLED_LENGTHS = [12, 11, 10, 9] as const;
 
 /**
@@ -23,23 +27,51 @@ const CODE_PREFIXES: ReadonlySet<string> = new Set(['PA', 'PB', 'PC', 'PD', 'PE'
  */
 const FOLDED = /[\u00AD\u200B-\u200F\u2060-\u2064\uFEFF]|[\u0300-\u036F]|[\u1AB0-\u1AFF]|[\u1DC0-\u1DFF]|[\u20D0-\u20FF]|[\uFE20-\uFE2F]/gu;
 
-/** Between two digit groups of one number: up to three spaces of any kind on one line, one newline, or one dot, middle dot, dash, comma or underscore. */
-const JOIN = /^(?:[^\S\n\r]{1,3}|\r?\n|[.,_\-\u00B7\u2010-\u2015])$/u;
+/**
+ * Between two digit groups of one number: up to three spaces of any kind on one line, one newline, or one or two dots,
+ * middle dots, dashes, commas, underscores or bars, with a space on either side.
+ */
+const JOIN = /^(?:[^\S\n\r]{1,3}|\r?\n|[^\S\n\r]?[.,_\-\u00B7\u2010-\u2015|]{1,2}[^\S\n\r]?)$/u;
 /** After a label the number may also break across lines or use slashes. */
-const JOIN_AFTER_LABEL = /^(?:\s{1,3}|[./,_\-\u00B7\u2010-\u2015])$/u;
+const JOIN_AFTER_LABEL = /^(?:\s{1,3}|\s?[./,_\-\u00B7\u2010-\u2015|]{1,2}\s?)$/u;
 /**
  * A date such as 12/03/2021, 12/03/21, 2021-03-12 or 20210312. It never belongs to an ID, so the last four digits of a
  * reduced ID never join one.
  */
 export const DATE =
-  /(?<!\p{Nd})(?:(?:0?[1-9]|[12]\d|3[01])([./-])(?:0?[1-9]|1[0-2])\1(?:19|20)?\d{2}|(?:19|20)\d{2}([./-])(?:0?[1-9]|1[0-2])\2(?:0?[1-9]|[12]\d|3[01])|(?:19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01]))(?!\p{Nd})/gu;
-/** A Vietnamese amount groups thousands with dots or commas, never starts with 0 (every CCCD does) and names its currency. */
+  /(?<!\p{Nd})(?:(?:0?[1-9]|[12]\d|3[01])([./-])(?:0?[1-9]|1[0-2])\1(?:19|20)?\d{2}|(?:19|20)\d{2}([./-])(?:0?[1-9]|1[0-2])\2(?:0?[1-9]|[12]\d|3[01])|(?:19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])|(?<!\p{Nd}[./-])(?:0?[1-9]|1[0-2])[./-](?:19|20)\d{2})(?!\p{Nd})/gu;
+/**
+ * A Vietnamese amount groups thousands with dots or commas, never starts with 0 (every CCCD does), names its currency
+ * and does not continue digits before it after spaces, so the last group of `079 175 001 234 đồng` stays an ID group.
+ * It is read on the folded text, where `đồng` is `đong`.
+ */
 const AMOUNT =
-  /(?<!\p{Nd}|\p{Nd}[.,])(?![0０])\p{Nd}{1,3}(?:(?:\.\p{Nd}{3})+|(?:,\p{Nd}{3})+)?(?!\p{Nd}|[.,]\p{Nd})(?=\s?(?:đ|đồng|vnd|vnđ)(?![\p{L}\p{N}]))/giu;
+  /(?<!\p{Nd}|\p{Nd}[.,]|\p{Nd}[^\S\n\r]{1,3})(?![0０])\p{Nd}{1,3}(?:(?:\.\p{Nd}{3})+|(?:,\p{Nd}{3})+)?(?!\p{Nd}|[.,]\p{Nd})(?=\s?(?:đ|₫|[dđ]ong|vnd|vnđ)(?![\p{L}\p{N}]))/giu;
 const LETTERS_BEFORE = /\p{L}+$/u;
 
 type Group = { readonly start: number; readonly end: number; readonly digits: string; readonly gap: string | null };
 type Span = { readonly from: number; readonly to: number; readonly last4: string };
+/** The text as `holds_national_id` reads it, and for each of its characters where the code point it came from starts and ends in the original. */
+type Folded = { readonly text: string; readonly from: readonly number[]; readonly to: readonly number[] };
+
+/** Compatibility decomposition, then the invisible characters and combining marks dropped; a character outside the BMP counts as one. */
+function fold(text: string): Folded {
+  let out = '';
+  const from: number[] = [];
+  const to: number[] = [];
+  let at = 0;
+  for (const char of text) {
+    const end = at + char.length;
+    const folded = char.length === 1 && char < '\u0080' ? char : char.normalize('NFKD').replace(FOLDED, '');
+    for (const piece of folded) {
+      out += piece.length > 1 ? '\uE000' : piece;
+      from.push(at);
+      to.push(end);
+    }
+    at = end;
+  }
+  return { text: out, from, to };
+}
 
 /** Full-width digits become ASCII; NFKC maps them and leaves every other character as NFC has it. */
 const asciiDigits = (text: string) => text.replace(/\p{Nd}/gu, (digit) => digit.normalize('NFKC'));
@@ -53,11 +85,15 @@ function groupsIn(text: string, groups: readonly Group[], pattern: RegExp): Read
 /**
  * Finds every national ID in one string: 12 digits anywhere, or 9 to 12 digits within reach of an ID label or in an ID
  * field, the digits possibly grouped. A match spans whole digit groups and stops at the first total that reaches the
- * length, and never takes in a date or an amount, so the date, year or amount after a number stays out of it.
+ * length, and never takes in a date or an amount, so the date, year or amount after a number stays out of it. A group
+ * of up to three digits on the line after a labelled number that is already whole is another field, not part of it.
  */
-function idSpans(text: string, idField: boolean): Span[] {
-  const labelEnds = [...text.matchAll(ID_LABEL)].map((m) => m.index + m[0].length);
-  const afterLabel = (at: number) => idField || labelEnds.some((end) => end <= at && at - end <= LABEL_REACH);
+function idSpans(original: string, idField: boolean): Span[] {
+  const folded = fold(original);
+  const text = folded.text;
+  const labels = [...text.matchAll(ID_LABEL)].map((m) => ({ start: m.index, end: m.index + m[0].length }));
+  const afterLabel = (at: number) => idField || labels.some((label) => label.end <= at && at - label.end <= LABEL_REACH_AFTER);
+  const beforeLabel = (end: number) => labels.some((label) => label.start >= end && label.start - end <= LABEL_REACH_BEFORE);
 
   const groups: Group[] = [];
   for (const m of text.matchAll(/\p{Nd}+/gu)) {
@@ -80,19 +116,32 @@ function idSpans(text: string, idField: boolean): Span[] {
     return undefined;
   };
   const codePrefixed = (first: Group) => CODE_PREFIXES.has(LETTERS_BEFORE.exec(text.slice(0, first.start))?.[0].toUpperCase() ?? '');
+  const startsAnotherField = (run: readonly Group[], length: number) => {
+    const last = run.at(-1);
+    return last !== undefined && run.length > 1 && last.digits.length <= 3 && /[\r\n]/u.test(last.gap ?? '') && LABELLED_LENGTHS.some((n) => n === length - last.digits.length);
+  };
 
   const spans: Span[] = [];
   for (let from = 0; from < groups.length; from++) {
     const first = groups[from];
     if (first === undefined || first.gap === '.') continue;
     const labelled = afterLabel(first.start);
-    for (const length of labelled ? LABELLED_LENGTHS : [12]) {
-      const run = runOf(from, length, labelled ? JOIN_AFTER_LABEL : JOIN);
+    const attempts: readonly (readonly [length: number, join: RegExp, labelled: boolean])[] = labelled
+      ? LABELLED_LENGTHS.map((length) => [length, JOIN_AFTER_LABEL, true] as const)
+      : [[12, JOIN, false], ...LABELLED_LENGTHS.map((length) => [length, JOIN_AFTER_LABEL, true] as const)];
+    for (const [length, join, needsLabel] of attempts) {
+      const run = runOf(from, length, join);
       const last = run?.at(-1);
       if (run === undefined || last === undefined) continue;
       if (groups[from + run.length]?.gap === '.' || run.some((group) => dates.has(group) || amounts.has(group))) continue;
-      if (!labelled && codePrefixed(first)) continue;
-      spans.push({ from: first.start, to: last.end, last4: run.map((group) => group.digits).join('').slice(-4) });
+      if (needsLabel && !labelled && !beforeLabel(last.end)) continue;
+      if (needsLabel && startsAnotherField(run, length)) continue;
+      if (!needsLabel && codePrefixed(first)) continue;
+      const lastChar = last.end - 1;
+      const fromAt = folded.from[first.start];
+      const toAt = folded.to[lastChar];
+      if (fromAt === undefined || toAt === undefined) continue;
+      spans.push({ from: fromAt, to: toAt, last4: run.map((group) => group.digits).join('').slice(-4) });
       from += run.length - 1;
       break;
     }

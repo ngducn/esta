@@ -153,6 +153,11 @@ describe('reduceNationalIds', () => {
     expect(reduced.holders[0]).toEqual({ id_last4: leaf('8340'), address_text: leaf('Phạm Minh Demo 8340, 12 Lê Lợi') });
   });
 
+  it('fills id_last4 from the ID, not from a short number on the next line', () => {
+    const reduced = reduceNationalIds({ holders: [{ id_last4: leaf(null), address_text: leaf('Số CMND: 023456789\n12 đường Demo') }] });
+    expect(reduced.holders[0]?.id_last4.value).toBe('6789');
+  });
+
   it('reads each string on its own, so six digits in each of two fields stay', () => {
     const input = { holders: [{ full_name: leaf('Demo 012345'), address_text: leaf('678901') }] };
     expect(reduceNationalIds(input)).toEqual(input);
