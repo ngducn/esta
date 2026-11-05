@@ -17,7 +17,7 @@ export type WatchRequestInput = Omit<NoteBinding, 'sheet' | 'facts'> & { readonl
  */
 export function portfolioWatchRequest(input: WatchRequestInput): PreparedJob {
   const { sheet, cite } = runSheet();
-  const watch = watchFactsTool(input.read, input.locale, cite);
+  const watch = watchFactsTool(input.read, input.locale, cite, input.asOf);
   const notes = watchNoteWriter({ ...input, sheet, facts: watch.facts });
   return {
     prompt: portfolioWatchPrompt({ locale: input.locale, today: input.asOf, timezone: input.timezone }),

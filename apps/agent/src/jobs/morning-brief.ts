@@ -39,7 +39,7 @@ export type BriefRequestInput = Omit<BriefBinding, 'sheet' | 'facts' | 'missingI
 /** The morning_brief request, built here for the worker and the golden test alike, so a recording hashes the prompt the worker ships. */
 export function morningBriefRequest(input: BriefRequestInput): PreparedJob {
   const { sheet, cite } = runSheet();
-  const watch = watchFactsTool(input.read, input.locale, cite);
+  const watch = watchFactsTool(input.read, input.locale, cite, input.asOf);
   const line = (lines: InputLines) => (kind: string) => lines[kind]?.[input.locale] ?? kind;
   const missingInputs = [...input.waiting.map(line(WAITING_INPUT)), ...input.failed.map(line(FAILED_INPUT))];
   const brief = briefWriter({ ...input, sheet, facts: watch.facts, missingInputs, market: () => todaysMarket(input) });

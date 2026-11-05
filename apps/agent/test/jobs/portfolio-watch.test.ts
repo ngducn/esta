@@ -1,51 +1,18 @@
 import { isoDate } from '@esta/core/date';
-import type { Locale } from '@esta/core/format';
-import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { JOBS } from '../../src/jobs/registry';
 import { portfolioWatchRequest } from '../../src/jobs/portfolio-watch';
 import { canonicalizer, inputHash } from '../../src/replay/canonicalize';
-import { DEFAULT_REPLAY_DIR, recordingSchema, writeRecording } from '../../src/replay/store';
-import { canonicalInput, replaySession } from '../../src/sdk/session';
-import { fakeDb, type Recorded } from '../../src/test/fake-db';
+import { DEFAULT_REPLAY_DIR, recordingSchema } from '../../src/replay/store';
+import { canonicalInput } from '../../src/sdk/session';
+import { fakeDb } from '../../src/test/fake-db';
 import { NumberGuardError } from '../../src/tools/create-item';
 import { mcpToolName } from '../../src/tools/server';
-import { CASES, clockOn, HOUSEHOLD, labels, snapshot } from '../full-seed';
+import { CASES, HOUSEHOLD, labels, snapshot } from '../full-seed';
 import { toolCaller } from '../replay-worker';
-
-const clock = clockOn('2026-10-07T06:45:00+07:00');
-
-type Row = Record<string, unknown>;
-
-function setup(tables: Record<string, Row[]> = { agent_items: [] }, jobId = 'job-1', locale: Locale = 'vi') {
-  const writes: Recorded[] = [];
-  const db = fakeDb(tables, writes);
-  const prepared = portfolioWatchRequest({ db, householdId: HOUSEHOLD, jobId, locale, asOf: isoDate('2026-10-07'), timezone: 'Asia/Ho_Chi_Minh', clock, read: async () => ({ snapshot, labels }) });
-  return { tables, writes, prepared, call: toolCaller(prepared) };
-}
-
-const items = (tables: Record<string, Row[]>) => tables.agent_items ?? [];
-const dirs: string[] = [];
-afterEach(() => {
-  for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
-});
-
-async function replay(prepared: ReturnType<typeof setup>['prepared'], replayDir = DEFAULT_REPLAY_DIR) {
-  const jobDir = mkdtempSync(join(tmpdir(), 'esta-watch-job-'));
-  dirs.push(jobDir);
-  return replaySession({ spec: JOBS.portfolio_watch, prompt: prepared.prompt, jobDir, configDir: jobDir, tools: prepared.tools, canon: canonicalizer({ householdName: 'Gia đình Demo', jobDir }) }, replayDir);
-}
-
-/** A recording of `toolCalls` for this prompt in a fresh directory, for the cases no committed recording covers. */
-function recordingDir(prepared: ReturnType<typeof setup>['prepared'], toolCalls: Array<{ name: string; input: Record<string, unknown> }>) {
-  const dir = mkdtempSync(join(tmpdir(), 'esta-watch-replay-'));
-  dirs.push(dir);
-  const input = canonicalInput({ spec: JOBS.portfolio_watch, prompt: prepared.prompt, canon: canonicalizer({ householdName: 'Gia đình Demo' }) });
-  writeRecording(dir, { version: 1, kind: 'portfolio_watch', inputHash: inputHash(input), input, model: 'test', numTurns: toolCalls.length + 1, toolCalls, reply: 'xong' });
-  return dir;
-}
+import { clock, items, recordingDir, replay, setup, type Row } from './watch-job';
 
 const note = (title: string, body_md: string, related: string[]) => ({ name: mcpToolName('create_item'), input: { title, body_md, related } });
 const FACTS = { name: mcpToolName('watch_facts'), input: {} };
@@ -60,7 +27,7 @@ describe('portfolio_watch in replay on the full seed at 2026-10-07 (AGENT.md §7
     const written = items(tables);
     expect(written.map((item) => item.severity)).toEqual(['action', 'action', 'action', 'watch']);
     const [w1, w3, w6, digest] = written;
-    expect(w1).toMatchObject({ kind: 'alert', audience: 'all', title: 'Phòng 5 Dãy trọ Dĩ An quá hạn 12 ngày', dedupe_key: expect.stringMatching(/^watch:W1:invoice:[0-9a-f-]{36}:2026-10-07$/) });
+    expect(w1).toMatchObject({ kind: 'alert', audience: 'all', title: 'Phòng 5 Dãy trọ Dĩ An quá hạn 12 ngày', dedupe_key: 'watch:W1:group:2026-10-07' });
     expect(w1?.body_md).toBe('Hóa đơn của Hoàng Văn Em Demo đến hạn ngày 25/09/2026 đã quá hạn 12 ngày, còn nợ 2.800.000 ₫. Nên nhắc khách đóng tiền.');
     expect(w3?.title).toBe('Hợp đồng Căn hộ Thủ Đức sắp hết hạn');
     expect(w6?.body_md).toContain('tiền cọc 2.800.000 ₫');

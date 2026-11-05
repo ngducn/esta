@@ -62,7 +62,7 @@ async function main(): Promise<number> {
 
   const { sheet, cite } = runSheet();
   const locale = await householdLocale(db, householdId);
-  await watchFactsTool(readWatch(db, householdId, now.today(), env.ESTA_TIMEZONE), locale, cite).run();
+  await watchFactsTool(readWatch(db, householdId, now.today(), env.ESTA_TIMEZONE), locale, cite, now.today()).run();
   await listPropertiesTool(db, householdId, cite).run();
   const writer = proposalWriter({ db, householdId, jobId: job.id, locale, sheet, clock });
   try {

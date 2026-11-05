@@ -23,16 +23,16 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 - **Merged since 2026-11-01:** #368 (d2016c5a) design foundation; #376 (496542e4) e2e clock pinned to 2026-11-01T10:00+07:00; #374 (2bbf8891) the shell; #375 (a19892e9) sign-in and onboarding brand layer; #383 (32991ea4) axe judges resting colours, one shared helper (closes #373); #381 (9a898a45) Tài sản workbench. Lows open: #372, #377, #378, #379, #380, #382.
 - **#384 merged** 2026-11-05 (4848b778): Thu tiền on the new design. Lows in #385.
 - **Tonight (2026-11-05, Ryan: "i want to make a lot of progress tonight, and stop at like 85% usage so I can finish it off tomorrow after work"):** RD-4 and RD-5 split by screen so each session stays short, all Sonnet, briefs in `briefs/rd-4a.md`, `rd-4b.md`, `rd-5a.md`, `rd-5b.md`, `rd-5c.md`. Slots: 3 (#384 round), 7, 8, 9; lanes on 14. Then, as budget allows: Cài đặt with P6-01b, P6-05, P6-02, P5-16b. **Stop spawning at 80% of the week, pause owners with a clean push at 85%.**
-- **State at 01:50 2026-11-06.** Merged tonight: #384 RD-3, #387 RD-5a, #388 RD-4a, #395 RD-5b, #389 RD-4b, #393 RD-5c, #392 P6-01b. Plan 87 of 101 (RD-4, RD-5, P6-02, P6-03 and the P5-16 leftovers split). Open:
-  - #399 number guard, merges as P5-16b: fix round, no stack (briefs/p5-16b-ff1.md), false rejections and missed spellings. Then a scoped reader, then merge.
-  - #400 P6-05 headers: fix round on slot 3 (briefs/p6-05-ff1.md): restore `blob:` in worker-src (root's wrong call broke big XLSX), zod jitless, perf-lists leftovers, stray files, form-action for Google. Then scoped reader, then merge.
-  - #401 watch and news, merges as P5-16d: lane PASS; audit two blockers; fix round, no stack (briefs/p5-16d-ff1.md). Then a scoped reader, then merge.
-  - #402 proposals and answers, merges as P5-16e: lane PASS; fix round, no stack (briefs/p5-16e-ff1.md). Then scoped reader, then merge; file its left bullets as one low.
-  - #403 P6-02a export: audit ISSUES; fix round on slot 9 (briefs/p6-02a-ff1.md): partial export must say so, import safe on real files, keyset paging, Cài đặt frame swap now #392 merged. Then scoped reader and a Sonnet lane on slot 14 (audit lists what to drive), then merge. Ryan's question in the PR: Mẹ's chats after a restore.
-  - #405 P6-03a first run at ae22bb77: Opus audit (briefs/pr405-audit.md) and lane on slot 7 (briefs/pr405-lane.md) running. P6-03b empty and error states on slot 8 (briefs/p6-03b.md).
-  - Next to start: P6-02b (nightly backup, party export, redaction) after #403; #404 morning watch runs out of turns on real data, after #401; P6-04 after P6-03.
-  - Waiting on Ryan: rename "Tài liệu" to "Giấy tờ" everywhere (recommended, 04-voice.md rule 3; default keep). Mẹ's session before P5-09, P5-14, P5-15.
-  - Earlier cleanup: #358 is P5-16a and #360 is P5-16c. Read issues with `--comments`: "Still open after" lists what stayed open. Week 68%; stop spawns at 80%, pause owners at 85%. Stop a finished agent with TaskStop if it re-reports. Slots 3, 7, 8, 9, 14; machine load about 20, so spawn no more than the slots allow.
+- **State at 04:20 2026-11-06.** Merged since 01:50: #399 P5-16b number guard (a6c42e22), #401 P5-16d watch and news (2e9108ba), #400 P6-05 headers and CSP (719aab77), #402 P5-16e Hỏi answers (4cb3d6f8), #405 P6-03a first-run guide (0c532ba5), #403 P6-02a export and restore (b12a65aa). Lows filed: #406, #407, #408, #411, #412, #413. Plan about 93 of 103 (P6-02 now splits a, b, c). Open:
+  - #409 P6-03b empty states: Opus audit (4 blockers) and lane (minor) done; fix round on slot 8 (briefs/p6-03b-ff1.md) merges main, makes the first-run guide replace Home's empty message, fixes the composer focus, Thu tiền's false month message, Thu chi on the registry, the duplicate add button, and the payments wording on failed states. Then a scoped reader, then merge.
+  - #410 P5-16f watch groups merged at 04:35 (ef4894b7), low #414.
+  - #415 P6-02b nightly backup at 13f29e0d, ci green: Opus audit and Sonnet lane (slot 14) running (briefs/pr415-audit.md, pr415-lane.md). Must merge before any deploy. Ryan's question in the PR: where backups live once deployed.
+  - #416 P6-02c tenant export and erasure at c815af0a, ci green: Opus audit and Sonnet lane (slot 7) running (briefs/pr416-audit.md, pr416-lane.md). The owner added a small admin tenant page at /tenants/{id} and rewrites the erased party's audit rows; payment memos and OCR text are not rewritten (STATUS, professional confirmation).
+  - Next: P6-04 polish after #409 merges (it has an operator review gate: screenshots and a video, Ryan clicks merge). Then P6-06 (Mom test) and P6-07 (cloud deploy), both Ryan's.
+  - Rulings tonight: Hỏi, Báo cáo and the watch count empty days one way (70 for Kho Biên Hòa on 07/10); the first-run guide replaces Home's empty message while it shows; page-header tools are not an empty state's action, duplicates of the same action go; after a restore Mẹ's old chats stay unseen (default, Ryan may ask for a remap); second fix rounds allowed when round 1 caused a regression on what Mẹ reads (recorded per PR).
+  - Root's errors tonight, told to Ryan on the PRs: `blob:` in worker-src (#400); briefing P5-16 from stale issue lists; the 130% wrap request that broke 100% (#405).
+  - Waiting on Ryan: rename "Tài liệu" to "Giấy tờ" everywhere (recommended; default keep). Mẹ's session before P5-09, P5-14, P5-15. HSTS on all subdomains (#406), at deploy. Where nightly backups live once deployed (P6-02b PR).
+  - Week 71% at 04:20; stop spawns at 80%, pause owners at 85%. Slots 3, 7, 8, 9, 14 (7, 8, 9 busy). Tripwire still set.
 - **Then:** Mẹ's session (Ryan's step, before more assistant features), P5-09, P5-14, P5-15, P5-10, P6-03, P6-04, P6-06, P6-07.
 - **Tripwire set** 2026-11-05 22:57: completeness rule 5 failed once beside other specs and passed alone. Clear with `rm /tmp/ci-local/one-at-a-time` when the flake is understood.
 - **#386 merged** 2026-11-02: pushes to main that touch only the notes files skip CI.
@@ -65,7 +65,7 @@ Ruled 2026-11-02: Thu tiền "Đã thu" counts payments toward this month's rent
 
 ## Budget
 
-Week at 65% on 2026-11-05 22:30 +07, resets 2026-11-07 11:00 +07. This run was paused from 2026-11-02, when the week stood near 18%, so most of that is other work. Ryan said "ok im back, lets continue" and was told the figure.
+Week at 71% on 2026-11-06 04:20 +07 (65% at 22:30 the night before), resets 2026-11-07 11:00 +07. Tonight cost about 6% for 13 merges. This run was paused from 2026-11-02, when the week stood near 18%, so most of that is other work. Ryan said "ok im back, lets continue" and was told the figure.
 
 Week at 18% at 02:50 on 2026-11-02 (17% at 00:57) (9% at 23:25 the night before). The root pauses new spawns at 30% of the week and tells Ryan; running agents finish.
 
