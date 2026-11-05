@@ -82,6 +82,13 @@ describe('describeFacts', () => {
     expect(byRule('W7')[0]).toMatchObject({ owner_name: 'Nguyễn Thị Demo', year_display: '2026', progress_display: '82%', threshold_compact: '500 tr' });
   });
 
+  it('writes a tax share as the whole percent the tax card shows (#338)', () => {
+    const [fact] = FACTS.filter((candidate) => candidate.ruleId === 'W7');
+    if (fact === undefined) throw new Error('no W7 fact');
+    const [share] = describeFacts([{ ...fact, numbers: { ...fact.numbers, progress_bp: 9_653 } }], SNAPSHOT, LABELS, 'vi');
+    expect(share?.record).toMatchObject({ progress_display: '96%' });
+  });
+
   it('leaves a missing name or figure blank, for the guard to answer', () => {
     expect(byRule('W10')[0]).toMatchObject({ document_label: '', waiting_since_display: '' });
   });

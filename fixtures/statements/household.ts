@@ -111,6 +111,13 @@ export async function statementXlsx(statement: HouseholdStatement): Promise<Buff
   return writeXlsxFile([{ sheet: 'Sao ke', data }], {}).toBuffer();
 }
 
+/** Layout B with `rows` data lines, the statement's lines repeated: a sheet over fflate's 512 KB worker threshold. */
+export async function bigStatementXlsx(statement: HouseholdStatement, rows: number): Promise<Buffer> {
+  const [labels = [], ...lines] = statementGrid(statement, 'b');
+  const data = [labels, ...Array.from({ length: rows }, (_, index) => lines[index % lines.length] ?? [])].map((row) => row.map((cell) => (cell === null ? null : { value: cell })));
+  return writeXlsxFile([{ sheet: 'Sao ke', data }], {}).toBuffer();
+}
+
 /**
  * The same statement from that bank with a value date column after the transaction date, a day later, so a reading under
  * either date column names the same transfers (P3-21): `Ngày thực hiện`, `Ngày hiệu lực`, then layout D's other columns.

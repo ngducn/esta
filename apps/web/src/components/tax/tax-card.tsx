@@ -1,5 +1,5 @@
 import type { IsoDate } from '@esta/core/date';
-import { formatDate, formatVnd, type Locale } from '@esta/core/format';
+import { formatDate, formatVnd, wholePercent, type Locale } from '@esta/core/format';
 import type { Vnd } from '@esta/core/money';
 import type { TaxPosition, TaxRule } from '@esta/core/tax';
 import { ChevronRight } from 'lucide-react';
@@ -58,7 +58,7 @@ export async function TaxPositionCard({ position, rule, otherBusinessRevenueVnd,
   const [t, locale] = await Promise.all([getTranslations('taxCard'), getLocale() as Promise<Locale>]);
   const money = (amount: Vnd) => formatVnd(amount, locale);
   const threshold = money(position.thresholdVnd);
-  const progress = position.overThreshold ? t('over', { threshold }) : t('progress', { percent: Math.floor(position.progressBp / 100), threshold });
+  const progress = position.overThreshold ? t('over', { threshold }) : t('progress', { percent: wholePercent(position.progressBp), threshold });
   return (
     <section aria-labelledby="tax-position-title" data-testid="tax-position" data-over={position.overThreshold} className={CARD}>
       <div className="flex flex-col gap-2">

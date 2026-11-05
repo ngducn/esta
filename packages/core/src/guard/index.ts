@@ -43,6 +43,12 @@ function tooComplex(masked: string): string | undefined {
   return NESTED.test(masked) ? `lists or quotes nested deeper than ${MAX_NESTING}` : undefined;
 }
 
+/** The reader drops a byte-order mark at the start or end of a text, so a note that hid one there shows none. */
+function strippedBom(masked: string, shown: string): NoteViolation[] {
+  const count = (text: string) => text.match(/\uFEFF/gu)?.length ?? 0;
+  return count(masked) > count(shown) ? [{ rule: 'invisible', text: '\uFEFF' }] : [];
+}
+
 const CITE = 'Cite the tool field that holds it as {{fN.field}}';
 
 /** Each rule's repair hint, addressed to the model. */
@@ -103,7 +109,7 @@ export function checkNote(template: string, sheet: FactSheet, format: NoteFormat
   const placeholders = occurrences.map(({ placeholder }) => placeholder);
   const unfilled = fills.flatMap((fill, i) => (fill.ok ? [] : [{ rule: fill.reason, text: placeholders[i] ?? '' }]));
   const isDate = (mask: string) => DATE_FIELD.test(occurrences[maskIndex(mask)]?.field ?? '');
-  const found = [...residue(shown, isDate), ...unfilled, ...seams(shown, values)];
+  const found = [...residue(shown, isDate), ...unfilled, ...seams(shown, values), ...strippedBom(masked, shown)];
   if (found.length > 0) return rejected(found, placeholders);
 
   const text = masked.replace(MASKS, (mask) => (plain ? (values[maskIndex(mask)] ?? '') : escapeMarkdown(values[maskIndex(mask)] ?? '')));

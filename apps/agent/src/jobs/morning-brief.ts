@@ -24,6 +24,8 @@ const FAILED_INPUT: InputLines = {
 };
 
 const MARKET_RELEVANCE = 0.6;
+/** A bound on the last 24 hours, wide enough that the cut never falls before the today filter drops yesterday's items. */
+const MAX_WINDOW_ITEMS = 500;
 
 export type BriefRequestInput = Omit<BriefBinding, 'sheet' | 'facts' | 'missingInputs' | 'market'> & {
   readonly timezone: string;
@@ -63,7 +65,7 @@ async function todaysMarket({ db, householdId, asOf, timezone, locale, clock }: 
     .order('relevance', { ascending: false })
     .order('created_at', { ascending: false })
     .order('url_normalized')
-    .limit(20);
+    .limit(MAX_WINDOW_ITEMS);
   if (error) throw new Error(`Reading today's research items failed: ${error.message}`);
   return data
     .filter((row) => businessDate(parseInstant(row.created_at), timezone) === asOf)

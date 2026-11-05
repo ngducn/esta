@@ -1,5 +1,5 @@
 import { estaUri, parseEstaUri, type EstaLinkType } from '@esta/core/links';
-import { parseProposal, PROPOSAL_TYPES, isProposalType, type Proposal } from '@esta/core/proposals';
+import { parseProposal, PROPOSAL_TYPES, RENT_CHANGE_RANGE, isProposalType, type Proposal } from '@esta/core/proposals';
 import { normalizeUrl } from '@esta/core/research';
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
@@ -37,12 +37,15 @@ const REFUSALS: Readonly<Record<string, string>> = {
   ESTA_AMENDMENT_ALREADY_BILLED: 'effective_period_start: that period is already billed or paid; use a later period start',
   ESTA_AMENDMENT_DUPLICATE: 'effective_period_start: the lease already changes on that date',
   ESTA_AMENDMENT_NOT_A_PERIOD_START: 'effective_period_start: not a period start of this lease',
-  ESTA_RENT_CHANGE_RANGE: 'rent_vnd: keep the new monthly rent between half and double the rent it replaces',
+  ESTA_RENT_CHANGE_RANGE: `rent_vnd: a suggestion card holds a new monthly rent from ${RENT_CHANGE_RANGE.minPercent}% to ${RENT_CHANGE_RANGE.maxPercent}% of the rent it replaces, and this rent is outside that range. Store no card for this change and try no other rent: tell the family member to change the rent on the lease itself.`,
   ESTA_LEASE_NOT_RENEWABLE: 'lease_id: only an active or ended lease renews',
   ESTA_LEASE_OPEN_ENDED: 'lease_id: an open-ended lease has no end to renew from',
   ESTA_LEASE_ALREADY_RENEWED: 'lease_id: the lease already has a renewal',
   ESTA_RENEWAL_END: 'end_date: must be after the lease ends',
 };
+
+/** Refusals no retry can fix: the model is sent elsewhere, not told to call again. */
+const FINAL_REFUSALS: ReadonlySet<string> = new Set(['ESTA_RENT_CHANGE_RANGE']);
 
 async function resolveCitations({ db, householdId, citing }: ProposalBinding, urls: readonly string[]): Promise<{ readonly found: Citation[]; readonly refused: string[] }> {
   if (urls.length === 0) return { found: [], refused: [] };
@@ -75,6 +78,17 @@ function subjectIds(params: Readonly<Record<string, unknown>>, sheet: ProposalBi
   );
 }
 
+/**
+ * A proposal and its repaired retry share one guard and so one repair turn. The key is the type, the subject and a hash of
+ * the params that are not text, because the text is what slips and changes on the retry. The guard is dropped once the text
+ * passes (see `write`), so the next proposal with the same key starts with its own repair turn.
+ */
+const guardKey = (type: string, params: Readonly<Record<string, unknown>>) => {
+  const texts: readonly string[] = isProposalType(type) ? PROPOSAL_TYPES[type].texts : [];
+  const rest = Object.entries(params).filter(([key]) => !texts.includes(key)).sort(([a], [b]) => a.localeCompare(b));
+  return JSON.stringify([type, ...Object.keys(SUBJECT_PARAMS).map((key) => params[key] ?? null), createHash('sha256').update(JSON.stringify(rest)).digest('hex').slice(0, 16)]);
+};
+
 /** The same proposal twice is one item: the key hashes the type and the params as Esta stores them. */
 const dedupeKey = (proposal: Proposal) => `proposal:${proposal.type}:${createHash('sha256').update(JSON.stringify(proposal.params)).digest('hex').slice(0, 32)}`;
 
@@ -84,10 +98,19 @@ const dedupeKey = (proposal: Proposal) => `proposal:${proposal.type}:${createHas
  * through the same writer as create_item before anything is stored.
  */
 export function proposalWriter(binding: ProposalBinding) {
-  const guard = guardedWriter(binding, 'create_proposal');
+  const guards = new Map<string, ReturnType<typeof guardedWriter>>();
   const { citing, cap } = binding;
   const saved: string[] = [];
   let stored = cap?.earlier ?? 0;
+
+  const guardFor = (key: string) => {
+    let guard = guards.get(key);
+    if (guard === undefined) {
+      guard = guardedWriter(binding, 'create_proposal');
+      guards.set(key, guard);
+    }
+    return guard;
+  };
 
   async function write(raw: Record<string, unknown>): Promise<{ saved: true; added: boolean; dedupe_key: string }> {
     const input = inputSchema.safeParse(raw);
@@ -102,10 +125,13 @@ export function proposalWriter(binding: ProposalBinding) {
       const template = params[key];
       return typeof template === 'string' ? [{ key, template }] : [];
     });
+    const gKey = guardKey(type, params);
+    const guard = guardFor(gKey);
     const filled = await guard.fill(
       [...texts.map(({ template }) => ({ template, format: 'plain' as const })), { template: rationale, format: 'markdown' as const }],
       JSON.stringify(raw, null, 2),
     );
+    guards.delete(gKey);
     const body = filled.at(-1)?.text ?? '';
     const parsed = parseProposal({ type, params: { ...subjectIds(params, binding.sheet), ...Object.fromEntries(texts.map(({ key }, i) => [key, filled[i]?.text])) } });
     if (!parsed.ok) throw rejected(parsed.reason);
@@ -118,7 +144,7 @@ export function proposalWriter(binding: ProposalBinding) {
     if (sources.refused.length > 0) throw rejected(sources.refused);
     const { data: refusal, error } = await binding.db.rpc('proposal_refusal', { p_household_id: binding.householdId, p_proposal: proposal });
     if (error) throw new Error(`Checking the proposal failed: ${error.message}`);
-    if (refusal !== null) throw rejected([REFUSALS[refusal] ?? refusal]);
+    if (refusal !== null) throw FINAL_REFUSALS.has(refusal) ? new ToolRejection(REFUSALS[refusal] ?? refusal) : rejected([REFUSALS[refusal] ?? refusal]);
 
     const links = subjects(proposal);
     const key = dedupeKey(proposal);
