@@ -69,4 +69,43 @@ describe('MoneyInput', () => {
     renderInLocale(<MoneyInput label="Amount received" defaultText="3tr5" />, 'en');
     expect(screen.getByTestId('money-preview').textContent).toBe(`3,500,000${NBSP}₫`);
   });
+
+  describe('with the amount in words', () => {
+    function setupWords(text: string, locale: 'vi' | 'en' = 'vi') {
+      renderInLocale(<MoneyInput label="Số tiền nhận" defaultText={text} words />, locale);
+      const input = screen.getByLabelText('Số tiền nhận');
+      return { input, words: () => screen.queryByTestId('money-words')?.textContent ?? null };
+    }
+
+    it.each([
+      ['3tr5', `3.500.000${NBSP}₫`, 'Ba triệu năm trăm nghìn đồng'],
+      ['1k', `1.000${NBSP}₫`, 'Một nghìn đồng'],
+      ['10.005.000', `10.005.000${NBSP}₫`, 'Mười triệu không trăm lẻ năm nghìn đồng'],
+      ['1 tỷ', `1.000.000.000${NBSP}₫`, 'Một tỷ đồng'],
+      ['1000 tỷ', `1.000.000.000.000${NBSP}₫`, 'Một nghìn tỷ đồng'],
+    ])('confirms %s as = %s and says it in words', (text, shown, spoken) => {
+      const { words } = setupWords(text);
+      expect(screen.getByTestId('money-preview').textContent).toBe(shown);
+      expect(words()).toBe(spoken);
+    });
+
+    it('says the amount in English words under the English locale', () => {
+      const { words } = setupWords('3tr5', 'en');
+      expect(words()).toBe('Three million five hundred thousand dong');
+    });
+
+    it.each([
+      ['0', 'Nhập số tiền lớn hơn 0.'],
+      ['1.000.000.000.001', 'Số này lớn hơn mức Esta ghi được.'],
+      ['5000 tỷ', 'Số này lớn hơn mức Esta ghi được.'],
+      ['3,5', 'Tiền đồng không có số lẻ.'],
+    ])('refuses %s with the reason in words and no amount', (text, reason) => {
+      const { input, words } = setupWords(text);
+      fireEvent.blur(input);
+      expect(input.getAttribute('aria-invalid')).toBe('true');
+      expect(document.getElementById(input.getAttribute('aria-describedby')?.split(' ')[1] ?? '')?.textContent).toContain(reason);
+      expect(screen.queryByTestId('money-preview')).toBeNull();
+      expect(words()).toBeNull();
+    });
+  });
 });
