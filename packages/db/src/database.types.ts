@@ -3745,6 +3745,10 @@ export type Database = {
           id: string
         }[]
       }
+      redact_party: {
+        Args: { p_as_of: string; p_party_id: string }
+        Returns: string[]
+      }
       renew_lease: {
         Args: {
           p_end_date?: string

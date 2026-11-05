@@ -23,8 +23,8 @@ export type DataExportLabels = {
 };
 
 type Stage = { readonly kind: 'idle' } | { readonly kind: 'ready'; readonly parts: Parts } | { readonly kind: 'failed' };
-async function requestExport(): Promise<Result<Parts>> {
-  const response = await fetch('/api/export', { method: 'POST' });
+async function requestExport(endpoint: string): Promise<Result<Parts>> {
+  const response = await fetch(endpoint, { method: 'POST' });
   if (!response.ok) return { ok: false, reason: 'refused' };
   const parsed = exportSchema.safeParse(await response.json());
   return parsed.success ? { ok: true, value: parsed.data.parts } : { ok: false, reason: 'unreadable' };
@@ -32,10 +32,10 @@ async function requestExport(): Promise<Result<Parts>> {
 
 const fill = (template: string, values: Readonly<Record<string, number>>) => template.replace(/\{(\w+)\}/g, (match, key: string) => String(values[key] ?? match));
 
-export function DataExport({ labels }: { labels: DataExportLabels }) {
+export function DataExport({ labels, endpoint = '/api/export' }: { labels: DataExportLabels; endpoint?: string }) {
   const [stage, setStage] = useState<Stage>({ kind: 'idle' });
   const { pending, run } = useAction();
-  const start = () => run(requestExport, (answer) => setStage(answer.ok ? { kind: 'ready', parts: answer.value } : { kind: 'failed' }));
+  const start = () => run(() => requestExport(endpoint), (answer) => setStage(answer.ok ? { kind: 'ready', parts: answer.value } : { kind: 'failed' }));
 
   return (
     <div className="flex flex-col items-start gap-3">

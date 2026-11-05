@@ -1,0 +1,94 @@
+import type { Clock } from '@esta/core';
+import { EXPORT_SCHEMA_VERSION, EXPORT_TABLES } from '@esta/core/export';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { z } from 'zod';
+import type { ExportSink } from './sink';
+import { csvChunks, jsonChunks, objectsUnder, type Row } from './writeExport';
+
+const IN_CHUNK = 40;
+const PAGE_ROWS = 1000;
+const encoder = new TextEncoder();
+const pageSchema = z.array(z.record(z.string(), z.unknown()));
+
+export type PartyExportOptions = { readonly clock: Clock };
+
+export type WrittenPartyExport = {
+  readonly documentIds: readonly string[];
+  readonly tables: Readonly<Record<string, number>>;
+  readonly files: number;
+};
+
+type Scope = { readonly column: string; readonly values: readonly string[] };
+
+const idsOf = (rows: readonly Row[]) => rows.map((row) => String(row.id));
+const union = (...lists: readonly (readonly Row[])[]) => [...new Map(lists.flat().map((row) => [String(row.id), row])).values()].toSorted((a, b) => String(a.id).localeCompare(String(b.id)));
+
+/** Reads in groups of ids so the request line stays short, and each group by key until a page comes back empty. */
+async function readWhere(client: SupabaseClient, householdId: string, tableName: string, scope: Scope): Promise<Row[]> {
+  const table = EXPORT_TABLES.find((candidate) => candidate.name === tableName);
+  if (table === undefined) throw new Error(`${tableName} is not an export table`);
+  const rows: Row[] = [];
+  for (let from = 0; from < scope.values.length; from += IN_CHUNK) {
+    const chunk = scope.values.slice(from, from + IN_CHUNK);
+    let after: string | undefined;
+    for (;;) {
+      const base = client.from(tableName).select(table.columns.join(',')).eq('household_id', householdId).in(scope.column, chunk);
+      const { data, error } = await (after === undefined ? base : base.gt('id', after)).order('id').limit(PAGE_ROWS);
+      if (error) throw new Error(`Reading ${tableName} failed: ${error.message}`);
+      const page = pageSchema.parse(data);
+      const last = page.at(-1)?.id;
+      if (typeof last !== 'string') break;
+      rows.push(...page);
+      after = last;
+    }
+  }
+  return rows;
+}
+
+async function* once(rows: Row[]): AsyncGenerator<Row[]> {
+  if (rows.length > 0) yield rows;
+}
+
+/**
+ * Everything linked to one person: their party row, the leases they rent, those leases' invoices with lines, deposit
+ * entries and documents, the payments they made, and each document's files. Another tenant's rows are never read: every
+ * read names this person's ids, and a payment or document joins only through them.
+ */
+export async function writePartyExport(client: SupabaseClient, householdId: string, partyId: string, sink: ExportSink, { clock }: PartyExportOptions): Promise<WrittenPartyExport> {
+  const read = (table: string, scope: Scope) => readWhere(client, householdId, table, scope);
+  const parties = await read('parties', { column: 'id', values: [partyId] });
+  const leases = await read('leases', { column: 'tenant_party_id', values: [partyId] });
+  const leaseIds = idsOf(leases);
+  const invoices = await read('invoices', { column: 'lease_id', values: leaseIds });
+  const invoiceIds = idsOf(invoices);
+  const invoiceLines = await read('invoice_lines', { column: 'invoice_id', values: invoiceIds });
+  const paid = await read('payments', { column: 'payer_party_id', values: [partyId] });
+  const allocations = union(await read('payment_allocations', { column: 'invoice_id', values: invoiceIds }), await read('payment_allocations', { column: 'payment_id', values: idsOf(paid) }));
+  const payments = union(paid, await read('payments', { column: 'id', values: [...new Set(allocations.map((row) => String(row.payment_id)))] }));
+  const depositEntries = await read('deposit_entries', { column: 'lease_id', values: leaseIds });
+  const documents = union(await read('documents', { column: 'party_id', values: [partyId] }), await read('documents', { column: 'lease_id', values: leaseIds }));
+
+  const written: Record<string, Row[]> = { parties, leases, invoices, invoice_lines: invoiceLines, payments, payment_allocations: allocations, deposit_entries: depositEntries, documents };
+  const counts: Record<string, number> = {};
+  for (const [name, rows] of Object.entries(written)) {
+    const columns = EXPORT_TABLES.find((table) => table.name === name)?.columns ?? [];
+    await sink.add(`tables/${name}.json`, jsonChunks(once(rows), () => undefined));
+    await sink.add(`tables/${name}.csv`, csvChunks(once(rows), columns));
+    counts[name] = rows.length;
+  }
+
+  let files = 0;
+  for (const document of documents) {
+    for await (const object of objectsUnder(client, 'documents', `${householdId}/${String(document.id)}`)) {
+      const { data, error } = await client.storage.from(object.bucket).download(object.path);
+      if (error || data === null) throw new Error(`Reading ${object.bucket}/${object.path} failed: ${error?.message ?? 'no data'}`);
+      await sink.add(`files/${object.bucket}/${object.path}`, new Uint8Array(await data.arrayBuffer()), data.size);
+      files += 1;
+    }
+  }
+
+  await sink.finish((parts) =>
+    encoder.encode(`${JSON.stringify({ schemaVersion: EXPORT_SCHEMA_VERSION, kind: 'party', exportedAt: clock.now(), householdId, partyId, tables: counts, files, parts }, null, 2)}\n`),
+  );
+  return { documentIds: idsOf(documents), tables: counts, files };
+}

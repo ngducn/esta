@@ -59,6 +59,15 @@ const ASK_PAGES = /^\/assistant\/ask(?:\/[^/]+)?\/?$/;
 const GUARDED_PAGES: readonly GuardedPage[] = [
   recordPage(/^\/properties\/([^/]+)(?:\/|$)/, ['new', 'archived'], (supabase, id) => supabase.from('property_list_rows').select('id').eq('id', id).maybeSingle()),
   recordPage(/^\/assistant\/ask\/([^/]+)$/, [], (supabase, id) => supabase.from('conversations').select('id').eq('id', id).maybeSingle()),
+  {
+    path: /^\/tenants\/([^/]+)\/?$/,
+    async hidden({ supabase, userId }, id) {
+      if ((await readMembership(supabase, userId))?.role !== 'admin') return true;
+      if (id === undefined || !z.uuid().safeParse(id).success) return true;
+      const { data, error } = await supabase.from('parties').select('id').eq('id', id).contains('tags', ['tenant']).maybeSingle();
+      return error === null && data === null;
+    },
+  },
   { path: /^\/assistant\/diagnostics\/?$/, hidden: async ({ supabase, userId }) => (await readMembership(supabase, userId))?.is_operator !== true },
   { path: /^\/open\/([^/]+\/[^/]+)$/, hidden: async ({ supabase }, link = '') => openLinkTarget(supabase, link).then((target) => target === null, () => false) },
 ];

@@ -10,7 +10,7 @@ const PAGE_ROWS = 1000;
 const LIST_LIMIT = 100;
 const encoder = new TextEncoder();
 const pageSchema = z.array(z.record(z.string(), z.unknown()));
-type Row = Record<string, unknown>;
+export type Row = Record<string, unknown>;
 
 export type WriteExportOptions = {
   readonly clock: Clock;
@@ -49,7 +49,7 @@ async function* pagesOf(client: SupabaseClient, table: HouseholdTable, household
   if (count !== read) throw new Error(`Reading ${table.name} returned ${read} of ${count} rows; try again`);
 }
 
-async function* jsonChunks(pages: AsyncIterable<Row[]>, onRows: (rows: Row[]) => void): AsyncGenerator<Uint8Array> {
+export async function* jsonChunks(pages: AsyncIterable<Row[]>, onRows: (rows: Row[]) => void): AsyncGenerator<Uint8Array> {
   let first = true;
   for await (const rows of pages) {
     onRows(rows);
@@ -59,14 +59,14 @@ async function* jsonChunks(pages: AsyncIterable<Row[]>, onRows: (rows: Row[]) =>
   yield encoder.encode(first ? '[]\n' : '\n]\n');
 }
 
-async function* csvChunks(pages: AsyncIterable<Row[]>, columns: readonly string[]): AsyncGenerator<Uint8Array> {
+export async function* csvChunks(pages: AsyncIterable<Row[]>, columns: readonly string[]): AsyncGenerator<Uint8Array> {
   yield encoder.encode(csvHead(columns));
   for await (const rows of pages) yield encoder.encode(csvRows(columns, rows));
 }
 
-type StorageObject = { readonly bucket: string; readonly path: string };
+export type StorageObject = { readonly bucket: string; readonly path: string };
 
-async function* objectsUnder(client: SupabaseClient, bucket: string, prefix: string): AsyncGenerator<StorageObject> {
+export async function* objectsUnder(client: SupabaseClient, bucket: string, prefix: string): AsyncGenerator<StorageObject> {
   for (let offset = 0; ; offset += LIST_LIMIT) {
     const { data, error } = await client.storage.from(bucket).list(prefix, { limit: LIST_LIMIT, offset, sortBy: { column: 'name', order: 'asc' } });
     if (error) throw new Error(`Listing ${bucket}/${prefix} failed: ${error.message}`);
