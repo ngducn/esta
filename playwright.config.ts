@@ -16,6 +16,9 @@ if (!servers.some((name) => name === server)) throw new Error(`ESTA_E2E_SERVER m
 // whole suite passed on the real clock. slotEnv passes this to the server and the agent worker; a test_clock row still wins.
 process.env.ESTA_FROZEN_NOW ||= '2026-11-01T10:00:00+07:00';
 
+// A seeded household's files weigh about 1.8 MB, so a 1 MB part makes every export in the suite a split one.
+process.env.ESTA_EXPORT_PART_MB ||= '1';
+
 const sharedClock = [
   'clock.spec.ts',
   'assistant-status.spec.ts',
