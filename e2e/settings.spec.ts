@@ -29,12 +29,14 @@ test('Ryan invites a relative as a viewer, who signs in and finds nothing to cha
 
   const email = `co.${randomUUID().slice(0, 8)}@demo.esta.test`;
   const sheet = await invite(page, email);
+  await page.screenshot({ path: test.info().outputPath('invite-sheet-390.png') });
   expect(await seriousAxeViolations(page)).toEqual([]);
   await sheet.getByTestId('invite-save').click();
   await expect(sheet).toBeHidden();
   await expect(rowOf(page, email).getByTestId('member-pending')).toHaveText('Chưa đăng nhập');
   await expect(rowOf(page, email).getByTestId('member-role')).toHaveValue('viewer');
   expect((await roles(page)).find((row) => row.invited_email === email)?.role, 'the invite reaches only the viewer role').toBe('viewer');
+  await page.screenshot({ path: test.info().outputPath('members-390.png'), fullPage: true });
 
   const again = await invite(page, email);
   await again.getByTestId('invite-save').click();
