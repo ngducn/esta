@@ -106,4 +106,22 @@ describe('create_proposal validation (AGENT.md §7)', () => {
     await expect(call('create_task', { title: 'Gọi người thuê Phòng 7', due_on: '2026-10-07', property_id: 'f1' })).rejects.toBeInstanceOf(NumberGuardError);
     expect(tables.agent_items).toEqual([expect.objectContaining({ kind: 'system', dedupe_key: 'number_guard:job-propose' })]);
   });
+
+  it('gives two subject-less tasks a repair turn each when the first is repaired before the second slips', async () => {
+    const { tables, writer } = await setup();
+    const call = (title: string) => writer.write(task({ title, due_on: '2026-10-07' }));
+    await expect(call('Gọi người thuê Phòng 5')).rejects.toBeInstanceOf(ToolRejection);
+    await expect(call('Gọi người thuê')).resolves.toMatchObject({ saved: true });
+    await expect(call('Nhắc đóng tiền Phòng 6')).rejects.toBeInstanceOf(ToolRejection);
+    await expect(call('Nhắc đóng tiền')).resolves.toMatchObject({ saved: true });
+    expect(tables.agent_items).toHaveLength(2);
+  });
+
+  it('gives two tasks with different params a repair turn each even when both slip before either is repaired', async () => {
+    const { writer } = await setup();
+    const call = (title: string, due_on: string) => writer.write(task({ title, due_on }));
+    await expect(call('Gọi người thuê Phòng 5', '2026-10-07')).rejects.toBeInstanceOf(ToolRejection);
+    await expect(call('Nhắc đóng tiền Phòng 6', '2026-10-09')).rejects.toBeInstanceOf(ToolRejection);
+    await expect(call('Nhắc đóng tiền Phòng 6', '2026-10-09')).rejects.toBeInstanceOf(NumberGuardError);
+  });
 });

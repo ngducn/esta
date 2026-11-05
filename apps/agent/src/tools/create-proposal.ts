@@ -75,8 +75,16 @@ function subjectIds(params: Readonly<Record<string, unknown>>, sheet: ProposalBi
   );
 }
 
-/** The proposals of one run that name the same type and subject share a repair turn; two about other subjects each get their own. */
-const guardKey = (type: string, params: Readonly<Record<string, unknown>>) => JSON.stringify([type, ...Object.keys(SUBJECT_PARAMS).map((key) => params[key] ?? null)]);
+/**
+ * A proposal and its repaired retry share one guard and so one repair turn. The key is the type, the subject and a hash of
+ * the params that are not text, because the text is what slips and changes on the retry. The guard is dropped once the text
+ * passes (see `write`), so the next proposal with the same key starts with its own repair turn.
+ */
+const guardKey = (type: string, params: Readonly<Record<string, unknown>>) => {
+  const texts: readonly string[] = isProposalType(type) ? PROPOSAL_TYPES[type].texts : [];
+  const rest = Object.entries(params).filter(([key]) => !texts.includes(key)).sort(([a], [b]) => a.localeCompare(b));
+  return JSON.stringify([type, ...Object.keys(SUBJECT_PARAMS).map((key) => params[key] ?? null), createHash('sha256').update(JSON.stringify(rest)).digest('hex').slice(0, 16)]);
+};
 
 /** The same proposal twice is one item: the key hashes the type and the params as Esta stores them. */
 const dedupeKey = (proposal: Proposal) => `proposal:${proposal.type}:${createHash('sha256').update(JSON.stringify(proposal.params)).digest('hex').slice(0, 32)}`;
@@ -92,8 +100,7 @@ export function proposalWriter(binding: ProposalBinding) {
   const saved: string[] = [];
   let stored = cap?.earlier ?? 0;
 
-  const guardFor = (type: string, params: Readonly<Record<string, unknown>>) => {
-    const key = guardKey(type, params);
+  const guardFor = (key: string) => {
     let guard = guards.get(key);
     if (guard === undefined) {
       guard = guardedWriter(binding, 'create_proposal');
@@ -115,11 +122,13 @@ export function proposalWriter(binding: ProposalBinding) {
       const template = params[key];
       return typeof template === 'string' ? [{ key, template }] : [];
     });
-    const guard = guardFor(type, params);
+    const gKey = guardKey(type, params);
+    const guard = guardFor(gKey);
     const filled = await guard.fill(
       [...texts.map(({ template }) => ({ template, format: 'plain' as const })), { template: rationale, format: 'markdown' as const }],
       JSON.stringify(raw, null, 2),
     );
+    guards.delete(gKey);
     const body = filled.at(-1)?.text ?? '';
     const parsed = parseProposal({ type, params: { ...subjectIds(params, binding.sheet), ...Object.fromEntries(texts.map(({ key }, i) => [key, filled[i]?.text])) } });
     if (!parsed.ok) throw rejected(parsed.reason);
