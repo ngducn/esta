@@ -38,7 +38,9 @@ export type BoardRowContext = {
   readonly reminders: BoardReminders;
 };
 
-const list ='@max-[56rem]:h-auto @max-[56rem]:min-h-0 @max-[56rem]:border-0 @max-[56rem]:p-0';
+// Every row's actions stay in view without sideways scroll (#377): the six columns need 64rem of the board's own width,
+// and from 56rem the table still fits once it leaves out Đã thu, so below 56rem the board is the phone list.
+const list = '@max-[56rem]:h-auto @max-[56rem]:min-h-0 @max-[56rem]:border-0 @max-[56rem]:p-0';
 const cell = {
   place: 'w-full max-w-0 @max-[56rem]:w-auto @max-[56rem]:max-w-none @max-[56rem]:col-start-1 @max-[56rem]:row-start-1',
   owed: 'text-end whitespace-nowrap @max-[56rem]:col-start-2 @max-[56rem]:row-start-1 @max-[56rem]:self-start',
