@@ -12,10 +12,6 @@ const BYTES_PER_MB = 1024 * 1024;
 
 export const refuseExport = (status: number) => new NextResponse(null, { status, headers: NO_STORE });
 
-/**
- * The shared tail of every export route: `write` fills a sink read through the member's session, then the parts are
- * stored in the private `exports` bucket, each document logged as downloaded, and signed links answered.
- */
 export async function storeExport(
   member: Member,
   write: (sink: ExportSink, session: Awaited<ReturnType<typeof createSessionClient>>) => Promise<{ readonly documentIds: readonly string[] }>,

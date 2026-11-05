@@ -23,7 +23,7 @@ type Scope = { readonly column: string; readonly values: readonly string[] };
 const idsOf = (rows: readonly Row[]) => rows.map((row) => String(row.id));
 const union = (...lists: readonly (readonly Row[])[]) => [...new Map(lists.flat().map((row) => [String(row.id), row])).values()].toSorted((a, b) => String(a.id).localeCompare(String(b.id)));
 
-/** Reads in groups of ids so the request line stays short, and each group by key until a page comes back empty. */
+/** Ids go in groups so the request line stays short. */
 async function readWhere(client: SupabaseClient, householdId: string, tableName: string, scope: Scope): Promise<Row[]> {
   const table = EXPORT_TABLES.find((candidate) => candidate.name === tableName);
   if (table === undefined) throw new Error(`${tableName} is not an export table`);
@@ -49,11 +49,7 @@ async function* once(rows: Row[]): AsyncGenerator<Row[]> {
   if (rows.length > 0) yield rows;
 }
 
-/**
- * Everything linked to one person: their party row, the leases they rent, those leases' invoices with lines, deposit
- * entries and documents, the payments they made, and each document's files. Another tenant's rows are never read: every
- * read names this person's ids, and a payment or document joins only through them.
- */
+/** Another tenant's rows are never read: every read names this person's ids, and a payment or document joins only through them. */
 export async function writePartyExport(client: SupabaseClient, householdId: string, partyId: string, sink: ExportSink, { clock }: PartyExportOptions): Promise<WrittenPartyExport> {
   const read = (table: string, scope: Scope) => readWhere(client, householdId, table, scope);
   const parties = await read('parties', { column: 'id', values: [partyId] });

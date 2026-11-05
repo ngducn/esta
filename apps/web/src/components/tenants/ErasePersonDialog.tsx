@@ -17,7 +17,6 @@ export type EraseLabels = {
   readonly refusals: Readonly<Record<ErasePersonRefusal, string>>;
 };
 
-/** The confirm names the person, as the voice guide asks, and a refusal says what to do first. */
 export default function ErasePersonDialog({ partyId, labels, open, onOpenChange, finalFocus }: PopupProps & { partyId: string; labels: EraseLabels }) {
   const router = useRouter();
   const [refusal, setRefusal] = useState<keyof EraseLabels['refusals'] | null>(null);

@@ -78,7 +78,6 @@ export async function* objectsUnder(client: SupabaseClient, bucket: string, pref
   }
 }
 
-/** One storage object into the archive under `files/<bucket>/<path>`, read through the exporter's own session. */
 export async function addObject(client: SupabaseClient, sink: ExportSink, object: StorageObject): Promise<void> {
   const { data, error } = await client.storage.from(object.bucket).download(object.path);
   if (error || data === null) throw new Error(`Reading ${object.bucket}/${object.path} failed: ${error?.message ?? 'no data'}`);

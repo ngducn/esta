@@ -11,7 +11,6 @@ import { loadTenantPage } from '@/server/tenants/load';
 
 type Params = Promise<{ partyId: string }>;
 
-/** One person who rents or rented from the household: what is on file, their leases, and the two data actions (DOMAIN-VN §8). Admins only. */
 export default async function TenantPage({ params }: { params: Params }) {
   const member = await requireMember();
   if (member.role !== 'admin') notFound();

@@ -19,7 +19,6 @@ export type TenantActionLabels = {
   readonly erase: EraseLabels;
 };
 
-/** The two things an admin can do with one person's data: take a copy, and, once nothing is owed, erase who they are. */
 export function TenantActions({ partyId, canErase, labels }: { partyId: string; canErase: boolean; labels: TenantActionLabels }) {
   const erase = useDeferredDialog(loadErase);
   return (

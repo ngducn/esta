@@ -1,6 +1,3 @@
--- P6-02c: erasing a former tenant's personal details (DOMAIN-VN §8, an [app rule]). The party row stays, as do its
--- leases, invoices and payments, so totals and reports do not change; only who the person is goes.
-
 -- Storage refuses a delete from SQL, so the files of an erased ID card are removed through the Storage API by the
 -- admin's own session after redact_party has deleted the document rows. The policy opens only a folder no document
 -- row names, which is what document_upload_household checks, so a registered document's files stay unremovable.
@@ -22,7 +19,6 @@ as $$
 $$;
 revoke all on function private.erase_audit_values(text, uuid[], text[]) from public;
 
--- Returns the names of the storage objects the deleted ID cards leave behind, for the caller to remove.
 create function public.redact_party(p_party_id uuid, p_as_of date)
 returns text[]
 language plpgsql

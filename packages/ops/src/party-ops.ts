@@ -10,7 +10,6 @@ const REMOVE_ATTEMPTS = 3;
 const partyRedactInputSchema = z.strictObject({ id: idSchema });
 type PartyRedactInput = z.output<typeof partyRedactInputSchema>;
 export type PartyRedacted = { readonly id: string; readonly removedFiles: number };
-/** `files_left`: the details are gone but some ID card files could not be removed yet; erasing again does not find them. */
 export type PartyRefusal = { readonly kind: 'active_lease' | 'deposit_held' | 'files_left' };
 
 const SENTINELS: Readonly<Record<string, PartyRefusal | CommonRefusal>> = {
@@ -33,12 +32,7 @@ async function removeFiles(ctx: OpContext, names: readonly string[]): Promise<bo
   return false;
 }
 
-/**
- * DOMAIN-VN §8: erases who a former tenant is and keeps what they owed and paid. `redact_party` refuses while the
- * person has a running lease or a held deposit, clears the contact fields, deletes the ID card documents and says
- * which files they left in Storage. Storage refuses a delete from SQL, so the admin's session removes those files
- * once no document row names them.
- */
+/** Storage refuses a delete from SQL, so the admin's session removes the ID card files once no document row names them. */
 export const partyRedact = defineOp<PartyRedactInput, PartyRedactInput, PartyRedacted, PartyRefusal>({
   creates: null,
   input: partyRedactInputSchema,

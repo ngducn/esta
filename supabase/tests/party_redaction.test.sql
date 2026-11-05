@@ -16,7 +16,6 @@ insert into public.units (id, household_id, property_id, label, kind) values
   ('00000000-0000-4000-8000-000000000a15', :'a', '00000000-0000-4000-8000-0000000000a1', 'Phòng 5', 'room'),
   ('00000000-0000-4000-8000-000000000a17', :'a', '00000000-0000-4000-8000-0000000000a1', 'Phòng 7', 'room');
 
--- gone: left with the deposit paid back. live: lease still running. held: left but the deposit is still held.
 insert into public.parties (id, household_id, kind, full_name, short_name, phone, zalo_phone, email, id_last4, address_text, notes, tags) values
   ('00000000-0000-4000-8000-00000000a0a1', :'a', 'individual', 'Lê Thị Gone Demo', 'Gone', '+84903000001', '+84903000001', 'gone@demo.test', '1234', '12 Đường Demo', 'Ghi chú Gone', array['tenant']),
   ('00000000-0000-4000-8000-00000000a0a2', :'a', 'individual', 'Trần Văn Live Demo', 'Live', '+84903000002', null, null, '2222', null, null, array['tenant']),

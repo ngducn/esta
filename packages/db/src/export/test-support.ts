@@ -2,7 +2,6 @@ import type { EntryData, ExportSink } from './sink';
 
 const decoder = new TextDecoder('utf-8', { ignoreBOM: true });
 
-/** Storage as the export reads it: `files` maps `bucket/path` to content, and a folder lists its entries. */
 export function fakeStorage(files: Record<string, string>) {
   return {
     from: (bucket: string) => ({

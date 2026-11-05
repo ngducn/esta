@@ -25,7 +25,6 @@ export type TenantPage = {
   readonly leases: readonly TenantLease[];
 };
 
-/** One person who rents or rented from the household, with their leases; null for anyone else, so the page answers a real 404. */
 export const loadTenantPage = cache(async (rawId: string): Promise<TenantPage | null> => {
   const id = idSchema.safeParse(rawId);
   if (!id.success) return null;

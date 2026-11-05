@@ -43,7 +43,6 @@ export function LeaseTerms({
   asOf: IsoDate;
   renewalOf: LeaseLink | null;
   renewedBy: LeaseLink | null;
-  /** The tenant's own page, for an admin; others see the name alone. */
   tenantHref?: string | null;
 }) {
   const t = useTranslations('leases');
