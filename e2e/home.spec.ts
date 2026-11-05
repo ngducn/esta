@@ -144,6 +144,7 @@ test('the meter’s share collected equals payments toward October’s rent read
     await expect(card.getByRole('meter'), size).toHaveAttribute('aria-valuenow', String(Math.floor((collected * 100) / billed)));
     await expect(card.getByRole('img', { name: 'Chưa có số liệu' }), 'a known figure is never the dash').toHaveCount(0);
     expect(await seriousAxeViolations(page), size).toEqual([]);
+    await page.context().clearCookies();
   }
 });
 

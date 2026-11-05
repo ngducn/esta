@@ -46,7 +46,7 @@ async function Home() {
     <div className="flex flex-col gap-stack">
       <PageHeader title={member.household.name} />
       <OfflineNotice message={t('offline')} testId="home-offline" />
-      <div className="grid grid-cols-1 gap-stack md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-stack md:grid-cols-2 md:items-start">
         <MonthCollection month={home.month} board={home.board} collected={home.collected} />
         <PortfolioFigure portfolio={portfolio} />
       </div>
