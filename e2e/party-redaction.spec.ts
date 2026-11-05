@@ -7,6 +7,7 @@ import { query } from '../scripts/db-checksum.ts';
 import { e2eServiceHeaders } from '../scripts/e2e-service.ts';
 import { parseSlot, slotWorkdir } from '../scripts/slot.ts';
 import { laneHousehold } from './helpers/seed';
+import { accessToken } from './helpers/session';
 import { DESKTOP, noSidewaysScroll, open, PHONE, rest, serviceUpsert, seriousAxeViolations, shot } from './helpers/wizard';
 
 const workdir = slotWorkdir(join(import.meta.dirname, '..'), parseSlot(process.env.ESTA_SLOT));
@@ -122,7 +123,7 @@ test('Ryan erases a former tenant: the name reads Đã xóa, the ID card he file
   await page.goto(`/properties/${room?.property_id}/rental/leases/${leaseId}`);
   await expect(page.getByTestId('lease-upload')).toBeEnabled({ timeout: 15_000 });
   await page.getByTestId('lease-upload').click();
-  const card = await sharp({ create: { width: 640, height: 400, channels: 3, noise: { type: 'gaussian', mean: 128, sigma: 40 } } }).jpeg().toBuffer();
+  const card = await sharp({ create: { width: 640, height: 400, channels: 3, background: { r: 120, g: 90, b: 60 }, noise: { type: 'gaussian', mean: 128, sigma: 40 } } }).jpeg().toBuffer();
   await page.getByTestId('camera-input').setInputFiles({ name: 'cccd.jpg', mimeType: 'image/jpeg', buffer: card });
   await expect(page.getByTestId('upload-preview')).toBeVisible({ timeout: 30_000 });
   await page.getByTestId('document-category').selectOption('id_card');
@@ -176,9 +177,7 @@ test('an erase that stopped before the files went hides them from a viewer, and 
   const viewer = await browser.newPage();
   try {
     await open(viewer, invited, 'light', PHONE);
-    const token = await viewer.evaluate(() => Object.values(localStorage).join(' '));
-    expect(token.length).toBeGreaterThanOrEqual(0);
-    const read = await viewer.request.get(`${rest.replace('/rest/v1', '/storage/v1')}/object/authenticated/documents/${name}`);
+    const read = await viewer.request.get(`${rest.replace('/rest/v1', '/storage/v1')}/object/authenticated/documents/${name}`, { headers: { authorization: `Bearer ${await accessToken(viewer)}`, apikey: service.apikey ?? '' } });
     expect(read.status(), 'a viewer gets no file').toBeGreaterThanOrEqual(400);
   } finally {
     await viewer.close();

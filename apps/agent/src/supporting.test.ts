@@ -51,6 +51,7 @@ describe('job registry', () => {
       { kind: 'portfolio_watch', at: '06:40' },
       { kind: 'morning_brief', at: '07:00' },
       { kind: 'weekly_review', at: '08:00', weekday: 0 },
+      { kind: 'backup_export', at: '02:00' },
     ]);
   });
 
@@ -75,7 +76,7 @@ describe('job registry', () => {
     });
   });
 
-  it('knows no other kind', () => {
+  it('knows no other kind, and backup_export is not a model kind', () => {
     expect(jobSpec('backup_export')).toBeUndefined();
     expect(jobSpec('toString')).toBeUndefined();
   });

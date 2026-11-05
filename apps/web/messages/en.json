@@ -2414,6 +2414,7 @@
     "ready": "Download ZIP file (expires in {minutes, plural, one {# minute} other {# minutes}})",
     "readyPart": "Download ZIP file part {part}/{total} (expires in {minutes, plural, one {# minute} other {# minutes}})",
     "manyParts": "There is a lot of information, so it is split into {total} files. Download all {total} files.",
+    "backup": "Every night Esta saves a complete copy, including what this file leaves out. To restore, ask the technical lead to use that copy.",
     "sensitive": "The file holds sensitive documents, such as ID card photos. Keep it somewhere safe.",
     "failed": "Could not download the information. Check the network, then tap again in a few minutes."
   },

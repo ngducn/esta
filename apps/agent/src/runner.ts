@@ -8,7 +8,7 @@ import type { RunMode } from './env';
 import { writeFailureItems } from './failure-items';
 import type { WorkerState } from './heartbeat';
 import { InvalidJobError } from './jobs/extract-document';
-import { jobSpec, type AgentJob, type JobSpec, type PreparedJob } from './jobs/registry';
+import { jobSpec, plainJobSpec, type AgentJob, type JobSpec, type PlainJobSpec, type PreparedJob } from './jobs/registry';
 import { canonicalizer, inputHash } from './replay/canonicalize';
 import { MissingRecordingError } from './replay/store';
 import { countToolCalls, judgeResult, type Failure, type FailureKind, type Outcome } from './sdk/result';
@@ -28,6 +28,8 @@ export type Worker = {
   readonly configDir: string;
   readonly replayDir: string;
   readonly timezone: string;
+  /** Where `backup_export` writes; null where nothing says and a guess would be unsafe (production). */
+  readonly backupDir: string | null;
   clock(): Promise<Clock>;
   /** Tells the heartbeat whether the last model session hit a usage limit. */
   setState(state: WorkerState): void;
@@ -120,7 +122,18 @@ function tidyTranscripts(job: AgentJob, configDir: string, keep: string): void {
   }
 }
 
+async function runPlain(worker: Worker, job: AgentJob, plain: PlainJobSpec): Promise<SessionOutcome> {
+  try {
+    const result = await plain.run({ db: worker.db, job, clock: await worker.clock(), backupDir: worker.backupDir });
+    return { outcome: { ok: true, reply: '', result }, session: null };
+  } catch (error) {
+    return { outcome: { ok: false, failure: failureOf(error) }, session: null };
+  }
+}
+
 async function runSession(worker: Worker, job: AgentJob, { waiting, failed }: Inputs): Promise<SessionOutcome> {
+  const plain = plainJobSpec(job.kind);
+  if (plain !== undefined) return runPlain(worker, job, plain);
   const spec = jobSpec(job.kind);
   if (spec === undefined) return { outcome: { ok: false, failure: { kind: 'invalid_job', message: `Unknown job kind ${job.kind}` } }, session: null };
   let session: SessionRun | null = null;
@@ -173,7 +186,7 @@ async function finishJob(worker: Worker, job: AgentJob, startedAt: Instant, inpu
     job_id: job.id,
     auth_mode: mode.authMode,
     agent_mode: mode.agentMode,
-    model: session?.model ?? (mode.agentMode === 'live' ? mode.model : null),
+    model: session?.model ?? (mode.agentMode === 'live' && plainJobSpec(job.kind) === undefined ? mode.model : null),
     num_turns: session?.result.numTurns ?? null,
     session_id: session?.result.sessionId ?? null,
     cost_estimate_usd: session?.result.costUsd ?? 0,
@@ -217,7 +230,7 @@ async function failJob(worker: Worker, job: AgentJob, failure: Failure): Promise
   rmSync(join(worker.jobsDir, job.id), { recursive: true, force: true });
   const spec = jobSpec(job.kind);
   await spec?.handler.onFailed?.({ db: worker.db, job, clock: () => worker.clock() }, failure.message);
-  await writeFailureItems({ db: worker.db, job, spec, clock: await worker.clock(), timezone: worker.timezone }, failure);
+  await writeFailureItems({ db: worker.db, job, spec: spec ?? plainJobSpec(job.kind), clock: await worker.clock(), timezone: worker.timezone }, failure);
   await ownJob(worker, job, 'Failing the job', { status: 'failed', error: failure.message, finished_at: (await worker.clock()).now() });
 }
 

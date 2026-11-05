@@ -17,6 +17,8 @@ export type WriteExportOptions = {
   /** The member whose session reads the household; the manifest records it and what that session cannot read. */
   readonly exporter: ExportExporter;
   readonly pageRows?: number;
+  /** A service-role read sees every row, so its manifest says complete and withholds nothing. */
+  readonly complete?: boolean;
 };
 
 export type WrittenExport = {
@@ -64,7 +66,7 @@ export async function* csvChunks(pages: AsyncIterable<Row[]>, columns: readonly 
   for await (const rows of pages) yield encoder.encode(csvRows(columns, rows));
 }
 
-export type StorageObject = { readonly bucket: string; readonly path: string };
+export type StorageObject = { readonly bucket: string; readonly path: string; readonly createdAt: string | null };
 
 export async function* objectsUnder(client: SupabaseClient, bucket: string, prefix: string): AsyncGenerator<StorageObject> {
   for (let offset = 0; ; offset += LIST_LIMIT) {
@@ -72,7 +74,7 @@ export async function* objectsUnder(client: SupabaseClient, bucket: string, pref
     if (error) throw new Error(`Listing ${bucket}/${prefix} failed: ${error.message}`);
     for (const entry of data) {
       if (entry.id === null) yield* objectsUnder(client, bucket, `${prefix}/${entry.name}`);
-      else yield { bucket, path: `${prefix}/${entry.name}` };
+      else yield { bucket, path: `${prefix}/${entry.name}`, createdAt: entry.created_at ?? null };
     }
     if (data.length < LIST_LIMIT) return;
   }
@@ -84,7 +86,7 @@ export async function addObject(client: SupabaseClient, sink: ExportSink, object
   await sink.add(`files/${object.bucket}/${object.path}`, new Uint8Array(await data.arrayBuffer()), data.size);
 }
 
-export async function writeExport(client: SupabaseClient, householdId: string, sink: ExportSink, { clock, exporter, pageRows = PAGE_ROWS }: WriteExportOptions): Promise<WrittenExport> {
+export async function writeExport(client: SupabaseClient, householdId: string, sink: ExportSink, { clock, exporter, pageRows = PAGE_ROWS, complete = false }: WriteExportOptions): Promise<WrittenExport> {
   const counts: { table: string; rows: number }[] = [];
   const documentPaths = new Map<string, string>();
   for (const table of EXPORT_TABLES) {
@@ -111,7 +113,7 @@ export async function writeExport(client: SupabaseClient, householdId: string, s
 
   let manifest: ExportManifest | undefined;
   await sink.finish((parts) => {
-    manifest = buildManifest({ clock, householdId, counts, files, parts, exporter });
+    manifest = buildManifest({ clock, householdId, counts, files, parts, exporter, complete });
     return encoder.encode(`${JSON.stringify(manifest, null, 2)}\n`);
   });
   if (manifest === undefined) throw new Error('The sink wrote no manifest');

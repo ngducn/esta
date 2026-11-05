@@ -2414,6 +2414,7 @@
     "ready": "Tải tệp ZIP (hết hạn sau {minutes, plural, other {# phút}})",
     "readyPart": "Tải tệp ZIP phần {part}/{total} (hết hạn sau {minutes, plural, other {# phút}})",
     "manyParts": "Thông tin khá nhiều nên được chia thành {total} tệp. Tải đủ cả {total} tệp.",
+    "backup": "Mỗi đêm Esta tự lưu một bản đầy đủ, gồm cả phần tệp này không có. Cần khôi phục thì dùng bản đó, nhờ người phụ trách kỹ thuật.",
     "sensitive": "Tệp gồm cả giấy tờ nhạy cảm, như ảnh căn cước. Cất tệp ở nơi an toàn.",
     "failed": "Chưa tải được thông tin. Kiểm tra mạng rồi bấm lại sau ít phút."
   },

@@ -1,6 +1,6 @@
 import { FROZEN_CLOCK_REFUSAL } from '@esta/core';
 import { describe, expect, it } from 'vitest';
-import { assertStartAllowed, parseAgentEnv } from './env';
+import { assertStartAllowed, backupDirFor, parseAgentEnv } from './env';
 
 const base = { SUPABASE_URL: 'http://127.0.0.1:54321', SUPABASE_SERVICE_ROLE_KEY: 'service-key', ESTA_ENV: 'development' };
 
@@ -59,5 +59,19 @@ describe('assertStartAllowed', () => {
   it('refuses a frozen clock under ESTA_ENV=production', () => {
     const env = parseAgentEnv({ ...base, ESTA_AGENT_MODE: 'replay', ESTA_ENV: 'production', ESTA_FROZEN_NOW: '2026-10-07T09:00:00+07:00' });
     expect(() => assertStartAllowed(env)).toThrow(FROZEN_CLOCK_REFUSAL);
+  });
+});
+
+describe('backupDirFor', () => {
+  it('uses ESTA_BACKUP_DIR when set, in any environment', () => {
+    expect(backupDirFor(parseAgentEnv({ ...base, ESTA_BACKUP_DIR: '/Volumes/family/backups', ESTA_ENV: 'production' }), '/home')).toBe('/Volumes/family/backups');
+  });
+
+  it('falls back to a folder under the worker home outside production', () => {
+    expect(backupDirFor(parseAgentEnv({ ...base, ESTA_BACKUP_DIR: '' }), '/home')).toBe('/home/backups');
+  });
+
+  it('gives production no guess, so the job refuses', () => {
+    expect(backupDirFor(parseAgentEnv({ ...base, ESTA_ENV: 'production' }), '/home')).toBeNull();
   });
 });

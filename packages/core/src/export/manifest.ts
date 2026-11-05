@@ -13,8 +13,8 @@ export type ExportManifest = {
   readonly parts: readonly string[];
   /** Who exported: the file holds what this session could read. */
   readonly exporter: ExportExporter;
-  /** Always false: an export reads through one member's session, so it never claims to be the whole household. */
-  readonly complete: false;
+  /** False for an export, which reads through one member's session; true only for the nightly backup, which reads with the service role. */
+  readonly complete: boolean;
   /** The tables the exporter's session reads only in part, with the rule that narrows each. */
   readonly withheld: readonly { readonly table: string; readonly rule: string }[];
 };
@@ -28,9 +28,10 @@ export type ManifestInput = {
   readonly files: number;
   readonly parts: readonly string[];
   readonly exporter: ExportExporter;
+  readonly complete?: boolean;
 };
 
-export function buildManifest({ clock, householdId, counts, files, parts, exporter }: ManifestInput): ExportManifest {
+export function buildManifest({ clock, householdId, counts, files, parts, exporter, complete = false }: ManifestInput): ExportManifest {
   return {
     schemaVersion: EXPORT_SCHEMA_VERSION,
     exportedAt: clock.now(),
@@ -39,7 +40,7 @@ export function buildManifest({ clock, householdId, counts, files, parts, export
     files,
     parts: [...parts],
     exporter,
-    complete: false,
-    withheld: withheldTables(exporter.isOperator),
+    complete,
+    withheld: complete ? [] : withheldTables(exporter.isOperator),
   };
 }
