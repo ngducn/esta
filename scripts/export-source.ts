@@ -15,9 +15,9 @@ const manifestSchema = z.object({
   files: z.number().int().nonnegative(),
   parts: z.array(z.string()).min(1),
   exporter: z.object({ role: z.string(), isOperator: z.boolean() }),
-  complete: z.literal(false),
+  complete: z.boolean(),
   withheld: z.array(z.object({ table: z.string(), rule: z.string() })),
-});
+}).refine((manifest) => !manifest.complete || manifest.withheld.length === 0, { message: 'A manifest cannot be complete and also withhold a table' });
 export type Manifest = z.infer<typeof manifestSchema>;
 
 export type ExportSource = {

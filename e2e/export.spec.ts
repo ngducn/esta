@@ -221,6 +221,9 @@ test('a partial export says so: each manifest and each screen names what that ad
     await expect(ryanScreen).toContainText('các cuộc trò chuyện với Trợ lý của người khác');
     await expect(ryanScreen).not.toContainText('người vận hành');
     await expect(ryanScreen).not.toContainText('sao lưu');
+    const backup = page.getByTestId('export-backup');
+    await expect(backup).toContainText('Mỗi đêm Esta tự lưu một bản đầy đủ');
+    await expect(backup).not.toContainText(/sắp có|dữ liệu|hệ thống|bản cập nhật/i);
 
     const mother = await browser.newPage();
     try {

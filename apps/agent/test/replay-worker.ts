@@ -33,7 +33,7 @@ export function replayWorker(
     return { data: row === undefined ? [] : [{ ...row }], error: null };
   };
   Object.assign(db, { rpc });
-  return { db, workerId: 'w2', mode: { agentMode: 'replay', authMode: 'none' }, jobsDir, conversationsDir: join(jobsDir, 'conversations'), configDir: jobsDir, replayDir, timezone: 'Asia/Ho_Chi_Minh', clock, setState: (state) => states.push(state) };
+  return { db, workerId: 'w2', mode: { agentMode: 'replay', authMode: 'none' }, jobsDir, conversationsDir: join(jobsDir, 'conversations'), configDir: jobsDir, replayDir, timezone: 'Asia/Ho_Chi_Minh', backupDir: null, clock, setState: (state) => states.push(state) };
 }
 
 /** Calls a prepared job's tool by its short name, as the model would, answering the text the model reads. */

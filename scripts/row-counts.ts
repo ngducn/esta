@@ -15,6 +15,9 @@ export const missingFiles = (exported: Iterable<string>, live: ReadonlySet<strin
 
 /** What the command prints. The first line says a match only for what this file holds; a withheld table is named, never counted as matching. */
 export function report(manifest: Manifest, found: readonly Difference[], missing: readonly string[]): string[] {
+  if (found.length === 0 && missing.length === 0 && manifest.complete) {
+    return [`all tables and files match (${Object.keys(manifest.tables).length} tables, ${manifest.files} files)`, 'nothing was withheld: this is the complete copy'];
+  }
   if (found.length === 0 && missing.length === 0) {
     const left = manifest.withheld.map((entry) => entry.table).join(', ');
     return [
