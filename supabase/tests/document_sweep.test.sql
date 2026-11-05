@@ -25,6 +25,8 @@ insert into storage.objects (bucket_id, name, created_at) values
   ('documents', :'b' || '/' || :kept || '/front.jpg', now() - interval '5 days'),
   ('documents', 'loose-file.jpg', now() - interval '5 days'),
   ('property-photos', :'a' || '/' || :stray || '/front.jpg', now() - interval '5 days');
+-- Rows from other tests or a dev session are not this test's: clear them inside the transaction, which rolls back.
+delete from private.file_removals;
 insert into private.file_removals (name, household_id, party_id) values
   (:'a' || '/' || :erased || '/front.jpg', :'a', '00000000-0000-4000-8000-00000000a0a1'),
   (:'a' || '/' || :erased || '/gone.jpg', :'a', '00000000-0000-4000-8000-00000000a0a1');

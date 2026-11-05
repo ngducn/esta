@@ -141,7 +141,8 @@ function idSpans(original: string, idField: boolean): Span[] {
     if (first === undefined) return false;
     const digits = run.map((group) => group.digits).join('');
     const next = groups[from + run.length];
-    const continues = next?.gap !== undefined && next.gap !== null && JOIN_AFTER_LABEL.test(next.gap) && !dates.has(next) && !amounts.has(next);
+    // A group of three or more digits cannot finish a 10-digit start to 12, so a phone or tax code stays whole before it.
+    const continues = next?.gap !== undefined && next.gap !== null && next.digits.length <= 2 && JOIN_AFTER_LABEL.test(next.gap) && !dates.has(next) && !amounts.has(next);
     return (digits.length === 10 && digits.startsWith('0') && !continues) || OTHER_NUMBER_LABEL.test(` ${text.slice(Math.max(0, first.start - 32), first.start)}`);
   };
 
