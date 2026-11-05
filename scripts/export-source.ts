@@ -14,6 +14,9 @@ const manifestSchema = z.object({
   tables: z.record(z.string(), z.number().int().nonnegative()),
   files: z.number().int().nonnegative(),
   parts: z.array(z.string()).min(1),
+  exporter: z.object({ role: z.string(), isOperator: z.boolean() }),
+  complete: z.literal(false),
+  withheld: z.array(z.object({ table: z.string(), rule: z.string() })),
 });
 export type Manifest = z.infer<typeof manifestSchema>;
 

@@ -38,7 +38,7 @@ export async function POST() {
   });
 
   try {
-    const { documentIds } = await writeExport(supabase, householdId, sink, { clock });
+    const { documentIds } = await writeExport(supabase, householdId, sink, { clock, exporter: { role: member.role, isOperator: member.isOperator } });
     const { error: logError } = await supabase.rpc('log_export_downloads', { p_household_id: householdId, p_document_ids: [...documentIds] });
     if (logError) throw new Error(`Logging the export failed: ${logError.message}`);
     const { data, error } = await stored.createSignedUrls(parts.map((name) => `${householdId}/${name}`), env.ESTA_SIGNED_URL_TTL_SECONDS, { download: true });

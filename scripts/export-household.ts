@@ -15,9 +15,9 @@ if (email === undefined || dir === undefined) {
 const target = localTarget();
 const env = slotEnv(join(import.meta.dirname, '..'), target.slot);
 const client = createClient(target.apiUrl, env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '', { auth: { persistSession: false } });
-const { error } = await client.auth.signInWithPassword({ email, password: DEMO_PASSWORD });
+const { data: signedIn, error } = await client.auth.signInWithPassword({ email, password: DEMO_PASSWORD });
 if (error) throw error;
-const { data: member, error: memberError } = await client.from('household_members').select('household_id').limit(1).single();
+const { data: member, error: memberError } = await client.from('household_members').select('household_id, role, is_operator').eq('user_id', signedIn.user.id).single();
 if (memberError) throw memberError;
 const clock = await readClock(client, { ESTA_ENV: env.ESTA_ENV, ESTA_FROZEN_NOW: env.ESTA_FROZEN_NOW, ESTA_TIMEZONE: env.ESTA_TIMEZONE ?? 'Asia/Ho_Chi_Minh' });
 mkdirSync(dir, { recursive: true });
@@ -27,5 +27,5 @@ const sink = zipPartsSink({
   upload: async (name, bytes) => void writeFileSync(join(dir, name), bytes),
   mtime: Date.parse(clock.now()),
 });
-const { manifest } = await writeExport(client, member.household_id, sink, { clock });
+const { manifest } = await writeExport(client, member.household_id, sink, { clock, exporter: { role: member.role, isOperator: member.is_operator } });
 console.log(`exported household ${manifest.householdId}: ${Object.values(manifest.tables).reduce((sum, rows) => sum + rows, 0)} rows, ${manifest.files} files, ${manifest.parts.length} part(s) in ${dir}`);

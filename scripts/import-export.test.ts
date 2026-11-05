@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { EXPORT_TABLES } from '../packages/core/src/export/tables.ts';
 import { assertLocal, type ExportSource } from './export-source.ts';
-import { importScript, quoteTag } from './import-export.ts';
-import { differences } from './row-counts.ts';
+import { contentTypeFor, documentMimes, importScript, quoteTag } from './import-export.ts';
+import { differences, missingFiles, report } from './row-counts.ts';
 
 const HOUSEHOLD = '00000000-0000-4000-8000-0000000000aa';
-const manifest = { schemaVersion: 1 as const, exportedAt: '2026-11-01T03:00:00.000Z', householdId: HOUSEHOLD, tables: {}, files: 0, parts: ['export.zip'] };
+const manifest = { schemaVersion: 1 as const, exportedAt: '2026-11-01T03:00:00.000Z', householdId: HOUSEHOLD, tables: {}, files: 0, parts: ['export.zip'], exporter: { role: 'admin', isOperator: true }, complete: false as const, withheld: [{ table: 'conversations', rule: 'x' }] };
 const source = (tables: Record<string, Record<string, unknown>[]>): ExportSource => ({ manifest, tables: new Map(Object.entries(tables)), files: new Map() });
 
 describe('assertLocal', () => {
@@ -73,5 +73,50 @@ describe('differences', () => {
 
   it('counts a table the database lacks as zero rows', () => {
     expect(differences(counts, new Map([['files', 36]])).map((row) => row.what)).toEqual(['properties', 'tasks']);
+  });
+});
+
+describe('contentTypeFor', () => {
+  const jpegHead = new Uint8Array([0xff, 0xd8, 0xff, 0xe0]);
+  const documents = documentMimes([
+    { storage_path: `${HOUSEHOLD}/d1/scan.jfif`, mime: 'image/jpeg' },
+    { storage_path: `${HOUSEHOLD}/d2/tai-lieu`, mime: 'application/pdf' },
+  ]);
+  const typeOf = (path: string, bytes = new Uint8Array()) => contentTypeFor(path, documents, bytes);
+
+  it('takes the type of a document from its row, whatever its name ends in', () => {
+    expect(typeOf(`documents/${HOUSEHOLD}/d1/scan.jfif`)).toBe('image/jpeg');
+    expect(typeOf(`documents/${HOUSEHOLD}/d2/tai-lieu`)).toBe('application/pdf');
+  });
+
+  it('types the copies made from a document, and property photos, by extension', () => {
+    expect(typeOf(`documents/${HOUSEHOLD}/d1/thumb.webp`)).toBe('image/webp');
+    expect(typeOf(`property-photos/${HOUSEHOLD}/p1/cover.JPG`)).toBe('image/jpeg');
+  });
+
+  it('reads the first bytes of an object no row names and no extension explains', () => {
+    expect(typeOf(`documents/${HOUSEHOLD}/orphan/scan.jfif`, jpegHead)).toBe('image/jpeg');
+    expect(typeOf(`documents/${HOUSEHOLD}/orphan/x.bin`, new Uint8Array([1, 2]))).toBe('application/octet-stream');
+  });
+});
+
+describe('missingFiles', () => {
+  it('names each exported file the database lacks, and ignores one it holds beyond the export', () => {
+    expect(missingFiles(['documents/h/d1/a.pdf', 'documents/h/d2/scan.jfif'], new Set(['documents/h/d1/a.pdf', 'documents/h/d9/extra.pdf']))).toEqual(['documents/h/d2/scan.jfif']);
+  });
+});
+
+describe('report', () => {
+  it('never says the export is complete: it names what the export holds and what it left out', () => {
+    const lines = report({ ...manifest, tables: { properties: 7 }, files: 3 }, [], []);
+    expect(lines[0]).toBe('tables and files match what this export holds (1 tables, 3 files)');
+    expect(lines.join('\n')).toContain('left out of this export, so not compared: conversations');
+    expect(lines.join('\n')).not.toMatch(/all tables match/);
+  });
+
+  it('says nothing matches while a file is missing', () => {
+    const lines = report({ ...manifest, files: 2 }, [{ what: 'files', exported: 2, live: 1 }], ['documents/h/d2/scan.jfif']);
+    expect(lines.join('\n')).toContain('missing file: documents/h/d2/scan.jfif');
+    expect(lines.join('\n')).not.toContain('match what this export holds');
   });
 });

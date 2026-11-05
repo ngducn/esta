@@ -86,6 +86,12 @@ describe('recordsToCsv', () => {
     expect(csv).toContain("c,'+84 90,12,[],'-1\r\n");
   });
 
+  it('quotes a semicolon, the list separator of Excel in Vietnamese, so a cell cannot split into a second formula cell', () => {
+    const quoted = recordsToCsv(['note'], [{ note: 'a;=1+1' }, { note: '\tx' }]);
+    expect(quoted).toContain('"a;=1+1"\r\n');
+    expect(quoted).toContain("'\tx\r\n");
+  });
+
   it('writes a head and rows apart so a long table streams', () => {
     expect(csvHead(columns) + csvRows(columns, [{ id: 'a', title: 't', amount_vnd: 1, tags: [], note: null }])).toBe(recordsToCsv(columns, [{ id: 'a', title: 't', amount_vnd: 1, tags: [], note: null }]));
   });

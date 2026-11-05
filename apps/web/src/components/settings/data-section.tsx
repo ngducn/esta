@@ -1,3 +1,4 @@
+import { withheldKinds } from '@esta/core/export';
 import { getTranslations } from 'next-intl/server';
 import { Card } from '@/components/ui/card';
 import { env } from '@/server/env';
@@ -16,6 +17,8 @@ export async function DataSection({ member }: { member: Member }) {
     manyParts: t('manyParts', { total: '{total}' }),
     failed: t('failed'),
   };
+  const kinds = withheldKinds(member.isOperator);
+  const withheld = [kinds.has('operator') ? { key: 'operator', text: t('withheldOperator') } : null, kinds.has('chats') ? { key: 'chats', text: t('withheldChats') } : null].filter((line) => line !== null);
   return (
     <section aria-labelledby="data-heading" data-testid="settings-data" className="flex max-w-3xl flex-col gap-4">
       <div className="flex flex-col gap-1">
@@ -25,6 +28,15 @@ export async function DataSection({ member }: { member: Member }) {
         <p className="text-text-muted">{t('intro')}</p>
       </div>
       <Card className="flex flex-col gap-3">
+        <div data-testid="export-withheld" className="flex flex-col gap-1 text-body-sm text-text-muted">
+          <p>{t('withheldTitle')}</p>
+          <ul className="list-disc pl-5">
+            {withheld.map((line) => (
+              <li key={line.key}>{line.text}</li>
+            ))}
+          </ul>
+          <p>{t('withheldBackup')}</p>
+        </div>
         <DataExport labels={labels} />
         <p className="text-body-sm text-text-muted">{t('sensitive')}</p>
       </Card>

@@ -2277,7 +2277,11 @@
   },
   "dataExport": {
     "title": "Dữ liệu",
-    "intro": "Tải về toàn bộ dữ liệu của gia đình: mọi bảng và mọi tệp tài liệu trong một tệp ZIP.",
+    "intro": "Tải về dữ liệu gia đình mà tài khoản của bạn xem được: các bảng và mọi tệp tài liệu trong một tệp ZIP.",
+    "withheldTitle": "Tệp này không có:",
+    "withheldOperator": "ghi chú dành riêng cho người vận hành và hồ sơ công việc của Trợ lý, cùng lịch sử thay đổi của chúng (chỉ người vận hành xem được)",
+    "withheldChats": "các cuộc trò chuyện với Trợ lý của người khác, cùng lịch sử thay đổi của chúng (mỗi người chỉ xem được cuộc trò chuyện của mình)",
+    "withheldBackup": "Bản sao lưu hằng đêm của hệ thống mới là bản đầy đủ. Bản sao lưu đó sắp có.",
     "start": "Xuất toàn bộ dữ liệu",
     "preparing": "Đang chuẩn bị tệp...",
     "ready": "Tải tệp ZIP (hết hạn sau {minutes, plural, other {# phút}})",

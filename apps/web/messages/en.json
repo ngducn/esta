@@ -2277,7 +2277,11 @@
   },
   "dataExport": {
     "title": "Data",
-    "intro": "Download all of the family's data: every table and every document file in one ZIP file.",
+    "intro": "Download the family's data that your account can see: the tables and every document file in one ZIP file.",
+    "withheldTitle": "This file leaves out:",
+    "withheldOperator": "the notes meant only for the operator and the assistant's job records, with their change history (only the operator can see them)",
+    "withheldChats": "other people's conversations with the assistant, with their change history (each person sees only their own)",
+    "withheldBackup": "The system's nightly backup is the complete copy. That backup is coming soon.",
     "start": "Export all data",
     "preparing": "Preparing the file...",
     "ready": "Download ZIP file (expires in {minutes, plural, one {# minute} other {# minutes}})",

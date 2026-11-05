@@ -7,7 +7,7 @@ const FORMULA_START = /^[=+\-@\t\r]/;
 
 const field = (text: string) => {
   const value = FORMULA_START.test(text) ? `'${text}` : text;
-  return /[",\r\n]/.test(value) ? `"${value.replaceAll('"', '""')}"` : value;
+  return /[",;\r\n]/.test(value) ? `"${value.replaceAll('"', '""')}"` : value;
 };
 
 /** Only text gets the formula guard: money and counts are numbers, so a negative amount keeps its minus sign. */

@@ -175,6 +175,19 @@ reset_db() {
 	"$@"
 }
 
+# The db job's last step in ci.yml: export a household, load it into an empty database, compare.
+export_round_trip() {
+	local dir log
+	dir=$(mktemp -d) && log="$dir/row-counts.log" &&
+		pnpm exec tsx scripts/roundtrip-checks.ts odd-names ryan.lane9@demo.esta.test &&
+		pnpm exec tsx scripts/export-household.ts ryan.lane9@demo.esta.test "$dir/export" &&
+		pnpm db:reset:empty &&
+		pnpm exec tsx scripts/roundtrip-checks.ts rollback "$dir/export" &&
+		node scripts/import-export.ts "$dir/export" &&
+		node scripts/row-counts.ts "$dir/export" | tee "$log" &&
+		grep -q '^tables and files match what this export holds' "$log"
+}
+
 run_job() {
 	case $1 in
 	check)
@@ -186,7 +199,8 @@ run_job() {
 			{ if node -e 'process.exit(require("./package.json").scripts["db:seed:check"]?0:1)'; then reset_db pnpm db:seed:check; else reset_db pnpm db:reset; fi; } &&
 			pnpm db:test &&
 			pnpm --filter web test:integration &&
-			pnpm db:types && git diff --exit-code packages/db/src/database.types.ts
+			pnpm db:types && git diff --exit-code packages/db/src/database.types.ts &&
+			export_round_trip
 		;;
 	e2e)
 		pnpm install --frozen-lockfile && pnpm db:start && empty_photos && reset_db pnpm db:reset && run_e2e

@@ -21,7 +21,17 @@ test.beforeEach(() => {
 
 type Link = { name: string; url: string };
 type Exported = { parts: Link[]; entries: Map<string, Uint8Array>; manifest: Manifest; partEntries: Map<string, string[]> };
-type Manifest = { schemaVersion: number; exportedAt: string; householdId: string; tables: Record<string, number>; files: number; parts: string[] };
+type Manifest = {
+  schemaVersion: number;
+  exportedAt: string;
+  householdId: string;
+  tables: Record<string, number>;
+  files: number;
+  parts: string[];
+  exporter: { role: string; isOperator: boolean };
+  complete: boolean;
+  withheld: { table: string; rule: string }[];
+};
 
 const text = (entries: Map<string, Uint8Array>, path: string) => strFromU8(entries.get(path) ?? new Uint8Array());
 
@@ -76,7 +86,8 @@ test('Ryan exports the whole household: every table as JSON and CSV, every file,
     expect(rows.length, `${table.name} rows in the JSON`).toBe(manifest.tables[table.name]);
     expect([...(entries.get(`tables/${table.name}.csv`) ?? []).slice(0, 3)], `${table.name} CSV starts with the BOM`).toEqual([0xef, 0xbb, 0xbf]);
     expect(text(entries, `tables/${table.name}.csv`).split('\r\n').length - 2, `${table.name} rows in the CSV`).toBe(rows.length);
-    expect(live.get(table.name), `${table.name} against a service-role count taken before the export`).toBe(rows.length);
+    if (table.visibility === 'household') expect(live.get(table.name), `${table.name} against a service-role count taken before the export`).toBe(rows.length);
+    else expect(rows.length, `${table.name} is narrowed by its policy, so the export holds at most what the database does`).toBeLessThanOrEqual(live.get(table.name) ?? 0);
   }
 
   const stored = query<{ n: number }>(workdir, `select count(*)::int as n from storage.objects where bucket_id in ('documents', 'property-photos') and name like '${HOUSEHOLD}/%'`)[0]?.n;
@@ -158,19 +169,75 @@ test('archived rows are exported with their deleted_at, so a restore does not br
   expect(text(entries, 'tables/audit_log.json')).toContain(archived?.id ?? 'missing');
 });
 
-test('an admin who is not the operator gets everything except the operator-only assistant records, and nothing else is hidden', async ({ page }) => {
+test('an admin who is not the operator exports every household-wide table in full, and is short only where the registry says the policy narrows', async ({ page }) => {
   await open(page, `me.lane${LANE}@demo.esta.test`, 'light', DESKTOP);
   const counts = await liveCounts(page);
   const { entries, manifest } = await exportAll(page);
-  const short: string[] = [];
   for (const table of EXPORT_TABLES) {
     const live = counts.get(table.name) ?? 0;
     const exported = (JSON.parse(text(entries, `tables/${table.name}.json`)) as unknown[]).length;
     expect(manifest.tables[table.name]).toBe(exported);
-    if (exported < live) short.push(table.name);
     expect(exported, `${table.name} never exports more than the database holds`).toBeLessThanOrEqual(live);
+    if (table.visibility === 'household') expect(exported, `${table.name} is household-wide, so nothing is short`).toBe(live);
   }
-  expect(short, 'the tables whose SELECT policy is narrower than the household').toEqual(['agent_jobs', 'agent_runs', 'audit_log']);
+});
+
+const SEEN = { chat: 'Cuộc trò chuyện Demo riêng của Mẹ', item: 'Ghi chú Demo chỉ người vận hành' };
+
+type Ids = { chat: string; item: string };
+
+/** Adds, as the service role, a conversation Mẹ started and an assistant item for the operator only, then removes both. */
+async function withPrivateRows(page: Page, run: (ids: Ids) => Promise<void>): Promise<void> {
+  const [me] = JSON.parse(await (await page.request.get(`${rest}/household_members?household_id=eq.${HOUSEHOLD}&invited_email=eq.me.lane${LANE}@demo.esta.test&select=user_id`, { headers: service })).text()) as { user_id: string }[];
+  const headers = { ...service, 'content-type': 'application/json', prefer: 'return=representation' };
+  const post = async (table: string, data: object) => {
+    const response = await page.request.post(`${rest}/${table}`, { headers, data });
+    expect(response.ok(), await response.text()).toBe(true);
+    return ((await response.json()) as { id: string }[])[0]?.id ?? '';
+  };
+  const chat = await post('conversations', { household_id: HOUSEHOLD, title: SEEN.chat, created_by: me?.user_id, last_asked_at: '2026-10-07T02:00:00Z' });
+  const item = await post('agent_items', { household_id: HOUSEHOLD, kind: 'note', severity: 'info', title: SEEN.item, body_md: 'Chỉ Ryan đọc', audience: 'operator', dedupe_key: `export-spec-${chat}` });
+  try {
+    await run({ chat, item });
+  } finally {
+    await page.request.delete(`${rest}/agent_items?id=eq.${item}`, { headers });
+    await page.request.delete(`${rest}/conversations?id=eq.${chat}`, { headers });
+  }
+}
+
+const rowIds = (entries: Map<string, Uint8Array>, table: string) => (JSON.parse(text(entries, `tables/${table}.json`)) as { id: string }[]).map((row) => row.id);
+
+test('a partial export says so: each manifest and each screen names what that admin cannot read', async ({ page, browser }) => {
+  await open(page, `ryan.lane${LANE}@demo.esta.test`, 'light', DESKTOP);
+  await withPrivateRows(page, async (ids) => {
+    const ryan = await exportAll(page);
+    expect(ryan.manifest).toMatchObject({ exporter: { role: 'admin', isOperator: true }, complete: false });
+    expect(ryan.manifest.withheld.map((entry) => entry.table)).toEqual(['audit_log', 'conversations', 'messages']);
+    expect(rowIds(ryan.entries, 'agent_items'), 'the operator reads the operator-only item').toContain(ids.item);
+    expect(rowIds(ryan.entries, 'conversations'), "Ryan's file lacks Mẹ's chat").not.toContain(ids.chat);
+    await page.goto('/settings');
+    const ryanScreen = page.getByTestId('export-withheld');
+    await expect(ryanScreen).toContainText('các cuộc trò chuyện với Trợ lý của người khác');
+    await expect(ryanScreen).not.toContainText('người vận hành');
+    await expect(ryanScreen).toContainText('Bản sao lưu hằng đêm của hệ thống mới là bản đầy đủ');
+
+    const mother = await browser.newPage();
+    try {
+      await open(mother, `me.lane${LANE}@demo.esta.test`, 'light', DESKTOP);
+      const me = await exportAll(mother);
+      expect(me.manifest).toMatchObject({ exporter: { role: 'admin', isOperator: false }, complete: false });
+      expect(me.manifest.withheld.map((entry) => entry.table)).toEqual(['agent_jobs', 'agent_items', 'agent_runs', 'audit_log', 'conversations', 'messages']);
+      expect(rowIds(me.entries, 'agent_items'), "Mẹ's file lacks the operator-only item").not.toContain(ids.item);
+      expect(rowIds(me.entries, 'conversations'), 'Mẹ reads her own chat').toContain(ids.chat);
+      await mother.goto('/settings');
+      const motherScreen = mother.getByTestId('export-withheld');
+      await expect(motherScreen).toContainText('ghi chú dành riêng cho người vận hành và hồ sơ công việc của Trợ lý');
+      await expect(motherScreen).toContainText('các cuộc trò chuyện với Trợ lý của người khác');
+      await expect(motherScreen).toContainText('sắp có');
+    } finally {
+      await mother.close();
+    }
+  });
 });
 
 test('Mẹ taps Xuất toàn bộ dữ liệu and gets one link per part, each a ZIP', async ({ page }) => {
