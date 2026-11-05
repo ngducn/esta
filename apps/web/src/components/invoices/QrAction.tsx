@@ -17,6 +17,8 @@ export function QrAction({
   invoiceHref,
   qr,
   labels,
+  className = buttonVariants({ variant: 'secondary' }),
+  labelClassName,
 }: {
   label: string;
   title: string;
@@ -24,13 +26,15 @@ export function QrAction({
   invoiceHref: string | null;
   qr: InvoiceQrView;
   labels: QrSheetLabels;
+  className?: string;
+  labelClassName?: string | undefined;
 }) {
   const dialog = useDeferredDialog(loadSheet);
   return (
     <>
-      <button type="button" data-testid="row-action-qr" {...dialog.triggerProps} className={buttonVariants({ variant: 'secondary' })}>
+      <button type="button" data-testid="row-action-qr" data-label={label} {...dialog.triggerProps} className={className}>
         <QrCode aria-hidden="true" />
-        {label}
+        <span className={labelClassName}>{label}</span>
       </button>
       <DeferredPopup dialog={dialog} popup={QrSheet} props={{ title, description, invoiceHref, qr, labels }} />
     </>

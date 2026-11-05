@@ -9,6 +9,8 @@ import { notFound } from 'next/navigation';
 import { ChoiceLinks } from '@/components/choice-links';
 import { ExpenseActions } from '@/components/expenses/expense-actions';
 import { ExpenseList } from '@/components/expenses/expense-list';
+import { MoneyDisplay } from '@/components/money/money-display';
+import { SummaryStrip } from '@/components/summary-strip';
 import { ReportTable } from '@/components/reports/report-table';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { getClock } from '@/server/clock';
@@ -58,20 +60,21 @@ export default async function PropertyFinancePage({
 
   return (
     <PropertyDetailFrame property={property} tab="finance" expenseActions={false}>
+      {ledger.empty ? null : (
+        <SummaryStrip
+          label={tLedger('stripLabel', { year })}
+          unknownLabel={tLedger('unknownFigure')}
+          figures={(['income', 'expenses', 'noi'] as const).map((column) => ({
+            label: tLedger(column),
+            value: <MoneyDisplay amount={total(ledger.table, column)} className="text-start" />,
+          }))}
+        />
+      )}
       <section aria-labelledby="ledger-title" data-testid="ledger" className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
         <div className="flex flex-col gap-1">
           <h2 id="ledger-title" className="text-title-3 text-text">
             {tLedger('title', { year })}
           </h2>
-          {ledger.empty ? null : (
-            <p data-testid="ledger-summary" className="text-body text-text-secondary num">
-              {tLedger('summary', {
-                income: formatVnd(total(ledger.table, 'income'), locale),
-                expenses: formatVnd(total(ledger.table, 'expenses'), locale),
-                noi: formatVnd(total(ledger.table, 'noi'), locale),
-              })}
-            </p>
-          )}
         </div>
         <ChoiceLinks
           label={t('years')}

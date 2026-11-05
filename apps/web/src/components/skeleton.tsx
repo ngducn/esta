@@ -160,28 +160,43 @@ export function SkeletonButton() {
   );
 }
 
-/** The board as it lands: title, the month selector, then group headers with their rows. */
 export function SkeletonCollections() {
+  const money = 'h-5 w-[12ch] @max-[56rem]:h-4';
   return (
-    <Loading className="flex flex-col gap-5">
-      <Block className="h-9 w-40 max-w-full" />
+    <Loading className="flex flex-col gap-stack">
+      <div className="flex flex-col gap-2">
+        <Block className="h-8 w-40 max-w-full" />
+        <Block className="h-5 w-48" />
+      </div>
       <Block className="h-touch w-80 max-w-full" />
-      <div className="flex flex-col rounded-lg border border-border bg-surface shadow-xs">
-        {[1, 6].map((rows, group) => (
-          <div key={group} className="flex flex-col">
-            <div className="flex items-center justify-between gap-3 border-b border-border bg-bg-subtle px-4 py-3">
-              <Block className="h-7 w-44" />
-              <Block className="h-7 w-28" />
+      <div className="@container overflow-hidden rounded-lg border border-border bg-surface shadow-xs">
+        <div className="grid grid-cols-1 @min-[30rem]:grid-cols-2 @min-[40rem]:grid-cols-3">
+          {[0, 1, 2].map((figure) => (
+            <div key={figure} className="flex flex-col gap-2 px-5 py-4">
+              <Block className="h-5 w-24" />
+              <Block className="h-8 w-[12ch]" />
+              <Block className="h-4 w-36" />
             </div>
-            {Array.from({ length: rows }, (_, index) => (
-              <div key={index} className="flex flex-col gap-2 border-b border-border px-4 py-3.5">
-                <div className="flex justify-between gap-3">
-                  <Block className="h-6 w-52 max-w-full" />
-                  <Block className="h-6 w-24" />
-                </div>
-                <Block className="h-5 w-40" />
-              </div>
-            ))}
+          ))}
+        </div>
+      </div>
+      <Block className="h-touch w-full max-w-lg" />
+      <div className="@container overflow-hidden rounded-lg border border-border bg-surface shadow-xs">
+        <div className="h-11 border-b border-border bg-bg-subtle @max-[56rem]:hidden" />
+        {Array.from({ length: 6 }, (_, row) => (
+          <div
+            key={row}
+            className="flex min-h-row-h items-center gap-6 border-b border-border px-cell-x @max-[56rem]:grid @max-[56rem]:grid-cols-[minmax(0,1fr)_auto] @max-[56rem]:gap-x-3 @max-[56rem]:gap-y-2 @max-[56rem]:px-4 @max-[56rem]:py-3.5"
+          >
+            <div className="flex min-w-0 flex-1 flex-col gap-2">
+              <Block className="h-5 w-48 max-w-full" />
+              <Block className="h-4 w-32" />
+            </div>
+            <Block className="h-5 w-24 @max-[56rem]:h-4" />
+            <Block className={money} />
+            <Block className={money} />
+            <Block className="h-6 w-28 rounded-full @max-[56rem]:col-span-2" />
+            <Block className="h-control-sm w-28 @max-[56rem]:col-span-2" />
           </div>
         ))}
       </div>
