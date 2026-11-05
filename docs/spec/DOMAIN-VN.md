@@ -250,6 +250,7 @@ App consequences `[app rule]`:
 
 - No structured national ID numbers anywhere (decision D11). ID card images are `sensitive` documents. What the assistant reads keeps the last 4 digits only; text a person types is saved as typed (D11, amended 2026-10-19).
 - Tenant data is used only to manage the lease. Export and delete exist per party.
+- Erasing a former tenant `[app rule]` (P6-02c): `redact_party` refuses with `ES002` while the party has a running lease or a held deposit as of the Clock's date. Otherwise the name becomes `Đã xóa`, the contact fields, notes and last four ID digits are cleared, and the ID card documents and their files are deleted. Leases, invoices and payments stay, so no total changes. The change history keeps who erased whom and which fields, never their old values. Whether keeping the lease and money rows satisfies a deletion request is unknown `[verify]`.
 - Sensitive documents show clear like every other (DOC-5, amended 2026-10-19), every access is logged, and they reach the AI only through the extraction job that targets them.
 - Whether household-only use is exempt from parts of the law is unknown `[verify]`; build to the stricter reading.
 

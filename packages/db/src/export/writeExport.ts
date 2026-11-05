@@ -78,6 +78,13 @@ export async function* objectsUnder(client: SupabaseClient, bucket: string, pref
   }
 }
 
+/** One storage object into the archive under `files/<bucket>/<path>`, read through the exporter's own session. */
+export async function addObject(client: SupabaseClient, sink: ExportSink, object: StorageObject): Promise<void> {
+  const { data, error } = await client.storage.from(object.bucket).download(object.path);
+  if (error || data === null) throw new Error(`Reading ${object.bucket}/${object.path} failed: ${error?.message ?? 'no data'}`);
+  await sink.add(`files/${object.bucket}/${object.path}`, new Uint8Array(await data.arrayBuffer()), data.size);
+}
+
 export async function writeExport(client: SupabaseClient, householdId: string, sink: ExportSink, { clock, exporter, pageRows = PAGE_ROWS }: WriteExportOptions): Promise<WrittenExport> {
   const counts: { table: string; rows: number }[] = [];
   const documentPaths = new Map<string, string>();
@@ -96,9 +103,7 @@ export async function writeExport(client: SupabaseClient, householdId: string, s
   let files = 0;
   for (const bucket of EXPORT_BUCKETS) {
     for await (const object of objectsUnder(client, bucket, householdId)) {
-      const { data, error } = await client.storage.from(object.bucket).download(object.path);
-      if (error || data === null) throw new Error(`Reading ${object.bucket}/${object.path} failed: ${error?.message ?? 'no data'}`);
-      await sink.add(`files/${object.bucket}/${object.path}`, new Uint8Array(await data.arrayBuffer()), data.size);
+      await addObject(client, sink, object);
       files += 1;
       const documentId = bucket === 'documents' ? documentPaths.get(object.path) : undefined;
       if (documentId !== undefined) documentIds.push(documentId);

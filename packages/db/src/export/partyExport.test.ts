@@ -1,12 +1,11 @@
 import { isoDate, parseInstant } from '@esta/core';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { describe, expect, it } from 'vitest';
-import type { EntryData, ExportSink } from './sink';
+import { fakeStorage, recordingSink } from './test-support';
 import { writePartyExport } from './partyExport';
 
 const HOUSEHOLD = 'h-1';
 const clock = { source: 'table', now: () => parseInstant('2026-10-07T02:00:00Z'), today: () => isoDate('2026-10-07') } as const;
-const decoder = new TextDecoder('utf-8', { ignoreBOM: true });
 
 type Table = Record<string, unknown>[];
 
@@ -45,37 +44,9 @@ function fakeClient(tables: Record<string, Table>, files: Record<string, string>
       };
       return query;
     },
-    storage: {
-      from: (bucket: string) => ({
-        list: (prefix: string) => {
-          const names = Object.keys(files).filter((path) => path.startsWith(`${bucket}/${prefix}/`)).map((path) => path.slice(`${bucket}/${prefix}/`.length));
-          return Promise.resolve({ data: names.map((name) => ({ name, id: `obj-${name}` })), error: null });
-        },
-        download: (path: string) => Promise.resolve({ data: new Blob([files[`${bucket}/${path}`] ?? '']), error: null }),
-      }),
-    },
+    storage: fakeStorage(files),
   };
   return { client: client as unknown as SupabaseClient, reads };
-}
-
-async function collect(data: EntryData): Promise<string> {
-  if (data instanceof Uint8Array) return decoder.decode(data);
-  let text = '';
-  for await (const chunk of data) text += decoder.decode(chunk);
-  return text;
-}
-
-function recordingSink() {
-  const entries = new Map<string, string>();
-  const sink: ExportSink = {
-    async add(path, data) {
-      entries.set(path, await collect(data));
-    },
-    async finish(manifest) {
-      entries.set('manifest.json', await collect(manifest(['x.zip'])));
-    },
-  };
-  return { sink, entries };
 }
 
 const h = { household_id: HOUSEHOLD };

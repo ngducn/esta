@@ -3,7 +3,7 @@ import { EXPORT_SCHEMA_VERSION, EXPORT_TABLES } from '@esta/core/export';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import type { ExportSink } from './sink';
-import { csvChunks, jsonChunks, objectsUnder, type Row } from './writeExport';
+import { addObject, csvChunks, jsonChunks, objectsUnder, type Row } from './writeExport';
 
 const IN_CHUNK = 40;
 const PAGE_ROWS = 1000;
@@ -80,9 +80,7 @@ export async function writePartyExport(client: SupabaseClient, householdId: stri
   let files = 0;
   for (const document of documents) {
     for await (const object of objectsUnder(client, 'documents', `${householdId}/${String(document.id)}`)) {
-      const { data, error } = await client.storage.from(object.bucket).download(object.path);
-      if (error || data === null) throw new Error(`Reading ${object.bucket}/${object.path} failed: ${error?.message ?? 'no data'}`);
-      await sink.add(`files/${object.bucket}/${object.path}`, new Uint8Array(await data.arrayBuffer()), data.size);
+      await addObject(client, sink, object);
       files += 1;
     }
   }

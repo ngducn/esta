@@ -1,5 +1,5 @@
 import type { Database } from '@esta/db';
-import { readMembership } from '@esta/ops';
+import { idSchema, readMembership } from '@esta/ops';
 import { createServerClient } from '@supabase/ssr';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { NextResponse, type NextRequest } from 'next/server';
@@ -63,8 +63,9 @@ const GUARDED_PAGES: readonly GuardedPage[] = [
     path: /^\/tenants\/([^/]+)\/?$/,
     async hidden({ supabase, userId }, id) {
       if ((await readMembership(supabase, userId))?.role !== 'admin') return true;
-      if (id === undefined || !z.uuid().safeParse(id).success) return true;
-      const { data, error } = await supabase.from('parties').select('id').eq('id', id).contains('tags', ['tenant']).maybeSingle();
+      const party = idSchema.safeParse(id);
+      if (!party.success) return true;
+      const { data, error } = await supabase.from('parties').select('id').eq('id', party.data).contains('tags', ['tenant']).maybeSingle();
       return error === null && data === null;
     },
   },

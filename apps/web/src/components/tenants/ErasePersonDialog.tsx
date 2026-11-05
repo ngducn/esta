@@ -6,7 +6,7 @@ import { FormAlert } from '@/components/form-alert';
 import { FormSheet } from '@/components/form-sheet';
 import { useAction } from '@/components/use-action';
 import type { PopupProps } from '@/components/use-deferred-dialog';
-import { erasePerson, type ErasePersonResult } from '@/server/actions/parties';
+import { erasePerson, type ErasePersonRefusal } from '@/server/actions/parties';
 
 export type EraseLabels = {
   readonly question: string;
@@ -14,7 +14,7 @@ export type EraseLabels = {
   readonly confirm: string;
   readonly cancel: string;
   readonly working: string;
-  readonly refusals: Readonly<Record<Extract<ErasePersonResult, { ok: false }>['reason'], string>>;
+  readonly refusals: Readonly<Record<ErasePersonRefusal, string>>;
 };
 
 /** The confirm names the person, as the voice guide asks, and a refusal says what to do first. */
