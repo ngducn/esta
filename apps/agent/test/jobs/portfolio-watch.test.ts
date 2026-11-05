@@ -169,6 +169,57 @@ describe('create_item for portfolio_watch', () => {
     expect((await call('create_item', { title: 'Để ý thêm', body_md: '{{f4.place_label}} để trống.', related: ['f4'] })).text).toMatch(/already wrote the grouped note/);
   });
 
+  it('counts a repair per note, so a later note gets its own repair turn (#318)', async () => {
+    const { call, tables } = setup();
+    await call('watch_facts');
+    expect((await call('create_item', { title: 'Phòng 5 quá hạn', body_md: '{{f1.place_label}}', related: ['f1'] })).isError).toBe(true);
+    expect((await call('create_item', { title: 'Quá hạn', body_md: '{{f1.place_label}}', related: ['f1'] })).isError).toBe(false);
+    expect((await call('create_item', { title: 'Phòng 7 quá hạn', body_md: '{{f2.place_label}}', related: ['f2'] })).isError).toBe(true);
+    expect((await call('create_item', { title: 'Quá hạn', body_md: '{{f2.place_label}}', related: ['f2'] })).isError).toBe(false);
+    expect(items(tables)).toHaveLength(2);
+  });
+
+  it('still fails a note that breaks the guard again right after its repair turn (#318)', async () => {
+    const { call } = setup();
+    await call('watch_facts');
+    await call('create_item', { title: 'Phòng 5 quá hạn', body_md: '{{f1.place_label}}', related: ['f1'] });
+    await expect(call('create_item', { title: 'Phòng 6 quá hạn', body_md: '{{f1.place_label}}', related: ['f1'] })).rejects.toThrow(NumberGuardError);
+  });
+
+  it('gives a filled title over 300 characters a repair turn instead of a database error (#318)', async () => {
+    const tables: Record<string, Row[]> = { agent_items: [] };
+    const long = new Map([...labels.properties].map(([id, name]) => [id, `${name} ${'rất dài '.repeat(20)}`]));
+    const prepared = portfolioWatchRequest({ db: fakeDb(tables), householdId: HOUSEHOLD, jobId: 'job-1', locale: 'vi', asOf: isoDate('2026-10-07'), timezone: 'Asia/Ho_Chi_Minh', clock, read: async () => ({ snapshot, labels: { ...labels, properties: long } }) });
+    const call = toolCaller(prepared);
+    await call('watch_facts');
+    const told = { title: '{{f1.place_label}} {{f1.place_label}}', body_md: 'Quá hạn.', related: ['f1'] };
+    const answer = await call('create_item', told);
+    expect(answer.isError).toBe(true);
+    expect(answer.text).toMatch(/title.*300/i);
+    expect(items(tables)).toEqual([]);
+    expect((await call('create_item', { ...told, title: 'Quá hạn' })).isError).toBe(false);
+  });
+
+  it('refuses a link in a note, which the prompt forbids and the page would render (#318)', async () => {
+    const { call, tables } = setup();
+    await call('watch_facts');
+    for (const body_md of ['Xem [đây](https://example.com/x).', 'Vào www.example.com nhé.', 'Xem <https://example.com>.']) {
+      const answer = await call('create_item', { title: 'Quá hạn', body_md, related: ['f1'] });
+      expect(answer.isError, body_md).toBe(true);
+      expect(answer.text).toMatch(/link/i);
+    }
+    expect(items(tables)).toEqual([]);
+  });
+
+  it('names the watch and info facts no note told in the job result, not silently (#318)', async () => {
+    const { call, prepared } = setup();
+    await call('watch_facts');
+    for (const handle of ['f1', 'f2', 'f6']) await call('create_item', { title: 'Việc', body_md: `{{${handle}.place_label}}`, related: [handle] });
+    const result = (await prepared.finish({ reply: 'xong', model: 'm' })) as { left_out: string[] };
+    expect(result.left_out.length).toBeGreaterThan(0);
+    expect(result.left_out.join(' ')).toMatch(/^f\d+ \(/);
+  });
+
   it('fails the job when the model never reads the facts', async () => {
     await expect(setup().prepared.finish({ reply: 'xong', model: 'test' })).rejects.toThrow(/without reading watch_facts/);
   });

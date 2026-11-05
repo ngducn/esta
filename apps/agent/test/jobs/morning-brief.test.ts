@@ -193,6 +193,36 @@ describe('create_brief', () => {
     );
   });
 
+  it('keeps a market line of today when more than 20 items of the last 24 hours rank above it (#329)', async () => {
+    const tables = tablesWith();
+    const stored = (title_vi: string, relevance: number, created_at: string, n: number): Row => ({ household_id: HOUSEHOLD, title_vi, source_name: 'Tin tức Demo', source_url: `https://tintuc.example.vn/${n}`, url_normalized: `https://tintuc.example.vn/${n}`, published_on: '2026-10-05', relevance, created_at });
+    tables.research_items = [...Array.from({ length: 25 }, (_, n) => stored(`Tin tối qua ${n}`, 0.99, '2026-10-06T16:00:00.000Z', n)), stored('Tin sáng nay', 0.7, '2026-10-06T23:00:00.000Z', 99)];
+    const { call } = tools(tables);
+    await call('watch_facts');
+    expect((await call('create_brief', draft())).isError).toBe(false);
+    expect(body(tables)).toContain('Tin sáng nay');
+    expect(body(tables)).not.toContain('Tin tối qua');
+  });
+
+  it('puts a market item in today or yesterday by its Vietnam date at 23:59:59 and 00:00:00 (#329)', async () => {
+    const tables = tablesWith();
+    const stored = (title_vi: string, created_at: string, n: number): Row => ({ household_id: HOUSEHOLD, title_vi, source_name: 'Tin tức Demo', source_url: `https://tintuc.example.vn/${n}`, url_normalized: `https://tintuc.example.vn/${n}`, published_on: '2026-10-05', relevance: 0.8, created_at });
+    tables.research_items = [
+      stored('Tin hôm qua 23:59:59', '2026-10-06T16:59:59.000Z', 1),
+      stored('Tin hôm nay 00:00:00', '2026-10-06T17:00:00.000Z', 2),
+      stored('Tin hôm nay 23:59:59', '2026-10-07T16:59:59.000Z', 3),
+      stored('Tin ngày mai 00:00:00', '2026-10-07T17:00:00.000Z', 4),
+    ];
+    const { call } = tools(tables);
+    await call('watch_facts');
+    expect((await call('create_brief', draft())).isError).toBe(false);
+    const market = body(tables).split('**Thị trường**\n\n')[1] ?? '';
+    expect(market).toContain('Tin hôm nay 00:00:00');
+    expect(market).toContain('Tin hôm nay 23:59:59');
+    expect(market).not.toContain('Tin hôm qua');
+    expect(market).not.toContain('Tin ngày mai');
+  });
+
   it('answers the same facts under the same handles when watch_facts is called twice', async () => {
     const { call } = tools();
     const [first, second] = [await call('watch_facts'), await call('watch_facts')];

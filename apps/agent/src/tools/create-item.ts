@@ -76,7 +76,8 @@ export type GuardedText = { readonly template: string; readonly format: NoteForm
 
 /**
  * The number guard as every write tool runs it (AGENT.md §6.3). `fill` checks all of a call's texts against the run's
- * sheet: the first call with a violation gets a repair turn, the next fails the job and leaves the operator note.
+ * sheet: a call with a violation gets a repair turn, and a violation in the call right after it fails the job and
+ * leaves the operator note. A passing call clears the count, so the next note has its own repair turn.
  * `save` writes one item for the household under its dedupe key, so a rerun the same day adds nothing; it answers
  * whether it added the row.
  */
@@ -92,6 +93,7 @@ export function guardedWriter(binding: GuardBinding, tool: string) {
         await writeGuardItem(binding, draft, found);
         throw new NumberGuardError(`number_guard: ${tool} still held text the number guard rejects after its repair turn; the operator note has it`);
       }
+      violations = 0;
       return checks.flatMap((check) => (check.ok ? [check.value] : []));
     },
     async save(item: ItemRow): Promise<boolean> {
@@ -104,6 +106,9 @@ export function guardedWriter(binding: GuardBinding, tool: string) {
     },
   };
 }
+
+const MAX_TITLE = 300;
+const LINK = /https?:\/\/|\bwww\.|\]\(/iu;
 
 const handles = (list: readonly string[]) => list.join(', ');
 
@@ -133,6 +138,8 @@ export function watchNoteWriter(binding: NoteBinding) {
     if (action !== undefined && related.length > 1) throw new ToolRejection(`${handles(related)}: a note about an action fact relates that fact alone. Write one note for each action fact, and put the watch and info facts in the grouped note.`);
     if (action === undefined && digest) throw new ToolRejection('This run already wrote the grouped note. Put every watch and info fact in that one note.');
 
+    if (LINK.test(note.title) || LINK.test(note.body_md)) throw new ToolRejection('A note holds no link: the app links the records itself. Take out the link and call create_item again.');
+
     const [title, body] = await guard.fill(
       [
         { template: note.title, format: 'plain' },
@@ -140,6 +147,7 @@ export function watchNoteWriter(binding: NoteBinding) {
       ],
       `${note.title}\n\n${note.body_md}`,
     );
+    if ((title?.text.length ?? 0) > MAX_TITLE) throw new ToolRejection(`The title reads ${title?.text.length} characters once filled; keep it to ${MAX_TITLE} and call create_item again.`);
     const dedupeKey = action === undefined ? `watch_digest:${binding.asOf}` : watchDedupeKey(action.fact, binding.asOf);
     const added = await guard.save({
       kind: 'alert',

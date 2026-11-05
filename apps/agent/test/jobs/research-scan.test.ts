@@ -193,12 +193,9 @@ describe('what the model types is checked before Mẹ reads it (#323)', () => {
     expect(seen).toEqual(['q', PAGE]);
   });
 
-  it('runs source_name through the number guard, with the page host for a name that holds a digit', async () => {
+  it('runs source_name through the number guard, and falls back to the page host for a name that holds a digit (#329)', async () => {
     const { call, items } = await scan();
-    const typed = await call('add_research_item', item({ source_name: 'Báo 24h Demo' }));
-    expect(typed.isError).toBe(true);
-    expect(typed.text).toMatch(/"24[^"]*": .*Fix these and call add_research_item again/s);
-    expect(await call('add_research_item', item({ source_name: '{{f0.host_label}}' }))).toEqual({ text: '{"saved":true}', isError: false });
+    expect(await call('add_research_item', item({ source_name: 'Báo 24h Demo' }))).toEqual({ text: '{"saved":true}', isError: false });
     expect(items()).toMatchObject([{ source_name: 'tintuc.example.vn' }]);
   });
 
@@ -224,6 +221,30 @@ describe('what the model types is checked before Mẹ reads it (#323)', () => {
     prepared.observe?.({ name: 'WebFetch', input: { url: PAGE, prompt: 'x' }, result: { code: 200, codeText: 'OK', result: PAGE_TEXT, url: `${landed}?utm_source=zalo`, bytes: 1, durationMs: 1 } });
     expect(await call('add_research_item', item({ source_url: `${PAGE}?utm_source=zalo#top` }))).toEqual({ text: '{"saved":true}', isError: false });
     expect(items()).toMatchObject([{ source_url: landed, url_normalized: PAGE }]);
+  });
+});
+
+describe('one article, one item, whichever link of its redirect the model cites (#329)', () => {
+  const landed = 'https://tintuc.example.vn/tin/vanh-dai-3-moi';
+  async function redirected(stored: Row[] = []) {
+    const run = await scan({ pages: {} });
+    (run.tables.research_items ??= []).push(...stored);
+    run.prepared.observe?.({ name: 'WebFetch', input: { url: PAGE, prompt: 'x' }, result: { code: 200, codeText: 'OK', result: PAGE_TEXT, url: landed, bytes: 1, durationMs: 1 } });
+    return run;
+  }
+  const dropped = async (run: Awaited<ReturnType<typeof redirected>>) => JSON.parse((await run.call('add_research_item', item({ source_url: landed }))).text);
+
+  it('drops the post-redirect link of an article stored under its pre-redirect link', async () => {
+    const run = await redirected();
+    expect(await run.call('add_research_item', item({ source_url: PAGE }))).toEqual({ text: '{"saved":true}', isError: false });
+    expect(await dropped(run)).toMatchObject({ saved: false, dropped: 'duplicate_url' });
+    expect(run.items()).toHaveLength(1);
+  });
+
+  it('finds the article stored on an earlier day under the link it was first reached by', async () => {
+    const run = await redirected([{ household_id: RESEARCH_HOUSEHOLD, url_normalized: PAGE, source_url: landed, title_vi: 'Cũ', created_at: '2026-10-04T00:00:00.000Z' }]);
+    expect(await dropped(run)).toMatchObject({ saved: false, dropped: 'duplicate_url' });
+    expect(run.items()).toHaveLength(1);
   });
 });
 

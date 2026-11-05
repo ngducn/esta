@@ -10,8 +10,8 @@ import { guardedWriter } from './create-item';
 import { daysAgo } from './recent-items';
 import { ToolRejection } from './server';
 
-/** A page WebFetch read in this run: its text, and the link it ended on, which `research_items.source_url` stores. */
-export type FetchedPage = { readonly text: string; readonly link: string };
+/** A page WebFetch read in this run: its text, the link it ended on, which `research_items.source_url` stores, and every normalized link it was reached by, so a redirect's two ends name one article. */
+export type FetchedPage = { readonly text: string; readonly link: string; readonly urls: readonly string[] };
 
 export type ResearchBinding = {
   readonly db: AgentDb;
@@ -32,6 +32,9 @@ export type Kept = { readonly id: string; readonly url_normalized: string; reado
 
 const SIMILAR_TITLE = 0.6;
 const MAX_SOURCE_NAME = 120;
+const HOST_NAME = '{{f0.host_label}}';
+/** A source name with a digit of its own, such as `24h`, can only fail the guard; the page host names the source instead. */
+const typedDigit = (name: string) => /\d/u.test(name.replace(/\{\{[^}]*\}\}/gu, ''));
 const DEDUPE_DAYS = 30;
 
 const DROPPED_HINT: Readonly<Record<Dropped['reason'], string>> = {
@@ -98,9 +101,9 @@ export function researchItemWriter(binding: ResearchBinding) {
     const effectiveOn = draft.effective_on !== null && onPage.has(draft.effective_on) ? draft.effective_on : null;
     const keep = keepRule({ publishedOn: draft.published_on, effectiveOn }, { today: binding.asOf, lastSuccessOn: binding.lastSuccessOn });
     if (!keep.ok) return drop(draft.source_url, keep.reason);
-    const stored = await binding.db.from('research_items').select('id').eq('household_id', binding.householdId).eq('url_normalized', url.value).maybeSingle();
+    const stored = await binding.db.from('research_items').select('id').eq('household_id', binding.householdId).in('url_normalized', [...new Set([url.value, ...page.urls])]).limit(1);
     if (stored.error) throw new Error(`add_research_item failed: ${stored.error.message}`);
-    if (stored.data !== null) return drop(draft.source_url, 'duplicate_url');
+    if (stored.data.length > 0) return drop(draft.source_url, 'duplicate_url');
     handlesIn(draft.topics, binding.topics, 'research_topics');
     handlesIn(draft.properties, binding.properties, 'list_properties');
 
@@ -109,7 +112,7 @@ export function researchItemWriter(binding: ResearchBinding) {
     for (const [handle, record] of binding.sheet) sheet.set(handle, record);
     sheet.set('f0', sourceRecord(draft, new URL(url.value), page.text, binding.locale));
     const [source, title, summary, why] = await guard.fill(
-      [draft.source_name, draft.title_vi, draft.summary_vi, draft.why_it_matters_vi].map((template) => ({ template, format: 'plain' as const })),
+      [typedDigit(draft.source_name) ? HOST_NAME : draft.source_name, draft.title_vi, draft.summary_vi, draft.why_it_matters_vi].map((template) => ({ template, format: 'plain' as const })),
       JSON.stringify(draft, null, 2),
     );
     const sourceName = source?.text ?? '';
