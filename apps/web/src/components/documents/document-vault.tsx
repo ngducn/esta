@@ -48,7 +48,7 @@ function ExpiringSoon({ items }: { items: readonly ExpiringItem[] }) {
           {items.map((item) => (
             <li key={item.id} data-testid="expiring-item" className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2.5 first:pt-0 last:pb-0">
               <div className="flex min-w-0 flex-col">
-                <Link href={`/documents/${item.id}`} prefetch={false} className="text-body font-medium break-words text-text underline-offset-4 hover:underline">
+                <Link href={`/documents/${item.id}`} prefetch={false} className="-my-2.5 block py-2.5 text-body font-medium break-words text-text underline-offset-4 hover:underline">
                   {item.title}
                 </Link>
                 {item.propertyName === null ? null : <span className="text-body-sm break-words text-text-muted">{item.propertyName}</span>}
