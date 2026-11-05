@@ -10,14 +10,20 @@ export type WordRow = {
   readonly passesNearDate?: true;
   readonly bannedOnlyAfter?: readonly string[];
   readonly bannedBesideDateMask?: true;
-  readonly notPassIfCountedNounFollows?: readonly string[];
+  /** The `passesAfter` words after which a classifier from `countedNouns` makes the word a count (`cả năm phòng`). */
+  readonly countedAfter?: readonly string[];
+  readonly countedNouns?: readonly string[];
+  /** Only the capitalized word is a violation: `may` is a common verb. */
+  readonly passesLowercase?: true;
+  /** A capitalized word after it reads as a person (`from May Demo`), since a month name holds no figure. */
+  readonly passesBeforeName?: readonly string[];
   readonly bannedOnlyNearNumber?: true;
 };
 
 const plain = (kind: WordKind, words: string): Array<[string, WordRow]> => words.split(' ').map((word) => [word, { kind }]);
 const letters = (kind: WordKind, words: string): Array<[string, WordRow]> => words.split(' ').map((word) => [word, { kind, bannedOnlyNearNumber: true }]);
 
-const COUNTED = 'phòng căn nhà người khách hợp lô thửa tầng dãy khu bên tòa đất sổ hộ cửa gian chỗ xe ngày tuần tháng giờ lần khoản bản trang dòng mục điều'.split(' ');
+const CLASSIFIERS = 'phòng căn lô thửa tầng dãy tòa gian ngày tuần tháng giờ lần'.split(' ');
 
 const EXCEPTIONS: Readonly<Record<string, WordRow>> = {
   ty: { kind: 'amount', passesAfter: ['công'] },
@@ -36,11 +42,17 @@ const EXCEPTIONS: Readonly<Record<string, WordRow>> = {
     kind: 'number',
     passesNearDate: true,
     passesAfter: ['hằng', 'hàng', 'mỗi', 'cả', 'trong', 'cuối', 'đầu', 'giữa', 'của', 'các', 'nhiều', 'theo', 'từng', 'lâu', 'vài', 'mấy', 'quanh', 'một'],
-    notPassIfCountedNounFollows: COUNTED,
+    countedAfter: ['cả', 'trong', 'các', 'của'],
+    countedNouns: CLASSIFIERS,
     passesBefore: ['nay', 'ngoái', 'sau', 'tới', 'trước', 'qua', 'rồi', 'mới', 'kia', 'đó', 'này', 'dương', 'âm', 'tính', 'tài', 'học', 'đầu', 'cuối', 'thuế', 'vừa'],
     passesBeforeCapitalized: ['Căn'],
   },
-  một: { kind: 'number', bannedOnlyAfter: ['mùng', 'mồng', 'tháng', 'quận', 'số'], passesBefore: ['lần'] },
+  một: {
+    kind: 'number',
+    bannedOnlyAfter: ['mùng', 'mồng', 'tháng', 'quận', 'số'],
+    passesAfterPhrase: ['tiên số', 'đề số', 'lo số', 'tố số', 'là số'],
+    passesBefore: ['lần', 'số', 'vài', 'phần', 'cách', 'chút', 'ít'],
+  },
   mốt: { kind: 'number', passesAfter: ['ngày'] },
   nhất: { kind: 'number', bannedOnlyAfter: ['thứ'] },
   nhật: { kind: 'date', bannedOnlyAfter: ['chủ'] },
@@ -50,7 +62,13 @@ const EXCEPTIONS: Readonly<Record<string, WordRow>> = {
   second: { kind: 'number', passesBefore: ['opinion', 'opinions'] },
   double: { kind: 'number', passesBefore: ['check', 'checks', 'checked', 'checking'] },
   lẻ: { kind: 'number', passesAfter: ['bán'] },
-  may: { kind: 'date', bannedOnlyAfter: ['in', 'of', 'by', 'until', 'till', 'since', 'during', 'from', 'last', 'next', 'mid', 'before', 'after'], bannedBesideDateMask: true },
+  may: {
+    kind: 'date',
+    bannedOnlyAfter: ['in', 'on', 'of', 'by', 'until', 'till', 'since', 'during', 'from', 'last', 'next', 'mid', 'before', 'after', 'tháng'],
+    passesBeforeName: ['by', 'from'],
+    passesLowercase: true,
+    bannedBesideDateMask: true,
+  },
   đôi: { kind: 'number', passesBefore: ['khi', 'chút'] },
 };
 
@@ -73,29 +91,37 @@ export const WORDS: ReadonlyMap<string, WordRow> = new Map([
 
 export const ROMAN_LABELS: ReadonlySet<string> = new Set('quý tầng dãy khu phòng điều khoản phần đoạn quận phase part article section room floor'.split(' '));
 export const ROMAN_ACRONYMS: ReadonlySet<string> = new Set('MIX CD CV DC MC MD XL'.split(' '));
+/** Lower-case `vi` and `xi` are also words (`vi phạm`, `xi măng`), so they are numerals only with no word after them. */
+export const ROMAN_WORDS: ReadonlySet<string> = new Set(['vi', 'xi']);
 
 const SEGMENT_KINDS: ReadonlySet<WordKind> = new Set(['number', 'amount', 'currency']);
+const NON_ASCII = /\P{ASCII}/u;
+/** `grand` would make `Grandeur` a number word glued to `eur`. */
+const NOT_SEGMENTS: ReadonlySet<string> = new Set(['grand']);
 const SEGMENTS: ReadonlySet<string> = new Set([
-  ...[...WORDS].filter(([word, row]) => SEGMENT_KINDS.has(row.kind) && row.bannedOnlyNearNumber !== true && (word.length >= 3 || word === 'ba')).map(([word]) => word),
+  ...[...WORDS]
+    .filter(([word, row]) => SEGMENT_KINDS.has(row.kind) && row.bannedOnlyNearNumber !== true && !NOT_SEGMENTS.has(word) && (word.length >= 3 || word === 'ba' || NON_ASCII.test(word)))
+    .map(([word]) => word),
   'một',
   'one',
 ]);
-const ARTICLES: ReadonlySet<string> = new Set(['một', 'one']);
+/** Words that serve as articles or names, so a run of only these (`oneone`, `baba`) is not a number. */
+const WEAK_SEGMENTS: ReadonlySet<string> = new Set(['một', 'one', 'ba']);
 const LONGEST_SEGMENT = Math.max(...[...SEGMENTS].map((word) => word.length));
 
-export function isGluedNumber(word: string): boolean {
-  if (word.length < 5 || WORDS.has(word)) return false;
-  const reach: Array<readonly string[] | undefined> = [[]];
+/** Two or more table words with nothing between them, at least one of which is not an article or `ba` (`batriệu`, `haitỷ`, `ba'triệu`). */
+export function isGluedNumber(token: string): boolean {
+  const word = token.replace(/['’]/gu, '');
+  if (word.length < 4) return false;
+  const reaches = [true];
+  const reachesCounting = [false];
   for (let end = 1; end <= word.length; end += 1) {
     for (let start = Math.max(0, end - LONGEST_SEGMENT); start < end; start += 1) {
-      const before = reach[start];
       const segment = word.slice(start, end);
-      if (before !== undefined && SEGMENTS.has(segment)) {
-        reach[end] = [...before, segment];
-        break;
-      }
+      if (reaches[start] !== true || !SEGMENTS.has(segment)) continue;
+      reaches[end] = true;
+      if (reachesCounting[start] === true || !WEAK_SEGMENTS.has(segment)) reachesCounting[end] = true;
     }
   }
-  const parts = reach[word.length];
-  return parts !== undefined && parts.length >= 2 && parts.some((part) => !ARTICLES.has(part));
+  return reachesCounting[word.length] === true;
 }
