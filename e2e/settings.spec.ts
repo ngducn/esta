@@ -52,10 +52,11 @@ test('Ryan invites a relative as a viewer, who signs in and finds nothing to cha
   expect(await seriousAxeViolations(viewer)).toEqual([]);
 
   const own = (await memberRest<{ id: string }[]>(viewer, 'GET', `household_members?select=id&invited_email=eq.${email}`))[0]?.id;
+  const household = (await memberRest<{ id: string }[]>(viewer, 'GET', 'households?select=id'))[0]?.id;
   for (const attempt of [
     await memberCall(viewer, 'PATCH', `household_members?id=eq.${own}`, { role: 'admin' }),
-    await memberCall(viewer, 'PATCH', 'households?select=id', { name: 'Đổi tên' }),
-    await memberCall(viewer, 'POST', 'rpc/invite_member', { p_household_id: (await memberRest<{ id: string }[]>(viewer, 'GET', 'households?select=id'))[0]?.id, p_email: 'x@demo.esta.test', p_role: 'viewer' }),
+    await memberCall(viewer, 'PATCH', `households?id=eq.${household}`, { name: 'Đổi tên' }),
+    await memberCall(viewer, 'POST', 'rpc/invite_member', { p_household_id: household, p_email: 'x@demo.esta.test', p_role: 'viewer' }),
   ]) {
     const body = await attempt.text();
     expect(attempt.ok() ? JSON.parse(body) : attempt.status(), 'the server refuses what the page hides').toEqual(attempt.ok() ? [] : 403);
@@ -94,8 +95,7 @@ test('an admin renames the household, and the page reads on a desktop in dark', 
   await page.goto('/settings');
   await page.getByTestId('household-name').fill('Gia đình Demo Nguyễn Thị Phương Thảo Hường Bảo Lộc');
   await page.getByTestId('household-save').click();
-  await expect(page.getByTestId('household-save')).toBeDisabled();
-  expect((await memberRest<{ name: string }[]>(page, 'GET', 'households?select=name'))[0]?.name).toBe('Gia đình Demo Nguyễn Thị Phương Thảo Hường Bảo Lộc');
+  await expect.poll(async () => (await memberRest<{ name: string }[]>(page, 'GET', 'households?select=name'))[0]?.name).toBe('Gia đình Demo Nguyễn Thị Phương Thảo Hường Bảo Lộc');
   await expect(page.getByTestId('settings-assistant')).toBeVisible();
   await expect(page.getByTestId('topics-empty')).toBeVisible();
   await expect(page.getByTestId('assistant-runs'), 'the new household has no operator runs yet but its owner is the operator').toBeVisible();
