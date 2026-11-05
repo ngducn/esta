@@ -1,6 +1,7 @@
 import { isoDate } from '@esta/core/date';
 import { evaluateWatch, type WatchLabels, type WatchSnapshot } from '@esta/core/watch';
 import { describe, expect, it } from 'vitest';
+import { portfolioWatchPrompt } from '../../src/prompts/portfolio-watch';
 import { JOBS } from '../../src/jobs/registry';
 import { mcpToolName } from '../../src/tools/server';
 import { labels, snapshot } from '../full-seed';
@@ -138,6 +139,24 @@ describe('portfolio_watch on a day with many items (#404)', () => {
     for (const told of notesFor(await facts(tomorrow.call))) await tomorrow.call('create_item', told);
     const next = items(tables).find((item) => String(item.dedupe_key) === 'watch:W8:group:2026-11-07');
     expect(room(next)).toBe(12);
+  });
+
+  it('refuses a note that cites a fact outside its related facts, such as another group\'s count', async () => {
+    const { call, tables } = setupOn(read, asOf);
+    const answer = await facts(call);
+    const overdue = answer.groups.find(({ rule_id }) => rule_id === 'W1')?.facts ?? [];
+    const meters = answer.groups.find(({ rule_id }) => rule_id === 'W8')?.facts ?? [];
+    const refused = await call('create_item', { title: `{{${meters[0]}.group_count_display}} hóa đơn quá hạn`, body_md: `- {{${overdue[0]}.place_label}}`, related: overdue });
+    expect(refused.isError).toBe(true);
+    expect(refused.text).toContain(`${meters[0]}: cited but not in related`);
+    expect(items(tables)).toEqual([]);
+  });
+
+  it('asks every note to say what happened and what to do, with each fact\'s own figures', () => {
+    const prompt = portfolioWatchPrompt({ locale: 'vi', today: isoDate(asOf), timezone: 'Asia/Ho_Chi_Minh' });
+    expect(prompt).toMatch(/says what happened and what to do/);
+    expect(prompt).toMatch(/amount owed, the due date and the days overdue/);
+    expect(prompt).toMatch(/that fact's own figures/);
   });
 
   it('holds a grouped note\'s numbers to the number guard like any note\'s', async () => {

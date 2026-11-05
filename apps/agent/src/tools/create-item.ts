@@ -7,7 +7,7 @@ import { checkNote, repairMessage, type FactSheet, type FilledNote, type NoteFor
 import type { TablesInsert } from '@esta/db';
 import { groupActionFacts, WATCH_SEVERITIES, type DescribedFact, type WatchSeverity } from '@esta/core/watch';
 import type { AgentDb } from '../supabase';
-import { ToolRejection } from './server';
+import { oneAtATime, ToolRejection } from './server';
 
 /** A note still broke the number guard after its one repair turn, which a retry of the same model turns cannot fix. */
 export class NumberGuardError extends Error {
@@ -108,6 +108,7 @@ export function guardedWriter(binding: GuardBinding, tool: string) {
 }
 
 const MAX_TITLE = 300;
+const CITED_HANDLE = /\{\{(f\d+)\./gu;
 const LINK = /https?:\/\/|\bwww\.|\]\(/iu;
 
 const handles = (list: readonly string[]) => list.join(', ');
@@ -149,6 +150,9 @@ export function watchNoteWriter(binding: NoteBinding) {
     }
     if (action === undefined && digest) throw new ToolRejection('This run already wrote the grouped note. Put every watch and info fact in that one note.');
 
+    const strays = [...new Set([...`${note.title}\n${note.body_md}`.matchAll(CITED_HANDLE)].map(([, handle]) => handle ?? ''))].filter((handle) => !related.includes(handle));
+    if (strays.length > 0) throw new ToolRejection(`${handles(strays)}: cited but not in related. Cite only the facts this note relates (${handles(related)}), and call create_item again.`);
+
     if (LINK.test(note.title) || LINK.test(note.body_md)) throw new ToolRejection('A note holds no link: the app links the records itself. Take out the link and call create_item again.');
 
     const dedupeKey = group?.dedupeKey ?? `watch_digest:${binding.asOf}`;
@@ -176,5 +180,5 @@ export function watchNoteWriter(binding: NoteBinding) {
     return { saved: true };
   }
 
-  return { write, covered: covered as ReadonlySet<string>, written: written as readonly WrittenNote[] };
+  return { write: oneAtATime(write), covered: covered as ReadonlySet<string>, written: written as readonly WrittenNote[] };
 }
