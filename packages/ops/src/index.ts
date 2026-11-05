@@ -19,6 +19,7 @@ export {
 export { askQuestion, MAX_QUESTION_LENGTH, type Asked } from './ask-ops';
 export { agentItemSetStatus, agentJobRetry, INBOX_STATUSES, type AgentItemSaved } from './agent-item-ops';
 export { batchUndo, UNDO_FLOWS, UNDO_REASONS, type BatchUndone, type UndoBlocker, type UndoRefusal } from './batch-undo';
+export { householdRename, memberInvite, memberRemove, memberSetRole, type MemberRefusal, type MemberSaved } from './member-ops';
 export { bankAccountCreate, bankAccountDelete, bankAccountEdit, bankAccountSetDefault, type BankAccountRefusal, type BankAccountSaved } from './bank-account-ops';
 export { readClock, type ClockEnv } from './clock';
 export { readCollectionRows, type CollectionRow } from './collections';
