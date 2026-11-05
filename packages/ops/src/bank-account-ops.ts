@@ -1,7 +1,6 @@
-import type { Result } from '@esta/core/result';
 import { bankAccountName, bankAccountNo } from '@esta/core/vietqr';
 import { z } from 'zod';
-import { changedColumns, dbRefusal, idSchema, type Changed, type CommonRefusal, type DatabaseError } from './kit';
+import { changedColumns, dbRefusal, idSchema, writtenRow, type Changed, type Written } from './kit';
 import { change, defineOp, refuse, unchanged, type OpContext } from './op';
 
 const typed = (read: (text: string) => string | null) =>
@@ -64,14 +63,7 @@ async function named(ctx: OpContext, id: string): Promise<boolean> {
   return references.includes(true);
 }
 
-type Written = { readonly data: readonly { id: string }[] | null; readonly error: DatabaseError | null };
-
-/** RLS hides a write a non-admin attempts while the row still reads, so no row back from a stored account is `forbidden`. */
-async function settled(ctx: OpContext, id: string, { data, error }: Written): Promise<Result<BankAccountSaved, BankAccountRefusal | CommonRefusal>> {
-  if (error) return refuse(dbRefusal(error, SENTINELS));
-  if (data !== null && data.length > 0) return { ok: true, value: { id } };
-  return refuse((await stored(ctx, id)) === null ? { kind: 'not_found' } : { kind: 'forbidden' });
-}
+const settled = (ctx: OpContext, id: string, written: Written) => writtenRow(id, written, async () => (await stored(ctx, id)) !== null, SENTINELS);
 
 /**
  * PLT-1's receiving account: where a bill's VietQR sends the money. The household's first account becomes its default.
