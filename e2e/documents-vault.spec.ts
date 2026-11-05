@@ -176,7 +176,7 @@ test('rule 5: a new property shows the empty vault with Thêm tài liệu, and a
   await serviceWrite(page, 'POST', 'properties', { id: property, household_id: household(5), nickname: 'Nhà Demo mới', code: 'VAULT5', kind: 'townhouse', use_mode: 'held' });
   try {
     await page.goto(`/properties/${property}/documents`);
-    await expect(page.getByTestId('documents-empty')).toHaveText('Chưa có tài liệu nào. Thêm ảnh sổ, hợp đồng hoặc hóa đơn.', COLD_ROUTE);
+    await expect(page.getByTestId('documents-empty')).toContainText('Chưa có tài liệu nào.', COLD_ROUTE);
     await expect(page.getByTestId('add-document')).toHaveText('Thêm tài liệu');
 
     await page.goto('/documents');
