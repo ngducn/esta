@@ -3,6 +3,7 @@
 import { isIsoDate, type IsoDate } from '@esta/core/date';
 import { formatDate, formatDateLong } from '@esta/core/format';
 import { parseDateInput } from '@esta/core/parse/date-input';
+import { CalendarDays } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useId, useRef, useState } from 'react';
 import { FieldMessage } from '@/components/field-message';
@@ -40,14 +41,11 @@ export function DateInput({ label, defaultValue, onValueChange, onTextChange, na
   };
 
   return (
-    <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-body font-medium text-text">
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={id} className="text-label text-text">
         {label}
       </label>
-      <p id={`${id}-hint`} className="text-body-sm text-text-muted">
-        {t('examples')}
-      </p>
-      <div className="mt-1 flex gap-2">
+      <div className="flex gap-2">
         <Input
           id={id}
           value={text}
@@ -55,26 +53,26 @@ export function DateInput({ label, defaultValue, onValueChange, onTextChange, na
           onBlur={settle}
           disabled={disabled}
           placeholder={t('placeholder')}
+          inputMode="numeric"
           autoComplete="off"
           spellCheck={false}
           aria-invalid={error !== null}
-          aria-describedby={`${id}-hint ${id}-message`}
+          aria-describedby={`${id}-message`}
           className="max-w-48 num"
         />
         <span className="relative">
           <Button
             type="button"
             variant="secondary"
+            className="w-control-h px-0"
             disabled={disabled}
+            aria-label={t('pick')}
             onClick={() => {
               const input = picker.current;
               if (input && typeof input.showPicker === 'function') input.showPicker();
             }}
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden="true">
-              <path d="M4 6.5h16v13H4zM4 10.5h16M8.5 4v4M15.5 4v4" />
-            </svg>
-            {t('pick')}
+            <CalendarDays aria-hidden="true" />
           </Button>
           <input
             ref={picker}
@@ -96,6 +94,8 @@ export function DateInput({ label, defaultValue, onValueChange, onTextChange, na
           <time dateTime={result.value} data-testid="date-preview" className="text-text">
             {formatDateLong(result.value, locale)}
           </time>
+        ) : result.reason === 'empty' ? (
+          <span className="text-text-muted">{t('examples')}</span>
         ) : null}
       </FieldMessage>
     </div>

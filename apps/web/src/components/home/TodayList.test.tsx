@@ -56,11 +56,11 @@ const itemNamed = (title: string) => {
 };
 
 describe('TodayList', () => {
-  it('gives a member who records one action per item: Ghi nhận, Gia hạn into the renew sheet, Xem tài liệu and Xem lại', () => {
+  it('gives a member who records one action per item: Ghi nhận, Gia hạn into the renew sheet, Xem giấy tờ and Xem lại', () => {
     renderInLocale(<TodayList today={todayItems(SNAPSHOT, ON)} asOf={ON} payment={PAYMENT} />);
     expect(itemNamed('Phòng 5, Dãy trọ Dĩ An').getByRole('button', { name: 'Ghi nhận' }).getAttribute('aria-haspopup')).toBe('dialog');
     expect(itemNamed('Căn hộ Thủ Đức').getByRole('link', { name: 'Gia hạn' }).getAttribute('href')).toBe(`/properties/${SNAPSHOT.leases[0]?.propertyId}/rental/leases/${SNAPSHOT.leases[0]?.leaseId}?renew=1`);
-    expect(itemNamed('Bảo hiểm cháy nổ Nhà phố Q7').getByRole('link', { name: 'Xem tài liệu' }).getAttribute('href')).toBe('/documents/00000000-0000-4000-8000-0000000d0001');
+    expect(itemNamed('Bảo hiểm cháy nổ Nhà phố Q7').getByRole('link', { name: 'Xem giấy tờ' }).getAttribute('href')).toBe('/documents/00000000-0000-4000-8000-0000000d0001');
     expect(itemNamed('Sổ hồng Bảo Lộc').getByRole('link', { name: 'Xem lại' }).getAttribute('href')).toBe('/documents/00000000-0000-4000-8000-0000000d0002/review');
     expect(itemNamed('Gọi người thuê Phòng 5').getByRole('link', { name: 'Xem việc cần làm' }).getAttribute('href')).toBe('/assistant#tasks');
     expect(itemNamed('Gọi người thuê Phòng 5').getByText('Hạn 06/10/2026')).toBeTruthy();
@@ -80,7 +80,7 @@ describe('TodayList', () => {
     expect(screen.queryByRole('button')).toBeNull();
     expect(itemNamed('Phòng 5, Dãy trọ Dĩ An').getByRole('link', { name: 'Xem hóa đơn' }).getAttribute('href')).toBe(`/collections/invoices/${phong5.invoiceId}`);
     expect(itemNamed('Căn hộ Thủ Đức').getByRole('link', { name: 'Xem hợp đồng' }).getAttribute('href')).toBe(`/properties/${SNAPSHOT.leases[0]?.propertyId}/rental/leases/${SNAPSHOT.leases[0]?.leaseId}`);
-    expect(itemNamed('Sổ hồng Bảo Lộc').getByRole('link', { name: 'Xem tài liệu' }).getAttribute('href')).toBe('/documents/00000000-0000-4000-8000-0000000d0002');
+    expect(itemNamed('Sổ hồng Bảo Lộc').getByRole('link', { name: 'Xem giấy tờ' }).getAttribute('href')).toBe('/documents/00000000-0000-4000-8000-0000000d0002');
   });
 
   it('says there is nothing to do, and points to Thu tiền only when the list is cut', () => {

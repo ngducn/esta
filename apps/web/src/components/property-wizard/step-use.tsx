@@ -1,6 +1,6 @@
 'use client';
 
-import { USE_MODES, type PropertyKind, type UseMode } from '@esta/core/properties/form';
+import type { PropertyKind, UseMode } from '@esta/core/properties/form';
 import { FileSignature } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { FormAlert } from '@/components/form-alert';
 import { TextField } from '@/components/form-parts';
-import { FormSelect } from '@/components/properties/address-picker';
+import { UseModeCards } from '@/components/properties/use-mode-cards';
 import { Button } from '@/components/ui/button';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { useAction } from '@/components/use-action';
@@ -36,8 +36,6 @@ export function StepUse({
   back: string;
 }) {
   const t = useTranslations('propertyWizard');
-  const tf = useTranslations('propertyForm');
-  const tp = useTranslations('properties');
   const router = useRouter();
   const [use, setUse] = useState(useMode);
   const [count, setCount] = useState(() => String(Math.max(rooms, suggestedRooms ?? 0) || ''));
@@ -63,13 +61,7 @@ export function StepUse({
   return (
     <form noValidate onSubmit={submit} data-testid="wizard-use" className="flex max-w-3xl flex-col gap-5 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
       <h2 className="text-headline font-semibold text-text">{t('useTitle')}</h2>
-      <FormSelect
-        label={tf('useMode')}
-        testId="use-mode"
-        value={use}
-        options={USE_MODES.map((option) => ({ value: option, label: tp('use', { use: option }) }))}
-        onChange={(value) => setUse(USE_MODES.find((option) => option === value) ?? use)}
-      />
+      <UseModeCards value={use} onChange={setUse} />
       {roomingHouse ? (
         <div className="flex flex-col gap-2">
           <TextField

@@ -4,10 +4,12 @@ import { MapPinned } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useState } from 'react';
+import { AddressBlock } from '@/components/address-block';
 import { FormAlert } from '@/components/form-alert';
 import { SuggestionList } from '@/components/properties/legacy-address-suggest';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { useAction } from '@/components/use-action';
+import { shortProvinceName } from '@esta/core/address';
 import type { CurrentUnitSuggestion } from '@esta/ops';
 import { confirmCurrentAddress } from '@/server/properties/wizard';
 
@@ -49,11 +51,8 @@ export function AddressConfirm({
         </h2>
         <p className="max-w-prose text-body text-pretty text-text-secondary">{t('addressBody')}</p>
       </div>
-      <div className="flex flex-col gap-1 rounded-md bg-bg-subtle px-4 py-3">
-        <p className="text-body-sm font-medium text-text-secondary">{t('addressOnCertificate')}</p>
-        <p data-testid="certificate-address-text" className="text-body break-words text-text">
-          {certificateAddress}
-        </p>
+      <div data-testid="certificate-address-text" className="rounded-md bg-bg-subtle px-4 py-3">
+        <AddressBlock legal={certificateAddress} current={saved === undefined ? null : `${saved.communeName}, ${shortProvinceName(saved.provinceName)}`} />
       </div>
       {suggestions.length === 0 ? (
         <p className="text-body text-text-secondary">{t('addressNone')}</p>

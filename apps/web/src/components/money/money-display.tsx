@@ -23,13 +23,23 @@ const variants: Record<MoneyVariant, { format: (amount: Vnd, locale: Locale) => 
 export function MoneyDisplay({ amount, variant = 'full', className }: { amount: Vnd; variant?: MoneyVariant; className?: string }) {
   const locale = useLocale();
   const { format, className: variantClass } = variants[variant];
+  const text = format(amount, locale);
+  const exact = formatVnd(amount, locale);
   return (
     <data
       value={amount}
       data-variant={variant}
+      title={variant === 'compact' ? exact : undefined}
       className={cn('inline-block text-end whitespace-nowrap num', amount === 0 && 'text-text-muted', variantClass, className)}
     >
-      {format(amount, locale)}
+      {variant === 'compact' ? (
+        <>
+          <span aria-hidden="true">{text}</span>
+          <span className="sr-only">{exact}</span>
+        </>
+      ) : (
+        text
+      )}
     </data>
   );
 }

@@ -43,11 +43,15 @@ async function Home() {
   const payment = home.payment === null || paymentIntl === null ? null : { ...home.payment, intl: paymentIntl };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-stack">
       <PageHeader title={member.household.name} />
       <OfflineNotice message={t('offline')} testId="home-offline" />
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
-        <div className="flex flex-col gap-5">
+      <div className="grid grid-cols-1 gap-stack md:grid-cols-2 md:items-start">
+        <MonthCollection month={home.month} board={home.board} collected={home.collected} />
+        <PortfolioFigure portfolio={portfolio} />
+      </div>
+      <div className={home.pins.length === 0 ? 'flex flex-col gap-stack' : 'grid grid-cols-1 gap-stack lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start'}>
+        <div className="flex min-w-0 flex-col gap-stack">
           <ToastHost labels={{ region: toast('region'), undo: toast('undo') }}>
             <TodayList today={home.today} asOf={asOf} payment={payment} />
           </ToastHost>
@@ -57,14 +61,10 @@ async function Home() {
             lastRun={brief === null ? null : wallClockStamp(brief.createdAt, clock.now(), env.ESTA_TIMEZONE)}
           />
         </div>
-        <div className="flex flex-col gap-5">
-          <MonthCollection month={home.month} board={home.board} collected={home.collected} />
-          <PortfolioFigure portfolio={portfolio} />
-        </div>
+        {home.pins.length === 0 ? null : (
+          <HomeMapStrip title={t('mapTitle')} openLabel={t('mapOpen')} map={{ ...mapIntl, theme, label: t('mapLabel', { count: home.pins.length }), pins: home.pins }} />
+        )}
       </div>
-      {home.pins.length === 0 ? null : (
-        <HomeMapStrip title={t('mapTitle')} openLabel={t('mapOpen')} map={{ ...mapIntl, theme, label: t('mapLabel', { count: home.pins.length }), pins: home.pins }} />
-      )}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-body-sm">
         <p className="text-text-secondary">{member.displayName === null ? t('signedIn') : t('signedInAs', { name: member.displayName })}</p>
         <p className="rounded-full border border-border bg-surface px-3 py-1 font-medium text-text-muted">{t('role', { role: onboarding(`roles.${member.role}`) })}</p>

@@ -204,35 +204,32 @@ export function SkeletonCollections() {
   );
 }
 
-/** Home as it lands: the title, today's list beside the month's figure on a desktop, the list first on a phone. */
+/** Home as it lands: the title, two stat cards, then today's list. */
 export function SkeletonHome() {
   return (
-    <Loading testId="skeleton-home" className="flex flex-col gap-6">
+    <Loading testId="skeleton-home" className="flex flex-col gap-stack">
       <Block className="h-9 w-56 max-w-full" />
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-start">
-        <div className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-card-pad shadow-xs">
-          <Block className="h-7 w-48" />
-          {Array.from({ length: 3 }, (_, index) => (
-            <div key={index} className="flex items-center gap-3 py-2">
-              <div className="flex min-w-0 flex-1 flex-col gap-2">
-                <Block className="h-6 w-56 max-w-full" />
-                <Block className="h-5 w-40" />
-              </div>
-              <Block className="h-touch w-28" />
-            </div>
-          ))}
-        </div>
-        <div className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-card-pad shadow-xs">
-          <Block className="h-7 w-36" />
-          <Block className="h-12 w-64 max-w-full" />
-          <Block className="h-2 w-full" />
-          <Block className="h-6 w-44" />
-          <div className="flex flex-wrap gap-x-5 gap-y-2 border-t border-border pt-4">
-            {Array.from({ length: 4 }, (_, index) => (
-              <Block key={index} className="h-6 w-24" />
-            ))}
+      <div className="grid grid-cols-1 gap-stack md:grid-cols-2">
+        {[0, 1].map((card) => (
+          <div key={card} className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-card-pad shadow-xs">
+            <Block className="h-7 w-36" />
+            <Block className="h-[3.25rem] w-64 max-w-full" />
+            <Block className="h-2 w-full" />
+            <Block className="h-6 w-44" />
           </div>
-        </div>
+        ))}
+      </div>
+      <div className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-card-pad shadow-xs">
+        <Block className="h-7 w-48" />
+        {Array.from({ length: 3 }, (_, index) => (
+          <div key={index} className="flex items-center gap-3 py-2">
+            <div className="flex min-w-0 flex-1 flex-col gap-2">
+              <Block className="h-6 w-56 max-w-full" />
+              <Block className="h-5 w-40" />
+            </div>
+            <Block className="h-touch w-28" />
+          </div>
+        ))}
       </div>
     </Loading>
   );
