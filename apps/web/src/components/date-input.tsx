@@ -2,7 +2,7 @@
 
 import { isIsoDate, type IsoDate } from '@esta/core/date';
 import { formatDate, formatDateLong } from '@esta/core/format';
-import { parseDateInput } from '@esta/core/parse/date-input';
+import { parseDateInput, parseOptionalDateInput } from '@esta/core/parse/date-input';
 import { CalendarDays } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useId, useRef, useState } from 'react';
@@ -37,8 +37,8 @@ export function DateInput({ label, defaultValue, onValueChange, onTextChange, na
   const change = (next: string) => {
     setText(next);
     onTextChange?.(next);
-    const parsed = parseDateInput(next);
-    onValueChange?.(parsed.ok ? parsed.value : null, parsed.ok || parsed.reason === 'empty');
+    const parsed = parseOptionalDateInput(next);
+    onValueChange?.(parsed.ok ? parsed.value : null, parsed.ok);
   };
 
   return (

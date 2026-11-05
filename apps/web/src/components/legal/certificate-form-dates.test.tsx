@@ -9,8 +9,31 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), refresh: 
 
 const BANK = '7a0f6e43-6f1a-4f43-9d6b-2f7f5c1d2e09';
 
-describe('certificate form: hidden release date', () => {
+const INITIAL = { form: 'gcn_2009_2024', serial_no: 'AB 123456', book_entry_no: null, issued_on: '2015-03-10', issued_by: null, holder_party_ids: [], annotations: [], status: 'valid', mortgage: null } as never;
+
+function renderForm(initial: unknown = INITIAL) {
+  renderInLocale(<CertificateForm propertyId="p1" itemId="c1" initial={initial as never} parties={[{ id: BANK, fullName: 'Ngân hàng Demo', kind: 'organization', isBank: true }]} />);
+}
+
+describe('certificate form: dates', () => {
   beforeEach(() => actions.saveLegalItem.mockReset().mockResolvedValue({ ok: true }));
+
+  it('refuses to save while the issue date is not on the calendar, and saves once it is', () => {
+    renderForm();
+    fireEvent.change(screen.getByRole('textbox', { name: 'Ngày cấp' }), { target: { value: '31/09/2015' } });
+    fireEvent.submit(document.querySelector('form') as HTMLFormElement);
+    expect(actions.saveLegalItem).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByRole('textbox', { name: 'Ngày cấp' }), { target: { value: '30/09/2015' } });
+    fireEvent.submit(document.querySelector('form') as HTMLFormElement);
+    expect(actions.saveLegalItem).toHaveBeenCalledTimes(1);
+  });
+
+  it('refuses to save while an annotation date is not on the calendar', () => {
+    renderForm({ ...(INITIAL as object), annotations: [{ date: '2020-01-01', text: 'Ghi chú Demo', kind: null }] });
+    fireEvent.change(screen.getByRole('textbox', { name: 'Ngày' }), { target: { value: '30/02/2020' } });
+    fireEvent.submit(document.querySelector('form') as HTMLFormElement);
+    expect(actions.saveLegalItem).not.toHaveBeenCalled();
+  });
 
   it('saves after the release field held 31/09/2026 and the status became mortgaged', () => {
     renderInLocale(
