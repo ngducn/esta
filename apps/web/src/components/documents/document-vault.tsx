@@ -1,12 +1,13 @@
 'use client';
 
-import { FilePlus2, Upload } from 'lucide-react';
+import { FilePlus2, FileText, Upload } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { lazy, useState, type DragEvent, type ReactNode } from 'react';
+import { EmptyState } from '@/components/empty-state';
 import { StatusShape, statusBadge, statusMarks } from '@/components/status-shape';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { useNoticeToast, useUndoToast } from '@/components/undo-toast';
 import { DeferredPopup, useDeferredDialog } from '@/components/use-deferred-dialog';
 import { useHydrated } from '@/lib/use-hydrated';
@@ -16,7 +17,7 @@ import type { DocumentStatuses } from '@/server/documents/extraction-status';
 import type { VaultTile } from '@/server/documents/list';
 import { DocumentTile } from './document-tile';
 import { useDocumentStatuses } from './use-document-status';
-import { VaultGroups } from './vault-groups';
+import { GroupByToggle, VaultGroups, type GroupBy } from './vault-groups';
 import type { SearchState } from '@/server/documents/vault';
 import { VaultSearch } from './vault-search';
 import type { CoverPhotoPriority } from '@/components/properties/cover-photo';
@@ -123,6 +124,7 @@ export function DocumentVault({
   const upload = useDeferredDialog(loadUploadSheet);
   const [droppedFile, setDroppedFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [by, setBy] = useState<GroupBy>(scope.kind === 'property' ? 'category' : 'property');
   const extraction = useDocumentStatuses(scope.kind === 'property' ? scope.propertyId : scope.householdId, statuses, { by: scope.kind });
   const propertyId = scope.kind === 'property' ? scope.propertyId : null;
   const uploads = scope.kind === 'property' && canEdit;
@@ -204,28 +206,21 @@ export function DocumentVault({
         </div>
       ) : null}
       {tiles.length === 0 ? (
-        <div className="flex flex-col items-start gap-3 rounded-lg border border-border bg-surface p-5 shadow-xs">
-          <p data-testid="documents-empty" className="text-body text-text-secondary">
-            {t('empty')}
-          </p>
-          {scope.kind === 'household' && canEdit ? (
-            <Link href="/properties" data-testid="add-document" className={buttonVariants({ variant: 'primary' })}>
-              <FilePlus2 aria-hidden="true" />
-              {t('add')}
-            </Link>
-          ) : null}
-        </div>
+        <EmptyState
+          icon={FileText}
+          title={t('empty')}
+          body={scope.kind === 'household' ? t('emptyBody') : t('emptyBodyProperty')}
+          testId="documents-empty"
+          className="max-w-3xl"
+          {...(scope.kind === 'household' && canEdit ? { action: { label: t('emptyAction'), href: '/properties', icon: FilePlus2, testId: 'add-document' } } : {})}
+        />
       ) : (
         <>
-          <VaultSearch initial={search} propertyId={propertyId}>
+          <VaultSearch initial={search} propertyId={propertyId} actions={<GroupByToggle by={by} onChange={setBy} />}>
             {(state) => <SearchResults state={state} render={(document) => tile(document, scope.kind === 'household')} />}
           </VaultSearch>
           <ExpiringSoon items={expiring} />
-          <VaultGroups
-            tiles={tiles}
-            initialBy={scope.kind === 'property' ? 'category' : 'property'}
-            renderTile={(document, showProperty, priority) => tile(document, showProperty && scope.kind === 'household', priority)}
-          />
+          <VaultGroups tiles={tiles} by={by} renderTile={(document, showProperty, priority) => tile(document, showProperty && scope.kind === 'household', priority)} />
         </>
       )}
       {scope.kind !== 'property' ? null : (
