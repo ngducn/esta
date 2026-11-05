@@ -7,11 +7,14 @@ export const MIN_QUOTE_WORDS = 3;
 const squash = (text: string) => text.normalize('NFC').replace(/\s+/gu, ' ').trim();
 const WORD_CHAR = /[\p{L}\p{N}\p{M}]/u;
 const DIGIT = /\p{N}/u;
+/** A hyphen as a page writes it: ASCII, hyphen, non-breaking hyphen, figure dash, en dash and the minus sign. */
+const DASH = /[-\u2010\u2011\u2012\u2013\u2212]/u;
 const NUMBER_SEPARATOR = /[.,/]/u;
 
 /** Whether a quote edge `edge` cuts into a word or number the page runs on with `next`, then `beyond`: `500` in `1.500`, `5` in `5,5`, `% giá` in `15% giá`. */
 function cutsIn(edge: string, next: string, beyond: string): boolean {
-  if (WORD_CHAR.test(edge)) return WORD_CHAR.test(next) || (DIGIT.test(edge) && NUMBER_SEPARATOR.test(next) && DIGIT.test(beyond));
+  if (DIGIT.test(edge) && DASH.test(next) && !WORD_CHAR.test(beyond)) return true;
+  if (WORD_CHAR.test(edge)) return WORD_CHAR.test(next) || (DIGIT.test(edge) && (NUMBER_SEPARATOR.test(next) || DASH.test(next)) && DIGIT.test(beyond));
   return edge !== ' ' && DIGIT.test(next);
 }
 

@@ -26,7 +26,8 @@ export function portfolioWatchRequest(input: WatchRequestInput): PreparedJob {
       if (!watch.wasRead()) throw new Error('The model ended without reading watch_facts');
       const missed = [...watch.facts].filter(([handle, { fact }]) => fact.severity === 'action' && !notes.covered.has(handle));
       if (missed.length > 0) throw new Error(`The model left action facts without a note: ${missed.map(([handle, { fact }]) => `${handle} (${fact.ruleId})`).join(', ')}`);
-      return { as_of: input.asOf, facts: watch.facts.size, notes: [...notes.written] };
+      const leftOut = [...watch.facts].filter(([handle]) => !notes.covered.has(handle)).map(([handle, { fact }]) => `${handle} (${fact.ruleId})`);
+      return { as_of: input.asOf, facts: watch.facts.size, notes: [...notes.written], left_out: leftOut };
     },
   };
 }
