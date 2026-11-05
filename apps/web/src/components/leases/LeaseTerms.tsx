@@ -33,6 +33,7 @@ export function LeaseTerms({
   asOf,
   renewalOf,
   renewedBy,
+  tenantHref = null,
 }: {
   lease: LeaseWithTenant;
   unitLabel: string;
@@ -42,6 +43,7 @@ export function LeaseTerms({
   asOf: IsoDate;
   renewalOf: LeaseLink | null;
   renewedBy: LeaseLink | null;
+  tenantHref?: string | null;
 }) {
   const t = useTranslations('leases');
   const locale = useLocale();
@@ -58,7 +60,13 @@ export function LeaseTerms({
       </h2>
       <dl className="flex flex-col gap-3">
         <Fact label={t('tenantLabel')}>
-          <span data-testid="lease-tenant-name">{lease.tenant?.fullName ?? t('none')}</span>
+          {tenantHref === null || lease.tenant === null ? (
+            <span data-testid="lease-tenant-name">{lease.tenant?.fullName ?? t('none')}</span>
+          ) : (
+            <Link href={tenantHref} data-testid="lease-tenant-name" className="font-medium text-accent-text underline underline-offset-4">
+              {lease.tenant.fullName}
+            </Link>
+          )}
           {lease.tenant?.phone == null ? null : <span className="block num text-text-secondary">{lease.tenant.phone}</span>}
         </Fact>
         <Fact label={t('unitLabel')}>{unitLabel}</Fact>

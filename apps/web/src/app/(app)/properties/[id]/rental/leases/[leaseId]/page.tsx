@@ -175,7 +175,7 @@ export default async function LeasePage({ params, searchParams }: { params: Para
       {canEdit ? null : <p className="text-body text-text-secondary">{t('viewerNote')}</p>}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-start">
         <div className="flex flex-col gap-6">
-          <LeaseTerms lease={summary} unitLabel={unit.label} invoices={invoices} schedule={schedule} amendments={amendments} asOf={asOf} renewalOf={renewalOf} renewedBy={renewedBy} />
+          <LeaseTerms lease={summary} unitLabel={unit.label} invoices={invoices} schedule={schedule} amendments={amendments} asOf={asOf} renewalOf={renewalOf} renewedBy={renewedBy} tenantHref={member.role === 'admin' && summary.tenant_party_id !== null ? `/tenants/${summary.tenant_party_id}` : null} />
           <PropertyIntl locale={locale} messages={{ deposits: messages.deposits, components: { money, date, status, toast } }}>
             <LeaseDeposit lease={summary} unitLabel={name} invoices={invoices} canEdit={canEdit} today={asOf} />
           </PropertyIntl>
