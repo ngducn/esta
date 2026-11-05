@@ -63,7 +63,7 @@ test('Ryan opens diagnostics from his menu and reads the replay worker, the last
   expect(runs.columns).toEqual(['Thời gian', 'Loại việc', 'Kết quả', 'Lượt', 'Thời lượng', 'Mô hình', 'Chi phí ước tính', 'Công cụ đã gọi']);
   expect(runs.rows.length).toBeLessThanOrEqual(20);
   expect(runs.rows.slice(0, 2).map(({ cells }) => [cells['#0'], cells.kind, cells.status])).toEqual([
-    ['07/10/2026 06:45', 'portfolio_watch', 'Chưa xong'],
+    ['07/10/2026 06:45', 'portfolio_watch', 'Lỗi'],
     ['07/10/2026 06:45', 'ping', 'Xong'],
   ]);
   for (const { cells } of runs.rows) expect(cells.duration, 'every finished run has its duration').toMatch(/^(\d+ phút )?\d+ giây$/);
