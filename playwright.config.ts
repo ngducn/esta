@@ -66,6 +66,7 @@ const sharedClock = [
 
 export default defineConfig({
   testDir: 'e2e',
+  testMatch: '**/*.spec.ts',
   testIgnore: 'prod/**',
   forbidOnly: Boolean(process.env.CI),
   reporter: process.env.CI ? 'github' : 'list',
