@@ -2,7 +2,7 @@
 
 import { NEW_VENDOR_TAG, readExpense, type ExpenseProblems } from '@esta/core/expenses';
 import { vnd, type Vnd } from '@esta/core/money';
-import { documentRow } from '@esta/ops';
+import { dbRefusal, documentRow, type Refusal } from '@esta/ops';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { readRequestClock } from '@/server/clock';
@@ -13,7 +13,12 @@ import { createSessionClient } from '@/server/supabase/server';
 export type ExpenseSaved =
   | { readonly ok: true; readonly expense: { readonly id: string; readonly amountVnd: Vnd } }
   | { readonly ok: false; readonly reason: 'invalid'; readonly problems: ExpenseProblems }
-  | { readonly ok: false; readonly reason: 'forbidden' | 'failed' | 'file_gone' };
+  | { readonly ok: false; readonly reason: 'forbidden' | 'failed' | 'file_gone' | 'date_after_today' | 'receipt_other_property' };
+
+const SENTINELS: Readonly<Record<string, Refusal>> = {
+  ESTA_EXPENSE_DATE_AFTER_TODAY: { kind: 'date_after_today' },
+  ESTA_EXPENSE_RECEIPT_PROPERTY: { kind: 'receipt_other_property' },
+};
 
 const failed = { ok: false, reason: 'failed' } as const;
 const savedSchema = z.tuple([z.object({ id: z.uuid(), amount_vnd: z.number().int().transform(vnd), property_id: z.uuid() })]);
@@ -49,7 +54,11 @@ export async function saveExpense(input: unknown): Promise<ExpenseSaved> {
     ...(document === null ? {} : { p_new_document: document }),
   });
   const saved = savedSchema.safeParse(data);
-  if (error || !saved.success) return failed;
+  if (error) {
+    const refusal = dbRefusal(error, SENTINELS);
+    return refusal.kind === 'date_after_today' || refusal.kind === 'receipt_other_property' ? { ok: false, reason: refusal.kind } : failed;
+  }
+  if (!saved.success) return failed;
   const [row] = saved.data;
   revalidatePath(`/properties/${row.property_id}`, 'layout');
   return { ok: true, expense: { id: row.id, amountVnd: row.amount_vnd } };

@@ -29,6 +29,8 @@ defaults:
   run:
     shell: bash
 
+# A pull_request run checks out refs/pull/N/merge, the PR merged into main as it stands now, so a branch is tested as it
+# would land. Pinning the head sha would test the branch against its older base (#439 went red that way).
 jobs:
   check:
     runs-on: ubuntu-24.04
@@ -36,7 +38,6 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           # pnpm quality compares the baseline with the copy where this branch forked from origin/main.
           fetch-depth: 0
           persist-credentials: false
@@ -44,10 +45,7 @@ jobs:
         with:
           # apps/web unit tests draw images in headless Chromium.
           browsers: 'true'
-      - name: No high or critical advisory in production dependencies
-        run: pnpm audit --prod --audit-level high
-      - run: pnpm check
-      - run: pnpm test:live
+      - run: tools/ci/jobs/check.sh
 
   db:
     runs-on: ubuntu-24.04
@@ -55,7 +53,6 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
       - uses: ./.github/actions/setup
       - uses: supabase/setup-cli@689adcfb80d947100a1eab127289b97d1fb07b13 # v3.2.0
@@ -64,40 +61,17 @@ jobs:
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/supabase-images
-          key: supabase-images-${{ github.job }}-2.90.0-v1
+          # v2 holds the pg_prove image that db:test pulls; a v1 cache has no copy of it and is never rewritten.
+          key: supabase-images-${{ github.job }}-2.90.0-v2
       - run: tools/ci/images.sh load ~/.cache/supabase-images
       - run: tools/ci/db-start.sh -x studio,realtime,imgproxy,mailpit
-      - run: tools/ci/images.sh save ~/.cache/supabase-images
-      - name: Reset twice and compare checksums
-        # The Supabase CLI can answer 502 while db reset restarts the Storage container; one restart of the stack and
-        # one retry clear it, as tools/ci-local.sh does.
-        run: |
-          pnpm db:seed:check 2>&1 | tee "$RUNNER_TEMP/seed-check.log" && exit 0
-          grep -q 'Error status 502' "$RUNNER_TEMP/seed-check.log" || exit 1
-          echo "::warning::db reset got a 502 while it restarted a container; restarting the stack and retrying once"
-          pnpm db:stop
-          tools/ci/db-start.sh -x studio,realtime,imgproxy,mailpit,postgres-meta
-          pnpm db:seed:check
-      - name: Every business table seeded in every household, and the SPEC 9.3 seed facts
-        run: pnpm seed:coverage --database && pnpm seed:facts
-      - run: pnpm db:test
-      - name: Screens and reports against the seeded database
-        # Each file works in its own seeded household, so the files do not collide; scripts/web-integration.ts sets the
-        # test clock first and clears it after.
-        run: pnpm --filter web test:integration
-      - name: Generated database types match the migrations
-        run: pnpm db:types && git diff --exit-code packages/db/src/database.types.ts
-      - name: Export a household, load it into an empty database and compare row counts (PLT-2)
-        # Last, because it resets the database: db:reset:empty leaves the migrations and no household rows.
-        run: |
-          pnpm exec tsx scripts/roundtrip-checks.ts odd-names ryan.lane9@demo.esta.test
-          pnpm exec tsx scripts/export-household.ts ryan.lane9@demo.esta.test "$RUNNER_TEMP/export"
-          pnpm db:reset:empty
-          pnpm exec tsx scripts/roundtrip-checks.ts rollback "$RUNNER_TEMP/export"
-          pnpm exec tsx scripts/roundtrip-checks.ts refused "$RUNNER_TEMP/export"
-          node scripts/import-export.ts "$RUNNER_TEMP/export"
-          node scripts/row-counts.ts "$RUNNER_TEMP/export" | tee "$RUNNER_TEMP/row-counts.log"
-          grep -q '^tables and files match what this export holds' "$RUNNER_TEMP/row-counts.log"
+      - name: Seed, pgTAP, integration tests, types and the export round trip
+        run: tools/ci/jobs/db.sh
+        env:
+          CI_STACK_EXCLUDE: studio,realtime,imgproxy,mailpit
+      - name: Keep the images, pgTAP's runner included, for the next run
+        # After db:test, because the pg_prove image is pulled by it; the cache action saves the folder when the job ends.
+        run: tools/ci/images.sh save ~/.cache/supabase-images
 
   e2e:
     name: e2e (${{ matrix.id }})
@@ -119,7 +93,6 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
       - uses: ./.github/actions/setup
         with:
@@ -135,7 +108,7 @@ jobs:
       - run: tools/ci/db-start.sh -x studio,realtime,imgproxy,postgres-meta
       - run: tools/ci/images.sh save ~/.cache/supabase-images
       - name: Run the shard on a production build, retrying a failed test once
-        run: pnpm e2e $PROJECTS --shard="$SHARD" --retries=1 --reporter=list,blob
+        run: tools/ci/jobs/e2e.sh $PROJECTS --shard="$SHARD" --reporter=list,blob
         env:
           PROJECTS: ${{ matrix.projects }}
           SHARD: ${{ matrix.shard }}
@@ -159,7 +132,6 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
       - uses: ./.github/actions/setup
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
@@ -167,11 +139,8 @@ jobs:
           pattern: blob-*
           merge-multiple: true
           path: all-blob-reports
-      - run: pnpm exec playwright merge-reports --reporter=html,json all-blob-reports
-        env:
-          PLAYWRIGHT_JSON_OUTPUT_NAME: e2e-results.json
-      - name: Count the tests and name the flaky ones
-        run: node tools/ci/e2e-summary.mjs e2e-results.json
+      - name: Merge the shards, count the tests and name the flaky ones
+        run: tools/ci/e2e-report.sh all-blob-reports
       - if: ${{ needs.e2e.result == 'failure' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
@@ -185,13 +154,11 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
       - uses: ./.github/actions/setup
         with:
           browsers: 'true'
-      - run: pnpm e2e:prod
-      - run: pnpm check:build-env
+      - run: tools/ci/jobs/prod-build.sh
 
   design:
     runs-on: ubuntu-24.04
@@ -199,15 +166,9 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
       - uses: ./.github/actions/setup
-      - name: Install the Impeccable engine at the digest in .github/impeccable-engine.sha256
-        run: |
-          bin=$(scripts/install-impeccable-engine.sh "$RUNNER_TEMP/impeccable")
-          echo "IMPECCABLE_BIN=$bin" >> "$GITHUB_ENV"
-      - run: test "$(.claude/skills/impeccable/scripts/impeccable engine-probe)" = "impeccable-engine $(cat .claude/skills/impeccable/scripts/VERSION)"
-      - run: pnpm design:detect
+      - run: tools/ci/jobs/design.sh
 
   ci:
     needs: [check, db, e2e, e2e-report, prod-build, design]
