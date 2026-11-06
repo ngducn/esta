@@ -11,7 +11,7 @@ import { InvalidJobError } from './jobs/extract-document';
 import { jobSpec, plainJobSpec, sessionInputs, type AgentJob, type JobSpec, type PlainJobSpec, type PreparedJob } from './jobs/registry';
 import { canonicalizer, inputHash } from './replay/canonicalize';
 import { MissingRecordingError } from './replay/store';
-import { countToolCalls, judgeResult, type Failure, type FailureKind, type Outcome } from './sdk/result';
+import { countToolCalls, judgeResult, storedDenial, type Failure, type FailureKind, type Outcome } from './sdk/result';
 import { canonicalInput, liveSession, pruneTranscripts, replaySession, SessionGoneError, type SessionRequest, type SessionRun } from './sdk/session';
 import type { AgentDb } from './supabase';
 import { NumberGuardError } from './tools/create-item';
@@ -189,7 +189,7 @@ async function finishJob(worker: Worker, job: AgentJob, startedAt: Instant, inpu
     num_turns: session?.result.numTurns ?? null,
     session_id: session?.result.sessionId ?? null,
     cost_estimate_usd: session?.result.costUsd ?? 0,
-    usage: session ? { usage: session.result.usage, model_usage: session.result.modelUsage, permission_denials: session.denials.map((denial) => ({ ...denial, at: finishedAt })) } : {},
+    usage: session ? { usage: session.result.usage, model_usage: session.result.modelUsage, permission_denials: session.denials.map((denial) => storedDenial(denial, finishedAt)) } : {},
     tool_calls: countToolCalls(session?.toolCalls.map((call) => call.name) ?? [], session?.denials ?? []),
     started_at: startedAt,
     finished_at: finishedAt,

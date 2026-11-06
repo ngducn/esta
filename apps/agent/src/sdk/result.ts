@@ -61,3 +61,11 @@ export function countToolCalls(names: readonly string[], denied: readonly { read
   for (const { tool_name } of denied) if (counts[tool_name] !== undefined) counts[tool_name] -= 1;
   return Object.fromEntries(Object.entries(counts).filter(([, count]) => count > 0));
 }
+
+/** A denial as `agent_runs.usage` keeps it: a denied WebSearch's query is what the guard kept from leaving, so it is never stored. */
+export const storedDenial = ({ tool_name, code, tool_input }: { readonly tool_name: string; readonly code: string; readonly tool_input: Record<string, unknown> }, at: string) => ({
+  tool_name,
+  code,
+  at,
+  ...(tool_name === 'WebSearch' ? {} : { tool_input: tool_input as Json }),
+});

@@ -26,8 +26,8 @@ export class SessionGoneError extends Error {
 
 const SESSION_GONE = 'No conversation found with session ID';
 
-/** A call the policy refused, as the run record keeps it: the tool and why, never the call's input, which may hold family data. */
-export type Denial = { readonly tool_name: string; readonly code: DenialCode };
+/** A call the policy refused, as the run record keeps it: the tool and why, and the call's input except a WebSearch's, which holds what the model tried to send out (see `storedDenial`). */
+export type Denial = { readonly tool_name: string; readonly code: DenialCode; readonly tool_input: Record<string, unknown> };
 
 export type SessionRun = { readonly result: SessionResult; readonly model: string; readonly toolCalls: readonly ToolCall[]; readonly denials: readonly Denial[] };
 
@@ -118,9 +118,9 @@ export async function liveSession(request: SessionRequest, mode: Extract<RunMode
     }),
     preToolUse: pathPolicyHook(
       policy,
-      (toolName, reason, code) => {
+      (toolName, reason, code, toolInput) => {
         console.warn(`[agent] denied ${toolName}: ${reason}`);
-        denials.push({ tool_name: toolName, code });
+        denials.push({ tool_name: toolName, code, tool_input: toolInput });
       },
       request.onWebTool,
     ),
@@ -242,7 +242,7 @@ export async function replaySession(request: SessionRequest, replayDir: string):
     if (!decision.allow) {
       console.warn(`[agent] denied ${call.name}: ${decision.reason}`);
       permissionDenials.push({ tool_name: call.name, tool_use_id: `replay-${index + 1}`, tool_input: input as Json });
-      denials.push({ tool_name: call.name, code: decision.code });
+      denials.push({ tool_name: call.name, code: decision.code, tool_input: input });
       continue;
     }
     // The recording already holds the model's next turn, so the answer is dropped; an error other than a rejection fails the job.
