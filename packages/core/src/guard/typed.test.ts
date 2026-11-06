@@ -1,3 +1,4 @@
+import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { isoDate } from '../date/iso-date';
 import { vnd } from '../money/vnd';
@@ -25,7 +26,7 @@ describe('extractTypedNumbers', () => {
   });
   it('reads 9%/năm as 900 bp and skips a monthly rate', () => {
     expect(kinds('lãi 9%/năm')).toEqual([{ kind: 'bp', value: 900 }]);
-    expect(kinds('lãi 1%/tháng')).toEqual([]);
+    expect(kinds('lãi 1%/tháng')).toEqual([{ kind: 'bp', value: 100, per: 'month' }]);
   });
   it('reads 07/10/2026', () => {
     expect(kinds('ngày 07/10/2026')).toEqual([{ kind: 'date', value: isoDate('2026-10-07') }]);
@@ -98,5 +99,41 @@ describe('extractTypedNumbers', () => {
   });
   it('reads 2.000.000 VND', () => {
     expect(kinds('2.000.000 VND')).toEqual([{ kind: 'vnd', value: vnd(2_000_000) }]);
+  });
+  it('B1 skips a monthly rate however it is written, and still reads a yearly one', () => {
+    for (const text of ['lãi 0,8% một tháng', 'lãi 0,8% mỗi tháng', 'lãi 0,8% tháng', 'lãi 0,8%/tháng', 'lãi 0,8 % / tháng', 'lãi 0,8 phần trăm một tháng', 'Lãi 0,8% Tháng']) {
+      expect(kinds(text), text).toEqual([{ kind: 'bp', value: 80, per: 'month' }]);
+    }
+    for (const text of ['lãi 9%/năm', 'lãi 9% một năm', 'lãi 9% mỗi năm', 'lãi 9% năm', 'lãi 9 phần trăm một năm']) {
+      expect(kinds(text), text).toEqual([{ kind: 'bp', value: 900 }]);
+    }
+  });
+  it('B1 still reads a rate that a loan term follows', () => {
+    expect(kinds('lãi 9% trong 15 năm')).toEqual([{ kind: 'bp', value: 900 }, { kind: 'months', value: 180 }]);
+  });
+  it('L1 reads a street or a property name as a label, not as her numbers', () => {
+    expect(kinds('nhà ở đường 3 tháng 2')).toEqual([]);
+    expect(kinds('nhà ở đường 30 tháng 4 giá 4tr')).toEqual([{ kind: 'vnd', value: vnd(4_000_000) }]);
+    expect(kinds('Căn hộ 2 phòng ngủ')).toEqual([]);
+    expect(kinds('thuê 2 phòng ngủ')).toEqual([]);
+  });
+  it('B1b reads a percent as a yearly rate only beside a year marker, whatever other period word is written', () => {
+    const monthly = ['lãi 0,8% hàng tháng', 'lãi 0,8% theo tháng', 'lãi 0,8% trên tháng', 'lãi 0,8%/th', 'lãi 0,8%/mỗi tháng', 'lãi 0,8%/1 tháng', 'lãi suất tháng 0,8%', 'lãi tháng là 0,8%', 'lãi 0,8% một tháng', 'interest 0,8% a month', 'interest 0,8%/month'];
+    for (const text of monthly) expect(kinds(text), text).toEqual([{ kind: 'bp', value: 80, per: 'month' }]);
+    const none = ['lãi 0,8% một quý', 'lãi 4,8% nửa năm', 'lãi 9%', 'lãi 9% thì sao'];
+    for (const text of none) expect(kinds(text), text).toEqual([]);
+    const yearly = ['lãi 9% hàng năm', 'lãi 9% trên năm', 'lãi 9% theo năm', 'lãi 9%/năm', 'lãi suất năm 9%', 'lãi suất năm là 9%', 'interest 9% a year', 'interest 9% per year', 'interest 9%/year', 'interest 9% p.a.'];
+    for (const text of yearly) expect(kinds(text), text).toEqual([{ kind: 'bp', value: 900 }]);
+  });
+  it('B1b property: a percent next to any word outside the year and month lists never yields a rate', () => {
+    const MARKERS = new Set(['năm', 'nam', 'year', 'tháng', 'thang', 'th', 'month']);
+    const word = fc.stringMatching(/^[a-zà-ỹ]{1,8}$/u).filter((w) => !MARKERS.has(w) && w !== 'trong');
+    fc.assert(
+      fc.property(word, fc.constantFrom('0,8%', '12 phần trăm', '4,8 %'), (w, pct) => {
+        for (const text of [`lãi ${pct} ${w}`, `lãi ${pct}/${w}`, `${w} ${pct}`, `lãi ${w} ${pct} thì sao`]) {
+          expect(kinds(text).filter((n) => n.kind === 'bp'), text).toEqual([]);
+        }
+      }),
+    );
   });
 });
