@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(14);
+select plan(16);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 select tests.user_id('admin.a@test.esta.test') as operator_a \gset
@@ -35,6 +35,15 @@ select results_eq(
 select is_empty(format($$ select 1 from public.cron_job_status(%L) $$, :'b'), 'an operator of another household reads nothing through that household');
 select throws_ok($$ select count(*) from public.cron_runs $$, '42501', null, 'the table itself is closed to a signed-in member');
 reset role;
+
+-- Mẹ's role: an admin who is not the operator
+select set_config('esta.actor', 'system:test', true);
+update public.household_members set is_operator = false where user_id = :'operator_a';
+select tests.act_as('admin.a@test.esta.test');
+select is_empty(format($$ select 1 from public.cron_job_status(%L) $$, :'a'), 'an admin who is not the operator reads nothing');
+select throws_ok($$ select count(*) from public.cron_runs $$, '42501', null, 'an admin who is not the operator cannot read the table');
+reset role;
+update public.household_members set is_operator = true where user_id = :'operator_a';
 
 select tests.act_as('member.a@test.esta.test');
 select is_empty(format($$ select 1 from public.cron_job_status(%L) $$, :'a'), 'a member who is not the operator reads nothing');

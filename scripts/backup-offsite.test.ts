@@ -1,4 +1,4 @@
-import { mkdtempSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -19,5 +19,30 @@ describe('offsitePlan', () => {
 
   it('copies the folder contents to the destination, trailing slashes normalised', () => {
     expect(offsitePlan({ ESTA_BACKUP_DIR: `${folder}/`, ESTA_BACKUP_OFFSITE: '/Volumes/demo/' })).toEqual({ args: ['-a', '--', `${folder}/`, '/Volumes/demo/'] });
+  });
+
+  it('refuses a destination equal to the backup folder, even through a symlink or ..', () => {
+    const link = join(tmpdir(), `offsite-link-${process.pid}`);
+    symlinkSync(folder, link);
+    for (const to of [folder, `${folder}/`, link, join(folder, 'sub', '..')]) {
+      mkdirSync(join(folder, 'sub'), { recursive: true });
+      expect(offsitePlan({ ESTA_BACKUP_DIR: folder, ESTA_BACKUP_OFFSITE: to })).toEqual({ refusal: expect.stringContaining('the same folder') });
+    }
+  });
+
+  it('refuses a destination inside the backup folder', () => {
+    mkdirSync(join(folder, 'offsite'), { recursive: true });
+    expect(offsitePlan({ ESTA_BACKUP_DIR: folder, ESTA_BACKUP_OFFSITE: join(folder, 'offsite') })).toEqual({ refusal: expect.stringContaining('inside the backup folder') });
+    expect(offsitePlan({ ESTA_BACKUP_DIR: folder, ESTA_BACKUP_OFFSITE: join(folder, 'not', 'yet') })).toEqual({ refusal: expect.stringContaining('inside the backup folder') });
+  });
+
+  it('refuses a destination inside the repo working tree', () => {
+    const repo = join(import.meta.dirname, '..');
+    expect(offsitePlan({ ESTA_BACKUP_DIR: folder, ESTA_BACKUP_OFFSITE: join(repo, 'backups') })).toEqual({ refusal: expect.stringContaining('inside the repo') });
+    expect(offsitePlan({ ESTA_BACKUP_DIR: folder, ESTA_BACKUP_OFFSITE: repo })).toEqual({ refusal: expect.stringContaining('inside the repo') });
+  });
+
+  it('leaves an rsync target alone', () => {
+    expect(offsitePlan({ ESTA_BACKUP_DIR: folder, ESTA_BACKUP_OFFSITE: 'ryan@host:/backups/esta' })).toEqual({ args: ['-a', '--', `${folder}/`, 'ryan@host:/backups/esta/'] });
   });
 });

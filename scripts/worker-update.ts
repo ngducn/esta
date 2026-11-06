@@ -5,25 +5,40 @@ export type Step = (command: string, args: readonly string[], cwd: string) => vo
 
 const git = (repo: string, args: readonly string[]) => execFileSync('git', ['-C', repo, ...args], { encoding: 'utf8' }).trim();
 
-/** Why the worker's clone must not move to `ref`, or null when it may. A branch name or a bare commit is not a release. */
-export function refusal(repo: string, ref: string | undefined): string | null {
-  if (ref === undefined || ref.trim() === '') return 'Usage: pnpm worker:update <release tag>';
-  if (git(repo, ['status', '--porcelain']) !== '') return 'Refusing to update: the worker clone has uncommitted changes. Commit or discard them first.';
+const dirty = (repo: string) => (git(repo, ['status', '--porcelain']) !== '' ? 'Refusing to update: the worker clone has uncommitted changes. Commit or discard them first.' : null);
+
+const notTag = (ref: string) => `Refusing to update: ${ref} is not a tag in this clone. Releases are tags; check the name.`;
+
+/** Syntax only, so hostile input never reaches git: no leading dash, and a valid ref name once under refs/tags. */
+function isTagName(ref: string): boolean {
+  if (ref.startsWith('-')) return false;
   try {
-    git(repo, ['rev-parse', '--verify', '--quiet', `refs/tags/${ref}^{commit}`]);
+    execFileSync('git', ['check-ref-format', `refs/tags/${ref}`], { stdio: 'ignore' });
+    return true;
   } catch {
-    return `Refusing to update: ${ref} is not a tag in this clone. Releases are tags; run git fetch --tags and check the name.`;
+    return false;
+  }
+}
+
+/** A real tag name only: `refs/tags/<name>` exists. `v3~1`, `v3^`, `HEAD`, a branch and a sha are not releases. */
+function tagRefusal(repo: string, ref: string): string | null {
+  try {
+    git(repo, ['show-ref', '--verify', '--quiet', `refs/tags/${ref}`]);
+  } catch {
+    return notTag(ref);
   }
   return null;
 }
 
-/** Moves the clone to the tag, installs what the tag pins and restarts the launchd job (DEPLOY.md section 8). */
+/** Moves the clone to the tag, installs what the tag pins and restarts the launchd job (DEPLOY.md section 13). The tag is checked after the fetch, because a new release is not in the clone until then. */
 export function updateWorker(repo: string, ref: string | undefined, step: Step, uid: string): string | null {
-  const stop = refusal(repo, ref);
-  if (stop !== null || ref === undefined) return stop;
+  if (ref === undefined || ref.trim() === '') return 'Usage: pnpm worker:update <release tag>';
+  const unclean = dirty(repo);
+  if (unclean !== null) return unclean;
+  if (!isTagName(ref)) return notTag(ref);
   step('git', ['fetch', '--tags', '--prune'], repo);
-  const again = refusal(repo, ref);
-  if (again !== null) return again;
+  const bad = tagRefusal(repo, ref);
+  if (bad !== null) return bad;
   step('git', ['checkout', '--detach', `refs/tags/${ref}`], repo);
   step('pnpm', ['install', '--frozen-lockfile'], repo);
   step('launchctl', ['kickstart', '-k', `gui/${uid}/vn.esta.agent`], repo);

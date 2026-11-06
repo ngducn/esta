@@ -63,7 +63,7 @@ Supabase's built-in sender is limited to a few emails an hour, so sign-in codes 
 ## 6. The worker on Ryan's Mac (Ryan)
 
 1. Create `apps/agent/.env.production` outside git (ignored through `.env*`) holding `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `ESTA_ENV=production`, `ESTA_AGENT_MODE=live`, `ESTA_AUTH_MODE=subscription`, `CLAUDE_CODE_OAUTH_TOKEN` (from `claude setup-token`), `ESTA_MODEL_ROUTINE`, `ESTA_MODEL_DEEP`, `ESTA_BACKUP_DIR`, and the mail settings `SMTP_URL`, `ESTA_EMAIL_FROM` and `ESTA_APP_URL`. Run `pnpm check:env --target production --app agent apps/agent/.env.production`. It must print `env ok for production (agent)`; it fails by name on a missing `CLAUDE_CODE_OAUTH_TOKEN`, `ESTA_MODEL_ROUTINE`, `ESTA_BACKUP_DIR`, `SMTP_URL`, `ESTA_EMAIL_FROM` or `ESTA_APP_URL` (a production worker without mail would run and send no notice to anyone, so it refuses to start), on a replay worker and on a frozen clock.
-2. From the repo folder, one command fills the plist's three placeholders and checks the result:
+2. From the worker's clone (a separate clone of the repo that only `pnpm worker:update` moves), one command fills the plist's three placeholders and checks the result:
 
 ```
 sed -e "s|__REPO__|$PWD|" -e "s|__ENV_FILE__|$PWD/apps/agent/.env.production|" -e "s|__HOME__|$HOME|" apps/agent/launchd/vn.esta.agent.plist > ~/Library/LaunchAgents/vn.esta.agent.plist && plutil -lint ~/Library/LaunchAgents/vn.esta.agent.plist
@@ -136,11 +136,11 @@ Run these against `esta-preview` before the first production deploy. None of the
 
 ## 13. Releasing (Ryan)
 
-A release is a tag on `main`, and the three parts move in this order. Vercel does not deploy `main` by itself (`vercel.json` turns off production deploys from git), so the web build never runs ahead of its migrations.
+A release is a tag on `main`, and the three parts move in this order. Vercel does not deploy `main` by itself (`vercel.json` sets `git.deploymentEnabled.main` to `false`; other branches still get preview builds), so the web build never runs ahead of its migrations.
 
 1. Tag the commit that passed `ci`: `git tag v<date>-<n> && git push origin v<date>-<n>`. Run section 12's probes against `esta-preview` first when the release changes the database.
-2. Migrations first, against the target project: `supabase link --project-ref <ref>`, then `supabase db push`. Read the list of migrations it prints and answer yes only to the ones in this release. A migration is written to be safe for the web build that is still live, because the old build serves until step 3.
-3. Promote the web build: deploy the tag from Vercel (Deployments, the tag's build, Promote to Production) and run `pnpm smoke https://<production host>`.
-4. Update the worker last, on the Mac, from the worker's own clone: `pnpm worker:update v<date>-<n>`. It refuses a ref that is not a tag in this clone and a clone with uncommitted changes, then runs `git fetch --tags`, `git checkout --detach`, `pnpm install --frozen-lockfile` and restarts the launchd job. Run `pnpm check:env --target production --app agent apps/agent/.env.production` again if the release added a variable.
+2. Migrations first, against the target project: `supabase link --project-ref <ref>`, then `supabase db push`. Run both from a clean checkout of the release tag (`git checkout v<date>-<n>`), because `db push` applies every pending migration in the working tree on one yes. A migration is written to be safe for the web build that is still live, because the old build serves until step 3.
+3. Build the web release from the same checkout of the tag: `vercel deploy --prod` (nothing else reaches production, since git deploys of `main` are off). Run `pnpm smoke https://<production host>`.
+4. Update the worker last, on the Mac, from the worker's clone (the folder section 6 installs from; clone the repo there once and run section 6 in it): `pnpm worker:update v<date>-<n>`. It refuses a ref that is not a tag in this clone and a clone with uncommitted changes, then runs `git fetch --tags`, `git checkout --detach`, `pnpm install --frozen-lockfile` and restarts the launchd job. Run `pnpm check:env --target production --app agent apps/agent/.env.production` again if the release added a variable.
 5. Check Settings, Trợ lý: the worker line reads online, and no nightly job line shows. That line lists a nightly job whose latest run failed, or that has not finished in 26 hours ([app rule]); it reads the `cron_runs` table that each cron route writes.
 6. A bad release: promote the last good web deployment, run `pnpm worker:update <last good tag>`, and write a forward migration for any database fix (section 8, steps 3 to 5).
