@@ -1,5 +1,5 @@
 import type { Clock } from '@esta/core';
-import { checkSources, noteRelated } from '@esta/core/assistant';
+import { checkSources, noteRelated, NO_SOURCE_SENTENCE } from '@esta/core/assistant';
 import type { IsoDate } from '@esta/core/date';
 import type { Locale } from '@esta/core/format';
 import type { Json, TablesUpdate } from '@esta/db';
@@ -16,8 +16,6 @@ import { familySearchTerms, householdLabels } from '../tools/household-labels';
 import { quotePageTool } from '../tools/quote-page';
 import { toolCaps } from '../sdk/path-policy';
 import { fetchedPage, type FetchedPage } from '../tools/web-quotes';
-import noSourceVi from '../../../web/messages/vi.json';
-import noSourceEn from '../../../web/messages/en.json';
 import { readTools } from '../tools/read-tools';
 import { estaTool } from '../tools/server';
 import { loadTopic, type AskTopic } from '../tools/topic-reads';
@@ -57,8 +55,6 @@ export const ASK_SESSIONS_PER_TURN = 3;
 
 /** AGENT.md §5.6: at most this many searches and fetches in one turn [app rule]. */
 const WEB_CAPS = { WebSearch: 4, WebFetch: 4 } as const;
-
-const NO_SOURCE: Readonly<Record<Locale, string>> = { vi: noSourceVi.assistant.ask.noSource, en: noSourceEn.assistant.ask.noSource };
 
 /** Whether the answer cites a field of `tax_position`, which her own tax comes from instead of a page. */
 const citesTaxPosition = (template: string, sheet: ReturnType<typeof runSheet>['sheet']): boolean => [...template.matchAll(/\{\{(f\d+)\./g)].some(([, handle = '']) => sheet.get(handle)?.vat_estimate_display !== undefined);
@@ -150,7 +146,7 @@ export async function askRequest(input: AskInput): Promise<PreparedJob> {
         answer = ended.value;
         if (checkSources(input.question, answer.refs, citesTaxPosition(answer.template, sheet)).ok) return null;
         if (sourceRepaired) {
-          answer = { text: NO_SOURCE[locale], template: NO_SOURCE[locale], cited: [], refs: [] };
+          answer = { text: NO_SOURCE_SENTENCE[answerLocale], template: NO_SOURCE_SENTENCE[answerLocale], cited: [], refs: [] };
           return null;
         }
         sourceRepaired = true;

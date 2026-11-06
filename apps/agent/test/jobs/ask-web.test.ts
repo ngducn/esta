@@ -1,11 +1,16 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { NO_SOURCE_SENTENCE } from '@esta/core/assistant';
 import { ASK_SESSIONS_PER_TURN } from '../../src/jobs/ask';
+import { askPrompt, askSourceRepairPrompt } from '../../src/prompts/ask';
+import { canonicalizer, inputHash } from '../../src/replay/canonicalize';
+import { writeRecording } from '../../src/replay/store';
+import { canonicalInput } from '../../src/sdk/session';
 import { JOBS } from '../../src/jobs/registry';
 import { pollOnce } from '../../src/runner';
 import { answerRow, askTables, askWorker, withSeedNames } from '../ask-seed';
-import { LEAK_CASE, LEAK_REPLAY_DIR, OVER_CAP_CASE, OVER_CAP_REPAIR_CASE, OVER_CAP_REPLAY_DIR } from '../golden/ask-cases';
+import { ASK_CONTEXT, LEAK_CASE, LEAK_REPLAY_DIR, OVER_CAP_CASE, OVER_CAP_REPAIR_CASE, OVER_CAP_REPLAY_DIR } from '../golden/ask-cases';
 import { tempDirs } from '../job-dir';
 
 const tempDir = tempDirs();
@@ -71,5 +76,26 @@ describe('a stuck ask is reclaimed only after a whole turn could have run', () =
       .at(-1);
     const minutes = Number(/when 'ask' then interval '(\d+) minutes'/u.exec(readFileSync(join(migrations, newest ?? ''), 'utf8'))?.[1]);
     expect(minutes * 60_000).toBeGreaterThan(ASK_SESSIONS_PER_TURN * JOBS.ask.timeoutMs);
+  });
+});
+
+describe('the no-source sentence follows the language of the reply', () => {
+  it('answers an English legal question in a Vietnamese household in English', async () => {
+    const question = 'What is the legal procedure to transfer a land title?';
+    const dir = tempDir('esta-ask-web-replay-');
+    const canon = canonicalizer({ householdName: 'Gia đình Demo' });
+    let after: string | undefined;
+    for (const [prompt, reply] of [
+      [askPrompt({ ...ASK_CONTEXT, question }), 'I could not find a page for this.'],
+      [askSourceRepairPrompt(), 'I still could not find an official page.'],
+    ] as const) {
+      const input = canonicalInput({ spec: JOBS.ask, prompt, canon, ...(after === undefined ? {} : { resume: { sessionId: null, afterInputHash: after } }) });
+      writeRecording(dir, { version: 1, kind: 'ask', inputHash: inputHash(input), input, model: 'test', numTurns: 1, toolCalls: [], reply });
+      after = inputHash(input);
+    }
+    const tables = askTables(question);
+    const { worker } = askWorker(tables, tempDir('esta-ask-web-jobs-'), dir);
+    await pollOnce(worker);
+    expect(answerRow(tables)).toMatchObject({ status: 'done', content_md: NO_SOURCE_SENTENCE.en });
   });
 });
