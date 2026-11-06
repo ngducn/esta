@@ -3,7 +3,6 @@ import { formatBps, formatDate, formatVnd, type Locale } from '@esta/core/format
 import { vnd } from '@esta/core/money';
 import { existingLinks } from '@esta/ops';
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { JOBS } from '../../src/jobs/registry';
 import { canonicalizer } from '../../src/replay/canonicalize';
@@ -15,13 +14,8 @@ import { HOUSEHOLD, seedRecords } from '../full-seed';
 import { tempJobDir } from '../job-dir';
 import { askCase as findCase, askRecording, ASK_CASES, caseInput, caseRequest } from './ask-cases';
 import { ASK_READS_FIXTURE, replayedReads } from './ask-reads';
+import { fact } from './ask-truth';
 
-const truth = JSON.parse(readFileSync(join(import.meta.dirname, 'ask-ground-truth.json'), 'utf8')) as Array<{ question: string; figure: string; value: string }>;
-const fact = (question: string, figure: string) => {
-  const row = truth.find((candidate) => candidate.question === question && candidate.figure === figure);
-  if (row === undefined) throw new Error(`ask-ground-truth.sql has no ${question} ${figure}`);
-  return row.value;
-};
 const money = (question: string, figure: string, locale: Locale = 'vi') => formatVnd(vnd(Number(fact(question, figure))), locale);
 const day = (question: string, figure: string) => formatDate(isoDate(fact(question, figure)), 'vi');
 

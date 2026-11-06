@@ -16,7 +16,7 @@ const playwrightReport = z.object({ suites: z.array(playwrightSuite) });
 
 type StepState = 'passed' | 'fixme' | 'skipped' | 'failed' | 'flaky';
 
-export const NORTH_STAR_PHASE_4: Readonly<Record<number, StepState>> = { 1: 'passed', 2: 'passed', 3: 'passed', 4: 'passed', 5: 'passed', 6: 'passed', 7: 'fixme', 8: 'passed', 9: 'fixme' };
+export const NORTH_STAR: Readonly<Record<number, StepState>> = { 1: 'passed', 2: 'passed', 3: 'passed', 4: 'passed', 5: 'passed', 6: 'passed', 7: 'passed', 8: 'passed', 9: 'passed' };
 
 function stepState({ status, annotations }: z.infer<typeof playwrightTest>): StepState {
   if (status === 'skipped') return annotations.some(({ type }) => type === 'fixme') ? 'fixme' : 'skipped';
@@ -49,6 +49,6 @@ export function verifyNorthStar(report: string, expected: Readonly<Record<number
     })
     .concat(unnumbered);
   const wanted = (state: StepState) => Object.keys(expected).filter((step) => expected[Number(step)] === state).join(', ');
-  const summary = `steps ${wanted('passed')} passed; ${wanted('fixme')} fixme`;
+  const summary = `steps ${wanted('passed')} passed${wanted('fixme') === '' ? '' : `; ${wanted('fixme')} fixme`}`;
   return problems.length === 0 ? { pass: true, detail: summary } : { pass: false, detail: `${problems.join(', ')}; expected ${summary}` };
 }
