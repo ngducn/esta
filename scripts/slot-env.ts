@@ -38,8 +38,6 @@ export function slotEnv(repoRoot: string, slot: number, { withKeys = true, app =
     PORT: String(ports.web),
     NEXT_PUBLIC_SUPABASE_URL: apiUrl,
     SUPABASE_URL: apiUrl,
-    SMTP_URL: `smtp://127.0.0.1:${ports.smtp}`,
-    ESTA_APP_URL: `http://127.0.0.1:${ports.web}`,
     ...(withKeys ? statusKeys(repoRoot, slot) : {}),
     ...fromShell,
   };

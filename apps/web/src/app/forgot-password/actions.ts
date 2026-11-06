@@ -14,7 +14,7 @@ export type ResetState =
       error: 'missing-code' | 'wrong-code' | 'short-password' | 'long-password' | 'failed' | 'send-failed' | null;
       sentCount: number;
     }
-  | { step: 'done'; next: '/' | '/onboarding' };
+  | { step: 'done'; next: string };
 
 type CodeStepError = NonNullable<Extract<ResetState, { step: 'code' }>['error']>;
 

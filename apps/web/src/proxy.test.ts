@@ -25,3 +25,19 @@ describe('proxy signed Storage rewrite', () => {
     expect(response.headers.get('x-middleware-request-authorization')).toBeNull();
   });
 });
+
+describe('proxy signed-out redirect', () => {
+  it('sends a signed-out visit to sign-in and remembers the page, so a notice link opens its note after sign-in', async () => {
+    const response = await proxy(new NextRequest('http://localhost:3500/assistant?note=0b0a1c2e-1111-4222-8333-444455556666'));
+
+    expect(new URL(response.headers.get('location') ?? '').pathname).toBe('/sign-in');
+    expect(response.cookies.get('esta_return')?.value).toBe('/assistant?note=0b0a1c2e-1111-4222-8333-444455556666');
+  });
+
+  it('remembers nothing for Home', async () => {
+    const response = await proxy(new NextRequest('http://localhost:3500/'));
+
+    expect(new URL(response.headers.get('location') ?? '').pathname).toBe('/sign-in');
+    expect(response.cookies.get('esta_return')).toBeUndefined();
+  });
+});

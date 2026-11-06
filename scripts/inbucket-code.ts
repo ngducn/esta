@@ -53,6 +53,19 @@ export async function latestMail(email: string, mailbox: Mailbox): Promise<Mail>
   return message.parse(await response.json());
 }
 
+/** Every mail to `email`, newest first. */
+export async function listMail(email: string, mailbox: Mailbox): Promise<Mail[]> {
+  const fetcher = mailbox.fetch ?? fetch;
+  const response = await fetcher(`${mailbox.api}/search?${search(email)}`);
+  if (!response.ok) throw new Error(`Searching the mailbox of ${email} failed: ${response.status}`);
+  const { messages } = searchResult.parse(await response.json());
+  return Promise.all(
+    messages
+      .toSorted((a, b) => Date.parse(b.Created) - Date.parse(a.Created))
+      .map(async ({ ID }) => message.parse(await (await fetcher(`${mailbox.api}/message/${ID}`)).json())),
+  );
+}
+
 export async function latestCode(email: string, mailbox: Mailbox): Promise<string> {
   return codeFromText((await latestMail(email, mailbox)).Text, email);
 }
