@@ -172,4 +172,8 @@ describe('monthly_rate_to_yearly: a monthly rate times twelve, as its own step b
     expect(calculate('monthly_rate_to_yearly', [bp(80)]).ok).toBe(false);
     expect(calculate('loan_payment', [v(2_000_000_000), monthlyBp(80), months(180)]).ok).toBe(false);
   });
+  it('refuses a monthly rate whose yearly value passes a safe integer, and a negative monthly rate', () => {
+    expect(calculate('monthly_rate_to_yearly', [monthlyBp(Math.floor(Number.MAX_SAFE_INTEGER / 12) + 1)])).toEqual({ ok: false, reason: { kind: 'overflow' } });
+    expect(calculate('monthly_rate_to_yearly', [monthlyBp(-80)])).toEqual({ ok: false, reason: { kind: 'invalid', why: 'rate must not be negative' } });
+  });
 });
