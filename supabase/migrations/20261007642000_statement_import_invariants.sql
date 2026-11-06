@@ -69,6 +69,7 @@ begin
   if not found then
     raise exception 'ESTA_BANK_ACCOUNT_NOT_FOUND' using errcode = 'P0002';
   end if;
+  perform pg_advisory_xact_lock(hashtextextended('statement_import:' || p_bank_account_id::text, 0));
   if jsonb_typeof(p_rows) is distinct from 'array' or jsonb_array_length(p_rows) > 5000 then
     raise exception 'ESTA_STATEMENT_ROWS' using errcode = '22023';
   end if;

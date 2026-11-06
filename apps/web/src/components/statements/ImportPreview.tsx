@@ -4,7 +4,7 @@ import { formatDate, formatVnd, type Locale } from '@esta/core/format';
 import { vnd } from '@esta/core/money';
 import { useLocale, useTranslations } from 'next-intl';
 import { useState } from 'react';
-import { FieldMessage } from '@/components/field-message';
+import { FormAlert } from '@/components/form-alert';
 import { StatusShape, statusBadge, statusMarks, type MarkStatus } from '@/components/status-shape';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -210,9 +210,9 @@ export function ImportPreview({ importId, committed, lines, refused }: { importI
             <Button type="button" onClick={commit} disabled={saving || posting.length === 0} data-testid="statement-commit">
               {saving ? t('committing') : t('commit', { count: posting.length })}
             </Button>
-            <FieldMessage id="statement-commit-error" error={error} />
           </div>
         )}
+        <FormAlert id="statement-commit-error" message={error} />
       </section>
 
       <section className="rounded-lg border border-border bg-surface shadow-xs">

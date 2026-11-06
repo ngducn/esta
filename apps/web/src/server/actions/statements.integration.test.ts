@@ -285,38 +285,34 @@ describe('statement import invariants against local Supabase (#255, #266)', () =
     return data;
   };
 
-  it('stores a transfer once when two previews of one statement, one read by its value dates, run at the same moment (#266)', async () => {
-    const plain = await readFile(statementCsv(again, 'a'), 'sao-ke-q.csv');
-    const valueDated = await readFile(statementCsv({ ...again, lines: again.lines.map((line) => ({ ...line, date: addDays(line.date, -1) })) }, 'a'), 'sao-ke-q-2.csv');
+  /** Two previews of one statement at the same moment, the second read by value dates, each then posted; returns the payments left and undoes them. */
+  async function racePreviews(statementOf: HouseholdStatement, account: string, name: string) {
+    const plain = await readFile(statementCsv(statementOf, 'a'), `${name}.csv`);
+    const valueDated = await readFile(statementCsv({ ...statementOf, lines: statementOf.lines.map((line) => ({ ...line, date: addDays(line.date, -1) })) }, 'a'), `${name}-2.csv`);
     const files = [plain, valueDated];
     let next = 0;
-    const outcomes = await twoAtOnce(() => importStatement(accountOf(files[next++ % 2] as Decoded, 'sao-ke-q.csv')));
+    const outcomes = await twoAtOnce(() => importStatement({ ...input(files[next++ % 2] as Decoded, `${name}.csv`), bank_account_id: account }));
     const made = outcomes.flatMap((outcome) => (outcome.status === 'fulfilled' && outcome.value.ok ? [outcome.value.value.import_id] : []));
     expect(made.length, 'at least one preview was kept').toBeGreaterThan(0);
     for (const id of made) await commitStatement({ import_id: id, confirmed_row_ids: [] });
-    const payments = await posted(made);
-    expect(payments.map((payment) => payment.amount_vnd).toSorted()).toEqual(again.lines.slice(0, 3).map((line) => line.amount as number).toSorted());
-    const references = (await Promise.all(made.map(lines))).flat();
-    expect(references.filter((row) => row.status === 'memo_match')).toHaveLength(3);
+    const payments = (await posted(made)).map((payment) => payment.amount_vnd);
+    const memoLines = (await Promise.all(made.map(lines))).flat().filter((row) => row.status === 'memo_match');
     for (const id of made) expect(await undoStatement({ import_id: id })).toMatchObject({ ok: true });
     expect(await posted(made)).toEqual([]);
+    return { payments, memoLines };
+  }
+
+  it('stores a transfer once when two previews of one statement, one read by its value dates, run at the same moment (#266)', async () => {
+    const { payments, memoLines } = await racePreviews(again, OTHER, 'sao-ke-q');
+    expect(payments.toSorted()).toEqual(again.lines.slice(0, 3).map((line) => line.amount as number).toSorted());
+    expect(memoLines).toHaveLength(3);
   });
 
   it('stores a part-paid transfer without a bank reference once when two previews of it run at the same moment (#266)', async () => {
     const account = crypto.randomUUID();
     await insert('bank_accounts', { id: account, household_id: HOUSEHOLD, bank_bin: '970422', account_no: `6${run}${Math.floor(Math.random() * 1e4).toString().padStart(4, '0')}`, account_name: 'DEMO Q 19B NOREF' });
     const partPaid = { ...again, lines: again.lines.slice(0, 3).map((line) => ({ ...line, bankRef: '', amount: vnd(1_000_000) })) };
-    const plain = await readFile(statementCsv(partPaid, 'a'), 'sao-ke-r.csv');
-    const valueDated = await readFile(statementCsv({ ...partPaid, lines: partPaid.lines.map((line) => ({ ...line, date: addDays(line.date, -1) })) }, 'a'), 'sao-ke-r-2.csv');
-    const files = [plain, valueDated];
-    let next = 0;
-    const outcomes = await twoAtOnce(() => importStatement({ ...input(files[next++ % 2] as Decoded, 'sao-ke-r.csv'), bank_account_id: account }));
-    const made = outcomes.flatMap((outcome) => (outcome.status === 'fulfilled' && outcome.value.ok ? [outcome.value.value.import_id] : []));
-    expect(made.length, 'at least one preview was kept').toBeGreaterThan(0);
-    for (const id of made) await commitStatement({ import_id: id, confirmed_row_ids: [] });
-    expect((await posted(made)).map((payment) => payment.amount_vnd)).toEqual([1_000_000, 1_000_000, 1_000_000]);
-    for (const id of made) expect(await undoStatement({ import_id: id })).toMatchObject({ ok: true });
-    expect(await posted(made)).toEqual([]);
+    expect((await racePreviews(partPaid, account, 'sao-ke-r')).payments).toEqual([1_000_000, 1_000_000, 1_000_000]);
   });
 
   it('takes an imported payment back, a line or the whole import, and leaves the bills owing again (#255)', async () => {
