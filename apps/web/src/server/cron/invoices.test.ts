@@ -4,7 +4,7 @@ import type { CronClient } from './supabase';
 
 vi.mock('server-only', () => ({}));
 vi.mock('../env', () => ({ env: { CRON_SECRET: 'secret' } }));
-vi.mock('../clock', () => ({ readRequestClock: async () => clock }));
+vi.mock('../clock', () => ({ readGlobalClock: async () => clock }));
 vi.mock('./supabase', () => ({ cronClient: () => route.client }));
 const route: { client?: CronClient } = {};
 const { runInvoices, invoicesCron } = await import('./invoices');
