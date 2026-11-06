@@ -76,7 +76,7 @@ describe('the nightly cron routes against local Supabase (SPEC §5.4, §7.4, LSE
     const before = await counts();
     expect(await cron('2026-10-07T09:00:00+07:00')).toEqual({
       leaseStatus: { ok: true, as_of: '2026-10-07', ended: 0 },
-      invoices: { ok: true, as_of: '2026-10-07', drafted: 0, issued: 0, households: HOUSEHOLDS },
+      invoices: { ok: true, as_of: '2026-10-07', drafted: 0, issued: 0, households: HOUSEHOLDS, failed: [] },
     });
     expect(await counts()).toEqual(before);
   });
@@ -90,7 +90,7 @@ describe('the nightly cron routes against local Supabase (SPEC §5.4, §7.4, LSE
     const after = await counts();
     expect(first).toEqual({
       leaseStatus: { ok: true, as_of: '2026-11-02', ended: HOUSEHOLDS },
-      invoices: { ok: true, as_of: '2026-11-02', drafted: after.total - before.total, issued: after.issued - before.issued, households: HOUSEHOLDS },
+      invoices: { ok: true, as_of: '2026-11-02', drafted: after.total - before.total, issued: after.issued - before.issued, households: HOUSEHOLDS, failed: [] },
     });
 
     const thuDuc = new Set(await leaseIdsOf('THUDUC'));
@@ -115,7 +115,7 @@ describe('the nightly cron routes against local Supabase (SPEC §5.4, §7.4, LSE
 
     expect(await cron('2026-11-02T09:00:00+07:00')).toEqual({
       leaseStatus: { ok: true, as_of: '2026-11-02', ended: 0 },
-      invoices: { ok: true, as_of: '2026-11-02', drafted: 0, issued: 0, households: HOUSEHOLDS },
+      invoices: { ok: true, as_of: '2026-11-02', drafted: 0, issued: 0, households: HOUSEHOLDS, failed: [] },
     });
     expect(await counts()).toEqual(after);
   });

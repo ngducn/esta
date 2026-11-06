@@ -82,7 +82,8 @@ export function scheduleUntil(leases: readonly Pick<LeaseRow, 'end_date'>[], asO
  */
 export async function readLeaseSchedule(db: Db, leaseIds: readonly string[], until: IsoDate): Promise<SchedulePeriod[]> {
   if (leaseIds.length === 0) return [];
-  const { data, error } = await db.rpc('lease_schedule', { p_lease_ids: [...leaseIds], p_until: until });
-  if (error) throw new Error(`Reading the lease schedule failed: ${error.message}`);
-  return z.array(schedulePeriodRowSchema).parse(data);
+  const rows = await readAll('the lease schedule', (from, to) =>
+    db.rpc('lease_schedule', { p_lease_ids: [...leaseIds], p_until: until }).order('lease_id').order('period_start').range(from, to),
+  );
+  return z.array(schedulePeriodRowSchema).parse(rows);
 }

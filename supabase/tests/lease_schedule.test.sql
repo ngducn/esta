@@ -2692,11 +2692,16 @@ insert into public.lease_amendments (household_id, lease_id, effective_period_st
 select :'a'::uuid, c.lease_id, a.effective_period_start, a.changes from schedule_amendment a join schedule_case c using (case_id)
 union all
 select :'a'::uuid, c.lease_id, a.effective_period_start, a.changes from plan_amendment a join plan_case c using (case_id);
+-- A room holds one lease on any day (#198), so each nightly case gets a house of its own.
+insert into public.properties (id, household_id, nickname, code, kind, use_mode)
+select extensions.uuid_generate_v5(extensions.uuid_ns_url(), 'cron-property:' || lease_id), :'c', 'Nhà kiểm thử Demo ' || n, 'LSC' || n, 'townhouse', 'rental'
+from (select lease_id, row_number() over (order by lease_id) as n from cron_case) numbered;
 insert into public.leases (
   id, household_id, property_id, unit_id, tenant_party_id, start_date, end_date, rent_vnd, billing_cycle_months, period_anchor,
   first_period_proration, due_offset_days, escalation, paid_through_date, utilities_mode, status
 )
-select lease_id, :'c', '00000000-0000-4000-8000-0000000005c1', private.whole_unit_id('00000000-0000-4000-8000-0000000005c1'),
+select lease_id, :'c', extensions.uuid_generate_v5(extensions.uuid_ns_url(), 'cron-property:' || lease_id),
+  private.whole_unit_id(extensions.uuid_generate_v5(extensions.uuid_ns_url(), 'cron-property:' || lease_id)),
   '00000000-0000-4000-8000-00000000a5c1', start_date, end_date, rent_vnd, cycle, anchor, proration, due_offset, escalation, paid_through,
   utilities, 'active'
 from cron_case;
