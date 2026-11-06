@@ -20,7 +20,7 @@ beforeAll(async () => {
   const source = transpile(new URL('./previews.ts', import.meta.url));
   await page.addScriptTag({ type: 'module', content: `${source}\nwindow.makePreviews = makePreviews;` });
   await page.waitForFunction(() => 'makePreviews' in window);
-}, 30_000);
+}, 30_000); // -- a real Chromium start, 1 s or so alone and several times that when the machine is busy
 
 afterAll(() => browser?.close());
 
@@ -66,4 +66,4 @@ test('an EXIF-rotated photo comes out upright as a 320 px thumbnail and a 1024 p
     expect(bottomBlue, 'blue at the bottom').toBeGreaterThan(200);
     expect(bottomRed).toBeLessThan(60);
   }
-}, 30_000);
+}, 30_000); // -- the same real Chromium page; 0.2 s alone, but the browser is starved when other suites run

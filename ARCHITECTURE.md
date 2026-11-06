@@ -150,6 +150,10 @@ Each metric below only goes down, and the path-to-10 plan (`docs/plan/quality-20
 | `double-cast` | 0 | Parse with zod at the boundary, or narrow with a type guard. |
 | `duplicated-lines` | under 50 | Extract the shared part into the module this file names. |
 
+## Unit tests that wait
+
+A unit test that fails under machine load and passes alone is a defect in the test, and a re-run hides it. The default 5 s test timeout and 10 s hook timeout stay. Warm a cold render or a lazy import once in `beforeAll` (`apps/web/src/test/dom-setup.ts` does the first React and next-intl render for every jsdom file), use fake timers where a real timer waits, and shrink the fixture to what the assertion needs. Work that is inherently heavy, such as drawing a PDF page or driving a real browser, gets a timeout on that one test: up to 15 s with no comment, and above 15 s only with a `// -- <measured reason>` comment on its line or the line above. `slow-test-setting` fails a `testTimeout` or `hookTimeout` setting, a `retry` other than 0, and an unreasoned timeout above 15 s in a unit test file or vitest config in `apps/web`, `packages/*` or `scripts`. It does not cover Playwright specs, which have `retries: 0` through Q-12b.
+
 ## Integration lanes
 
 `pnpm test:integration` runs the apps/web `*.integration.test.ts` files in parallel against one seeded stack. Each file signs in and writes only in the lane households it owns in `INTEGRATION_LANES` (`apps/web/src/test/lanes.ts`), and reads its household and member emails from `integrationLane(import.meta.url)`. A second sign-in as the same member voids the first one's code, and a shared household shows one file the other's writes. `apps/web/src/test/lanes.test.ts` fails on an unregistered file, a lane owned twice, or a lane email or household id written into a file. The `db` job in CI runs it after pgTAP, and the `ci` job fails when it fails. A failed file is run once more when its only failure is the local gateway's invalid upstream response (`scripts/web-integration-report.ts`).

@@ -44,7 +44,10 @@ beforeEach(() => {
 
 afterEach(() => rmSync(root, { recursive: true, force: true }));
 
-describe('pnpm quality', () => {
+/** Each test runs the whole checker in process three or four times, 1 to 3 s alone (measured 2026-11-06), so the 5 s default fails beside other suites. */
+const RUNS_THE_CHECKER = { timeout: 15_000 };
+
+describe('pnpm quality', RUNS_THE_CHECKER, () => {
   it('passes a tree against the baseline it just wrote', () => {
     expect(check()).toMatchObject({ ok: true, lines: [] });
   });
@@ -138,7 +141,7 @@ describe('pnpm quality', () => {
   });
 });
 
-describe('the baseline against main', () => {
+describe('the baseline against main', RUNS_THE_CHECKER, () => {
   const git = (...args: string[]) => {
     const result = spawnSync('git', ['-c', 'user.name=Demo', '-c', 'user.email=demo@example.test', ...args], { cwd: root, encoding: 'utf8' });
     expect(result.status, result.stderr).toBe(0);
@@ -236,6 +239,7 @@ describe('the registry', () => {
     expect(problems).toEqual([]);
   });
 
+  // -- scans the whole repository: 1.8 s alone and 8 s beside other suites, measured 2026-11-06
   it('holds the repository to its committed baseline', { timeout: 30_000 }, () => {
     expect(run(repoRoot, { update: false }).lines).toEqual([]);
   });

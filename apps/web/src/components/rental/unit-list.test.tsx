@@ -1,7 +1,7 @@
 import type { Unit } from '@esta/core/schemas/units';
-import { fireEvent, screen } from '@testing-library/react';
+import { cleanup, fireEvent, screen } from '@testing-library/react';
 import { useState } from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { UndoToastProvider } from '@/components/undo-toast-provider';
 import { renderInLocale } from '@/test/render';
 import viMessages from '../../../messages/vi.json';
@@ -28,16 +28,26 @@ function Rooms() {
   );
 }
 
-async function undoDelete() {
+async function openFirstRoom() {
   renderInLocale(
     <UndoToastProvider>
       <Rooms />
     </UndoToastProvider>,
   );
   fireEvent.click(screen.getByRole('button', { name: 'Sửa Phòng 101' }));
-  fireEvent.click(await screen.findByTestId('delete-unit', undefined, { timeout: 5000 }));
+  return screen.findByTestId('delete-unit', undefined, { timeout: 5000 });
+}
+
+async function undoDelete() {
+  fireEvent.click(await openFirstRoom());
   fireEvent.click(await screen.findByRole('button', { name: 'Hoàn tác' }, { timeout: 5000 }));
 }
+
+beforeAll(async () => {
+  await Promise.all([import('./unit-sheet'), import('@/components/ui/toast')]);
+  await openFirstRoom();
+  cleanup();
+});
 
 beforeEach(() => {
   actions.deleteUnit.mockReset().mockResolvedValue({ ok: true, deleted: { propertyId: 'p1' } });

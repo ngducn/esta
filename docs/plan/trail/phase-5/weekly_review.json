@@ -1,0 +1,9 @@
+[
+  {
+    "kind": "weekly",
+    "title": "Tổng kết tuần: thu tiền, hợp đồng sắp hết hạn và phòng trống",
+    "body_md": "**Thu tiền tháng này**\n- Đã thu 54.000.000 ₫ trên tổng cần thu 69.600.000 ₫ của kỳ thanh toán 10/2026.\n- Quá hạn: [Phòng 5](esta://invoice/7701f9ca-8056-5db5-a157-d131407b52cd) tại Dãy trọ Dĩ An, Hoàng Văn Em Demo, khoản 2.800.000 ₫, hạn 25/09/2026, trễ 16 ngày.\n\n**Tháng tới**\n- Hợp đồng thuê sắp hết: [Căn hộ Thủ Đức](esta://lease/19f7abd4-f81a-5135-bcb7-c2ba5cedce43), Phạm Thị Lan Demo, kết thúc 01/11/2026, còn 21 ngày; tiền cọc đang giữ 18.000.000 ₫.\n- Các khoản đến hạn 25/10/2026: [Phòng 1](esta://invoice/38fe5f3a-0d26-59ab-9323-4e56c1411e4f), [Phòng 2](esta://invoice/4e1ce3bb-74b0-501e-85e6-92518d08f3a7), [Phòng 3](esta://invoice/5a41e93d-8abc-53b1-a7c3-5cfa5baad3c1), [Phòng 4](esta://invoice/f396d47a-b4d3-5802-8992-ec5657fd01c5), [Phòng 5](esta://invoice/38730fbf-790e-5592-bf63-67dcd882c89a), [Phòng 6](esta://invoice/97979fcf-2450-5dd2-977b-eb3ed9075bdf), tổng 15.600.000 ₫.\n\n**Phòng và nhà trống**\n- [Kho Biên Hòa](esta://unit/80d47268-48d7-5473-aa36-f72f85cac4df): trống 74 ngày, từ 30/07/2026.\n- [Phòng 7](esta://unit/f3295844-4743-5167-a5aa-c337e0ec0a0a) tại Dãy trọ Dĩ An: trống 26 ngày.\n- [Phòng 8](esta://unit/d51ab9f3-547c-54e1-9c62-f87bfc590dea) tại Dãy trọ Dĩ An: trống 71 ngày.\n\n**Chi phí đáng chú ý**\n- Chưa ghi nhận chi phí nào trong tháng (0 ₫).\n\n**Thuế năm nay**\n- [Nguyễn Thị Demo](esta://party/5107e10c-018b-5f2d-ad73-f0ad36ca7467): doanh thu dự kiến 482.658.469 ₫, đạt 96% ngưỡng 500.000.000 ₫, còn 17.341.531 ₫. Cần theo dõi sát.\n- [Trần Minh Demo](esta://party/d825b7a8-43f6-5ab6-bfdf-114cdd8be7f7): dự kiến 86.823.913 ₫, đạt 17% ngưỡng.",
+    "dedupe_key": "weekly_review:2026-W41",
+    "created_at": "2026-10-11T01:00:00+00:00"
+  }
+]
