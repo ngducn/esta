@@ -67,6 +67,7 @@ Files attached in claude.ai reach Claude but not the connector's tools, so stori
 ### 3.3 Auth
 
 - The connector signs in once as Ryan the way Esta does (SPEC D8): email and password, or the 6-digit code mailed to that address. `pnpm connector:login` asks for the email and the password and mails a code when the password is left empty. It keeps the session, refresh token included, in the macOS Keychain through the `security` command (fallback: a 0600 file under `~/.config/esta/`), never in the repo or a log, one entry per Supabase URL.
+- `pnpm connector:logout` ends the session on the server before it removes the saved copy, and every tool call asks the server who the session is, so a session signed out anywhere stops the connector at its next call. A session whose Keychain command line would pass `security -i`'s 4,095-byte limit is refused, never saved cut.
 - Every request runs as Ryan's session: RLS limits it to his households, and the audit log names him.
 - Only the operator of the household Esta opens for the account (its first membership, `household_members.is_operator`) may use it. Anyone else is signed out again at sign-in, and every tool call checks again.
 - It never holds the service role key.

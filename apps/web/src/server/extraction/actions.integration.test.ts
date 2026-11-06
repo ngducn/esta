@@ -10,6 +10,7 @@ import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import truthFile from '../../../../../fixtures/certificates/gcn_2024-photo/truth.json';
 import billTruth from '../../../../../fixtures/utility-bills/electricity-q7-scan/truth.json';
 import { seedId } from '../../../../../supabase/seed/generator/ids';
+import { integrationLane, outsiderEmail } from '@/test/lanes';
 import { service, signedInAs, stackName, stackUp } from '@/test/stack';
 
 const session = vi.hoisted(() => ({
@@ -25,11 +26,10 @@ vi.mock('@/server/supabase/server', () => ({ createSessionClient: async () => se
 const { saveExtractionReview } = await import('./actions');
 
 
-const LANE = 9;
-const household = seedId(`seed:household:lane-${LANE}`);
-const propertyId = seedId(`seed:property:lane-${LANE}:bao-loc`);
+const { lane, household, ryan } = integrationLane(import.meta.url);
+const propertyId = seedId(`seed:property:lane-${lane}:bao-loc`);
 // Ryan's emails, so a sign-in code never races the documents test, which signs in Mẹ of lanes 8 and 9.
-const memberUser = seedId(`seed:user:ryan-lane-${LANE}`);
+const memberUser = seedId(`seed:user:ryan-lane-${lane}`);
 const documents: string[] = [];
 const acceptAllOf = (result: unknown) => Object.fromEntries(reviewFields('certificate_v1', result).map((field) => [field.path, { kind: 'accepted' }]));
 const acceptAll = acceptAllOf(truthFile.certificate);
@@ -152,8 +152,8 @@ describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
   let outsider: SupabaseClient;
 
   beforeAll(async () => {
-    member = await signedInAs(`ryan.lane${LANE}@demo.esta.test`);
-    outsider = await signedInAs('ryan.lane8@demo.esta.test');
+    member = await signedInAs(ryan);
+    outsider = await signedInAs(outsiderEmail('ryan'));
   });
 
   afterAll(async () => {
@@ -166,7 +166,7 @@ describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
       await rest(`structures?certificate_id=in.(${certificateIds})`, { method: 'DELETE' });
       await rest(`certificates?id=in.(${certificateIds})`, { method: 'DELETE' });
     }
-    const created = certificates.flatMap((row) => row.holder_party_ids).filter((id) => id !== seedId(`seed:party:me-lane-${LANE}`));
+    const created = certificates.flatMap((row) => row.holder_party_ids).filter((id) => id !== seedId(`seed:party:me-lane-${lane}`));
     if (created.length > 0) await rest(`parties?id=in.(${[...new Set(created)].join(',')})`, { method: 'DELETE' });
     const extractions = await rest<{ id: string }[]>(`document_extractions?document_id=in.(${ids})&select=id`);
     const accounts = extractions.map((row) => rowId(row.id, 'utility_account')).join(',');

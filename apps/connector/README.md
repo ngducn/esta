@@ -77,8 +77,10 @@ Claude lists the folder, reads the tracker, sends the typed price and date throu
 
 Only the operator of the household Esta opens for the account. Anyone else is signed out again at sign-in, and every tool call checks again, so taking away the operator flag stops the connector at its next call. It never holds the service role key: `pnpm connector` reads only the anon key from the slot's `supabase status`.
 
-To sign out, delete the Keychain entry.
+To sign out, run `pnpm connector:logout`. It ends the session on the server and then removes the saved copy, so a copy of the token stops working at once. If Esta cannot be reached it says so and keeps the saved session, so you can run it again. A running connector asks the server who it is at every tool call, so signing out from anywhere stops it at its next call.
 
 ```sh
-security delete-generic-password -s esta-connector
+ESTA_SLOT=0 pnpm connector:logout
 ```
+
+A session too long for the Keychain's one-line limit is refused with a message; set `ESTA_SESSION_FILE` to keep it in a file.

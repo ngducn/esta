@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { seedId } from '../../../../supabase/seed/generator/ids.ts';
 import { DEFAULT_OPTIONS } from '../../../../supabase/seed/generator/index.ts';
 import { householdId, householdSeeds } from '../../../../supabase/seed/generator/households.ts';
-import { INTEGRATION_LANES, integrationLane, runsAlone } from './lanes';
+import { INTEGRATION_LANES, integrationLane, lanesOf, outsiderEmail, runsAlone, runsSerially } from './lanes';
 
 const WEB_ROOT = join(import.meta.dirname, '..', '..');
 const onDisk = readdirSync(join(WEB_ROOT, 'src'), { recursive: true, encoding: 'utf8' })
@@ -13,6 +13,9 @@ const onDisk = readdirSync(join(WEB_ROOT, 'src'), { recursive: true, encoding: '
   .map((path) => `src/${path.split('\\').join('/')}`)
   .toSorted();
 const claims = Object.entries(INTEGRATION_LANES);
+const sourceFiles = readdirSync(join(WEB_ROOT, 'src'), { recursive: true, encoding: 'utf8' })
+  .filter((path) => /\.(?:ts|tsx)$/.test(path))
+  .map((path) => `src/${path.split('\\').join('/')}`);
 const SEEDED_HOUSEHOLDS = householdSeeds(DEFAULT_OPTIONS.lanes).map(householdId);
 const fileUrl = (file: string) => pathToFileURL(join(WEB_ROOT, file)).href;
 
@@ -29,10 +32,25 @@ describe('the integration lane registry', () => {
   });
 
   it('gives each lane to one file, inside the default seed', () => {
-    const owned = claims.flatMap(([, claim]) => (claim === 'every-household' ? [] : claim));
+    const owned = claims.flatMap(([, claim]) => (Array.isArray(claim) ? claim : []));
     expect(owned.length, 'no lane is owned twice').toBe(new Set(owned).size);
-    for (const lane of owned) expect(Number.isInteger(lane) && lane >= 1 && lane <= DEFAULT_OPTIONS.lanes, `lane ${lane}`).toBe(true);
-    for (const [file, claim] of claims) expect(claim === 'every-household' || claim.length > 0, file).toBe(true);
+    for (const lane of claims.flatMap(([, claim]) => lanesOf(claim))) expect(Number.isInteger(lane) && lane >= 1 && lane <= DEFAULT_OPTIONS.lanes, `lane ${lane}`).toBe(true);
+    for (const [file, claim] of claims) expect(claim === 'every-household' || lanesOf(claim).length > 0, file).toBe(true);
+  });
+
+  it('runs the files that share a lane in a pass of their own, and signs the outsider in from a lane no parallel file owns a member of at that time', () => {
+    expect(runsSerially.toSorted()).toEqual(claims.filter(([, claim]) => typeof claim === 'object' && 'serial' in claim).map(([file]) => file).toSorted());
+    expect(outsiderEmail('me')).toBe('me.lane8@demo.esta.test');
+  });
+
+  it('names a file integration whenever it reaches for the local stack, so the database job runs it (#122)', () => {
+    const usesStack = sourceFiles.filter((file) => file !== 'src/test/stack.ts' && /from '@\/test\/stack'/.test(readFileSync(join(WEB_ROOT, file), 'utf8')));
+    expect(usesStack.length).toBeGreaterThan(0);
+    expect(usesStack.filter((file) => !file.endsWith('.integration.test.ts'))).toEqual([]);
+  });
+
+  it.each(onDisk)('%s skips only when the stack is down, which the runner treats as a failure', (file) => {
+    expect(readFileSync(join(WEB_ROOT, file), 'utf8')).not.toMatch(/\b(?:test|it|describe)\.(?:skip|todo)\b|skipIf\((?!!stackUp\))/);
   });
 
   it('runs alone only the files that touch every household', () => {

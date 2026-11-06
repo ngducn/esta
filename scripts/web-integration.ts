@@ -2,7 +2,7 @@
 // relative to apps/web, against that slot's stack.
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
-import { runsAlone } from '../apps/web/src/test/lanes.ts';
+import { runsAlone, runsSerially } from '../apps/web/src/test/lanes.ts';
 import { parseSlot, slotPorts } from './slot.ts';
 import { slotEnv } from './slot-env.ts';
 
@@ -29,6 +29,8 @@ const files = process.argv.slice(2);
 const status =
   files.length > 0
     ? vitest(...files)
-    : vitest('integration', ...runsAlone.flatMap((file) => ['--exclude', file])) || (runsAlone.length > 0 ? vitest(...runsAlone) : 0);
+    : vitest('integration', ...[...runsAlone, ...runsSerially].flatMap((file) => ['--exclude', file])) ||
+      vitest(...runsAlone) ||
+      vitest('--no-file-parallelism', ...runsSerially);
 clock('off');
 process.exit(status);

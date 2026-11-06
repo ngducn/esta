@@ -1,6 +1,7 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import { seedId } from '../../../../../supabase/seed/generator/ids';
+import { integrationLane } from '@/test/lanes';
 import { putSigned, service, signedInAs, stackName, stackUp } from '@/test/stack';
 
 const session = vi.hoisted(() => ({ client: null as unknown, member: { role: 'member', household: { id: '' } } }));
@@ -16,8 +17,7 @@ vi.mock('@/server/supabase/server', () => ({ createSessionClient: async () => se
 const { createDocumentUpload } = await import('@/server/documents/actions');
 const { startPropertyWizard } = await import('./wizard');
 
-const LANE = 7;
-const household = seedId(`seed:household:lane-${LANE}`);
+const { household, me } = integrationLane(import.meta.url);
 const bytes = randomBytes(4096);
 const file = { filename: 'so-hong.pdf', mime: 'application/pdf', size: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex'), pageCount: 1 };
 const propertyIds: string[] = [];
@@ -27,7 +27,7 @@ const code = () => `WZ${String(Date.now()).slice(-6)}`;
 
 describe.skipIf(!stackUp)(`startPropertyWizard (PRP-7) against ${stackName}`, () => {
   beforeAll(async () => {
-    session.client = await signedInAs(`me.lane${LANE}@demo.esta.test`);
+    session.client = await signedInAs(me);
     session.member = { role: 'admin', household: { id: household } };
   });
 

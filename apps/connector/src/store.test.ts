@@ -53,6 +53,20 @@ describe('keychainStore', () => {
     expect(keychainStore('http://127.0.0.1:54421', security.run).getItem('session')).toBeNull();
   });
 
+  it('refuses a session whose command line `security -i` would cut at 4,095 bytes, and runs nothing', () => {
+    const security = fakeSecurity();
+    const store = keychainStore('http://127.0.0.1:54321', security.run);
+    const longest = (size: number) => JSON.stringify({ refresh_token: 'demo', claims: 'x'.repeat(size) });
+    const lineBytes = (value: string) => Buffer.byteLength(`add-generic-password -U -s esta-connector -a "http://127.0.0.1:54321#session" -w ${Buffer.from(value).toString('base64')}\n`);
+    let size = 2400;
+    while (lineBytes(longest(size)) < 4095) size += 1;
+    expect(() => store.setItem('session', longest(size))).toThrow(/too long for the Keychain/);
+    expect(security.calls).toEqual([]);
+    while (lineBytes(longest(size)) >= 4095) size -= 1;
+    store.setItem('session', longest(size));
+    expect(store.getItem('session')).toBe(longest(size));
+  });
+
   it('fails loudly when the Keychain refuses a write', () => {
     const store = keychainStore('http://127.0.0.1:54321', () => ({ status: 1, stdout: '' }));
     expect(() => store.setItem('session', SECRET)).toThrow('Saving the Keychain item esta-connector failed');

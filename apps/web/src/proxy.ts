@@ -40,13 +40,22 @@ function redirectToSignIn(request: NextRequest, from: NextResponse): NextRespons
   return redirect;
 }
 
-/** Storage needs only the signed token in the query, so the session cookie and any bearer stay on the app origin. */
+/** Storage's own headers win over same-named ones, so the CDN-specific pair is what keeps a private preview out of a shared cache; `private` still lets the phone keep its own copy. */
+function noStore(response: NextResponse): NextResponse {
+  response.headers.set('cache-control', 'private');
+  response.headers.set('cdn-cache-control', 'no-store');
+  response.headers.set('vercel-cdn-cache-control', 'no-store');
+  return response;
+}
+
+/** Storage needs only the signed token in the query, so the session cookie and any bearer stay on the app origin. Only reads get through. */
 function rewriteSigned(request: NextRequest): NextResponse {
+  if (request.method !== 'GET' && request.method !== 'HEAD') return noStore(new NextResponse(null, { status: 405, headers: { allow: 'GET, HEAD' } }));
   const { pathname, search } = request.nextUrl;
   const headers = new Headers(request.headers);
   headers.delete('cookie');
   headers.delete('authorization');
-  return NextResponse.rewrite(new URL(`${pathname}${search}`, env.NEXT_PUBLIC_SUPABASE_URL), { request: { headers } });
+  return noStore(NextResponse.rewrite(new URL(`${pathname}${search}`, env.NEXT_PUBLIC_SUPABASE_URL), { request: { headers } }));
 }
 
 type Session = { readonly supabase: SupabaseClient<Database>; readonly userId: string };

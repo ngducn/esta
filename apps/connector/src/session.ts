@@ -42,15 +42,20 @@ export type Operator = { readonly userId: string; readonly householdId: string; 
 
 export type OperatorRefusal = 'signed_out' | 'no_household' | 'not_operator';
 
-/** The household Esta opens for this user, and only when the user is its operator (CONNECTOR §3.3). */
+/**
+ * The household Esta opens for this user, and only when the user is its operator (CONNECTOR §3.3). Asks the server who
+ * the session is, not just whether the token verifies, so a session signed out elsewhere stops at the next call instead
+ * of reading until its access token expires.
+ */
 export async function currentOperator(db: Db): Promise<Result<Operator, OperatorRefusal>> {
-  const { data: claims } = await db.auth.getClaims();
-  if (claims === null) return { ok: false, reason: 'signed_out' };
-  const data = await readMembership(db, claims.claims.sub);
+  const { data: found } = await db.auth.getUser();
+  if (found.user === null) return { ok: false, reason: 'signed_out' };
+  const userId = found.user.id;
+  const data = await readMembership(db, userId);
   if (data === null) return { ok: false, reason: 'no_household' };
   if (!data.is_operator) return { ok: false, reason: 'not_operator' };
   return {
     ok: true,
-    value: { userId: claims.claims.sub, householdId: data.household.id, householdName: data.household.name, locale: data.household.locale === 'en' ? 'en' : 'vi' },
+    value: { userId, householdId: data.household.id, householdName: data.household.name, locale: data.household.locale === 'en' ? 'en' : 'vi' },
   };
 }
