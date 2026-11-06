@@ -108,6 +108,12 @@ export function guardedWriter(binding: GuardBinding, tool: string) {
 }
 
 const MAX_TITLE = 300;
+
+/** An item's title column holds 300 characters, so a title that is longer once its handles are filled goes back to the model instead of failing in the database. */
+export function assertTitleFits(filled: string | undefined): void {
+  const length = filled?.length ?? 0;
+  if (length > MAX_TITLE) throw new ToolRejection(`The title reads ${length} characters once filled; keep it to ${MAX_TITLE} and call create_item again.`);
+}
 const CITED_HANDLE = /\{\{(f\d+)\./gu;
 const LINK = /https?:\/\/|\bwww\.|\]\(/iu;
 
@@ -163,8 +169,7 @@ export function watchNoteWriter(binding: NoteBinding) {
       ],
       `${note.title}\n\n${note.body_md}`,
     );
-    const titleLength = title?.text.length ?? 0;
-    if (titleLength > MAX_TITLE) throw new ToolRejection(`The title reads ${titleLength} characters once filled; keep it to ${MAX_TITLE} and call create_item again.`);
+    assertTitleFits(title?.text);
     const added = await guardFor(dedupeKey).save({
       kind: 'alert',
       severity: severityOf(facts),

@@ -84,11 +84,18 @@ const paymentRowSchema = z
   .object({ invoice_id: z.uuid(), received_on: isoDateSchema, amount_vnd: z.number().int().transform(vnd) })
   .transform((row): InvoicePayment => ({ invoiceId: row.invoice_id, receivedOn: row.received_on, amountVnd: row.amount_vnd }));
 
+/** Invoice ids per request: 100 uuids are about 4 KB of URL, well under the gateway's limit (#338). */
+const INVOICES_PER_READ = 100;
+
 /** Every payment allocated to these invoices, from `allocation_facts`, with the day it was received. */
 export async function readInvoicePayments(db: Db, householdId: string, invoiceIds: readonly string[]): Promise<InvoicePayment[]> {
-  if (invoiceIds.length === 0) return [];
-  const rows = await readAll('invoice payments', (from, to) =>
-    db.from('allocation_facts').select('invoice_id, received_on, amount_vnd').eq('household_id', householdId).in('invoice_id', [...invoiceIds]).order('payment_id').order('invoice_id').range(from, to),
-  );
-  return z.array(paymentRowSchema).parse(rows);
+  const payments: InvoicePayment[] = [];
+  for (let first = 0; first < invoiceIds.length; first += INVOICES_PER_READ) {
+    const ids = invoiceIds.slice(first, first + INVOICES_PER_READ);
+    const rows = await readAll('invoice payments', (from, to) =>
+      db.from('allocation_facts').select('invoice_id, received_on, amount_vnd').eq('household_id', householdId).in('invoice_id', ids).order('payment_id').order('invoice_id').range(from, to),
+    );
+    payments.push(...z.array(paymentRowSchema).parse(rows));
+  }
+  return payments;
 }

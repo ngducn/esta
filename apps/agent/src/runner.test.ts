@@ -105,15 +105,16 @@ describe('pollOnce for a portfolio_watch whose session ends as an error', () => 
   const recordings = mkdtempSync(join(tmpdir(), 'esta-runner-auth-'));
   afterEach(() => vi.restoreAllMocks());
 
-  function watchWorker(replayDir: string, attempts: number, clock?: () => Promise<Clock>) {
+  function watchWorker(replayDir: string, attempts: number, clock?: () => Promise<Clock>, alsoQueued: readonly number[] = []) {
     const { db, tables } = twoHouseholds();
     const job = { id: JOB_A, household_id: A, kind: 'portfolio_watch', payload: {}, status: 'queued', attempts, max_attempts: 4, idempotency_key: `portfolio_watch:${A}:2026-10-07` };
-    Object.assign(tables, { agent_jobs: [job], agent_runs: [] });
+    const others = alsoQueued.map((count, index) => ({ ...job, id: `bbbbbbbb${JOB_A.slice(8, -1)}${index + 2}`, attempts: count }));
+    Object.assign(tables, { agent_jobs: [job, ...others], agent_runs: [] });
     vi.spyOn(JOBS.portfolio_watch.handler, 'prepare').mockImplementation(async ({ db: jobDb, job: claimed }) =>
       portfolioWatchRequest({ db: jobDb, householdId: claimed.household_id, jobId: claimed.id, locale: 'vi', asOf: isoDate('2026-10-07'), timezone: 'Asia/Ho_Chi_Minh', clock: async () => ({ source: 'table', now: () => NOW, today: () => isoDate('2026-10-07') }), read: async () => ({ snapshot, labels }) }),
     );
     const states: WorkerState[] = [];
-    return { job, tables, states, worker: replayWorker(db, [job], jobsDir, clock, replayDir, states) };
+    return { job, tables, states, worker: replayWorker(db, [job, ...others], jobsDir, clock, replayDir, states) };
   }
 
   it('requeues a usage limit a minute later and tells the heartbeat Trợ lý is paused', async () => {
@@ -130,6 +131,28 @@ describe('pollOnce for a portfolio_watch whose session ends as an error', () => 
     expect(job).toMatchObject({ status: 'failed', attempts: 4 });
     expect(states).toEqual(['ok']);
     expect(tables.agent_items).toEqual([expect.objectContaining({ kind: 'alert', proposal: { type: 'retry_job', params: { job_id: JOB_A }, min_role: 'admin' } })]);
+  });
+
+  it('keeps the paused line while another job still waits on the usage limit (#361)', async () => {
+    const { job, states, worker } = watchWorker(join(CASES, 'usage-limit'), 0, undefined, [3]);
+    expect(await pollOnce(worker)).toBe(true);
+    expect(await pollOnce(worker)).toBe(true);
+    expect(job).toMatchObject({ status: 'queued' });
+    expect(states).toEqual(['usage_limited', 'usage_limited']);
+  });
+
+  it('clears the paused line when the job that set it fails on its last attempt before any session starts (#361)', async () => {
+    const { job, states, worker } = watchWorker(join(CASES, 'usage-limit'), 0, undefined, [3]);
+    expect(await pollOnce(worker)).toBe(true);
+    expect(states).toEqual(['usage_limited']);
+    const prepare = JOBS.portfolio_watch.handler.prepare.bind(JOBS.portfolio_watch.handler);
+    vi.spyOn(JOBS.portfolio_watch.handler, 'prepare').mockImplementation((context) => (context.job.id === JOB_A ? Promise.reject(new Error('Reading the portfolio failed')) : prepare(context)));
+    Object.assign(job, { attempts: 3, run_after: '2026-10-07T00:00:00.000Z' });
+    while (await pollOnce(worker)) {
+      if (states.length > 4) break;
+    }
+    expect(job).toMatchObject({ status: 'failed' });
+    expect(states.at(-1)).toBe('ok');
   });
 
   it('fails a rejected login at once, with the Thử lại item for admins and one note for operators that names no error text', async () => {
@@ -156,6 +179,15 @@ describe('pollOnce for a portfolio_watch whose session ends as an error', () => 
       { dedupe_key: `number_guard:${JOB_A}`, audience: 'operator' },
       { dedupe_key: `job_failed:portfolio_watch:2026-10-07:${JOB_A}`, audience: 'operator' },
     ]);
+  });
+
+  it('records the model, turns and tool calls of a run the number guard stopped, so the recent runs row says what happened (#317)', async () => {
+    const { tables, worker } = watchWorker(join(CASES, 'guard-violation'), 0);
+    vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    await pollOnce(worker);
+    const [run] = (tables as unknown as { agent_runs: Record<string, unknown>[] }).agent_runs;
+    expect(run).toMatchObject({ model: expect.stringMatching(/\S/), num_turns: expect.any(Number) });
+    expect(Object.keys(run?.tool_calls as object)).toEqual(expect.arrayContaining(['mcp__esta__watch_facts', 'mcp__esta__create_item']));
   });
 
   it("leaves one Thử lại item after the fourth attempt fails, keyed by the job's kind and its own day so Thị trường can name a failed scan (#329), and none before it", async () => {

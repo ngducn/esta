@@ -83,6 +83,10 @@ A user action that writes more than one row runs as one `security definer` funct
 
 A connector batch is not one user action: it is a sequence of ops, each atomic on its own, and it ends `partial` with what landed (`docs/spec/CONNECTOR.md` §3.4). It converges without a transaction: an apply that dies is taken over after a five-minute lease, and the takeover plans each item again, so what landed plans as unchanged and nothing lands twice. Four flows still break this rule. Issue #184 moves extraction acceptance into one function. Issue #189 moves the room reorder, the legal save with quick-added owners, and delete-and-undo.
 
+## Assistant limits
+
+**Home.** `packages/core/src/agent-limits` (`@esta/core/agent-limits`): `retryAt` and `RETRY_BACKOFF_MINUTES` for the retry delay, and `WEB_CAPS` for the searches and fetches one run of `ask`, `weekly_review` and `research_scan` may make, with `remainingWebCaps` for what a retried job has left. A prompt, a policy or a job spec that needs one of these numbers imports it; `capsLeftForJob` (`apps/agent/src/jobs/web-spent.ts`) takes a job's earlier runs off the cap so a retry never starts with a fresh budget. `web-cap-literal` counts a `WebSearch` or `WebFetch` property set to a number anywhere else in product code.
+
 ## Rules in SQL and rules in TypeScript
 
 A rule that decides what gets written lives in SQL, because SQL is the writer: billing periods, invoice issue, payment allocation, payment status, lease transitions and the national-ID check. A rule that only shapes what a screen shows lives in `packages/core`. When both sides need a rule, one side is the source and the other reads it.
