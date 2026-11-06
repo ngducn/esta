@@ -2368,7 +2368,7 @@
     "occupancy": "Occupancy",
     "portfolio": "Portfolio",
     "ownersTitle": "Owners' summary, {year}",
-    "ownersBasis": "Revenue and tax come from each owner's Tax card. Money received and expenses come from the profit and loss, split by each property's ownership shares. An archived property that earned rent this year counts in revenue and in money received, but not in expenses.",
+    "ownersBasis": "Revenue and tax come from each owner's Tax card. Money received and expenses come from the profit and loss, split by each property's ownership shares. An archived property that received income or had costs this year still counts in both income and costs.",
     "ownersEmpty": "No one is recorded as an owner yet. Add owners on a property's Legal tab.",
     "ownersSheet": "Owners {year}",
     "occupancyTitle": "Occupancy, {year}, through {date}",

@@ -52,7 +52,7 @@ export type ReportSnapshot = {
   readonly properties: readonly ReportProperty[];
   /** `allocation_facts` received in the period, including those of properties archived since. */
   readonly incomes: readonly (IncomeFact & { readonly propertyId: string })[];
-  /** Live expenses paid in the period. */
+  /** `expenses` paid in the period, including those of properties archived since. */
   readonly expenses: readonly (ExpenseFact & { readonly propertyId: string })[];
   /** Every issued invoice due in the period, whether or not its property was archived since. */
   readonly invoices: readonly ReportInvoice[];

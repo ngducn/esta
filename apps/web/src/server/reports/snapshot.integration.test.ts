@@ -145,6 +145,8 @@ describe('readReportSnapshot as leases end and properties go (FIN-4, SPEC §5.4)
     if (owed === undefined) throw new Error("October's bill is unpaid");
     const paid = await recordPayment({ invoiceId: owed.id, owedVnd: owed.outstandingVnd, amount: '4.000.000', method: 'bank_transfer', receivedOn: '07/10/2026', idempotencyKey: crypto.randomUUID(), invoiceIds: null });
     expect(paid.ok).toBe(true);
+    const spent = await client.from('expenses').insert({ household_id: HOUSEHOLD, property_id: gone.propertyId, category: 'repair', amount_vnd: 1_250_000, paid_on: '2026-10-05' });
+    if (spent.error) throw spent.error;
 
     const october = isoDate('2026-10-01');
     const read = async () => {
@@ -156,8 +158,8 @@ describe('readReportSnapshot as leases end and properties go (FIN-4, SPEC §5.4)
         report: { billedVnd: billed, collectedVnd: collected, outstandingVnd: outstanding },
         home: await readMonthCollected(client, HOUSEHOLD, october),
         ask: monthCollected(billsDueIn(snapshot.invoices, october)),
-        pnlIncome: propertyPnl(year, pnlLabels).totals.cells[1]?.value,
-        ownersIncome: ownerSummary(year, ownerLabels).totals.cells[2]?.value,
+        pnl: propertyPnl(year, pnlLabels).totals.cells.slice(1).map((one) => one.value),
+        owners: ownerSummary(year, ownerLabels).totals.cells.slice(2, 4).map((one) => one.value),
       };
     };
     const inSql = async () => {
@@ -165,8 +167,11 @@ describe('readReportSnapshot as leases end and properties go (FIN-4, SPEC §5.4)
       if (bills.error) throw bills.error;
       const facts = await client.from('allocation_facts').select('amount_vnd').eq('household_id', HOUSEHOLD).gte('received_on', YEAR.from).lte('received_on', YEAR.to);
       if (facts.error) throw facts.error;
+      const paidOut = await client.from('expenses').select('amount_vnd').eq('household_id', HOUSEHOLD).is('deleted_at', null).gte('paid_on', YEAR.from).lte('paid_on', YEAR.to);
+      if (paidOut.error) throw paidOut.error;
       const sum = (values: (number | null)[]) => values.reduce<number>((total, value) => total + (value ?? 0), 0);
       return {
+        spent: sum(paidOut.data.map((expense) => expense.amount_vnd)),
         billedVnd: sum(bills.data.map((bill) => bill.total_vnd)),
         collectedVnd: sum(bills.data.map((bill) => Math.min(bill.allocated_vnd ?? 0, bill.total_vnd ?? 0))),
         outstandingVnd: sum(bills.data.map((bill) => bill.outstanding_vnd)),
@@ -178,8 +183,8 @@ describe('readReportSnapshot as leases end and properties go (FIN-4, SPEC §5.4)
       expect(screens.report, 'Báo cáo').toEqual({ ...figures, outstandingVnd: sql.outstandingVnd });
       expect(screens.home, 'Tổng quan and Thu tiền').toEqual(figures);
       expect(screens.ask, 'Hỏi').toEqual(figures);
-      expect(screens.pnlIncome, 'Lãi lỗ Thu').toBe(sql.received);
-      expect(screens.ownersIncome, 'the owner summary').toBe(sql.received);
+      expect(screens.pnl, 'Lãi lỗ: Thu, Tổng chi, Còn lại').toEqual([sql.received, sql.spent, sql.received - sql.spent]);
+      expect(screens.owners, 'the owner summary: income and expenses').toEqual([sql.received, sql.spent]);
     };
     const before = { screens: await read(), sql: await inSql() };
     agree(before.screens, before.sql);

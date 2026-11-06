@@ -48,8 +48,8 @@ function splitLedgers(snapshot: ReportSnapshot): Map<string, Split> {
 
 /**
  * FIN-4: one row per owner for the year of the period, keyed by party id. Revenue and the VAT and PIT estimates are the
- * owner's tax card (`computeTaxPosition` over `toTaxInputs`); income received is each property's P&L income, archived
- * ones included, and expenses are each live property's, split by ownership share, with a last row for any part no share covers, so the rows add up to the P&L totals.
+ * owner's tax card (`computeTaxPosition` over `toTaxInputs`); income and expenses are each property's P&L figures, archived
+ * ones included, split by ownership share, with a last row for any part no share covers, so the rows add up to the P&L totals.
  */
 export function ownerSummary(snapshot: ReportSnapshot, labels: OwnerSummaryLabels): ExportTable {
   const year = Number(snapshot.from.slice(0, 4));

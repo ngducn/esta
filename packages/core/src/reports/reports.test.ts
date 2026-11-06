@@ -111,15 +111,15 @@ describe('propertyPnl (FIN-4)', () => {
     ]);
   });
 
-  it("keeps the income of a property archived since in one last row, so archiving changes neither the total income nor a figure", () => {
+  it("keeps the income and expenses of a property archived since in one last row, so archiving changes neither the total income nor a figure", () => {
     const ARCHIVED = '00000000-0000-4000-8000-0000000000a9';
-    const gone = { ...year2026, incomes: [...year2026.incomes, { propertyId: ARCHIVED, receivedOn: d('2026-10-07'), amountVnd: vnd(45_000_000) }] };
+    const gone = { ...year2026, incomes: [...year2026.incomes, { propertyId: ARCHIVED, receivedOn: d('2026-10-07'), amountVnd: vnd(45_000_000) }], expenses: [...year2026.expenses, { propertyId: ARCHIVED, paidOn: d('2026-10-08'), category: 'repair' as const, amountVnd: vnd(2_000_000) }] };
     const table = propertyPnl(gone, pnlLabels);
     expect(text(table)).toEqual([
       ['Dãy trọ Dĩ An Demo', 6_000_000, 500_000, 5_500_000],
       ['Nhà phố Q7 Demo', 60_000_000, 4_000_000, 56_000_000],
-      ['Đã lưu trữ', 45_000_000, 0, 45_000_000],
-      ['Tổng cộng', 111_000_000, 4_500_000, 106_500_000],
+      ['Đã lưu trữ', 45_000_000, 2_000_000, 43_000_000],
+      ['Tổng cộng', 111_000_000, 6_500_000, 104_500_000],
     ]);
     expect(checkReportInvariants(gone, { pnl: table }).filter((check) => !holds(check))).toEqual([]);
   });

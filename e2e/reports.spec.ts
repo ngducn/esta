@@ -169,7 +169,7 @@ test("lane 7: Mẹ downloads her owner summary as a PDF holding her name with it
   await page.goto('/reports?report=owners');
   await expect(report(page).getByRole('heading', { name: 'Tổng kết năm 2026 theo chủ sở hữu' })).toBeVisible();
   await expect(report(page).getByText('Ước tính, không phải tư vấn thuế')).toBeVisible();
-  await expect(report(page).getByText('Tài sản đã lưu trữ có tiền thuê trong năm vẫn tính vào doanh thu', { exact: false })).toBeVisible();
+  await expect(report(page).getByText('Tài sản đã lưu trữ có tiền thu hoặc chi phí trong năm vẫn được tính vào cả thu và chi', { exact: false })).toBeVisible();
   const table = await readReportTable(report(page));
   const [download] = await Promise.all([page.waitForEvent('download'), report(page).getByRole('link', { name: 'Tải PDF' }).click()]);
   expect(download.suggestedFilename()).toBe('chu-so-huu-2026.pdf');
