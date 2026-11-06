@@ -15,7 +15,10 @@ const HOUSEHOLDS = ['h-1', 'h-2', 'h-3', 'h-4'];
 function client(failing: Readonly<Record<string, string>>): { readonly client: CronClient; readonly billed: string[] } {
   const billed: string[] = [];
   const fake = {
-    from: () => ({ select: () => ({ order: () => Promise.resolve({ data: HOUSEHOLDS.map((id) => ({ id })), error: null }) }) }),
+    from: () => ({
+      select: () => ({ order: () => Promise.resolve({ data: HOUSEHOLDS.map((id) => ({ id })), error: null }) }),
+      insert: () => Promise.resolve({ error: null }),
+    }),
     rpc: (_name: string, args: { p_household_id: string }) => ({
       single: () => {
         const id = args.p_household_id;

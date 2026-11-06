@@ -34,4 +34,4 @@ export async function runInvoices(client: CronClient, clock: Clock): Promise<Inv
   return { ok: failed.length === 0, as_of: asOf, drafted, issued, households: households.length, failed };
 }
 
-export const invoicesCron = cronHandler(runInvoices);
+export const invoicesCron = cronHandler('invoices', runInvoices);
