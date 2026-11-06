@@ -77,7 +77,7 @@ Claude lists the folder, reads the tracker, sends the typed price and date throu
 
 Only the operator of the household Esta opens for the account. Anyone else is signed out again at sign-in, and every tool call checks again, so taking away the operator flag stops the connector at its next call. It never holds the service role key: `pnpm connector` reads only the anon key from the slot's `supabase status`.
 
-To sign out, run `pnpm connector:logout`. It ends the session on the server and then removes the saved copy, so a copy of the token stops working at once. If Esta cannot be reached it says so and keeps the saved session, so you can run it again. A running connector asks the server who it is at every tool call, so signing out from anywhere stops it at its next call.
+To sign out, run `pnpm connector:logout`. It ends the session on the server and only then removes the saved copy. What stops at once: the refresh token, Esta's sign-in service answering for the access token, and every connector tool call, because each one asks the server who it is. What does not: an access token someone copied can still read the data API until it expires (up to an hour, `jwt_expiry` in `supabase/config.toml`), because the data API checks the token's signature, not the session. If Esta cannot be reached it prints "Not signed out", exits 1 and keeps the saved session, so you can run it again.
 
 ```sh
 ESTA_SLOT=0 pnpm connector:logout

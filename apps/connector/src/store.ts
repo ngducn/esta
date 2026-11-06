@@ -20,8 +20,8 @@ const runCommand: Run = (command, args, input) => {
 
 const SERVICE = 'esta-connector';
 const NOT_FOUND = 44;
-/** `security -i` reads at most 4,095 bytes of a line; the rest would run as a second command. */
-const SECURITY_LINE_LIMIT = 4095;
+/** `security -i` takes a line of up to 4,097 bytes with its newline whole (store.test.ts asks the real tool); a longer line is cut and the rest would run as a second command. */
+export const SECURITY_LINE_LIMIT = 4097;
 
 /**
  * The macOS Keychain through `security`. A new value goes in on stdin through `security -i`, never as an argument,
@@ -38,7 +38,7 @@ export function keychainStore(scope: string, run: Run = runCommand): SecretStore
     },
     setItem(key, value) {
       const line = `add-generic-password -U -s ${SERVICE} -a "${account(key)}" -w ${Buffer.from(value, 'utf8').toString('base64')}\n`;
-      if (Buffer.byteLength(line) >= SECURITY_LINE_LIMIT) throw new Error(`The session is too long for the Keychain (${Buffer.byteLength(line)} bytes). Set ESTA_SESSION_FILE to keep it in a file instead`);
+      if (Buffer.byteLength(line) > SECURITY_LINE_LIMIT) throw new Error(`The session is too long for the Keychain (${Buffer.byteLength(line)} bytes). Set ESTA_SESSION_FILE to keep it in a file instead`);
       const saved = run('security', ['-i'], line);
       if (saved.status !== 0) throw new Error(`Saving the Keychain item ${SERVICE} failed`);
     },

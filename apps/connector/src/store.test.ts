@@ -1,8 +1,9 @@
+import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { fileStore, keychainStore, secretStore, type Run } from './store';
+import { fileStore, keychainStore, SECURITY_LINE_LIMIT, secretStore, type Run } from './store';
 
 const SECRET = '{"refresh_token":"demo-refresh-token value"}';
 
@@ -53,18 +54,34 @@ describe('keychainStore', () => {
     expect(keychainStore('http://127.0.0.1:54421', security.run).getItem('session')).toBeNull();
   });
 
-  it('refuses a session whose command line `security -i` would cut at 4,095 bytes, and runs nothing', () => {
+  it('refuses a session whose command line `security -i` would cut, and saves one a byte shorter', () => {
+    const lineBytes = (value: string) => Buffer.byteLength(`add-generic-password -U -s esta-connector -a "http://127.0.0.1:54321#session" -w ${Buffer.from(value).toString('base64')}\n`);
+    const sized = (size: number) => JSON.stringify({ refresh_token: 'demo', claims: 'x'.repeat(size) });
+    let size = 2400;
+    while (lineBytes(sized(size + 1)) <= SECURITY_LINE_LIMIT) size += 1;
+    const atLimit = { value: sized(size), bytes: lineBytes(sized(size)) };
+    expect(atLimit.bytes, 'the longest line that fits is within one base64 step of the limit').toBeGreaterThan(SECURITY_LINE_LIMIT - 4);
+
     const security = fakeSecurity();
     const store = keychainStore('http://127.0.0.1:54321', security.run);
-    const longest = (size: number) => JSON.stringify({ refresh_token: 'demo', claims: 'x'.repeat(size) });
-    const lineBytes = (value: string) => Buffer.byteLength(`add-generic-password -U -s esta-connector -a "http://127.0.0.1:54321#session" -w ${Buffer.from(value).toString('base64')}\n`);
-    let size = 2400;
-    while (lineBytes(longest(size)) < 4095) size += 1;
-    expect(() => store.setItem('session', longest(size))).toThrow(/too long for the Keychain/);
-    expect(security.calls).toEqual([]);
-    while (lineBytes(longest(size)) >= 4095) size -= 1;
-    store.setItem('session', longest(size));
-    expect(store.getItem('session')).toBe(longest(size));
+    store.setItem('session', atLimit.value);
+    expect(store.getItem('session')).toBe(atLimit.value);
+
+    const over = { value: sized(size + 1) };
+    expect(lineBytes(over.value)).toBeGreaterThan(SECURITY_LINE_LIMIT);
+    expect(() => store.setItem('session', over.value)).toThrow(/too long for the Keychain/);
+    expect(security.calls.filter((call) => call.args[0] === '-i')).toHaveLength(1);
+  });
+
+  it.runIf(process.platform === 'darwin')('SECURITY_LINE_LIMIT is the longest line the real `security -i` takes whole', () => {
+    const prefix = 'show-keychain-info /nonexistent/';
+    const cutsAt = (bytes: number) => {
+      const line = `${prefix}${'a'.repeat(bytes - prefix.length - 1)}\n`;
+      const out = spawnSync('security', ['-i'], { input: line, encoding: 'utf8' });
+      return `${out.stdout}${out.stderr}`.includes('unknown command');
+    };
+    expect(cutsAt(SECURITY_LINE_LIMIT), 'a line at the limit runs as one command').toBe(false);
+    expect(cutsAt(SECURITY_LINE_LIMIT + 1), 'one byte more is cut').toBe(true);
   });
 
   it('fails loudly when the Keychain refuses a write', () => {
