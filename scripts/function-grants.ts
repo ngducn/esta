@@ -5,14 +5,14 @@ import { parseSlot, slotWorkdir } from './slot.ts';
 
 export const ALLOWLIST = 'quality/function-grants.json';
 
-export type FunctionGrant = { readonly name: string; readonly schema: string; readonly anon: boolean; readonly authenticated: boolean; readonly public: boolean };
+export type FunctionGrant = { readonly signature: string; readonly schema: string; readonly anon: boolean; readonly authenticated: boolean; readonly public: boolean };
 export type Allowlist = { readonly anon: Readonly<Record<string, string>>; readonly authenticated: Readonly<Record<string, string>> };
 
-/** Every function Esta owns in `public` and `private`, with who may run it; a function an extension owns is the extension's. */
+/** Every function Esta owns in `public` and `private`, keyed by its full signature so an overload is its own entry; a function an extension owns is the extension's. */
 export function functionGrants(workdir: string): FunctionGrant[] {
   return query<FunctionGrant>(
     workdir,
-    `select n.nspname as schema, n.nspname || '.' || p.proname as name,
+    `select n.nspname as schema, n.nspname || '.' || p.proname || regexp_replace(p.oid::regprocedure::text, '^[^(]*', '') as signature,
             has_function_privilege('anon', p.oid, 'execute') as anon,
             has_function_privilege('authenticated', p.oid, 'execute') as authenticated,
             has_function_privilege('public', p.oid, 'execute') as public
@@ -27,10 +27,10 @@ const unique = (names: readonly string[]) => [...new Set(names)];
 /** Postgres lets `anon` and `public` run what a `revoke` forgot; one denied call can crash the local image (supautils, docs/plan/STATUS.md), so no grant is implicit. */
 export function grantProblems(grants: readonly FunctionGrant[], allowed: Allowlist): string[] {
   const privateFns = grants.filter(({ schema }) => schema === 'private');
-  const anonNames = unique(grants.filter(({ anon }) => anon).map(({ name }) => name));
-  const authenticatedNames = unique(privateFns.filter(({ authenticated }) => authenticated).map(({ name }) => name));
+  const anonNames = unique(grants.filter(({ anon }) => anon).map(({ signature }) => signature));
+  const authenticatedNames = unique(privateFns.filter(({ authenticated }) => authenticated).map(({ signature }) => signature));
   return [
-    ...unique(privateFns.filter(({ public: everyone }) => everyone).map(({ name }) => name)).map((name) => `${name} is executable by public; revoke execute from public, anon and authenticated, then grant it back only if a policy or constraint needs it`),
+    ...unique(privateFns.filter(({ public: everyone }) => everyone).map(({ signature }) => signature)).map((name) => `${name} is executable by public; revoke execute from public, anon and authenticated, then grant it back only if a policy or constraint needs it`),
     ...anonNames.filter((name) => !(name in allowed.anon)).map((name) => `${name} is executable by anon and is not in ${ALLOWLIST}; revoke execute from public and anon, or add it with the reason an anonymous caller needs it`),
     ...authenticatedNames.filter((name) => !(name in allowed.authenticated)).map((name) => `${name} is executable by authenticated and is not in ${ALLOWLIST}; revoke it, or add it with the policy, constraint or view that calls it`),
     ...Object.keys(allowed.anon).filter((name) => !anonNames.includes(name)).map((name) => `${name} is no longer executable by anon; remove it from ${ALLOWLIST}`),

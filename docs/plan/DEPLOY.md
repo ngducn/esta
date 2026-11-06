@@ -53,7 +53,7 @@ export ESTA_PREVIEW_CALLBACK_URL='https://<preview host pattern>/sign-in/callbac
 | `ESTA_FROZEN_NOW` | Never set in production; the build and `check-env` refuse it. |
 
 3. Before deploying, run `pnpm check:env --target production --app web <file>` on a file holding the production values (kept outside the repo), and `--target preview --app web` on one holding the preview values. It fails on a missing variable, a frozen clock, a service role key in a `NEXT_PUBLIC_` variable (by name, by value, or swapped with the anon key) or `ESTA_ENV` not matching the target.
-4. Deploy. Then run `pnpm smoke https://<production host>`; it sends GET requests only and must print `smoke ok` with every check listed (security headers, CSP, `/dev` and `/api/test/clock` hidden with `404`, the sign-in page answering `200` without a redirect, and every cron route in `vercel.json` refusing a call without the secret with `401`).
+4. Deploy, after the preflight probes in section 12 have passed against `esta-preview` (the denied-function probe is a deploy blocker). Then run `pnpm smoke https://<production host>`; it sends GET requests only and must print `smoke ok` with every check listed (security headers, CSP, `/dev` and `/api/test/clock` hidden with `404`, the sign-in page answering `200` without a redirect, and every cron route in `vercel.json` refusing a call without the secret with `401`).
 5. In the Vercel dashboard, run each cron once from Settings, Cron Jobs and check the response is 200.
 
 ## 5. Email sender (Ryan)
