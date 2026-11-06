@@ -131,6 +131,20 @@ Parse external data with zod at the boundary and trust internal types after it. 
 
 Fix the code instead of disabling a rule inline. When an exception is right, put it in `eslint.config.mjs` with a reason, where review sees it (CLAUDE.md, Translations). The count of inline `eslint-disable` comments (`inline-eslint-disable`) only goes down.
 
+## Targets
+
+Each metric below only goes down, and the path-to-10 plan (`docs/plan/quality-2026-11.md`) takes it to its target.
+
+| Metric | Target | Home |
+| --- | --- | --- |
+| `long-function` | 0 | Split by state (a hook or a reducer) or by mode (one component per variant). |
+| `direct-write` | 0 | An op in `packages/ops`, run with `runOp` from a server action. |
+| `literal-role-check` | 0 | One access table (Q-08); until then read the role from `requireMember` and add no comparison. |
+| `file-name-case` | 0 | Kebab-case file names; Next.js special files already are. |
+| `ad-hoc-result-type` | 0 | `Result` from `@esta/core/result`. |
+| `double-cast` | 0 | Parse with zod at the boundary, or narrow with a type guard. |
+| `duplicated-lines` | under 50 | Extract the shared part into the module this file names. |
+
 ## Integration lanes
 
 `pnpm test:integration` runs the apps/web `*.integration.test.ts` files in parallel against one seeded stack. Each file signs in and writes only in the lane households it owns in `INTEGRATION_LANES` (`apps/web/src/test/lanes.ts`), and reads its household and member emails from `integrationLane(import.meta.url)`. A second sign-in as the same member voids the first one's code, and a shared household shows one file the other's writes. `apps/web/src/test/lanes.test.ts` fails on an unregistered file, a lane owned twice, or a lane email or household id written into a file. The `db` job in CI runs it after pgTAP, and the `ci` job fails when it fails.
