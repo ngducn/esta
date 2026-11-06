@@ -1,3 +1,5 @@
+import { WEB_CAPS } from '@esta/core/agent-limits';
+import { capsLeftForJob } from './web-spent';
 import { businessDate, parseInstant } from '@esta/core';
 import type { IsoDate } from '@esta/core/date';
 import type { Locale } from '@esta/core/format';
@@ -21,7 +23,7 @@ const EMPTY_NOTE: Readonly<Record<Locale, string>> = {
 };
 
 /** AGENT.md §5.2 maximums, which `household_settings.agent` may lower; maxTurns 40 is sized for them. */
-const capsSchema = z.object({ research_searches: z.int().min(0).max(12).catch(12), research_fetches: z.int().min(0).max(8).catch(8) });
+const capsSchema = z.object({ research_searches: z.int().min(0).max(WEB_CAPS.research_scan.WebSearch).catch(WEB_CAPS.research_scan.WebSearch), research_fetches: z.int().min(0).max(WEB_CAPS.research_scan.WebFetch).catch(WEB_CAPS.research_scan.WebFetch) });
 
 export type ScanRequestInput = Omit<ResearchBinding, 'sheet' | 'topics' | 'properties' | 'fetched'> & { readonly timezone: string; readonly caps: ScanCaps };
 
@@ -62,12 +64,12 @@ async function storedToday({ db, householdId, asOf, timezone }: ScanRequestInput
   return typeof latest === 'string' && businessDate(parseInstant(latest), timezone) === asOf;
 }
 
-async function scanCaps(db: AgentDb, householdId: string): Promise<ScanCaps> {
+async function scanCaps(db: AgentDb, householdId: string, jobId: string): Promise<ScanCaps> {
   const { data, error } = await db.from('household_settings').select('agent').eq('household_id', householdId).maybeSingle();
   if (error) throw new Error(`Reading the household settings failed: ${error.message}`);
   const caps = capsSchema.safeParse(data?.agent ?? {});
   const { research_searches, research_fetches } = caps.success ? caps.data : capsSchema.parse({});
-  return { WebSearch: research_searches, WebFetch: research_fetches };
+  return capsLeftForJob(db, jobId, { WebSearch: research_searches, WebFetch: research_fetches });
 }
 
 async function lastSuccessOn(db: AgentDb, householdId: string, timezone: string): Promise<IsoDate | null> {
@@ -79,6 +81,6 @@ async function lastSuccessOn(db: AgentDb, householdId: string, timezone: string)
 
 export async function prepareResearchScan({ db, job, clock, timezone }: JobContext): Promise<PreparedJob> {
   const asOf = (await clock()).today();
-  const [locale, caps, since] = await Promise.all([householdLocale(db, job.household_id), scanCaps(db, job.household_id), lastSuccessOn(db, job.household_id, timezone), syncResearchTopics(db, job.household_id)]);
+  const [locale, caps, since] = await Promise.all([householdLocale(db, job.household_id), scanCaps(db, job.household_id, job.id), lastSuccessOn(db, job.household_id, timezone), syncResearchTopics(db, job.household_id)]);
   return researchScanRequest({ db, householdId: job.household_id, jobId: job.id, locale, asOf, timezone, clock, caps, lastSuccessOn: since });
 }

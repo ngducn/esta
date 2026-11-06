@@ -13,6 +13,7 @@ import {
   putFetches,
   slowTestSettings,
   sqlstateReads,
+  webCapLiterals,
   testIdQueries,
   viewports,
 } from './smells.ts';
@@ -54,10 +55,7 @@ const NOT_TESTS: Scope = { include: /./, exclude: TEST_FILE };
 /** The four target metrics also skip test helpers: any file under a `test/` or `__tests__/` folder. */
 const NOT_TARGETED = new RegExp(`${NOT_PRODUCT.source}|(^|/)test/`);
 const WEB_SRC: Scope = { include: /^apps\/web\/src\//, exclude: NOT_TARGETED };
-const SOURCE_NAMES: Scope = {
-  include: /^(apps\/web\/src|apps\/agent\/src|packages\/[^/]+\/src)\/.*\.tsx?$/,
-  exclude: NOT_TARGETED,
-};
+const SOURCE_NAMES: Scope = { include: /^(apps\/web\/src|apps\/agent\/src|packages\/[^/]+\/src)\/.*\.tsx?$/, exclude: NOT_TARGETED };
 
 const without = (scope: Scope, home: RegExp): Scope => ({
   include: scope.include,
@@ -154,6 +152,14 @@ export const METRICS: readonly Metric[] = [
     section: 'server-writes-the-ops-layer',
     scope: without(PRODUCT_CODE, /^packages\/ops\/src\/kit\.ts$/),
     find: sqlstateReads,
+  }),
+  syntax({
+    id: 'web-cap-literal',
+    message: 'A job states how many searches or fetches it may make as a number, so the prompt, the policy and a retry can disagree.',
+    home: { use: '`WEB_CAPS` and `remainingWebCaps` in packages/core/src/agent-limits/web-caps.ts.', helpers: ['WEB_CAPS', 'remainingWebCaps'].map((name) => ({ name, file: 'packages/core/src/agent-limits/web-caps.ts' })) },
+    section: 'assistant-limits',
+    scope: without(PRODUCT_CODE, /^packages\/core\/src\/agent-limits\/web-caps\.ts$/),
+    find: webCapLiterals,
   }),
   syntax({
     id: 'toast-provider-mount',

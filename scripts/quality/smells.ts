@@ -135,6 +135,12 @@ export const doubleCasts: Finder = (source) =>
     return (ts.isAsExpression(inner) || ts.isTypeAssertionExpression(inner)) && inner.type.kind === ts.SyntaxKind.UnknownKeyword;
   });
 
+/** `{ WebSearch: 4 }` or `{ WebFetch: 8 }`: a search or fetch budget written as a number instead of read from `WEB_CAPS`. */
+export const webCapLiterals: Finder = (source) =>
+  nodes(source, ts.SyntaxKind.PropertyAssignment).filter(
+    (node) => ts.isPropertyAssignment(node) && (ts.isIdentifier(node.name) || ts.isStringLiteral(node.name)) && (node.name.text === 'WebSearch' || node.name.text === 'WebFetch') && ts.isNumericLiteral(unwrap(node.initializer)),
+  );
+
 const SQLSTATE = /^(?:22|23|40|42|P0)[0-9A-Z]{3}$/;
 const ERROR_NAME = /err|fail|cause|^e$/i;
 

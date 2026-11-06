@@ -79,6 +79,19 @@ describe('the web caps in the PreToolUse policy (AGENT.md §5.2)', () => {
     expect((await prepare({ research_searches: 4, research_fetches: 2 })).caps).toEqual({ WebSearch: 4, WebFetch: 2 });
     expect((await prepare({ research_searches: 30, research_fetches: 8 })).caps).toEqual({ WebSearch: 12, WebFetch: 8 });
   });
+
+  it("gives a retried run only what the job's earlier attempts left of its searches and fetches (#327)", async () => {
+    const tables = researchTables();
+    tables.agent_runs = [
+      { id: 'run-1', job_id: 'job-1', tool_calls: { WebSearch: 5, WebFetch: 3, mcp__esta__add_research_item: 2 } },
+      { id: 'run-2', job_id: 'job-1', tool_calls: { WebSearch: 4 } },
+      { id: 'run-other', job_id: 'job-2', tool_calls: { WebSearch: 12, WebFetch: 8 } },
+    ];
+    const worker = replayWorker(memoryDb(tables), tables.agent_jobs ?? [], jobsDir, clockOn('2026-10-07T06:00:00+07:00'));
+    const prepared = await JOBS.research_scan.handler.prepare({ db: worker.db, job: { household_id: RESEARCH_HOUSEHOLD, id: 'job-1' } as never, jobDir: jobsDir, timezone: 'Asia/Ho_Chi_Minh', waiting: [], failed: [], clock: worker.clock });
+    expect(prepared.caps).toEqual({ WebSearch: 3, WebFetch: 5 });
+    expect(prepared.prompt).toContain('3 searches and 5 fetches');
+  });
 });
 
 describe('add_research_item', () => {

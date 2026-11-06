@@ -1,4 +1,5 @@
 import type { Clock } from '@esta/core';
+import { WEB_CAPS } from '@esta/core/agent-limits';
 import { checkSources, noteRelated, NO_SOURCE_SENTENCE } from '@esta/core/assistant';
 import type { IsoDate } from '@esta/core/date';
 import type { Locale } from '@esta/core/format';
@@ -55,9 +56,6 @@ type AnswerUpdate = Pick<TablesUpdate<'messages'>, 'content_md' | 'refs' | 'defe
 
 /** A turn runs the answer, a number repair and a source repair at most, each its own session of `JOBS.ask.timeoutMs`. */
 export const ASK_SESSIONS_PER_TURN = 3;
-
-/** AGENT.md §5.6: at most this many searches and fetches in one turn [app rule]. */
-const WEB_CAPS = { WebSearch: 4, WebFetch: 4 } as const;
 
 /** Whether the answer cites a field of `tax_position`, which her own tax comes from instead of a page. */
 const citesTaxPosition = (template: string, sheet: ReturnType<typeof runSheet>['sheet']): boolean => [...template.matchAll(/\{\{(f\d+)\./g)].some(([, handle = '']) => sheet.get(handle)?.vat_estimate_display !== undefined);
@@ -145,7 +143,7 @@ export async function askRequest(input: AskInput): Promise<PreparedJob> {
     ...(earlier === null ? {} : { resume: { sessionId: earlier.sessionId, afterInputHash: earlier.turnHash }, rebuild: () => rebuildOrForgetSession(input, earlier, labels, typed, otherPeriodRate) }),
     ...(input.deep ? { modelRole: 'deep' as const } : {}),
     tools,
-    caps: toolCaps(WEB_CAPS),
+    caps: toolCaps(WEB_CAPS.ask),
     fetchable: new Set<string>(),
     searchTerms,
     observe(call) {
