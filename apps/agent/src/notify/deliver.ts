@@ -41,6 +41,10 @@ async function read<T>(label: string, query: PromiseLike<{ data: unknown[] | nul
 async function queueNotices(db: AgentDb, clock: Clock): Promise<void> {
   const today = clock.today();
   const since = new Date(Date.parse(clock.now()) - NEW_NOTE_WINDOW_MS).toISOString();
+  const dayStart = Date.parse(startOfDay(today));
+  const dayEnd = Date.parse(startOfDay(addDays(today, 1)));
+  // The cap counts the whole business day, so the notices are read from whichever is earlier: the note window or midnight.
+  const noticesSince = new Date(Math.min(Date.parse(since), dayStart)).toISOString();
   const items = (await read('the recent notes', db.from('agent_items').select(ITEM_COLUMNS).eq('status', 'new').gte('created_at', since).order('created_at'), itemRow)).filter(
     (item) => noticeKind(item) !== null,
   );
@@ -54,11 +58,9 @@ async function queueNotices(db: AgentDb, clock: Clock): Promise<void> {
   );
   const existing = await read(
     'the notices',
-    db.from('notifications').select('user_id, agent_item_id, status, created_at').eq('channel', 'email').in('household_id', households).gte('created_at', since),
+    db.from('notifications').select('user_id, agent_item_id, status, created_at').eq('channel', 'email').in('household_id', households).gte('created_at', noticesSince),
     z.object({ user_id: z.string(), agent_item_id: z.string(), status: z.string(), created_at: z.string() }),
   );
-  const dayStart = Date.parse(startOfDay(today));
-  const dayEnd = Date.parse(startOfDay(addDays(today, 1)));
   const counted = new Map<string, number>();
   for (const row of existing) {
     const at = Date.parse(row.created_at);
