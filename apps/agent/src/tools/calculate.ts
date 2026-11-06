@@ -1,22 +1,12 @@
-import { calculate, type CalcRefusal, type TypedValue } from '@esta/core/calc';
-import { isoDate } from '@esta/core/date';
+import { calculate, typedValueSchema, type CalcRefusal, type TypedValue } from '@esta/core/calc';
 import type { Locale } from '@esta/core/format';
-import { vnd } from '@esta/core/money';
 import { z } from 'zod';
 import type { FactSheet } from '@esta/core/guard';
-import { sameAnswer, type RunSheet } from './fact-sheet';
+import { CALC_OPERANDS, sameAnswer, type RunSheet } from './fact-sheet';
 import { calculateOperations, parseToolInput, ToolRejection } from './server';
 
 const inputSchema = z.strictObject({ op: z.string(), operands: z.array(z.string()).min(1).max(12) });
 const USAGE = 'calculate takes {"op": one of the listed operations, "operands": fields of records that hold a number, such as "f3.rent_display", never a number you write yourself}';
-
-const typedSchema = z.discriminatedUnion('kind', [
-  z.strictObject({ kind: z.literal('vnd'), value: z.number().int().transform(vnd) }),
-  z.strictObject({ kind: z.literal('bp'), value: z.number().int() }),
-  z.strictObject({ kind: z.literal('count'), value: z.number().int(), unit: z.string() }),
-  z.strictObject({ kind: z.literal('months'), value: z.number().int() }),
-  z.strictObject({ kind: z.literal('date'), value: z.string().transform(isoDate) }),
-]);
 
 const OPERAND = /^(f\d+)\.([a-z][a-z0-9_]*)_display$/;
 
@@ -26,7 +16,7 @@ function operandOf(ref: string, sheet: FactSheet): TypedValue {
   const [, handle = '', stem = ''] = parts;
   const record = sheet.get(handle);
   if (record === undefined) throw new ToolRejection(`${handle} is not a record of this turn, so ${ref} holds no number`);
-  const typed = typedSchema.safeParse(record[`${stem}_typed`]);
+  const typed = typedValueSchema.safeParse(record[`${stem}_typed`]);
   if (!typed.success) throw new ToolRejection(`${ref} holds no number a calculation can use`);
   return typed.data;
 }
@@ -55,7 +45,7 @@ export function calculateTool({ sheet, cite, locale, log }: { readonly sheet: Fa
     const ran = calculate(op, refs.map((ref) => operandOf(ref, sheet)), locale);
     if (!ran.ok) throw new ToolRejection(refusal(ran.reason, refs));
     const { value, result_display, working_display } = ran.value;
-    const record = cite({ op, result_display, result_typed: value, working_display });
+    const record = cite({ op, result_display, result_typed: value, working_display, [CALC_OPERANDS]: [...new Set(refs.map((ref) => OPERAND.exec(ref)?.[1] ?? ''))] });
     log?.push({ handle: record.handle, op, operands: refs, result_display, working_display });
     return record;
   });

@@ -2,6 +2,7 @@ import { checkNote, type FactSheet, type FilledNote, type NoteViolation } from '
 import type { AnswerRef, CalcRef, SourceRef } from '@esta/core/assistant';
 import type { IsoDate } from '@esta/core/date';
 import type { Result } from '@esta/core/result';
+import { CALC_OPERANDS } from '../tools/fact-sheet';
 
 export const FLUSH_MS = 300;
 
@@ -38,14 +39,30 @@ export function sourceRefs(template: string, sheet: FactSheet): SourceRef[] {
   return sources;
 }
 
-/** The working of each calculation result the template cites, in the order it first cites them. */
-export function calcRefs(template: string, sheet: FactSheet): CalcRef[] {
-  const workings = new Set<string>();
-  for (const [, handle = ''] of template.matchAll(CITED_HANDLE)) {
-    const working = sheet.get(handle)?.working_display;
-    if (typeof working === 'string') workings.add(working);
+/** Every handle a calculation result rests on, itself included, by walking the operand handles `calculate` kept. */
+function calculationsBehind(handles: Iterable<string>, sheet: FactSheet): Set<string> {
+  const seen = new Set<string>();
+  const queue = [...handles];
+  for (let handle = queue.pop(); handle !== undefined; handle = queue.pop()) {
+    if (seen.has(handle)) continue;
+    seen.add(handle);
+    const from = (sheet.get(handle) as Record<symbol, unknown> | undefined)?.[CALC_OPERANDS];
+    if (Array.isArray(from)) queue.push(...from.filter((operand): operand is string => typeof operand === 'string'));
   }
-  return [...workings].map((working) => ({ kind: 'calc', working }));
+  return seen;
+}
+
+const handleNumber = (handle: string): number => Number(handle.slice(1));
+
+/** The working of each calculation the template cites and each one those results were worked out from, in the order they ran (handles are numbered in call order). */
+export function calcRefs(template: string, sheet: FactSheet): CalcRef[] {
+  const cited = [...template.matchAll(CITED_HANDLE)].map(([, handle = '']) => handle);
+  return [...calculationsBehind(cited, sheet)]
+    .sort((a, b) => handleNumber(a) - handleNumber(b))
+    .flatMap((handle) => {
+      const working = sheet.get(handle)?.working_display;
+      return typeof working === 'string' ? [{ kind: 'calc' as const, working }] : [];
+    });
 }
 
 /** A line holding only an ordered list's number, such as `1.`. A cut at its `.` would read as a typed number until the item's text comes. */

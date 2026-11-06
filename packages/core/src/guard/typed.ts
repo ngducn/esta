@@ -15,6 +15,9 @@ const NUMBER = String.raw`\d+(?:[.,]\d+)*`;
 const COUNT_UNITS = String.raw`(?:năm|tháng|phòng|căn|nhà|lô|tầng|người|ngày|lần)`;
 /** A unit after a number that makes it a count or an area, never money: `1.500 m2`, `1.000 người`. */
 const NOT_MONEY_UNIT = String.raw`(?:m2|m²|m|ha|người|nguoi|căn|lô|phòng|phong|nhà|tầng|lần|%)`;
+/** Words that make the number after them part of a street, block or room description (`đường 3 tháng 2`), not a count of hers. */
+const NAME_LABEL = /(?<![\p{L}])(?:đường|phố|hẻm|ngõ|ngách|quận|phường|căn hộ|chung cư)\s+$/iu;
+const ROOM_KIND_AFTER = /^\s*(?:ngủ|tắm|vệ sinh|wc)(?!\p{L})/iu;
 const ID_WORD = /(?<![\p{L}])(?:cmnd|cccd|cmt|mã|stk|mst|tk|số)\s*:?\s*$/iu;
 const UNIT_LABEL = new RegExp(String.raw`(\d[\d.,]*\s*)?(?<![\p{L}])${COUNT_UNITS}\s+$`, 'iu');
 
@@ -24,8 +27,8 @@ const DATE_IN_WORDS = new RegExp(
   'giu',
 );
 const PERCENT = new RegExp(
-  String.raw`${NOT_WORD_BEFORE}(\d{1,3}(?:[.,]\d{1,2})?)\s*(?:%|phần trăm)(?:\s*\/\s*(năm|nam|tháng|thang))?${NOT_WORD_AFTER}`,
-  'gu',
+  String.raw`${NOT_WORD_BEFORE}(\d{1,3}(?:[.,]\d{1,2})?)\s*(?:%|phần trăm)(?:(?:\s*\/\s*|\s+(?:mỗi|moi|một|mot)\s+|\s+)(năm|nam|tháng|thang))?${NOT_WORD_AFTER}`,
+  'giu',
 );
 const MONEY_CHAIN = new RegExp(
   String.raw`${NOT_WORD_BEFORE}${NUMBER}\s*${MONEY_UNIT}${UNIT_END}(?:\s*${NUMBER}\s*${MONEY_UNIT}${UNIT_END})*(?:\s*\d{1,3}(?![\p{L}\p{N}]|[.,]\d)(?!\s*${NOT_MONEY_UNIT}(?!\p{L})|\s*${COUNT_UNITS}${NOT_WORD_AFTER})|\s+rưỡi${NOT_WORD_AFTER})?`,
@@ -96,6 +99,7 @@ export function extractTypedNumbers(text: string, locale: Locale = 'vi'): TypedN
     }],
     [COUNT, (m) => {
       if (isLabel(m.input.slice(0, m.index))) return null;
+      if (NAME_LABEL.test(m.input.slice(0, m.index)) || ROOM_KIND_AFTER.test(m.input.slice(m.index + m[0].length))) return null;
       const value = Number(m[1]);
       const unit = (m[2] ?? '').toLowerCase();
       if (m[3] !== undefined) return unit === 'năm' ? { kind: 'months', value: value * 12 + 6 } : null;

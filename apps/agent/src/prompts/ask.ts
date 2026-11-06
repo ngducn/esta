@@ -34,7 +34,7 @@ function typedSection(typed: readonly TypedRecord[] | undefined): string[] {
   if (typed === undefined || typed.length === 0) return [];
   return [
     '',
-    'Numbers the family member wrote in this conversation, each a record of this turn. Take one as an operand of calculate, such as "f1.value_display", or cite it as {{f1.value_display}}; never write one yourself:',
+    `Numbers the family member wrote in this conversation, each a record of this turn. Take one as an operand of calculate, such as "${typed[0]?.handle}.value_display", or cite it as {{${typed[0]?.handle}.value_display}}; never write one yourself:`,
     ...typed.map(({ handle, value_display, typed_text }) => `${handle}: ${value_display} (written "${typed_text}")`),
   ];
 }

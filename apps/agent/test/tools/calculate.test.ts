@@ -1,7 +1,8 @@
+import { formatBps, formatVnd } from '@esta/core/format';
 import { vnd } from '@esta/core/money';
 import { describe, expect, it } from 'vitest';
 import { calculateTool } from '../../src/tools/calculate';
-import { runSheet, typedVnd } from '../../src/tools/fact-sheet';
+import { bpField, runSheet, typedVnd, vndField } from '../../src/tools/fact-sheet';
 import { quotePageTool } from '../../src/tools/quote-page';
 import { ToolRejection } from '../../src/tools/server';
 import { citeTypedNumbers } from '../../src/tools/typed-numbers';
@@ -69,5 +70,24 @@ describe('calculate', () => {
   it('answers the same call with the same record', async () => {
     const { run } = turn('Nếu tăng lên 4tr thì sao?');
     expect(await run({ op: 'monthly_to_yearly', operands: ['f1.value_display'] })).toBe(await run({ op: 'monthly_to_yearly', operands: ['f1.value_display'] }));
+  });
+
+  it('B1 lists no rate for a monthly rate, and works the loan out from the yearly rate she then types', async () => {
+    const monthly = turn('Vay 2 tỷ trong 15 năm, lãi 0,8% một tháng thì mỗi tháng trả bao nhiêu?');
+    expect(monthly.typed.map(({ value_typed }) => (value_typed as { kind: string }).kind)).toEqual(['vnd', 'months']);
+    const yearly = turn('Vay 2 tỷ trong 15 năm, lãi 9,6%/năm thì mỗi tháng trả bao nhiêu?');
+    const record = (await yearly.run({ op: 'loan_payment', operands: ['f1.value_display', 'f3.value_display', 'f2.value_display'] })) as Record<string, unknown>;
+    expect(record.result_display).toBe('21.005.345\u00a0₫');
+  });
+});
+
+describe('the display and typed fields of a read tool (L5)', () => {
+  it('come from one value, in both languages', () => {
+    for (const locale of ['vi', 'en'] as const) {
+      const rent = vndField('rent', vnd(2_500_000), locale);
+      expect(rent).toEqual({ rent_display: formatVnd(vnd(2_500_000), locale), rent_typed: { kind: 'vnd', value: 2_500_000 } });
+      expect(bpField('yield', 625, locale)).toEqual({ yield_display: formatBps(625, locale), yield_typed: { kind: 'bp', value: 625 } });
+    }
+    expect(vndField('rent', null, 'vi')).toEqual({ rent_display: null, rent_typed: null });
   });
 });

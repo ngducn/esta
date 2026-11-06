@@ -1,11 +1,11 @@
 {
   "version": 1,
   "kind": "ask",
-  "inputHash": "ab34458b83a3edae7476a08f82629324a1814649ec96a15c7e52471a8b610752",
+  "inputHash": "d0a143c2b6660fcd64959035935222da36538c1398b5deed229b5a57061aa4b9",
   "input": {
     "version": 1,
     "kind": "ask",
-    "prompt": "Today is 2026-10-07 in Asia/Ho_Chi_Minh. The family member writes again in the conversation so far. Reply with the rules of your first task.\nThe handles and placeholders of your earlier replies no longer hold. Call the tools, and calculate, again for every record and figure this reply writes, and fetch a web page again and quote it again with quote_page, since no page from an earlier turn holds; this turn's handles start at f2.\n\nNumbers the family member wrote in this conversation, each a record of this turn. Take one as an operand of calculate, such as \"f1.value_display\", or cite it as {{f1.value_display}}; never write one yourself:\nf2: 2.000.000.000 ₫ (written \"2 tỷ\")\nf3: 180 tháng (written \"15 năm\")\n\nMessage:\nVới lãi suất đó, vay 2 tỷ trong 15 năm mỗi tháng trả bao nhiêu?",
+    "prompt": "Today is 2026-10-07 in Asia/Ho_Chi_Minh. The family member writes again in the conversation so far. Reply with the rules of your first task.\nThe handles and placeholders of your earlier replies no longer hold. Call the tools, and calculate, again for every record and figure this reply writes, and fetch a web page again and quote it again with quote_page, since no page from an earlier turn holds; this turn's handles start at f2.\n\nNumbers the family member wrote in this conversation, each a record of this turn. Take one as an operand of calculate, such as \"f2.value_display\", or cite it as {{f2.value_display}}; never write one yourself:\nf2: 2.000.000.000 ₫ (written \"2 tỷ\")\nf3: 180 tháng (written \"15 năm\")\n\nMessage:\nVới lãi suất đó, vay 2 tỷ trong 15 năm mỗi tháng trả bao nhiêu?",
     "builtInTools": [
       "WebSearch",
       "WebFetch"

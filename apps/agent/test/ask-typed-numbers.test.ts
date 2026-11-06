@@ -58,6 +58,13 @@ describe('the numbers she wrote, listed by handle before the first turn', () => 
     expect(prompt).toContain('f5: 5.000.000 ₫ (written "5tr")');
   });
 
+  it('L9 names the first listed handle in its example, also in a follow-up whose handles start later', async () => {
+    const first = await promptFor('Nếu tăng lên 4tr thì sao?');
+    expect(first).toContain('such as "f1.value_display", or cite it as {{f1.value_display}}');
+    const follow = await promptFor('Còn 5tr thì sao?', { earlier: 'Nếu tăng tiền lên 4tr thì sao?' });
+    expect(follow).toContain('such as "f4.value_display", or cite it as {{f4.value_display}}');
+  });
+
   it('still refuses a figure she never typed, and one she typed when the model writes it instead of citing it', async () => {
     for (const [written, figure] of [['Mỗi tháng trả 3.000.000 ₫.', '3.000.000'], ['Mỗi tháng thu thêm 4.000.000 ₫.', '4.000.000']]) {
       const prepared = await prepare('Nếu tăng tiền phòng 2 lên 4tr thì sao?');

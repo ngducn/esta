@@ -1,4 +1,4 @@
-import { formatBps, formatCount, formatDate, formatVnd } from '@esta/core/format';
+import { formatBps, formatCount, formatDate } from '@esta/core/format';
 import { rentInEffect } from '@esta/core/lease';
 import { estaUri } from '@esta/core/links';
 import { vnd } from '@esta/core/money';
@@ -7,7 +7,7 @@ import { vacantDays } from '@esta/core/reports';
 import { grossYieldBp, latestValuation } from '@esta/core/valuations';
 import { z } from 'zod';
 import type { ReadToolContext } from './ask-reads';
-import { sameAnswer, typedBp, typedVnd } from './fact-sheet';
+import { bpField, sameAnswer, vndField } from './fact-sheet';
 import { propertyByHandle } from './list-properties';
 import { parseToolInput } from './server';
 
@@ -29,8 +29,7 @@ export function getPropertyTool({ reads, locale, asOf, cite, properties }: ReadT
     return {
       property: cite({
         property_label: property.property_label,
-        valuation_display: valuation === undefined ? null : formatVnd(valuation.valueVnd, locale),
-        valuation_typed: typedVnd(valuation === undefined ? null : valuation.valueVnd),
+        ...vndField('valuation', valuation?.valueVnd ?? null, locale),
         valuation_date_display: valuation === undefined ? null : formatDate(valuation.asOf, locale),
         link,
       }),
@@ -40,8 +39,7 @@ export function getPropertyTool({ reads, locale, asOf, cite, properties }: ReadT
           serial_label: certificate.serial_no,
           status: certificate.status,
           mortgage_bank_name: mortgage === null ? null : (legal.partyNames[mortgage.bank_party_id] ?? null),
-          mortgage_amount_display: mortgage === null ? null : formatVnd(mortgage.amount_vnd, locale),
-          mortgage_amount_typed: typedVnd(mortgage === null ? null : vnd(mortgage.amount_vnd)),
+          ...vndField('mortgage_amount', mortgage === null ? null : vnd(mortgage.amount_vnd), locale),
           mortgage_registered_date_display: mortgage?.registered_on === undefined ? null : formatDate(mortgage.registered_on, locale),
           link: estaUri({ type: 'legal', id: property.id }),
         });
@@ -81,14 +79,10 @@ export function propertyMetricsTool({ reads, locale, asOf, cite, properties }: R
     return {
       property: cite({
         property_label: property.property_label,
-        monthly_rent_display: monthly === null ? null : formatVnd(monthly, locale),
-        annual_rent_display: monthly === null ? null : formatVnd(vnd(monthly * 12), locale),
-        gross_yield_display: monthly === null || valuation === undefined ? null : formatBps(grossYieldBp(monthly, valuation.valueVnd), locale),
-        gross_yield_typed: typedBp(monthly === null || valuation === undefined ? null : grossYieldBp(monthly, valuation.valueVnd)),
-        valuation_display: valuation === undefined ? null : formatVnd(valuation.valueVnd, locale),
-        monthly_rent_typed: typedVnd(monthly),
-        annual_rent_typed: typedVnd(monthly === null ? null : vnd(monthly * 12)),
-        valuation_typed: typedVnd(valuation === undefined ? null : valuation.valueVnd),
+        ...vndField('monthly_rent', monthly, locale),
+        ...vndField('annual_rent', monthly === null ? null : vnd(monthly * 12), locale),
+        ...bpField('gross_yield', monthly === null || valuation === undefined ? null : grossYieldBp(monthly, valuation.valueVnd), locale),
+        ...vndField('valuation', valuation?.valueVnd ?? null, locale),
         valuation_date_display: valuation === undefined ? null : formatDate(valuation.asOf, locale),
         unit_count_display: formatCount(units.length, locale),
         leased_unit_count_display: formatCount(leased, locale),

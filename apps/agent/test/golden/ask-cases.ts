@@ -19,6 +19,7 @@ import { agentItems } from '../../../../supabase/seed/generator/agent.ts';
 import { householdSeeds } from '../../../../supabase/seed/generator/households.ts';
 import { PROPERTY_SEEDS } from '../../../../supabase/seed/generator/properties.ts';
 import { replayedReads } from './ask-reads';
+import { pruneCaseRecordings } from './prune-cases';
 
 export type AskCase = {
   readonly id: string;
@@ -375,10 +376,12 @@ export async function askRepairRecording(item: AskCase): Promise<Recording> {
 }
 
 if (import.meta.main) {
+  pruneCaseRecordings(DEFAULT_REPLAY_DIR, ASK_CASES.map(({ id }) => id));
   for (const item of ASK_CASES) {
     console.log(writeRecording(DEFAULT_REPLAY_DIR, await askRecording(item)));
     if (item.repairReply !== undefined) console.log(writeRecording(DEFAULT_REPLAY_DIR, await askRepairRecording(item)));
   }
+  pruneCaseRecordings(LEAK_REPLAY_DIR, [LEAK_CASE.id]);
   console.log(writeRecording(LEAK_REPLAY_DIR, await askRecording(LEAK_CASE)));
 }
 

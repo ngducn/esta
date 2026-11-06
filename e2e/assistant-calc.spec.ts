@@ -58,7 +58,7 @@ test('thread case T6: Mẹ asks the monthly payment of a loan she types, and rea
   const paid = formatVnd(groundTruth('t6', 'monthly payment of 2 tỷ over 15 năm at 9%'), 'vi');
   await expect(answer(page)).toContainText(`mỗi tháng trả ${paid}.`);
   const working = answer(page).getByTestId('answer-working');
-  for (const input of [formatVnd(money(2_000_000_000), 'vi'), '9%', '180 tháng', paid]) await expect(working).toContainText(input);
+  await expect(working).toContainText(`${formatVnd(money(2_000_000_000), 'vi')}, 9%/năm, 180 tháng → ${paid}/tháng`);
   expect(await seriousAxeViolations(page)).toEqual([]);
   await shot(page, 'p5-15-loan-390x844-dark');
 });

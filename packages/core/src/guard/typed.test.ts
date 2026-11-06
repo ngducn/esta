@@ -99,4 +99,21 @@ describe('extractTypedNumbers', () => {
   it('reads 2.000.000 VND', () => {
     expect(kinds('2.000.000 VND')).toEqual([{ kind: 'vnd', value: vnd(2_000_000) }]);
   });
+  it('B1 skips a monthly rate however it is written, and still reads a yearly one', () => {
+    for (const text of ['lãi 0,8% một tháng', 'lãi 0,8% mỗi tháng', 'lãi 0,8% tháng', 'lãi 0,8%/tháng', 'lãi 0,8 % / tháng', 'lãi 0,8 phần trăm một tháng', 'Lãi 0,8% Tháng']) {
+      expect(kinds(text), text).toEqual([]);
+    }
+    for (const text of ['lãi 9%/năm', 'lãi 9% một năm', 'lãi 9% mỗi năm', 'lãi 9% năm', 'lãi 9 phần trăm một năm']) {
+      expect(kinds(text), text).toEqual([{ kind: 'bp', value: 900 }]);
+    }
+  });
+  it('B1 still reads a rate that a loan term follows', () => {
+    expect(kinds('lãi 9% trong 15 năm')).toEqual([{ kind: 'bp', value: 900 }, { kind: 'months', value: 180 }]);
+  });
+  it('L1 reads a street or a property name as a label, not as her numbers', () => {
+    expect(kinds('nhà ở đường 3 tháng 2')).toEqual([]);
+    expect(kinds('nhà ở đường 30 tháng 4 giá 4tr')).toEqual([{ kind: 'vnd', value: vnd(4_000_000) }]);
+    expect(kinds('Căn hộ 2 phòng ngủ')).toEqual([]);
+    expect(kinds('thuê 2 phòng ngủ')).toEqual([]);
+  });
 });

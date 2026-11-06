@@ -42,10 +42,11 @@ export const refusedQuotes = (checked: readonly CheckedQuote[]): string[] => che
 /** `quote_n_label` for each quote that matched, numbered by its place in the list. */
 export const quoteLabels = (checked: readonly CheckedQuote[]): Array<[string, string]> => checked.flatMap(({ found }, i) => (found.ok ? [[`quote_${i + 1}_label`, found.value] as [string, string]] : []));
 
-/** `quote_n_value_display` and `quote_n_value_typed` for the first number each matching quote holds, read as a number she typed would be, so a quoted rate can be an operand of `calculate`. */
+/** `quote_n_value_display` and `quote_n_value_typed` for the first rate or amount each matching quote holds (else its first number), read as a number she typed would be, so a quoted rate can be an operand of `calculate` even when a date comes first. */
 export const quoteNumbers = (checked: readonly CheckedQuote[], locale: Locale): Array<[string, unknown]> =>
   checked.flatMap(({ found }, i) => {
-    const [first] = found.ok ? extractTypedNumbers(found.value, locale) : [];
+    const numbers = found.ok ? extractTypedNumbers(found.value, locale) : [];
+    const first = numbers.find(({ typed }) => typed.kind === 'bp' || typed.kind === 'vnd') ?? numbers[0];
     return first === undefined ? [] : [[`quote_${i + 1}_value_display`, first.value_display] as [string, unknown], [`quote_${i + 1}_value_typed`, first.typed] as [string, unknown]];
   });
 
