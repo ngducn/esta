@@ -54,9 +54,10 @@ Review checklist for classes no mechanical check catches (a reviewer reads for e
 10. A loop over households or leases in a job: one failure is caught per item, logged with its id, returned in the summary and answered with a non-200 status (`cronHandler` answers 500 when `ok` is false).
 11. A writer race settled by an exclusion constraint: the constraint does not serialize writers (two sessions deadlock, 40P01, where the room answers taken). Take a row lock on the parent first, as `guard_lease` locks the unit, and race about 20 rooms in the integration test.
 12. An e2e spec that writes to a seeded entity another spec reads (a room added to the Dĩ An property made its card read vacant in `property-units` rule 7, #453): the rows a spec creates on a seeded household are removed in an `afterEach` (it runs when the test fails), or sit on a property no other spec asserts on. No lint can tell which seeded rows another spec asserts on, so the reader checks each `serviceUpsert` in a spec for it.
-13. A security definer function derives every row it writes from stored rows, never from a caller-supplied id (`accept_extraction` took the manual entry's id as a parameter and let a member mark another household's read accepted). Its pgTAP file names another household's ids for every id parameter and shows that household's rows unchanged.
-14. A definer PR updates ARCHITECTURE's multi-row paragraph and the SPEC text that names the old writer ("under the member's session").
-15. A test called red on main must fail on main for the defect it names, not because main lacks the new function; a race test holds one writer's last write until the other settles, so it is red on main's split shape.
+13. A release step that acts on the whole working tree (`supabase db push` applies every pending migration on one yes): the runbook says to run it from a clean checkout of the release tag, because no check can see which migrations the operator answers yes to.
+14. A security definer function derives every row it writes from stored rows, never from a caller-supplied id (`accept_extraction` took the manual entry's id as a parameter and let a member mark another household's read accepted). Its pgTAP file names another household's ids for every id parameter and shows that household's rows unchanged.
+15. A definer PR updates ARCHITECTURE's multi-row paragraph and the SPEC text that names the old writer ("under the member's session").
+16. A test called red on main must fail on main for the defect it names, not because main lacks the new function; a race test holds one writer's last write until the other settles, so it is red on main's split shape.
 
 ## Planned tiers for the remaining PRs
 
