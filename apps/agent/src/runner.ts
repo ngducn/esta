@@ -110,6 +110,7 @@ function followedBy(first: SessionRun, next: SessionRun): SessionRun {
     result: { ...next.result, numTurns: first.result.numTurns + next.result.numTurns, costUsd: first.result.costUsd + next.result.costUsd },
     model: next.model,
     toolCalls: [...first.toolCalls, ...next.toolCalls],
+    denials: [...first.denials, ...next.denials],
   };
 }
 
@@ -151,6 +152,7 @@ async function runSession(worker: Worker, job: AgentJob, { waiting, failed }: In
       tools: prepared.tools,
       canon: canonicalizer({ householdName: await householdName(worker.db, job.household_id), jobDir: work.dir }),
       ...(prepared.caps === undefined ? {} : { caps: prepared.caps }),
+      ...(prepared.fetchable === undefined ? {} : { fetchable: prepared.fetchable }),
       ...(prepared.observe === undefined ? {} : { observe: prepared.observe }),
       ...(prepared.searchTerms === undefined ? {} : { searchTerms: prepared.searchTerms }),
       ...(prepared.onWebTool === undefined ? {} : { onWebTool: prepared.onWebTool }),
@@ -192,8 +194,8 @@ async function finishJob(worker: Worker, job: AgentJob, startedAt: Instant, inpu
     num_turns: session?.result.numTurns ?? null,
     session_id: session?.result.sessionId ?? null,
     cost_estimate_usd: session?.result.costUsd ?? 0,
-    usage: session ? { usage: session.result.usage, model_usage: session.result.modelUsage, permission_denials: session.result.permissionDenials } : {},
-    tool_calls: countToolCalls(session?.toolCalls.map((call) => call.name) ?? []),
+    usage: session ? { usage: session.result.usage, model_usage: session.result.modelUsage, permission_denials: session.denials.map((denial) => ({ ...denial, at: finishedAt })) } : {},
+    tool_calls: countToolCalls(session?.toolCalls.map((call) => call.name) ?? [], session?.denials ?? []),
     started_at: startedAt,
     finished_at: finishedAt,
   });

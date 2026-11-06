@@ -58,6 +58,10 @@ describe('judgeResult', () => {
 });
 
 describe('countToolCalls', () => {
+  it('leaves out a call the policy denied, and a tool that only had denied calls', () => {
+    expect(countToolCalls(['WebSearch', 'WebSearch', 'WebFetch'], [{ tool_name: 'WebSearch' }, { tool_name: 'WebFetch' }])).toEqual({ WebSearch: 1 });
+  });
+
   it('keeps names and counts only', () => {
     expect(countToolCalls(['mcp__esta__household_info', 'Read', 'mcp__esta__household_info'])).toEqual({
       mcp__esta__household_info: 2,

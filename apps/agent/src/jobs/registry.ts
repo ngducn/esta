@@ -45,7 +45,7 @@ export type PreparedJob = {
   rebuild?(): Promise<string | null>;
   /** Another model than the kind's, as an operator's Suy nghĩ kỹ hơn asks. */
   readonly modelRole?: ModelRole;
-} & Pick<SessionRequest, 'caps' | 'observe' | 'searchTerms' | 'onWebTool' | 'onText'>;
+} & Pick<SessionRequest, 'caps' | 'fetchable' | 'observe' | 'searchTerms' | 'onWebTool' | 'onText'>;
 
 /** The session the job's last turn ran in, and that turn's replay key, for a job a later one resumes. */
 export type FinishedRun = { readonly reply: string; readonly model: string; readonly sessionId?: string | null; readonly turnHash?: string };

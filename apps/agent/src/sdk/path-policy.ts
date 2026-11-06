@@ -117,7 +117,7 @@ export function decideToolUse(policy: ToolPolicy, toolName: string, input: Reado
 /** `allowedTools` auto-approves before `canUseTool` runs, so the policy runs as a PreToolUse hook (S1 correction 1). */
 export const isWebTool = (toolName: string): boolean => WEB_RULES.has(toolName);
 
-export function pathPolicyHook(policy: ToolPolicy, onDeny: (toolName: string, reason: string) => void, onWebTool?: () => Promise<void>): HookCallback {
+export function pathPolicyHook(policy: ToolPolicy, onDeny: (toolName: string, reason: string, code: DenialCode) => void, onWebTool?: () => Promise<void>): HookCallback {
   return async (input) => {
     if (input.hook_event_name !== 'PreToolUse') return {};
     const toolInput = typeof input.tool_input === 'object' && input.tool_input !== null ? (input.tool_input as Record<string, unknown>) : {};
@@ -126,7 +126,7 @@ export function pathPolicyHook(policy: ToolPolicy, onDeny: (toolName: string, re
       if (isWebTool(input.tool_name)) await onWebTool?.();
       return {};
     }
-    onDeny(input.tool_name, decision.reason);
+    onDeny(input.tool_name, decision.reason, decision.code);
     return {
       hookSpecificOutput: {
         hookEventName: 'PreToolUse',

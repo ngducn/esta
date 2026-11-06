@@ -10,7 +10,7 @@ import { readRecording, recordingPath } from '../replay/store';
 import { estaServer, runTool, type EstaTools } from '../tools/server';
 import type { SearchTerm } from './search-guard';
 import { buildSdkEnv, buildSdkOptions } from './options';
-import { decideToolUse, isWebTool, pathPolicyHook, rememberSearchHits, toolCaps, type ToolPolicy } from './path-policy';
+import { decideToolUse, isWebTool, pathPolicyHook, rememberSearchHits, toolCaps, type DenialCode, type ToolCap, type ToolPolicy } from './path-policy';
 import { fromSdkResult, type SessionResult } from './result';
 
 export type ToolCall = { readonly name: string; readonly input: Record<string, unknown> };
@@ -26,7 +26,10 @@ export class SessionGoneError extends Error {
 
 const SESSION_GONE = 'No conversation found with session ID';
 
-export type SessionRun = { readonly result: SessionResult; readonly model: string; readonly toolCalls: readonly ToolCall[] };
+/** A call the policy refused, as the run record keeps it: the tool and why, never the call's input, which may hold family data. */
+export type Denial = { readonly tool_name: string; readonly code: DenialCode };
+
+export type SessionRun = { readonly result: SessionResult; readonly model: string; readonly toolCalls: readonly ToolCall[]; readonly denials: readonly Denial[] };
 
 export type SessionRequest = {
   readonly spec: JobSpec;
@@ -35,7 +38,10 @@ export type SessionRequest = {
   readonly configDir: string;
   readonly tools: EstaTools;
   readonly canon: Canonicalizer;
-  readonly caps?: Readonly<Record<string, number>>;
+  /** The calls a built-in tool may make: the allowed counts, or counters shared by every session of a turn. */
+  readonly caps?: Readonly<Record<string, number>> | ReadonlyMap<string, ToolCap>;
+  /** The pages the turn's searches returned, shared by every session of the turn so a repair session fetches what the first one found. */
+  readonly fetchable?: Set<string>;
   observe?(call: BuiltInResult): void;
   readonly searchTerms?: readonly SearchTerm[];
   /** A web tool call the policy allowed is about to run. */
@@ -60,13 +66,15 @@ export function canonicalInput({ spec, prompt, canon, resume, modelRole }: Pick<
   };
 }
 
-function toolPolicy({ spec, jobDir, tools, caps, searchTerms }: SessionRequest): ToolPolicy {
+const isCounters = (caps: NonNullable<SessionRequest['caps']>): caps is ReadonlyMap<string, ToolCap> => caps instanceof Map;
+
+function toolPolicy({ spec, jobDir, tools, caps, fetchable, searchTerms }: SessionRequest): ToolPolicy {
   return {
     ...(searchTerms === undefined ? {} : { searchTerms }),
     allowed: new Set([...spec.builtInTools, ...tools.keys()]),
     jobDir,
-    ...(caps === undefined ? {} : { caps: toolCaps(caps) }),
-    ...(spec.builtInTools.includes('WebFetch') ? { fetchable: new Set<string>() } : {}),
+    ...(caps === undefined ? {} : { caps: isCounters(caps) ? caps : toolCaps(caps) }),
+    ...(spec.builtInTools.includes('WebFetch') ? { fetchable: fetchable ?? new Set<string>() } : {}),
   };
 }
 
@@ -97,6 +105,7 @@ export async function liveSession(request: SessionRequest, mode: Extract<RunMode
   const abortController = new AbortController();
   const timer = setTimeout(() => abortController.abort(), request.spec.timeoutMs);
   const toolFailures: unknown[] = [];
+  const denials: Denial[] = [];
   const policy = toolPolicy(request);
   const options = buildSdkOptions({
     spec: request.spec,
@@ -107,7 +116,14 @@ export async function liveSession(request: SessionRequest, mode: Extract<RunMode
       toolFailures.push(error);
       abortController.abort();
     }),
-    preToolUse: pathPolicyHook(policy, (toolName, reason) => console.warn(`[agent] denied ${toolName}: ${reason}`), request.onWebTool),
+    preToolUse: pathPolicyHook(
+      policy,
+      (toolName, reason, code) => {
+        console.warn(`[agent] denied ${toolName}: ${reason}`);
+        denials.push({ tool_name: toolName, code });
+      },
+      request.onWebTool,
+    ),
     postToolUse: observeHook(request, policy),
     abortController,
     ...(keepsTranscript(request) ? { streaming: { resume: request.resume?.sessionId ?? null } } : {}),
@@ -148,7 +164,7 @@ export async function liveSession(request: SessionRequest, mode: Extract<RunMode
   if (result === undefined) throw new Error('The model session ended without a result');
   const resumed = request.resume?.sessionId ?? null;
   if (resumed !== null && result.subtype === 'error_during_execution' && result.errors.some((error) => error.startsWith(SESSION_GONE))) throw new SessionGoneError(resumed);
-  return { result: fromSdkResult(result, cause), model, toolCalls };
+  return { result: fromSdkResult(result, cause), model, toolCalls, denials };
 }
 
 const REPLAY_CHUNK = /.{1,12}/gsu;
@@ -217,6 +233,7 @@ export async function replaySession(request: SessionRequest, replayDir: string):
   const policy = toolPolicy(request);
   const toolCalls: ToolCall[] = [];
   const permissionDenials: { tool_name: string; tool_use_id: string; tool_input: Json }[] = [];
+  const denials: Denial[] = [];
   for (const [index, call] of recording.toolCalls.entries()) {
     const input = JSON.parse(request.canon.restore(JSON.stringify(call.input))) as Record<string, unknown>;
     toolCalls.push({ name: call.name, input });
@@ -225,6 +242,7 @@ export async function replaySession(request: SessionRequest, replayDir: string):
     if (!decision.allow) {
       console.warn(`[agent] denied ${call.name}: ${decision.reason}`);
       permissionDenials.push({ tool_name: call.name, tool_use_id: `replay-${index + 1}`, tool_input: input as Json });
+      denials.push({ tool_name: call.name, code: decision.code });
       continue;
     }
     // The recording already holds the model's next turn, so the answer is dropped; an error other than a rejection fails the job.
@@ -254,5 +272,6 @@ export async function replaySession(request: SessionRequest, replayDir: string):
     },
     model: recording.model,
     toolCalls,
+    denials,
   };
 }

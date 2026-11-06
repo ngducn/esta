@@ -1116,6 +1116,14 @@
     "unknown": "Unknown",
     "noToolCalls": "No tool calls",
     "toolCall": "{name} × {count}",
+    "toolDenied": "{name} blocked ({reason})",
+    "denialReason": {
+      "number": "held a number or an amount",
+      "family_data": "held family data",
+      "cap": "over the call limit",
+      "not_fetchable": "page no search returned",
+      "policy": "not allowed"
+    },
     "retrySelf": "You can enter it by hand.",
     "retryAsk": "An admin can have the assistant read it again.",
     "retryJob": "Retry",

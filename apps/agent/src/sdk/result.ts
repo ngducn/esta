@@ -54,8 +54,10 @@ export function judgeResult(result: SessionResult): Outcome {
   return { ok: false, failure: { kind: failureKind(result.cause, message), message } };
 }
 
-export function countToolCalls(names: readonly string[]): Record<string, number> {
+/** The calls that ran by tool name: a call the policy denied was asked for, and did not run. */
+export function countToolCalls(names: readonly string[], denied: readonly { readonly tool_name: string }[] = []): Record<string, number> {
   const counts: Record<string, number> = {};
   for (const name of names) counts[name] = (counts[name] ?? 0) + 1;
-  return counts;
+  for (const { tool_name } of denied) if (counts[tool_name] !== undefined) counts[tool_name] -= 1;
+  return Object.fromEntries(Object.entries(counts).filter(([, count]) => count > 0));
 }

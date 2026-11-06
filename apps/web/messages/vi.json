@@ -1116,6 +1116,14 @@
     "unknown": "Không rõ",
     "noToolCalls": "Không gọi công cụ",
     "toolCall": "{name} × {count}",
+    "toolDenied": "{name} bị chặn ({reason})",
+    "denialReason": {
+      "number": "có số tiền hoặc số điện thoại",
+      "family_data": "có tên hoặc địa chỉ của gia đình",
+      "cap": "quá số lần cho phép",
+      "not_fetchable": "trang không do tìm kiếm trả về",
+      "policy": "không được phép"
+    },
     "retrySelf": "Có thể nhập tay.",
     "retryAsk": "Người quản trị có thể cho trợ lý đọc lại.",
     "retryJob": "Thử lại",

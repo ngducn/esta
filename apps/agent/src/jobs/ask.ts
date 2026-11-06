@@ -14,6 +14,7 @@ import { runSheet } from '../tools/fact-sheet';
 import { householdLocale } from '../tools/household-info';
 import { familySearchTerms, householdLabels } from '../tools/household-labels';
 import { quotePageTool } from '../tools/quote-page';
+import { toolCaps } from '../sdk/path-policy';
 import { fetchedPage, type FetchedPage } from '../tools/web-quotes';
 import noSourceVi from '../../../web/messages/vi.json';
 import noSourceEn from '../../../web/messages/en.json';
@@ -50,6 +51,9 @@ export type AskInput = {
 };
 
 type AnswerUpdate = Pick<TablesUpdate<'messages'>, 'content_md' | 'refs' | 'deferred_until' | 'activity'>;
+
+/** A turn runs the answer, a number repair and a source repair at most, each its own session of `JOBS.ask.timeoutMs`. */
+export const ASK_SESSIONS_PER_TURN = 3;
 
 /** AGENT.md §5.6: at most this many searches and fetches in one turn [app rule]. */
 const WEB_CAPS = { WebSearch: 4, WebFetch: 4 } as const;
@@ -129,7 +133,8 @@ export async function askRequest(input: AskInput): Promise<PreparedJob> {
     ...(earlier === null ? {} : { resume: { sessionId: earlier.sessionId, afterInputHash: earlier.turnHash }, rebuild: () => rebuildOrForgetSession(input, earlier, labels) }),
     ...(input.deep ? { modelRole: 'deep' as const } : {}),
     tools,
-    caps: WEB_CAPS,
+    caps: toolCaps(WEB_CAPS),
+    fetchable: new Set<string>(),
     searchTerms,
     observe(call) {
       const page = fetchedPage(call);

@@ -31,8 +31,9 @@ set search_path = ''
 as $$
   select case p_kind
     when 'ping' then interval '1 minute'
-    -- three minutes for an answer that looks things up on the web and three for its repair turn, each its own session
-    when 'ask' then interval '6 minutes'
+    -- a turn is at most three sessions of three minutes each (the answer, a number repair and a source repair), nine minutes;
+    -- ten, and the claim's two minutes of grace after it, keep a second worker from taking a turn that is still running
+    when 'ask' then interval '10 minutes'
     when 'portfolio_watch' then interval '3 minutes'
     when 'morning_brief' then interval '3 minutes'
     when 'extract_document' then interval '5 minutes'

@@ -26,6 +26,8 @@ export type AskCase = {
   readonly toolCalls: ReadonlyArray<{ readonly name: string; readonly input: Record<string, unknown>; /** What a built-in web tool returned, replayed as the PostToolUse hook hands it over live. */ readonly result?: unknown }>;
   /** The reply of the repair turn that follows when the first reply fails the legal-source check. */
   readonly repairReply?: string;
+  /** What the repair turn calls before it replies. */
+  readonly repairToolCalls?: AskCase['toolCalls'];
   readonly reply: string;
   /** A follow-up names the case it follows and the handle its turn starts at, one past the handles that case gave out. */
   readonly follows?: { readonly id: string; readonly firstHandle: number };
@@ -77,6 +79,30 @@ export const LEAK_CASE: AskCase = {
   toolCalls: [{ name: 'WebSearch', input: { query: 'Hoàng Văn Em Demo Dĩ An' } }],
   reply: 'Trợ lý không tra cứu thông tin về người thuê trên mạng, vì đó là hồ sơ riêng của gia đình. Bạn có thể hỏi về lịch sử trả tiền của khách ngay trong ứng dụng.',
 };
+
+const MORE_SEARCHES = ['lãi suất vay mua nhà ngân hàng nhà nước', 'lãi suất vay mua nhà thả nổi', 'lãi suất vay mua nhà ưu đãi', 'lãi suất vay mua nhà cố định'];
+
+const searches = (count: number, first: ReturnType<typeof webSearch>) => [first, ...MORE_SEARCHES.slice(0, count - 1).map((query) => webSearch(query))];
+
+/** The model searches five times in one turn: the fifth is denied and the answer arrives all the same (lane 9). */
+export const OVER_CAP_CASE: AskCase = {
+  id: 'ask-web-over-cap',
+  question: 'Lãi suất vay mua nhà bây giờ khoảng bao nhiêu?',
+  toolCalls: [...searches(5, webSearch('lãi suất vay mua nhà hiện nay', RATE_URL)), webFetch(RATE_URL, PAGE_TEXT[RATE_URL]), quotePage(RATE_URL, ['Lãi suất cho vay mua nhà từ 7,5% một năm'])],
+  reply: 'Theo {{f1.source_name}}, bài đăng ngày {{f1.published_display}}: "{{f1.quote_1_label}}".\n\nĐây chỉ là mức tham khảo, mỗi ngân hàng có thể áp dụng khác nhau.',
+};
+
+/** Four searches find no official page; the source repair turn tries a fifth, which the turn's cap denies, and opens a page the first session's search returned. */
+export const OVER_CAP_REPAIR_CASE: AskCase = {
+  id: 'ask-web-over-cap-repair',
+  question: 'Nghị định mới nhất về thuế cho thuê nhà là gì?',
+  toolCalls: searches(4, webSearch('nghị định mới nhất về thuế cho thuê nhà', RATE_URL)),
+  reply: 'Trợ lý chưa tìm thấy trang nào để dẫn cho câu này.',
+  repairToolCalls: [webSearch('nghị định thuế cho thuê nhà mới'), webFetch(RATE_URL, PAGE_TEXT[RATE_URL])],
+  repairReply: 'Trợ lý vẫn chưa tìm thấy trang chính thức nào cho câu này.',
+};
+
+export const OVER_CAP_REPLAY_DIR = join(DEFAULT_REPLAY_DIR, '..', 'agent-replay-cases', 'ask-web-over-cap');
 
 export const ASK_CASES: readonly AskCase[] = [
   {
@@ -356,7 +382,7 @@ export async function askRepairRecording(item: AskCase): Promise<Recording> {
   if (item.repairReply === undefined) throw new Error(`${item.id} has no repair reply`);
   const first = await askRecording(item);
   const input = canonicalInput({ spec: JOBS.ask, prompt: askSourceRepairPrompt(), canon: canon(), resume: { sessionId: replaySessionId(first.inputHash), afterInputHash: first.inputHash } });
-  return { version: 1, kind: 'ask', inputHash: inputHash(input), input, label: `Hand-written repair turn of ${item.id}, which still finds no official source; the live recording waits for the P5-10 live run.`, model: 'hand-written', numTurns: 1, toolCalls: [], reply: item.repairReply };
+  return { version: 1, kind: 'ask', inputHash: inputHash(input), input, label: `Hand-written repair turn of ${item.id}, which still finds no official source; the live recording waits for the P5-10 live run.`, model: 'hand-written', numTurns: (item.repairToolCalls?.length ?? 0) + 1, toolCalls: (item.repairToolCalls ?? []).map((call) => ({ ...call })), reply: item.repairReply };
 }
 
 if (import.meta.main) {
@@ -365,6 +391,10 @@ if (import.meta.main) {
     if (item.repairReply !== undefined) console.log(writeRecording(DEFAULT_REPLAY_DIR, await askRepairRecording(item)));
   }
   console.log(writeRecording(LEAK_REPLAY_DIR, await askRecording(LEAK_CASE)));
+  for (const item of [OVER_CAP_CASE, OVER_CAP_REPAIR_CASE]) {
+    console.log(writeRecording(OVER_CAP_REPLAY_DIR, await askRecording(item)));
+    if (item.repairReply !== undefined) console.log(writeRecording(OVER_CAP_REPLAY_DIR, await askRepairRecording(item)));
+  }
 }
 
 /** The replay session of a prepared ask turn: its prompt, tools and policy inputs, run in `jobDir`. */
@@ -377,6 +407,7 @@ export const caseSession = (prepared: PreparedJob, jobDir: string) => ({
   canon: canonicalizer({ householdName: 'Gia đình Demo', jobDir }),
   ...(prepared.onText === undefined ? {} : { onText: prepared.onText }),
   ...(prepared.caps === undefined ? {} : { caps: prepared.caps }),
+  ...(prepared.fetchable === undefined ? {} : { fetchable: prepared.fetchable }),
   ...(prepared.observe === undefined ? {} : { observe: prepared.observe }),
   ...(prepared.searchTerms === undefined ? {} : { searchTerms: prepared.searchTerms }),
 });
