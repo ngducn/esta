@@ -4,8 +4,8 @@ import type { CitedRecord, RunSheet } from './fact-sheet';
 import { adminUnitNames, readHeldProperties } from './list-properties';
 
 async function deriveTopics(db: AgentDb, householdId: string): Promise<ResearchTopic[]> {
-  const held = (await readHeldProperties(db, householdId)).flatMap(({ id, kind, communeCode, provinceCode }) => (communeCode === null || provinceCode === null ? [] : [{ id, kind, communeCode, provinceCode }]));
-  const communes = [...new Set(held.map((property) => property.communeCode))];
+  const held = (await readHeldProperties(db, householdId)).flatMap(({ id, kind, communeCode, provinceCode }) => (provinceCode === null ? [] : [{ id, kind, communeCode, provinceCode }]));
+  const communes = [...new Set(held.flatMap((property) => (property.communeCode === null ? [] : [property.communeCode])))];
   const [names, legacy] = await Promise.all([
     adminUnitNames(db, [...communes, ...held.map((property) => property.provinceCode)]),
     communes.length === 0 ? { data: [], error: null } : db.from('admin_unit_legacy_map').select('new_commune_code, old_province_name, old_district_name, merge_kind').in('new_commune_code', communes).order('id'),

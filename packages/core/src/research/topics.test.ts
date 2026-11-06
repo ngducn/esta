@@ -86,3 +86,13 @@ describe('deriveResearchTopics on the seven seed properties (AGENT.md §5.2)', (
     expect(deriveResearchTopics([], ADMIN_UNITS, LEGACY).map((topic) => topic.key)).toEqual(NATIONAL_TOPICS.map((topic) => topic.key));
   });
 });
+
+describe('a property without a commune (#326)', () => {
+  const bare = [...SEED, { id: 'no-commune', kind: 'townhouse' as const, provinceCode: '68', communeCode: null }];
+  const derived = deriveResearchTopics(bare, ADMIN_UNITS, LEGACY);
+
+  it('follows its province and adds no commune topic', () => {
+    expect(derived.find((topic) => topic.key === 'province:68')?.property_ids).toEqual(['bao-loc', 'no-commune']);
+    expect(derived.filter((topic) => topic.key.startsWith('commune:')).map((topic) => topic.key)).toEqual(topics.filter((topic) => topic.key.startsWith('commune:')).map((topic) => topic.key));
+  });
+});
