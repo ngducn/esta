@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(6);
+select plan(8);
 
 select is(
   (select count(*)::int from pg_default_acl d, aclexplode(d.defaclacl) a
@@ -12,6 +12,8 @@ select ok(has_function_privilege('authenticated', 'public.log_export_downloads(u
 select ok(has_function_privilege('anon', 'public.invoice_qr_by_token(text)', 'execute'), 'anon still reads a bill by its token');
 select ok(not has_function_privilege('anon', 'public.esta_unaccent(text)', 'execute'), 'anon cannot run the name helpers');
 select ok(not has_function_privilege('public', 'private.touch_updated_at()', 'execute'), 'a trigger function is not open to everyone');
+select ok(not has_function_privilege('anon', 'private.statement_text_key(text)', 'execute'), 'anon cannot run the statement text key');
+select ok(has_function_privilege('authenticated', 'private.statement_text_key(text)', 'execute'), 'a signed-in member can, because the statement views call it');
 
 select * from finish();
 rollback;

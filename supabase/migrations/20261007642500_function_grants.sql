@@ -13,3 +13,7 @@ grant execute on function public.invoice_qr_by_token(text) to anon;
 
 -- A trigger function is not called through a grant; nothing needs it open to everyone.
 revoke execute on function private.touch_updated_at() from public, anon;
+
+-- Added by the statement import migration after this one was written: the same rule, open to a signed-in member only, since its views and tests call it as one.
+revoke execute on function private.statement_text_key(text) from public, anon;
+grant execute on function private.statement_text_key(text) to authenticated;

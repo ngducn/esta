@@ -27,6 +27,7 @@
     "private.read_entries(jsonb)": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
     "private.statement_line_candidates(statement_rows)": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
     "private.statement_line_state(statement_rows)": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.statement_text_key(text)": "called by the statement line views and functions, which run as the signed-in member",
     "private.thread_row_creator(text,uuid)": "named in a row level security or storage policy, which runs as the signed-in member",
     "private.valid_annotations(jsonb)": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
     "private.valid_area(jsonb)": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
