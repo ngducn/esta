@@ -47,4 +47,4 @@ export function integrationLane(fileUrl: string, index = 0) {
   return { lane, household: householdId(seed), me: personEmail('me', seed), ryan: personEmail('ryan', seed) };
 }
 
-export { withCapabilities } from './fake-member';
+export { withCapabilities } from './fake-member.ts';
