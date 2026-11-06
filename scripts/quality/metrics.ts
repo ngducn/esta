@@ -10,6 +10,7 @@ import {
   isoDateRefines,
   localIdSchemas,
   pageScrollWidths,
+  pageSizeLiterals,
   putFetches,
   slowTestSettings,
   sqlstateReads,
@@ -21,10 +22,10 @@ import { classLists, comments, elements, imported, importsModule, uses, type Fin
 
 const REPO_ROOT = join(import.meta.dirname, '..', '..');
 
-export type Helper = { readonly name: string; readonly file: string };
+type Helper = { readonly name: string; readonly file: string };
 
 /** What to use instead. Every backticked name in `use` is an exported helper listed here, or a name the pending issue adds. */
-export type Home = {
+type Home = {
   readonly use: string;
   readonly helpers?: readonly Helper[];
   /** The issue that creates the home when it does not exist yet; until it lands, a change that needs one records a raise. */
@@ -40,7 +41,7 @@ export type Metric = {
   readonly cap?: number;
   readonly measure: (input: MeasureInput) => Occurrence[];
 };
-export type MeasureInput = { readonly corpus: Corpus; readonly clones: readonly Clone[]; readonly fixtureClones: readonly Clone[] };
+type MeasureInput = { readonly corpus: Corpus; readonly clones: readonly Clone[]; readonly fixtureClones: readonly Clone[] };
 
 const NOT_PRODUCT = new RegExp(`${TEST_FILE.source}|${DEV_ROUTES.source}`);
 const PRODUCT_CODE: Scope = { include: /^(apps\/[^/]+\/src|packages\/[^/]+\/src)\//, exclude: NOT_PRODUCT };
@@ -154,6 +155,13 @@ export const METRICS: readonly Metric[] = [
     section: 'server-writes-the-ops-layer',
     scope: without(PRODUCT_CODE, /^packages\/ops\/src\/kit\.ts$/),
     find: sqlstateReads,
+  }),
+  syntax({
+    id: 'postgrest-page-literal',
+    message: 'A number is spelled out inside `.range(`, so the page size is written again outside the one constant.',
+    home: { use: '`POSTGREST_PAGE_SIZE` in packages/ops/src/kit.ts, through `readAll`.', helpers: [{ name: 'POSTGREST_PAGE_SIZE', file: OPS_KIT }, { name: 'readAll', file: OPS_KIT }] },
+    section: 'reading-more-than-one-page',
+    scope: without(NOT_TESTS, /^packages\/ops\/src\/kit\.ts$/), find: pageSizeLiterals,
   }),
   syntax({
     id: 'toast-provider-mount',

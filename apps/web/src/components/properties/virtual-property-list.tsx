@@ -7,7 +7,7 @@ import { PropertyCard, photoPriority, propertyGrid, type PropertyCardData } from
 const MIN_COLUMN_REM = 19;
 const GAP_REM = 1.5;
 
-export function columnsFor(widthPx: number, remPx: number): number {
+function columnsFor(widthPx: number, remPx: number): number {
   return Math.max(1, Math.floor((widthPx / remPx + GAP_REM) / (MIN_COLUMN_REM + GAP_REM)));
 }
 

@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 const text = z.string().trim().min(1).optional();
 
-export const envSchema = z.object({
+const envSchema = z.object({
   SUPABASE_URL: z.url(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'SUPABASE_SERVICE_ROLE_KEY is required by the worker'),
   ESTA_AGENT_MODE: z.enum(['live', 'replay']).default('live'),

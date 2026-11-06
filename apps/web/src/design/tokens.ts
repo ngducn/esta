@@ -88,8 +88,6 @@ export const overlays = {
 
 export const tones = ['success', 'warning', 'danger', 'info', 'neutral'] as const;
 
-export type Tone = (typeof tones)[number];
-
 /** Vietnamese stacked marks (ặ, ữ, Ướ) collide with the line above below this. */
 export const minimumLeading = 1.3;
 

@@ -16,7 +16,7 @@ type Metric = 'lcpMs' | 'tbtMs' | 'cls' | 'scriptKb';
 export type Budget = { route: string; limits: Partial<Record<Metric, number>>; addedScriptKb?: number; pinsMs?: number; runs?: number };
 export type Extras = { listScriptKb?: number; pinsMs?: number };
 
-export const MAP_RUNS = 9;
+const MAP_RUNS = 9;
 const GENERAL = { lcpMs: 2500, tbtMs: 200, cls: 0.05, scriptKb: 200 };
 const EMAIL = 'me.lane1@demo.esta.test';
 const HOUSEHOLD = seedId('seed:household:lane-1');
@@ -39,7 +39,7 @@ export const PHASE_2_BUDGETS: readonly Budget[] = [
 ];
 
 /** SPEC §7.2 on Home and Collections, the Phase 3 routes it names. */
-export const PHASE_3_BUDGETS: readonly Budget[] = [
+const PHASE_3_BUDGETS: readonly Budget[] = [
   { route: '/', limits: GENERAL },
   { route: '/collections', limits: GENERAL },
 ];

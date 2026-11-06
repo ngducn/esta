@@ -80,7 +80,7 @@ export function fileStore(scope: string, file: string): SecretStore {
   };
 }
 
-export const DEFAULT_SESSION_FILE = join(homedir(), '.config', 'esta', 'connector-session.json');
+const DEFAULT_SESSION_FILE = join(homedir(), '.config', 'esta', 'connector-session.json');
 
 /** Each Supabase URL keeps its own session, so a session for one local slot is never sent to another. */
 export function secretStore(supabaseUrl: string, options: { platform: NodeJS.Platform; file: string | undefined }): SecretStore {

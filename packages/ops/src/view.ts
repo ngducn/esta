@@ -31,10 +31,10 @@ export type Lookup = {
 };
 
 type Rows = { readonly [T in ViewTable]: { readonly table: T; readonly row: ViewRows[T] } };
-export type LeaseSet = Partial<Omit<ViewRows['leases'], 'id' | 'property_id'>>;
+type LeaseSet = Partial<Omit<ViewRows['leases'], 'id' | 'property_id'>>;
 /** A set on a lease the database holds, merged onto the row a read returns. */
 type LeaseOverlay = { readonly table: 'leases'; readonly set: LeaseSet };
-export type PendingRow = Rows[ViewTable] | LeaseOverlay;
+type PendingRow = Rows[ViewTable] | LeaseOverlay;
 export type Write = (Rows[ViewTable] & { readonly kind: 'create' }) | { readonly kind: 'set'; readonly table: 'leases'; readonly id: string; readonly set: LeaseSet };
 
 export type Pending = ReadonlyMap<string, PendingRow>;

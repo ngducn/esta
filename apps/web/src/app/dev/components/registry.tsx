@@ -15,7 +15,6 @@ import {
   SkeletonMoney,
   SkeletonRing,
   SkeletonStatus,
-  SkeletonTable,
 } from '@/components/skeleton';
 import { StatusMark } from '@/components/status-mark';
 import { Card } from '@/components/ui/card';
@@ -23,9 +22,9 @@ import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import { ConfirmDialogDemo, DateInputDemo, MoneyInputDemo, RentTableDemo, SheetDemo, UndoToastDemo } from './demos';
+import { ConfirmDialogDemo, DateInputDemo, MoneyInputDemo, SheetDemo, UndoToastDemo } from './demos';
 
-export type DevT = Awaited<ReturnType<typeof getTranslations<'devComponents'>>>;
+type DevT = Awaited<ReturnType<typeof getTranslations<'devComponents'>>>;
 type ComponentName = keyof IntlMessages['devComponents']['names'];
 type StateName = keyof IntlMessages['devComponents']['states'];
 type IntlMessages = typeof import('../../../../messages/vi.json');
@@ -288,16 +287,6 @@ export const registry: readonly RegistryEntry[] = [
       },
       { state: 'empty', render: () => <AddressBlock legal={null} current={null} /> },
       { state: 'loading', render: () => <SkeletonAddress /> },
-    ],
-  },
-  {
-    component: 'dataTable',
-    wide: true,
-    states: [
-      { state: 'default', render: () => <RentTableDemo variant="default" /> },
-      { state: 'long', render: () => <RentTableDemo variant="long" /> },
-      { state: 'empty', render: () => <RentTableDemo variant="empty" /> },
-      { state: 'loading', render: () => <SkeletonTable /> },
     ],
   },
   {

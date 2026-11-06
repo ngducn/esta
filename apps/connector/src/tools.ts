@@ -36,7 +36,7 @@ import type { ImportFolders } from './files';
 import type { OperatorRefusal } from './session';
 import { MAX_SPREADSHEET_BYTES, readSpreadsheet } from './spreadsheet';
 
-export type ToolContext = LocalContext & ReadContext & { readonly folders: ImportFolders; readonly batchDb: (batchId: string) => Db };
+type ToolContext = LocalContext & ReadContext & { readonly folders: ImportFolders; readonly batchDb: (batchId: string) => Db };
 
 export type ToolDeps = {
   /** Checked on every call: the session, its household, and that the member is still its operator. */

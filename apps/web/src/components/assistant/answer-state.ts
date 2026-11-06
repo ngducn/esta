@@ -4,7 +4,7 @@ import type { AnswerRef, CalcRef, SourceRef } from '@esta/core/assistant';
 const ANSWER_STATUSES = ['streaming', 'deferred', 'done', 'error'] as const;
 const STOPPED = ['timeout', 'gone'] as const;
 
-export type AnswerStatus = (typeof ANSWER_STATUSES)[number];
+type AnswerStatus = (typeof ANSWER_STATUSES)[number];
 
 /** An answer as its page shows it: the guarded text so far and the record links its run looked up (`messages.refs`). */
 export type AnswerState = { readonly content: string; readonly status: AnswerStatus; readonly refs: readonly AnswerRef[]; /** `web` while a web tool runs before the first sentence (`messages.activity`). */ readonly activity?: 'web' | null };

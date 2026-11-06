@@ -1,6 +1,6 @@
 import type { SheetRow, SoapRecord } from './sources.ts';
 
-export type AdminUnitKind = 'province' | 'city' | 'ward' | 'commune' | 'special_zone';
+type AdminUnitKind = 'province' | 'city' | 'ward' | 'commune' | 'special_zone';
 export type MergeKind = 'whole' | 'partial';
 
 export type AdminUnit = {
@@ -33,7 +33,7 @@ export type RawSources = {
   curated: readonly CuratedLink[];
 };
 
-export const CONVERSION_SOURCE = 'nso_bang_chuyen_doi_2025';
+const CONVERSION_SOURCE = 'nso_bang_chuyen_doi_2025';
 
 const KIND_BY_CATALOG_TYPE: Readonly<Record<string, AdminUnitKind>> = {
   'Thành phố Trung ương': 'city',

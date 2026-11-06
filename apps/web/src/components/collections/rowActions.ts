@@ -18,7 +18,7 @@ export type CollectionRowAction =
   | (ActionBase & { readonly kind: 'remind'; readonly label: 'remind' })
   | (ActionBase & { readonly kind: 'link'; readonly label: 'openLease'; readonly href: (row: CollectionRow) => string });
 
-export const COLLECTION_ROW_ACTIONS: readonly CollectionRowAction[] = [
+const COLLECTION_ROW_ACTIONS: readonly CollectionRowAction[] = [
   {
     id: 'record-payment',
     kind: 'recordPayment',

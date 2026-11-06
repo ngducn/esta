@@ -37,7 +37,7 @@ export {
   type NewDocument,
 } from './documents';
 export type { FileProblem, FileRefusal, LocalContext, LocalFile, LocalFiles, LocalPreviews } from './files';
-export { dbRefusal, idSchema, optionalIdSchema, type CommonRefusal, type Refusal } from './kit';
+export { dbRefusal, idSchema, POSTGREST_PAGE_SIZE, readAll, optionalIdSchema, type CommonRefusal, type Refusal } from './kit';
 export type { Db } from './db';
 export { readInvoicePayments, readInvoices, type InvoiceScope, type InvoiceSummary } from './invoices';
 export { LEGAL_KINDS, legalKindSchema, legalTable, readLegalRows, readOwnership, type LegalKind, type LegalRow, type LegalValue } from './legal';

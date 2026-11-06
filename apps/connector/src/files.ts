@@ -6,7 +6,7 @@ import { open, readdir, readlink, realpath, stat } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { basename, delimiter, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 
-export const DEFAULT_IMPORT_FOLDER = 'Esta-import';
+const DEFAULT_IMPORT_FOLDER = 'Esta-import';
 
 /** One entry of a folder: what Claude may read, or why it may not, the same answer a read of it would give. */
 export type FolderEntry =

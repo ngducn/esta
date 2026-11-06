@@ -20,6 +20,16 @@ To add a smell, add one entry to `METRICS` with a finder in `scripts/quality/sme
 
 Every `scripts/check-*.ts` gate runs from the `check` script in `package.json`, and every other `scripts/*.ts` entry point that no file imports has a script that runs it. `scripts/package-scripts.test.ts` fails otherwise, so a merge that drops a script line (a gate that stops running looks like green) turns red. A gate that cannot run in `pnpm check`, or a tool run only by hand or by CI, goes on the allowlist in that test with a one-line reason. Add a new gate to the `check` chain, not to the allowlist.
 
+## Dead code and the package boundaries
+
+`pnpm knip` (`knip.jsonc`, in `pnpm check`) fails on a file, an export or an exported type that no other file imports, tests and e2e specs included. Delete it, or drop the `export` keyword when the file uses it itself. Knip has no ignore list. `knip.jsonc` names only entries it cannot see, such as the connector's CLI files that `scripts/connector.ts` picks by name, each with its reason beside it. A new entry needs the same.
+
+`packages/db` holds the generated Supabase types and nothing else. A lint block in `eslint.config.mjs` fails an import of another workspace and any export that is not a type or the generated file (`eslint-rules/db-boundary.test.ts`). Code that reads or writes rows lives in `packages/ops`, which holds the household export (`packages/ops/src/export`).
+
+## Two addresses are the same
+
+`sameAddress(a, b)` in `packages/core/src/address/same.ts` decides whether two printed addresses are one: NFC, one space between words, lower case. The property list, the address block and the certificate review all call it. `esta/no-address-equality` fails `===` or `!==` between two values that mention an address, outside `packages/core/src/address`.
+
 ## Duplicated code
 
 `pnpm quality` runs jscpd 5 over the source files and counts every block of 50 or more tokens that appears twice (`clones`) and the lines inside those blocks (`duplicated-lines`). An edit of up to five lines inside a copied block keeps it one clone. The token threshold is jscpd's default. It registers the duplicates the 2026-10-19 review measured: the two upload flows, the legal and rental item actions, and the e2e setup copied between specs.
@@ -93,6 +103,12 @@ A rule that decides what gets written lives in SQL, because SQL is the writer: b
 - A definer function decides from stored rows. It takes no boolean that says a decision was made (`p_params_valid`): `pnpm db:test` runs `scripts/caller-verdict.ts` and fails on one.
 - Every `'ESTA_*'` sentinel a migration raises is named in a TypeScript refusal table (`dbRefusal`), or sits in `quality/sentinels.json` with a one-line reason it never reaches a screen. `scripts/check-sentinels.ts` runs in `pnpm check` (`pnpm check:sentinels`) and fails on an unmapped, unlisted sentinel; the list only shrinks, so mapping one removes its entry. A rule the database adds that TypeScript lets through (#211) is mapped the same day.
 - Issue #197 squashes the migrations into one baseline before the first deploy, so each function has one current body.
+
+## Reading more than one page
+
+PostgREST caps a response at `max_rows` (1000 in `supabase/config.toml`), and a household may hold more. `POSTGREST_PAGE_SIZE` in `packages/ops/src/kit.ts` is that number, written once, and `readAll(what, page)` in the same file reads every page of an ordered query with it. The assistant's tools, the statement reader and the export all use them; the export's keyset pages use the constant as their limit.
+
+`postgrest-page-literal` counts a number larger than 1 inside `.range(` anywhere outside `kit.ts`. Read a long list with `readAll`, and give it an ordered query.
 
 ## Document upload
 

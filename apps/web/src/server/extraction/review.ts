@@ -9,7 +9,7 @@ import { requireMember } from '@/server/member';
 import { createSessionClient } from '@/server/supabase/server';
 import { fieldViews, type FieldView } from './field-views';
 
-export type ReviewDocument = {
+type ReviewDocument = {
   readonly id: string;
   readonly title: string;
   readonly mime: string;

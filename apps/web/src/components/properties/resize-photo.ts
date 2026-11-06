@@ -1,6 +1,6 @@
 import type { Result } from '@esta/core/result';
 
-export const MAX_SOURCE_BYTES = 15 * 1024 * 1024;
+const MAX_SOURCE_BYTES = 15 * 1024 * 1024;
 const MAX_WIDTH = 960;
 const MAX_HEIGHT = 1280;
 const QUALITY = 0.8;

@@ -1,7 +1,7 @@
 import 'server-only';
 import { cookies } from 'next/headers';
 
-export const themeCookie = 'esta_theme';
+const themeCookie = 'esta_theme';
 
 /** Light whatever the system says; dark applies only when the member chose it in Cài đặt. */
 export const themePreferences = ['light', 'dark'] as const;

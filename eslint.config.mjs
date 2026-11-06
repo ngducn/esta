@@ -4,6 +4,7 @@ import nextPlugin from '@next/eslint-plugin-next';
 import reactHooks from 'eslint-plugin-react-hooks';
 import { defineConfig, globalIgnores } from 'eslint/config';
 import tseslint from 'typescript-eslint';
+import noAddressEquality from './eslint-rules/no-address-equality.mjs';
 import noBrowserSupabaseClient from './eslint-rules/no-browser-supabase-client.mjs';
 import noGuardDisable from './eslint-rules/no-guard-disable.mjs';
 import noJsxLiterals from './eslint-rules/no-jsx-literals.mjs';
@@ -59,6 +60,7 @@ export default defineConfig(
           'service-role-allowlist': serviceRoleAllowlist,
           'no-jsx-literals': noJsxLiterals,
           'no-browser-supabase-client': noBrowserSupabaseClient,
+          'no-address-equality': noAddressEquality,
           'no-guard-disable': noGuardDisable,
           'no-self-sourced-property': noSelfSourcedProperty,
         },
@@ -69,6 +71,12 @@ export default defineConfig(
   {
     files: ['apps/web/**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}'],
     rules: { 'esta/no-browser-supabase-client': 'error' },
+  },
+  {
+    // Two addresses are the same by `sameAddress` alone (Q-10); the screens that compared them by hand disagreed.
+    files: ['apps/**/*.{ts,tsx}', 'packages/**/*.ts'],
+    ignores: ['packages/core/src/address/**'],
+    rules: { 'esta/no-address-equality': 'error' },
   },
   {
     // A property that draws from a production list can only find what the list already holds (#439, #450).
@@ -107,6 +115,24 @@ export default defineConfig(
           selector: 'Literal[value=/user_meta/]',
           message: 'Read names and settings from household_members, never from user_metadata.',
         },
+      ],
+    },
+  },
+  {
+    // packages/db holds the generated types and nothing else: it imports no workspace, and exports types or the generated file (Q-10).
+    files: ['packages/db/src/**/*.ts'],
+    ignores: ['packages/db/src/database.types.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { patterns: [{ regex: '^(@esta/|\\.\\./\\.\\.|\\.\\./(?!database\\.types$))', message: 'packages/db imports no other workspace. Code that reads or writes rows lives in packages/ops.' }] },
+      ],
+      'no-restricted-syntax': [
+        'error',
+        { selector: 'Literal[value=/user_meta/]', message: 'Read names and settings from household_members, never from user_metadata.' },
+        { selector: 'ExportNamedDeclaration[exportKind!="type"][source=null]', message: 'packages/db exports types and the generated file only. Code that reads or writes rows lives in packages/ops.' },
+        { selector: 'ExportNamedDeclaration[exportKind!="type"][source.value!="./database.types"]', message: 'packages/db exports types and the generated file only.' },
+        { selector: 'ExportAllDeclaration, ExportDefaultDeclaration', message: 'packages/db exports types and the generated file only.' },
       ],
     },
   },

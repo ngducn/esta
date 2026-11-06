@@ -26,7 +26,7 @@ export async function householdInfo(db: AgentDb, householdId: string): Promise<H
   };
 }
 
-export const localeOf = (locale: string): Locale => (locale === 'en' ? 'en' : 'vi');
+const localeOf = (locale: string): Locale => (locale === 'en' ? 'en' : 'vi');
 
 export async function householdLocale(db: AgentDb, householdId: string): Promise<Locale> {
   const { data, error } = await db.from('households').select('locale').eq('id', householdId).single();

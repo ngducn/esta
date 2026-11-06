@@ -26,7 +26,7 @@ export type ResearchBinding = {
 };
 
 export type Dropped = { readonly source_url: string; readonly reason: DropReason | 'not_fetched' | 'date_unconfirmed' | 'duplicate_url' | 'similar_title' };
-export type Kept = { readonly id: string; readonly url_normalized: string; readonly title: string; readonly relevance: number; readonly cited: Array<FilledNote['cited'][number]> };
+type Kept = { readonly id: string; readonly url_normalized: string; readonly title: string; readonly relevance: number; readonly cited: Array<FilledNote['cited'][number]> };
 
 const SIMILAR_TITLE = 0.6;
 const MAX_SOURCE_NAME = 120;

@@ -108,7 +108,7 @@ export function weeklyReviewRequest(input: WeeklyRequestInput): PreparedJob {
 }
 
 /** Every attempt of this week's run, the first job and each Thử lại, so retrying cannot make more proposals than one run may. */
-export async function weekProposals(db: AgentDb, job: Pick<AgentJob, 'id' | 'household_id' | 'kind' | 'idempotency_key'>): Promise<number> {
+async function weekProposals(db: AgentDb, job: Pick<AgentJob, 'id' | 'household_id' | 'kind' | 'idempotency_key'>): Promise<number> {
   let runs = [job.id];
   if (job.idempotency_key !== null) {
     const first = firstRunKey(job.idempotency_key);

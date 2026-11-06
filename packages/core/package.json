@@ -8,7 +8,7 @@
     "./allocation": "./src/allocation/index.ts",
     "./onboarding": "./src/onboarding/firstRun.ts",
     "./assistant": "./src/assistant/index.ts",
-    "./address": "./src/address/format-current.ts",
+    "./address": "./src/address/index.ts",
     "./agent": "./src/agent/worker-status.ts",
     "./agent-usage": "./src/agent/usage.ts",
     "./agent-limits": "./src/agent-limits/backoff.ts",

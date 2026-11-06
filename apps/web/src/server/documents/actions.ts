@@ -17,7 +17,7 @@ const id = z.uuid();
 
 const uploadSchema = documentFileSchema.extend({ propertyId: id, category: z.enum(DOCUMENT_CATEGORY_IDS) });
 
-export type UploadTarget = { readonly path: string; readonly url: string };
+type UploadTarget = { readonly path: string; readonly url: string };
 
 export type UploadTicket =
   | {

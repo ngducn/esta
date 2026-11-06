@@ -64,7 +64,7 @@ export async function loadTenants(): Promise<Tenant[]> {
   return z.array(tenantRowSchema).parse(data);
 }
 
-export async function loadLeaseSchedule(leaseIds: readonly string[], until: IsoDate): Promise<SchedulePeriod[]> {
+async function loadLeaseSchedule(leaseIds: readonly string[], until: IsoDate): Promise<SchedulePeriod[]> {
   return readLeaseSchedule(await createSessionClient(), leaseIds, until);
 }
 

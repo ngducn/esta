@@ -255,6 +255,19 @@ export const pageScrollWidths: Finder = (source) =>
     return (ts.isPropertyAccessExpression(owner) && PAGE_ROOTS.has(owner.name.text)) || (ts.isIdentifier(owner) && isRootParameter(owner));
   });
 
+/** A number such as `999` or `100` inside `.range(…)`: a page size spelled out where `POSTGREST_PAGE_SIZE` belongs. 0 and 1 are the bounds of a first page. */
+export const pageSizeLiterals: Finder = (source) =>
+  calls(source)
+    .filter((call) => ts.isPropertyAccessExpression(call.expression) && call.expression.name.text === 'range')
+    .flatMap((call) => call.arguments.flatMap((argument) => numericLiterals(argument)))
+    .filter((literal) => Number(literal.text) > 1);
+
+function numericLiterals(node: ts.Node): ts.NumericLiteral[] {
+  const found: ts.NumericLiteral[] = ts.isNumericLiteral(node) ? [node] : [];
+  ts.forEachChild(node, (child) => found.push(...numericLiterals(child)));
+  return found;
+}
+
 /** `fetch(url, { method: 'PUT', … })`: bytes sent by hand. */
 export const putFetches: Finder = (source) =>
   calls(source).filter((call) => {

@@ -3,7 +3,7 @@ import type { AgentDb } from '../supabase';
 import { deliverPending } from './deliver';
 import { smtpMailer, type DeliveryConfig, type Mailer } from './smtp';
 
-export const DELIVERY_INTERVAL_MS = 60_000;
+const DELIVERY_INTERVAL_MS = 60_000;
 
 export type Delivery = {
   /** Asks for a delivery run and returns at once; a request made during a run triggers one more run when it ends. */

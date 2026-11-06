@@ -1,4 +1,5 @@
-import { normalizeName, sameName } from '../names';
+import { sameAddress } from '../address/same';
+import { sameName } from '../names';
 
 /** The values a certificate save writes, by review path: a plan's `acceptedFields`, or what the review has decided so far. */
 export type Saved = Readonly<Record<string, { readonly value: string | number | boolean }>>;
@@ -17,7 +18,7 @@ export type Replaced = { readonly path: string; readonly before: string; readonl
 /** #356: the one value a certificate save writes over, the property's certificate address, when it holds another one. */
 export function replacedAddress(saved: Saved, before: string | null): Replaced | null {
   const after = savedAddress(saved);
-  if (after === null || before === null || before.trim() === '' || normalizeName(before) === normalizeName(after.value)) return null;
+  if (after === null || before === null || before.trim() === '' || sameAddress(before, after.value)) return null;
   return { path: after.path, before, after: after.value };
 }
 

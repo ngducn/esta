@@ -8,7 +8,7 @@ export const optionalIdSchema = idSchema.nullable();
 /** What every refusal has: a `kind` the caller switches on. An op adds its own kinds with their payload. */
 export type Refusal = { readonly kind: string };
 
-export type Issue = { readonly path: string; readonly code: string };
+type Issue = { readonly path: string; readonly code: string };
 
 /**
  * Refusals any op may return. `conflict` is a unique, foreign-key or exclusion violation at apply time; the runner
@@ -62,7 +62,7 @@ export function changedColumns<T>(current: T, next: T, keys: readonly (keyof T)[
 }
 
 /** PostgREST caps a response at `max_rows` (1000 in `supabase/config.toml`), and a household may hold more. */
-const PAGE_SIZE = 1000;
+export const POSTGREST_PAGE_SIZE = 1000;
 
 type Page<T> = PromiseLike<{ data: T[] | null; error: { message: string } | null }>;
 
@@ -76,11 +76,11 @@ export async function readRows<T>(what: string, read: Page<T>): Promise<T[]> {
 /** `page` must order the rows, or PostgREST ranges can overlap and skip rows. */
 export async function readAll<T>(what: string, page: (from: number, to: number) => Page<T>): Promise<T[]> {
   const rows: T[] = [];
-  for (let from = 0; ; from += PAGE_SIZE) {
-    const { data, error } = await page(from, from + PAGE_SIZE - 1);
+  for (let from = 0; ; from += POSTGREST_PAGE_SIZE) {
+    const { data, error } = await page(from, from + POSTGREST_PAGE_SIZE - 1);
     if (error) throw new Error(`Reading ${what} failed: ${error.message}`);
     rows.push(...(data ?? []));
-    if ((data ?? []).length < PAGE_SIZE) return rows;
+    if ((data ?? []).length < POSTGREST_PAGE_SIZE) return rows;
   }
 }
 

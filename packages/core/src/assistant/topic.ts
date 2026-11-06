@@ -7,7 +7,7 @@ export const threadTopicSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('property'), propertyId: z.uuid() }),
 ]);
 
-export const noteRelatedSchema = z.object({
+const noteRelatedSchema = z.object({
   facts: z.array(z.object({ rule_id: z.string(), subject_key: z.string() })).catch([]).default([]),
   links: z.array(z.string()).catch([]).default([]),
 });

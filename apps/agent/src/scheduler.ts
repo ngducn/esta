@@ -3,7 +3,7 @@ import { planScheduledJobs, scheduleKey } from '@esta/core/agent-schedule';
 import { SCHEDULED_JOBS } from './jobs/registry';
 import type { AgentDb } from './supabase';
 
-export const SCHEDULER_INTERVAL_MS = 60_000;
+const SCHEDULER_INTERVAL_MS = 60_000;
 
 /** Lower runs first, so a ping or a document a person just queued never waits behind every household's daily jobs. */
 export const SCHEDULED_PRIORITY = 200;
