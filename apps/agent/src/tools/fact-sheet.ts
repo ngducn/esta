@@ -1,4 +1,10 @@
+import type { TypedValue } from '@esta/core/calc';
 import type { FactSheet } from '@esta/core/guard';
+import { formatBps, formatVnd, type Locale } from '@esta/core/format';
+import type { Vnd } from '@esta/core/money';
+
+/** The handles a calculation's operands came from, kept on its record out of sight (a symbol key never reaches the model or JSON) so the working can be walked back. */
+export const CALC_OPERANDS = Symbol('calcOperands');
 
 export type CitedRecord<T> = T & { readonly handle: string };
 
@@ -28,4 +34,24 @@ export function sameAnswer<A extends unknown[], T>(run: (...args: A) => Promise<
     answers.set(key, answer);
     return answer;
   };
+}
+
+export const typedVnd = (value: Vnd | null): TypedValue | null => (value === null ? null : { kind: 'vnd', value });
+export const typedBp = (value: number | null): TypedValue | null => (value === null ? null : { kind: 'bp', value });
+
+type Field<S extends string, D = string | null> = { readonly [K in `${S}_display`]: D } & { readonly [K in `${S}_typed`]: TypedValue | null };
+
+/**
+ * `<stem>_display` and `<stem>_typed` for one amount, written from the one value so the string the answer shows and the
+ * number a calculation reads cannot differ. Every money field a read tool returns comes from here (AGENT.md §4).
+ */
+export function vndField<S extends string>(stem: S, value: Vnd, locale: Locale): Field<S, string>;
+export function vndField<S extends string>(stem: S, value: Vnd | null, locale: Locale): Field<S>;
+export function vndField<S extends string>(stem: S, value: Vnd | null, locale: Locale): Field<S> {
+  return { [`${stem}_display`]: value === null ? null : formatVnd(value, locale), [`${stem}_typed`]: typedVnd(value) } as Field<S>;
+}
+
+/** `<stem>_display` and `<stem>_typed` for one percent in basis points, from the one value. */
+export function bpField<S extends string>(stem: S, value: number | null, locale: Locale): Field<S> {
+  return { [`${stem}_display`]: value === null ? null : formatBps(value, locale), [`${stem}_typed`]: typedBp(value) } as Field<S>;
 }

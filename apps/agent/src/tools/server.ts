@@ -1,9 +1,14 @@
 import { createSdkMcpServer, tool, type McpSdkServerConfigWithInstance } from '@anthropic-ai/claude-agent-sdk';
+import { CALC_OPS } from '@esta/core/calc';
 import { z } from 'zod';
 
 export const SERVER_NAME = 'esta';
 
 export const mcpToolName = (name: string): string => `mcp__${SERVER_NAME}__${name}`;
+
+/** The operations and the kind each operand takes, which the `calculate` description lists for the model. */
+export const calculateOperations = (): string =>
+  CALC_OPS.map((op) => `${op.id}(${op.operands.join(', ')}${op.variadic === true ? ', …' : ''}) gives ${op.result}`).join('; ');
 
 const briefLine = z.object({ text: z.string(), related: z.array(z.string()) });
 
@@ -102,6 +107,10 @@ const CATALOG = {
     description:
       'Quote a page you read with WebFetch in this turn: {"url": the page, "quotes": figures copied exactly from the page, each with the words around it, at least three words}. It answers one record with source_name, published_display when the page writes a date, and quote_n_label for each quote that matches; cite quote n as {{fN.quote_n_label}}. A quote that does not match is refused with the reason, and the others still count. Write no figure from a page except through it.',
     input: { url: z.string(), quotes: z.array(z.string()) },
+  },
+  calculate: {
+    description: `Work out a figure from fields of records that hold a number: {"op", "operands": fields such as "f3.rent_display" or "f1.value_display", written as the field's name, never a number you write}. Operations: ${calculateOperations()}. It answers one record with result_display and working_display; cite the figure as {{fN.result_display}}, and use "fN.result_display" as an operand of a later call. A call whose operand is the wrong kind is refused with which one.`,
+    input: { op: z.string(), operands: z.array(z.string()) },
   },
   create_brief: {
     description:
