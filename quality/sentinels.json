@@ -24,5 +24,6 @@
   "ESTA_PAYMENT_KEY_MISSING": "statement import guard; the import always builds a key",
   "ESTA_PAYMENT_METHOD": "payment method guard; the sheet offers cash and bank transfer only",
   "ESTA_PAYMENT_NOT_UNDOABLE": "reachable: undoing a payment past its window; undoPayment answers ok false without naming the cause",
-  "ESTA_READING_IDENTITY": "meter reading identity trigger; a direct write only"
+  "ESTA_READING_IDENTITY": "meter reading identity trigger; a direct write only",
+  "ESTA_UNIT_DELETED": "a lease insert against a unit in the trash; the lease screens list live rooms only, so a direct write or a race is the only way here"
 }

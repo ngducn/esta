@@ -56,7 +56,7 @@ export async function readWatchSnapshot(db: Db, householdId: string, { asOf, tim
   const [properties, completeness, units, leases, held, invoices, documents, meters, taxPositions, extractions] = await Promise.all([
     readAll('properties', (from, to) => db.from('properties').select('id, kind, use_mode, deleted_at').eq('household_id', householdId).order('id').range(from, to)),
     readCompleteness(db, householdId),
-    readAll('units', (from, to) => db.from('units').select('id, property_id, available_from').eq('household_id', householdId).order('id').range(from, to)),
+    readAll('units', (from, to) => db.from('units').select('id, property_id, available_from').eq('household_id', householdId).is('deleted_at', null).order('id').range(from, to)),
     readLeases(db, householdId),
     readHeldDeposits(db, householdId),
     readInvoices(db, householdId, { issuedOnOrBefore: asOf }),

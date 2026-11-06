@@ -8,8 +8,8 @@ import { z } from 'zod';
 import { requireMember } from '@/server/member';
 import { createSessionClient } from '@/server/supabase/server';
 
-export const UNIT_COLUMNS = 'id, label, kind, area_m2, list_rent_vnd, available_from, sort_order';
-export const ACCOUNT_COLUMNS = 'id, unit_id, kind, provider, customer_code, holder_name, note';
+const UNIT_COLUMNS = 'id, label, kind, area_m2, list_rent_vnd, available_from, sort_order';
+const ACCOUNT_COLUMNS = 'id, unit_id, kind, provider, customer_code, holder_name, note';
 
 const unitRowSchema = z
   .object({
@@ -41,19 +41,21 @@ const accountRowSchema = z.object({
 
 export type PropertyRental = { readonly units: readonly Unit[]; readonly accounts: readonly UtilityAccount[] };
 
-/** RLS limits both reads to the member's households and the predicate to the current one. */
+/** RLS limits both reads to the member's households and the predicate to the current one. An account whose room is in the trash reads as property level until the room comes back. */
 export const loadPropertyRental = cache(async (propertyId: string): Promise<PropertyRental> => {
   const [member, supabase] = await Promise.all([requireMember(), createSessionClient()]);
   const scope = { household_id: member.household.id, property_id: propertyId };
   const [units, accounts] = await Promise.all([
-    supabase.from('units').select(UNIT_COLUMNS).match(scope),
-    supabase.from('utility_accounts').select(ACCOUNT_COLUMNS).match(scope).order('kind').order('created_at').order('id'),
+    supabase.from('units').select(UNIT_COLUMNS).match(scope).is('deleted_at', null),
+    supabase.from('utility_accounts').select(ACCOUNT_COLUMNS).match(scope).is('deleted_at', null).order('kind').order('created_at').order('id'),
   ]);
   if (units.error) throw new Error(`Reading units failed: ${units.error.message}`);
   if (accounts.error) throw new Error(`Reading utility accounts failed: ${accounts.error.message}`);
+  const live = z.array(unitRowSchema).parse(units.data);
+  const liveIds = new Set(live.map((unit) => unit.id));
   return {
-    units: z.array(unitRowSchema).parse(units.data).toSorted(compareUnits),
-    accounts: z.array(accountRowSchema).parse(accounts.data),
+    units: live.toSorted(compareUnits),
+    accounts: z.array(accountRowSchema).parse(accounts.data).map((account) => (account.unit_id === null || liveIds.has(account.unit_id) ? account : { ...account, unit_id: null })),
   };
 });
 

@@ -50,7 +50,7 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
-  actions.deleteUnit.mockReset().mockResolvedValue({ ok: true, deleted: { propertyId: 'p1' } });
+  actions.deleteUnit.mockReset().mockResolvedValue({ ok: true, deleted: { id: 'u1' } });
   actions.restoreUnit.mockReset();
 });
 
@@ -69,6 +69,13 @@ describe('UnitList', () => {
     const region = screen.getByRole('region', { name: 'Thông báo' });
     expect((await screen.findByText(restoreFailed)).closest('[role="region"]')).toBe(region);
     expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('undoes a delete by sending the id and nothing else', async () => {
+    actions.restoreUnit.mockResolvedValue({ ok: true, id: 'u1' });
+    await undoDelete();
+    expect(actions.deleteUnit).toHaveBeenCalledWith(expect.any(String));
+    expect(actions.restoreUnit).toHaveBeenCalledWith({ id: 'u1' });
   });
 
   it('shows a Hoàn tác the server refused in the toast', async () => {

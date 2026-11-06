@@ -212,8 +212,8 @@ select results_eq(
   'a member deletes the draft but not the active lease');
 
 select throws_ok(
-  $$ delete from public.units where id = '00000000-0000-4000-8000-000000000a11' $$,
-  '23503', 'ESTA_UNIT_HAS_LEASES', 'a unit with leases cannot be deleted');
+  $$ update public.units set deleted_at = now() where id = '00000000-0000-4000-8000-000000000a11' $$,
+  '23503', 'ESTA_UNIT_HAS_LEASES', 'a unit with leases cannot be put in the trash');
 select lives_ok(
   format($$ insert into public.leases (household_id, property_id, unit_id, tenant_party_id)
             values (%L, '00000000-0000-4000-8000-0000000000a2', private.whole_unit_id('00000000-0000-4000-8000-0000000000a2'),

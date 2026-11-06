@@ -33,7 +33,7 @@ describe('viewRows', () => {
     await viewRows({ db, householdId: HOUSEHOLD }, 'units', { property_id: PROPERTY, label: 'Phòng 2' });
     expect(sent).toMatchObject([{ method: 'GET', table: 'units' }]);
     const filters = Object.fromEntries(sent[0]?.query ?? []);
-    expect(filters).toEqual({ select: 'id,property_id,label', household_id: `eq.${HOUSEHOLD}`, property_id: `eq.${PROPERTY}`, label: 'eq.Phòng 2' });
+    expect(filters).toEqual({ select: 'id,property_id,label', deleted_at: 'is.null', household_id: `eq.${HOUSEHOLD}`, property_id: `eq.${PROPERTY}`, label: 'eq.Phòng 2' });
   });
 
   it('adds the planned rows of the table that match the lookup by id or by natural key', async () => {

@@ -5,6 +5,7 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import { defineConfig, globalIgnores } from 'eslint/config';
 import tseslint from 'typescript-eslint';
 import noBrowserSupabaseClient from './eslint-rules/no-browser-supabase-client.mjs';
+import noUntypedActionParams from './eslint-rules/no-untyped-action-params.mjs';
 import noGuardDisable from './eslint-rules/no-guard-disable.mjs';
 import noJsxLiterals from './eslint-rules/no-jsx-literals.mjs';
 import noSelfSourcedProperty from './eslint-rules/no-self-sourced-property.mjs';
@@ -61,6 +62,7 @@ export default defineConfig(
           'no-browser-supabase-client': noBrowserSupabaseClient,
           'no-guard-disable': noGuardDisable,
           'no-self-sourced-property': noSelfSourcedProperty,
+          'no-untyped-action-params': noUntypedActionParams,
         },
       },
     },
@@ -69,6 +71,13 @@ export default defineConfig(
   {
     files: ['apps/web/**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}'],
     rules: { 'esta/no-browser-supabase-client': 'error' },
+  },
+  {
+    files: ['apps/web/**/*.{ts,tsx}'],
+    ignores: [
+      'apps/web/src/app/(app)/properties/*/legal/actions.ts', // still ships the deleted row to the client; Q-04 moves it onto softDeleteOps
+    ],
+    rules: { 'esta/no-untyped-action-params': 'error' },
   },
   {
     // A property that draws from a production list can only find what the list already holds (#439, #450).

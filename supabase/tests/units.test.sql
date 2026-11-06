@@ -111,27 +111,29 @@ select throws_ok(
   format($$ insert into public.utility_accounts (household_id, property_id, kind) values (%L, '00000000-0000-4000-8000-0000000000a1', 'gas') $$, :'a'),
   '23514', null, 'an account kind outside the list is refused');
 
-delete from public.units where id = :'room2';
-select is((select unit_id from public.utility_accounts where id = '00000000-0000-4000-8000-0000000ac0a1'), null::uuid,
-  'deleting Phòng 2 moves its account to property level');
+update public.units set deleted_at = now() where id = :'room2';
+select is((select unit_id from public.utility_accounts where id = '00000000-0000-4000-8000-0000000ac0a1'), :'room2'::uuid,
+  'putting Phòng 2 in the trash keeps its account linked, so restoring the room brings the link back');
 
-delete from public.units where property_id = '00000000-0000-4000-8000-0000000000a2';
+update public.units set deleted_at = now() where property_id = '00000000-0000-4000-8000-0000000000a2';
 select results_eq(
-  $$ select id, label, kind from public.units where property_id = '00000000-0000-4000-8000-0000000000a2' $$,
+  $$ select id, label, kind from public.units where property_id = '00000000-0000-4000-8000-0000000000a2' and deleted_at is null $$,
   $$ values (private.whole_unit_id('00000000-0000-4000-8000-0000000000a2'), 'Toàn bộ', 'whole') $$,
-  'deleting the last unit brings back the whole unit with its derived id');
-delete from public.units where property_id = '00000000-0000-4000-8000-0000000000a1';
+  'trashing the last unit brings back the whole unit with its derived id');
+update public.units set deleted_at = now() where property_id = '00000000-0000-4000-8000-0000000000a1' and kind <> 'whole';
 select results_eq(
-  $$ select id, kind from public.units where property_id = '00000000-0000-4000-8000-0000000000a1' $$,
+  $$ select id, kind from public.units where property_id = '00000000-0000-4000-8000-0000000000a1' and deleted_at is null $$,
   $$ values (private.whole_unit_id('00000000-0000-4000-8000-0000000000a1'), 'whole') $$,
-  'deleting every room in one statement leaves exactly one whole unit');
-delete from public.units where id = private.whole_unit_id('00000000-0000-4000-8000-0000000000a3');
+  'trashing every room in one statement leaves exactly one whole unit');
+select throws_ok(
+  $$ update public.units set deleted_at = now() where id = private.whole_unit_id('00000000-0000-4000-8000-0000000000a3') $$,
+  '23514', null, 'the whole unit itself cannot be put in the trash');
 select is((select count(*)::int from public.units where property_id = '00000000-0000-4000-8000-0000000000a3'), 1,
-  'deleting the whole unit itself leaves the property with one whole unit');
+  'the property keeps its one whole unit');
 update public.properties set deleted_at = now() where id = '00000000-0000-4000-8000-0000000000a3';
 insert into public.units (household_id, property_id, label, kind) values (:'a', '00000000-0000-4000-8000-0000000000a3', 'Lô đất', 'lot');
-delete from public.units where property_id = '00000000-0000-4000-8000-0000000000a3';
-select is((select kind from public.units where property_id = '00000000-0000-4000-8000-0000000000a3'), 'whole',
+update public.units set deleted_at = now() where property_id = '00000000-0000-4000-8000-0000000000a3' and kind = 'lot';
+select is((select kind from public.units where property_id = '00000000-0000-4000-8000-0000000000a3' and deleted_at is null), 'whole',
   'an archived property still gets its whole unit back');
 
 select tests.sees_household('public.units', :'a', true);

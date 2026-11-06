@@ -67,7 +67,7 @@ test('rule 1: Cho thuê on Dãy trọ Dĩ An lists Phòng 1 to Phòng 8 with lis
 test('rule 2: adding a room at 2tr8 with a double tap on save makes exactly one Phòng 9 and flags the declared count', async ({ page }) => {
   await open(page, 'me.lane2@demo.esta.test', 'dark', PHONE);
   const seeded = encodeURIComponent(`(${EIGHT_ROOMS.map((label) => `"${label}"`).join(',')})`);
-  await rest(page, 'DELETE', `units?property_id=eq.${propertyId(2, 'di-an')}&label=not.in.${seeded}`);
+  await rest(page, 'PATCH', `units?property_id=eq.${propertyId(2, 'di-an')}&label=not.in.${seeded}&deleted_at=is.null`, { deleted_at: '2026-10-07T02:00:00Z' });
   await page.goto(rentalPath(2, 'di-an'));
   await expect(labels(page)).toHaveText(EIGHT_ROOMS);
 
@@ -91,7 +91,7 @@ test('rule 2: adding a room at 2tr8 with a double tap on save makes exactly one 
 
 test('rule 3: an electricity account on Phòng 2 lists under Phòng 2 and a water account under the property', async ({ page }) => {
   await open(page, 'ryan.lane3@demo.esta.test', 'light', DESKTOP);
-  await rest(page, 'DELETE', `utility_accounts?property_id=eq.${propertyId(3, 'di-an')}&customer_code=in.(PE0123456789,NB0123456789)`);
+  await rest(page, 'PATCH', `utility_accounts?property_id=eq.${propertyId(3, 'di-an')}&customer_code=in.(PE0123456789,NB0123456789)&deleted_at=is.null`, { deleted_at: '2026-10-07T02:00:00Z' });
   await page.goto(rentalPath(3, 'di-an'));
 
   await page.getByTestId('add-account').click();
@@ -244,6 +244,24 @@ test('deleting Phòng 8 and tapping Hoàn tác brings it back with its available
   await expectRuleOne(page, 'Có thể cho thuê từ 01/08/2026');
   await page.reload();
   await expectRuleOne(page, 'Có thể cho thuê từ 01/08/2026');
+});
+
+test('deleting a utility account and tapping Hoàn tác brings back the same account, and a reload keeps it', async ({ page }) => {
+  await open(page, 'ryan.lane4@demo.esta.test', 'light', PHONE);
+  await rest(page, 'PATCH', `utility_accounts?property_id=eq.${propertyId(4, 'di-an')}&customer_code=eq.UD0123456789&deleted_at=is.null`, { deleted_at: '2026-10-07T02:00:00Z' });
+  await rest(page, 'POST', 'utility_accounts', { household_id: seedId('seed:household:lane-4'), property_id: propertyId(4, 'di-an'), kind: 'internet', provider: 'Internet Demo', customer_code: 'UD0123456789' });
+  await page.goto(rentalPath(4, 'di-an'));
+  const account = page.getByRole('listitem').filter({ hasText: 'UD0123456789' });
+  await expect(account).toHaveCount(1);
+  await account.getByRole('button', { name: /^Xóa/u }).click();
+  await expect(account).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Hoàn tác' })).toBeVisible();
+  await page.screenshot({ path: '/tmp/owner-q-03/undo-toast-account-390.png' });
+  await page.getByRole('button', { name: 'Hoàn tác' }).click();
+  await expect(account).toHaveCount(1);
+  await page.reload();
+  await expect(account).toHaveCount(1);
+  await expect(account).toContainText('Internet Demo');
 });
 
 test('Lên and Xuống show only after Sắp xếp phòng, a move and an edited rent hold after a reload, and Xếp theo số phòng puts the rooms back in the order the Thu tiền board shows', async ({ page }) => {

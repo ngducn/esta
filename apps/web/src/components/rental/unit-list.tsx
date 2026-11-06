@@ -106,7 +106,7 @@ export function UnitList({
   const remove = (unit: Unit) => {
     setError(null);
     run(
-      () => deleteUnit(propertyId, unit.id),
+      () => deleteUnit(unit.id),
       (result) => {
         if (!result.ok) {
           setError('hasLeases' in result ? t('deleteHasLeases', { label: unit.label }) : t('deleteFailed'));

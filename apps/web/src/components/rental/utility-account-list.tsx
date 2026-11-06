@@ -61,7 +61,7 @@ export async function UtilityAccountList({ propertyId, accounts, units, canEdit 
                     <ItemActions
                       compact
                       editHref={`/properties/${propertyId}/rental/accounts/${account.id}`}
-                      remove={deleteAccount.bind(null, propertyId, account.id)}
+                      remove={deleteAccount.bind(null, account.id)}
                       restore={restoreAccount}
                       labels={{
                         edit: t('edit'),
