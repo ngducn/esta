@@ -18,18 +18,21 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 - The redesign is planned in `docs/plan/redesign-2026-11.md` (b2def8a7): six slices, RD-1 to RD-6, with its defaults listed under "Decisions taken as defaults".
 - #365's fix round 1 had never pushed. The previous owner stopped after merging main locally (840b881e in `/tmp/owner-data-trust-a/wt`). A fresh owner took it over.
 
-## Open items (state at 09:45 2026-11-06 +07)
+## Open items (state at 10:47 2026-11-06 +07)
 
-- **Ryan 2026-11-06:** "merge them and finish the project" and "when done have a deploy plan for me, list me some options to deploy". This lifted the hold for Mẹ's session; P6-07 (cloud) stays his.
-- **Merged today:** #415, #416, #421, #424, #419 (a19e5305), #422 (6adc837b, carries main's tenant route fix).
-- **Deploy options page** published for Ryan: https://claude.ai/artifact/LPwsLJvYWMRqa2xtjDT3DW (recommends A as locked, Supabase Pro once real documents go in, Resend or Brevo free). Source: /tmp/deploy-plan/research.md. Scratch file: the session scratchpad esta-deploy/index.html.
-- **#427 P6-06 deploy runbook**, head 1f28f34d, merge-ready: Opus audit B1-B7 and lane fixed in one round, scoped reader CLEAN, ci green. Held for Ryan's click (the root told him it would wait; its plan has an operator gate) and asked in chat: merge now or after the Mom test. Lows #431 (L4 plist login shell and L9 Supabase sender matter before going live). Ryan decision #428: no cloud restore tool yet.
-- **#429 P5-14 web quotes**, head 53ab8393, ci green: Opus audit (briefs/pr429-audit.md, report /tmp/review-429/audit.md) and Sonnet lane (briefs/pr429-lane.md, slot 9) running. Then one fix round, a reader, merge. Then the P5-15 owner (plan 5059-5132, migration 20261007630000).
-- **#430 P5-09 email notice**, head a9a0e2a6, ci green: Opus audit (briefs/pr430-audit.md, /tmp/review-430/audit.md) and lane (briefs/pr430-lane.md, slot 7) running. The owner added a sign-in return-link cookie beyond the plan; open redirect is the audit's first check. Then one fix round, reader, merge. Then P5-10 (plan 5192-5264): its live run spends Ryan's subscription; check the week first. P5-10 also flips north-star steps 7 and 9 on the production build.
-- **Rulings today (Ryan may overrule):** preview gets its own Supabase project (plan P6-07 step 1 already says so); restore drill local, cloud restore is #428; `ESTA_E2E_BUILD` replaced by the existing `ESTA_E2E_SERVER=build`; plus the 04:20 rulings (tenant export share, sweep clock, archiving never changes money).
-- **Lows open from today:** #420, #423, #425, #426, #431.
-- **Tripwire set** 2026-11-05 22:57: completeness rule 5 failed once beside other specs and passed alone. Clear with `rm /tmp/ci-local/one-at-a-time` when the flake is understood.
-- **#386 merged** 2026-11-02: pushes to main that touch only the notes files skip CI.
+- **Ryan 2026-11-06:** "merge them and finish the project"; "when done have a deploy plan for me"; "can we paralellize? push it through the last bit"; "can you do a thermo review and audit and rate the codebase in infrastructure, code quality and overall quality". P6-07 cloud steps and the Mom test are his.
+- **Merged today:** #415, #416, #421, #424, #419, #422 (6adc837b), #427 P6-06 runbook (562c1938, Ryan: "push it through"), #430 P5-09 email notice (2dc9a4ee, low #435).
+- **Deploy options page:** https://claude.ai/artifact/LPwsLJvYWMRqa2xtjDT3DW.
+- **#429 P5-14 web quotes:** fix round 1 running (briefs/p5-14-ff1.md, slot 8, wt /tmp/owner-p5-14/wt). It pushed 3cc4e186 with e2e documents-extract rule 5 red (DOC-5 denied Read); owner told to redact only WebSearch denials. Then a scoped reader, merge.
+- **#432 P5-15a calc core:** fix round 1 running (briefs/p5-15a-ff1.md, wt /tmp/owner-p5-15a/wt; audit /tmp/review-432/audit.md B1-B6). Then reader, merge.
+- **#433 P6-07a lane-otp:** fix round 1 running (briefs/p6-07a-ff1.md, slot 14 wt /tmp/owner-p6-07a/wt). Then reader, merge.
+- **P5-10a north-star 7/9 + live-run harness:** owner running (briefs/p5-10a.md, slot 3); told #430 merged.
+- **Codebase review for Ryan:** Opus thermo code review (briefs/codebase-thermo.md -> /tmp/review-codebase/code-quality.md) and Opus infra audit (briefs/codebase-infra.md -> /tmp/review-codebase/infrastructure.md) running; root publishes one rated report as an artifact.
+- **Then:** P5-15b wiring (calculate tool, Cách tính, T5/T6 recordings, re-key) after #429 and #432; P5-10b live run last (live calls on Ryan's subscription; check the week).
+- **Rulings today (Ryan may overrule):** preview gets its own Supabase project; restore drill local, cloud restore #428; ESTA_E2E_SERVER=build replaces ESTA_E2E_BUILD; denied searches never store input; search-guard terms (person names 2+ tokens any order, streets with or without type word, labels except type+place, no orgs); negative half rounding uses the core helper else half away from zero.
+- **Not ours:** pid 56207 is Ryan's slot 5 worker in /private/tmp/ryan-test; leave it.
+- **Lows open from today:** #420, #423, #425, #426, #431, #435.
+- **Tripwire set** 2026-11-05 22:57; clear with `rm /tmp/ci-local/one-at-a-time` when the flake is understood.
 
 ## Waiting for Ryan (defaults apply)
 
@@ -58,7 +61,7 @@ Ruled 2026-11-02: Thu tiền "Đã thu" counts payments toward this month's rent
 
 ## Budget
 
-Week at 75% at 09:45 on 2026-11-06, resets 2026-11-07 11:00 +07. Guard for "finish the project": stop spawns at 90%, pause owners at 95%.
+Week at 77% at 10:47 on 2026-11-06, resets 2026-11-07 11:00 +07. Guard for "finish the project": stop spawns at 90%, pause owners at 95%.
 
 Week at 71% on 2026-11-06 04:20 +07 (65% at 22:30 the night before), resets 2026-11-07 11:00 +07. Tonight cost about 6% for 13 merges. This run was paused from 2026-11-02, when the week stood near 18%, so most of that is other work. Ryan said "ok im back, lets continue" and was told the figure.
 
