@@ -46,6 +46,7 @@ Review checklist for classes no mechanical check catches (a reviewer reads for e
 3. Count, then write, until `twoAtOnce` (Q-16) covers the write.
 4. A denylist where an allowlist belongs: a fix that refuses the bad spellings it was shown (monthly rates, #439) instead of accepting only the good ones. Ask for a property test that random neighbours of the input never pass.
 5. A merge of main into a branch: compare the merge result with main's side (`git diff <merge>^2 <merge>`) and read every removed line. A gate that stops running looks exactly like green (#448 dropped `classes:check` and `check:migration-order` this way). `scripts/package-scripts.test.ts` catches a lost `scripts/check-*.ts` gate or entry point; it cannot catch a dropped line elsewhere.
+6. Every number in a trail doc (a time, a count, a cost, a quoted answer) cites a committed file that holds it; a figure read off a console and kept nowhere is not stated.
 
 ## Planned tiers for the remaining PRs
 
