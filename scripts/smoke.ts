@@ -1,4 +1,10 @@
-export const CRON_PATHS = ['/api/cron/lease-status', '/api/cron/invoices', '/api/cron/document-sweep', '/api/cron/keep-alive'];
+import { readFileSync } from 'node:fs';
+import { z } from 'zod';
+
+const vercelConfig = z.object({ crons: z.array(z.object({ path: z.string() })) });
+
+/** The routes Vercel schedules, read from vercel.json so a new cron cannot be left out of the check. */
+export const CRON_PATHS: readonly string[] = vercelConfig.parse(JSON.parse(readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'))).crons.map((cron) => cron.path);
 
 const REQUIRED_HEADERS = ['strict-transport-security', 'x-content-type-options', 'referrer-policy', 'permissions-policy'];
 
@@ -6,12 +12,13 @@ export type SmokeResult = { readonly name: string; readonly ok: boolean; readonl
 
 type BuildEnv = 'production' | 'test';
 
-async function status(base: string, path: string, init?: RequestInit): Promise<number> {
-  return (await fetch(new URL(path, base), { redirect: 'manual', ...init })).status;
+/** GET only, and a redirect stays a redirect: following one could land on a page that happens to pass. */
+async function status(base: string, path: string): Promise<number> {
+  return (await fetch(new URL(path, base), { redirect: 'manual' })).status;
 }
 
 export async function runSmoke(base: string, buildEnv: BuildEnv): Promise<SmokeResult[]> {
-  const signIn = await fetch(new URL('/sign-in', base));
+  const signIn = await fetch(new URL('/sign-in', base), { redirect: 'manual' });
   const html = await signIn.text();
   const missing = REQUIRED_HEADERS.filter((name) => !signIn.headers.has(name));
   const csp = signIn.headers.get('content-security-policy') ?? '';
@@ -22,10 +29,10 @@ export async function runSmoke(base: string, buildEnv: BuildEnv): Promise<SmokeR
   ];
   if (buildEnv === 'production') {
     const dev = await status(base, '/dev');
-    const clock = await status(base, '/api/test/clock', { method: 'POST' });
+    const clock = await status(base, '/api/test/clock');
     results.push(
       { name: '/dev is hidden', ok: dev === 404, detail: String(dev) },
-      { name: '/api/test/clock is hidden', ok: clock === 404, detail: String(clock) },
+      { name: '/api/test/clock is hidden', ok: clock === 404, detail: clock === 404 ? '404, hidden' : `${clock}, ${clock === 405 || clock === 401 ? 'visible, the route exists' : 'not hidden'}` },
     );
   }
   for (const path of CRON_PATHS) {
