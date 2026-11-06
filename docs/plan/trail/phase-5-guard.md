@@ -52,7 +52,7 @@ Three classes of false reject, each a list of the only contexts the word passes 
 - A context that `có` or `còn` stands before never passes: `Có hai bên ký` and `Còn hai bên phòng` count sides.
 - `phần trăm` as a noun passes when no number word stands before `phần` (`một phần trăm`, `ba phần trăm` are rejected). `trăm` stays an amount anywhere else.
 
-**Accepted trade (L4).** `cả hai` before a verb passes even when it restates a count the answer never named: "Hiện cả hai đều chưa vượt ngưỡng." says the same as the true reject `Hiện cả hai chủ sở hữu chưa vượt ngưỡng.` without its noun. No mechanical check can see whether the two were named earlier, so the trade is recorded here and in the review checklist (`verification-tiers.md`, item 7).
+**Accepted trade (L4).** `cả hai` before a verb passes even when it restates a count the answer never named: "Hiện cả hai đều chưa vượt ngưỡng." says the same as the true reject `Hiện cả hai chủ sở hữu chưa vượt ngưỡng.` without its noun. No mechanical check can see whether the two were named earlier, so the trade is recorded here and in the review checklist (`verification-tiers.md`, item 8).
 
 A legal article number and a law's year (digits in `Điều 118`, `Luật Nhà ở 2023`) did not appear in the 16 rejects, so no context for them was added: a digit is a figure the model typed, and the guard keeps rejecting it until a live answer shows a case. `thứ hai` (Monday or second) is a date word the guard rejects on purpose.
 

@@ -4,7 +4,7 @@ import { isoDate } from '@esta/core/date';
 import { vnd } from '@esta/core/money';
 import { PDFDocument } from 'pdf-lib';
 import { PNG } from 'pngjs';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { decodeQrPng } from '../../../../../scripts/decode-qr';
 import { pdfPagePngs } from '../../../../../scripts/pdf-pages.mjs';
 import { pdfText } from '../../../../../scripts/receipt-text';
@@ -59,9 +59,18 @@ const input = {
 const partPaid = buildReceiptModel(input);
 const notice = buildReceiptModel({ ...input, receivedVnd: vnd(0), outstandingVnd: vnd(3_680_000) });
 
+/** Drawing a page with pdf.js and reading its code takes 1 to 2.7 s alone and 5.4 s in a full parallel run (measured 2026-11-06), so the 5 s default fails under load. */
+const RENDERS_A_PAGE = { timeout: 15_000 };
+
+let partPaidPdf: Uint8Array;
+beforeAll(async () => {
+  partPaidPdf = await renderReceiptPdf(partPaid);
+  await pdfText(partPaidPdf);
+});
+
 describe('renderReceiptPdf', () => {
   it('extracts the tenant, title, total and words in NFC from an A5 page (LSE-6)', async () => {
-    const bytes = await renderReceiptPdf(partPaid);
+    const bytes = partPaidPdf;
     const text = await pdfText(bytes);
     expect(text).toContain('Đặng Thị Hường Demo');
     expect(text).not.toContain('Đặng Thị Hường Demo'.normalize('NFD'));
@@ -79,7 +88,7 @@ describe('renderReceiptPdf', () => {
     expect(text).not.toContain('Thông báo tiền thuê');
   });
 
-  it('titles a bill with nothing received Thông báo tiền thuê and prints no received row, with the code for the whole total', async () => {
+  it('titles a bill with nothing received Thông báo tiền thuê and prints no received row, with the code for the whole total', RENDERS_A_PAGE, async () => {
     const bytes = await renderReceiptPdf(notice);
     const text = await pdfText(bytes);
     expect(text).toContain('Thông báo tiền thuê');
@@ -109,7 +118,7 @@ describe('renderReceiptPng', () => {
   it.each([
     ['part-paid', partPaid],
     ['notice', notice],
-  ])('draws a 1080 × 1527 %s picture whose code a bank app reads', async (_, receipt) => {
+  ])('draws a 1080 × 1527 %s picture whose code a bank app reads', RENDERS_A_PAGE, async (_, receipt) => {
     const bytes = await renderReceiptPng(receipt);
     const png = PNG.sync.read(bytes);
     expect([png.width, png.height]).toEqual([PNG_PX.width, PNG_PX.height]);
@@ -142,7 +151,7 @@ const long = buildReceiptModel({
 });
 
 describe('a long receipt', () => {
-  it('keeps every line and a scannable code in the PDF, on as many A5 pages as it needs', async () => {
+  it('keeps every line and a scannable code in the PDF, on as many A5 pages as it needs', RENDERS_A_PAGE, async () => {
     const bytes = await renderReceiptPdf(long);
     const text = await pdfText(bytes);
     for (const line of long.lines) expect(text).toContain(line.label);
@@ -154,7 +163,7 @@ describe('a long receipt', () => {
     expect(codes.filter((code) => code !== null)).toEqual([PAYLOAD]);
   });
 
-  it('grows the picture taller instead of cutting off the code', async () => {
+  it('grows the picture taller instead of cutting off the code', RENDERS_A_PAGE, async () => {
     const bytes = await renderReceiptPng(long);
     const png = PNG.sync.read(bytes);
     expect(png.width).toBe(PNG_PX.width);

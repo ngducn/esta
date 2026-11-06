@@ -1,0 +1,30 @@
+[
+  {
+    "kind": "alert",
+    "title": "Tiền thuê quá hạn kỳ thanh toán, Phòng 5 Dãy trọ Dĩ An",
+    "body_md": "Kỳ thanh toán của **Hoàng Văn Em Demo** tại Phòng 5 Dãy trọ Dĩ An chưa được thanh toán.\n\n- Số tiền còn nợ: **2.800.000 ₫**\n- Hạn thanh toán: 25/09/2026\n- Đã quá hạn: 12 ngày\n\nNên liên hệ người thuê để nhắc nhẹ và thống nhất ngày thanh toán.",
+    "dedupe_key": "watch:W1:group:2026-10-07",
+    "created_at": "2026-10-07T00:00:00+00:00"
+  },
+  {
+    "kind": "alert",
+    "title": "Các mục cần theo dõi",
+    "body_md": "- **Kho Biên Hòa**: đang trống từ 29/07/2026, được 70 ngày.\n- **Phòng 8 Dãy trọ Dĩ An**: đang trống từ 01/08/2026, được 67 ngày.\n- **Bảo hiểm cháy nổ Nhà phố Q7** (Nhà phố Q7): hết hạn ngày 30/10/2026, còn 23 ngày.\n- **Nguyễn Thị Demo**: doanh thu năm 2026 dự kiến 482.658.469 ₫, đạt 96% so với ngưỡng 500.000.000 ₫.\n- **Đất vườn Long An**: hồ sơ mới đầy đủ 30%, nên bổ sung thông tin về sổ và thửa đất.",
+    "dedupe_key": "watch_digest:2026-10-07",
+    "created_at": "2026-10-07T00:00:00+00:00"
+  },
+  {
+    "kind": "alert",
+    "title": "Hợp đồng thuê sắp hết hạn, Căn hộ Thủ Đức",
+    "body_md": "Hợp đồng thuê của **Phạm Thị Lan Demo** tại Căn hộ Thủ Đức sẽ kết thúc vào 01/11/2026, còn 25 ngày.\n\nNên trao đổi với người thuê xem có gia hạn hợp đồng thuê hay không.",
+    "dedupe_key": "watch:W3:group:2026-10-07",
+    "created_at": "2026-10-07T00:00:00+00:00"
+  },
+  {
+    "kind": "alert",
+    "title": "Tiền cọc cần xử lý, Phòng 7 Dãy trọ Dĩ An",
+    "body_md": "Hợp đồng thuê của **Bùi Văn Hùng Demo** tại Phòng 7 Dãy trọ Dĩ An đã kết thúc ngày 15/09/2026, cách nay 22 ngày.\n\n- Tiền cọc đang giữ: **2.800.000 ₫**\n\nNên kiểm tra phòng và hoàn trả hoặc đối trừ tiền cọc cho người thuê.",
+    "dedupe_key": "watch:W6:group:2026-10-07",
+    "created_at": "2026-10-07T00:00:00+00:00"
+  }
+]

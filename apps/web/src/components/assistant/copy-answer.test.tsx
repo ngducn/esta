@@ -1,5 +1,5 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { renderInLocale } from '@/test/render';
 import { UndoToastProvider } from '../undo-toast-provider';
 import { CopyAnswer } from './copy-answer';
@@ -7,6 +7,7 @@ import { CopyAnswer } from './copy-answer';
 const labels = { copy: 'Sao chép', copyLabel: 'Sao chép câu trả lời lúc 09:00', copied: 'Đã sao chép câu trả lời.', failed: 'Chưa sao chép được.' };
 
 describe('Sao chép (#351)', () => {
+  beforeAll(() => import('@/components/ui/toast'));
   afterEach(() => Reflect.deleteProperty(navigator, 'clipboard'));
 
   it('leaves the answer it wraps selected when the clipboard refuses, so Mẹ can copy it with a long press', async () => {
