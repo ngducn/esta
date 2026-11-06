@@ -122,7 +122,8 @@ describe('newParcelSchema', () => {
 
 describe('landTermEnded (#367)', () => {
   const today = isoDate('2026-11-06');
-  const purposes = (...terms: (string | undefined)[]) => terms.map((term) => ({ land_use_code: 'ONT', ...(term === undefined ? {} : { term }) }));
+  const purposes = (...terms: (string | undefined)[]) =>
+    terms.map((term) => purposeSchema.parse({ land_use_code: 'ONT', ...(term === undefined ? {} : { term }) }));
 
   it.each([
     ['a term that ended yesterday', ['2026-11-05'], true],

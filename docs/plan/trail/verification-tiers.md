@@ -45,6 +45,7 @@ Review checklist for classes no mechanical check catches (a reviewer reads for e
 2. Clock edges, until `clockEdges()` (Q-16) is used by every period-keyed test.
 3. Count, then write, until `twoAtOnce` (Q-16) covers the write.
 4. A denylist where an allowlist belongs: a fix that refuses the bad spellings it was shown (monthly rates, #439) instead of accepting only the good ones. Ask for a property test that random neighbours of the input never pass.
+5. A rule only TypeScript holds: if TS refuses it, the database refuses it. A form, action or parser that rejects a future date, a link to another property's row or a value outside a range is matched by a trigger or constraint, and the table's pgTAP file tries the forbidden write directly (expenses, #211).
 
 ## Planned tiers for the remaining PRs
 

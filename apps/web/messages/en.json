@@ -986,6 +986,8 @@
     "nicknameRequired": "Enter a name for the property.",
     "kind": "Kind",
     "detail": "{key, select, building_name {Building name} block {Block} floor {Floor} unit_no {Unit number} management_fee_vnd {Monthly management fee} room_count {Number of rooms} frontage_m {Frontage (m)} road_width_m {Road width in front (m)} other {Detail}}",
+    "detailShort": "{key, select, room_count {room count} frontage_m {frontage} road_width_m {road width} building_name {building name} block {block} floor {floor} unit_no {unit number} management_fee_vnd {management fee} other {detail}}",
+    "droppedDetails": "This kind of property has no field for {details}. Saving deletes what was typed. Pick the old kind again to keep it.",
     "detailInvalid": "This number could not be read. Type digits only, for example 12 or 4,5.",
     "useMode": "Use",
     "legalStatus": "Legal status",

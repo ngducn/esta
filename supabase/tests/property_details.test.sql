@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(24);
+select plan(25);
 
 select tests.create_household('a') as a \gset
 
@@ -30,6 +30,10 @@ select throws_ok(format($$ update public.properties set kind = 'townhouse' where
   '23514', null, 'changing the kind keeps the old details, so the check refuses it until they are replaced');
 select lives_ok(format($$ update public.properties set kind = 'townhouse', kind_details = '{}' where id = %L $$, :'pa'),
   'changing the kind with its own details passes');
+select ok(
+  exists (select from public.audit_log where table_name = 'properties' and row_id = :'pa' and action = 'update'
+    and diff::text like '%A-12.05%'),
+  'the details a kind change drops stay in the audit history, so the loss can be put back by hand (#397)');
 select throws_ok(format($$ update public.properties set acquisition_kind = 'lottery' where id = %L $$, :'pa'),
   '23514', null, 'an unknown acquisition_kind is refused');
 select throws_ok(format($$ update public.properties set acquisition_price_vnd = -1 where id = %L $$, :'pa'),

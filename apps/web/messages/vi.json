@@ -986,6 +986,8 @@
     "nicknameRequired": "Nhập tên gọi của tài sản.",
     "kind": "Loại tài sản",
     "detail": "{key, select, building_name {Tên tòa nhà} block {Block} floor {Tầng} unit_no {Số căn} management_fee_vnd {Phí quản lý mỗi tháng} room_count {Số phòng} frontage_m {Mặt tiền (m)} road_width_m {Đường trước nhà rộng (m)} other {Chi tiết}}",
+    "detailShort": "{key, select, room_count {số phòng} frontage_m {mặt tiền} road_width_m {đường trước nhà} building_name {tên tòa nhà} block {block} floor {tầng} unit_no {số căn} management_fee_vnd {phí quản lý} other {chi tiết}}",
+    "droppedDetails": "Loại tài sản này không có mục {details}. Khi lưu, phần đã nhập sẽ bị xóa. Chọn lại loại cũ để giữ.",
     "detailInvalid": "Chưa đọc được số này. Chỉ nhập số, ví dụ 12 hoặc 4,5.",
     "useMode": "Sử dụng",
     "legalStatus": "Pháp lý",
