@@ -20,6 +20,7 @@ const parcel = seedId(`seed:parcel:${HOUSEHOLD}:q7:1`);
 const statementImport = seedId(`seed:statement-import:${HOUSEHOLD}`);
 const conversation = seedId(`seed:conversation:${HOUSEHOLD}`);
 const utilityAccount = seedId(`seed:utility-account:${HOUSEHOLD}:di-an:electricity`);
+const tenant = seedId(`seed:party:tenant-${HOUSEHOLD}:di-an:1`);
 
 const route = (page: string, path: string, viewer: Viewer = 'member'): AppRoute => ({ id: path === '/' ? 'home' : path.slice(1).replace(/[/?=&]/g, '-'), page, path, viewer });
 
@@ -60,6 +61,7 @@ export const APP_ROUTES: readonly AppRoute[] = [
   route('(app)/reports/tax', '/reports/tax'),
   route('(app)/settings', '/settings'),
   route('(app)/settings/history', '/settings/history', 'operator'),
+  route('(app)/tenants/[partyId]', `/tenants/${tenant}`),
   route('sign-in', '/sign-in', 'signed-out'),
   route('sign-in/code', '/sign-in/code', 'signed-out'),
   route('sign-up', '/sign-up', 'signed-out'),
