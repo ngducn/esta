@@ -4,8 +4,8 @@
   // string, a config or a shell script names, so knip cannot see it is run.
   "workspaces": {
     ".": {
-      // Scripts run through `pnpm <name>`, node, or tools/ci; the statements fixture generator is run by hand (the other two are `fixtures:*` scripts); Playwright specs are found by knip's own plugin.
-      "entry": ["scripts/*.ts", "scripts/**/*.test.ts", "eslint-rules/*.mjs", "fixtures/statements/generate.ts"],
+      // Scripts run through `pnpm <name>`, node, or tools/ci; the statements fixture generator is run by hand (the other two are `fixtures:*` scripts); `e2e/warm-routes.ts` is Playwright globalSetup, named by a string in a ternary in playwright.config.ts; Playwright specs are found by knip's own plugin.
+      "entry": ["scripts/*.ts", "scripts/**/*.test.ts", "eslint-rules/*.mjs", "fixtures/statements/generate.ts", "e2e/warm-routes.ts"],
       "project": ["scripts/**/*.ts", "eslint-rules/**", "e2e/**/*.ts", "fixtures/**/*.ts"]
     },
     "apps/connector": {
