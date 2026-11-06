@@ -20,6 +20,8 @@ export async function visit(page: Page, route: OpenRoute): Promise<void> {
   await page.goto(route.path);
   await page.locator('main h1, main h2, h1').first().waitFor({ state: 'visible', timeout: 60_000 });
   await page.evaluate(() => document.fonts.ready);
+  const failed = await page.getByRole('alert').filter({ hasText: 'Chưa tải được' }).count();
+  if (failed > 0) throw new Error(`${route.id} drew its failed-load message instead of its page`);
 }
 
 export const VIEWERS: readonly Viewer[] = ['member', 'operator', 'signed-out', 'newcomer'];
