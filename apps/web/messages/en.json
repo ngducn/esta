@@ -153,7 +153,7 @@
     "mapTitle": "Property map",
     "mapOpen": "Open the map",
     "mapLabel": "Map of {count, plural, one {# pinned property} other {# pinned properties}}",
-    "offline": "Could not load. Check the network and try again.",
+    "offline": "You are offline. The list below is from the last load; reload once you are back online.",
     "errorTitle": "Overview did not load",
     "errorBody": "Check the network and try again. Recorded payments are saved.",
     "retry": "Try again",
@@ -432,7 +432,8 @@
     "accountOf": "Account: {name}",
     "signOut": "Sign out",
     "more": "More",
-    "close": "Close"
+    "close": "Close",
+    "offlineBlocked": "You are offline, so this page cannot open yet. Tap again once you are back online."
   },
   "sections": {
     "documents": "Documents will keep certificates, leases and ID cards in one place, found at once with one search box.",

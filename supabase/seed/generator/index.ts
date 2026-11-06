@@ -13,7 +13,8 @@ import { billingSql, depositEntries, leaseAmendments, leases, tenants } from './
 import { ownershipShares } from './ownership.ts';
 import { ownerTaxInputs, parties } from './parties.ts';
 import { properties, PROPERTY_SEEDS } from './properties.ts';
-import { agentItems, agentJobs, agentRuns } from './agent.ts';
+import { agentItems, agentJobs, agentRuns, conversationSql } from './agent.ts';
+import { statementImports, statementRows } from './statements.ts';
 import { researchTopics } from './research.ts';
 import { tasks } from './tasks.ts';
 import { renderSeed, type TableRows } from './sql.ts';
@@ -48,6 +49,8 @@ const EMITTERS: readonly Emitter[] = [
   agentJobs,
   agentRuns,
   agentItems,
+  statementImports,
+  statementRows,
   researchTopics,
 ];
 
@@ -75,7 +78,7 @@ export function seedTables({ lanes, asOf, variant }: GenerateOptions): SeedTable
     ...(upsert === true ? { upsert } : {}),
     rows: households.flatMap((household) => rows({ household, properties, asOf, today })),
   }));
-  return { households, tables, tail: [billingSql(households, { properties }, asOf), contractReadingsSql(households, { properties })].join('\n') };
+  return { households, tables, tail: [billingSql(households, { properties }, asOf), contractReadingsSql(households, { properties }), conversationSql(households)].join('\n') };
 }
 
 export function generate(options: GenerateOptions): string {
