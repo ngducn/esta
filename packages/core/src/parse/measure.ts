@@ -12,6 +12,8 @@ const MAX_HUNDREDTHS = 999_999_999_999;
 const GROUPED = /^(?<integer>[1-9]\d{0,2}(?<mark>[. \u00A0])\d{3}(?:\k<mark>\d{3})*)(?:,(?<fraction>\d+))?$/u;
 /** A number that starts with 0 and goes on after a dot or a space: no thousands group starts with 0, and `0.450` is no decimal Mẹ meant. */
 const LEADING_ZERO_GROUP = /^0\d*[. \u00A0]\d/u;
+/** Digits and separators only: any other text, such as the unit in `0.5 ha`, is what to fix first, and the comma advice would mislead. */
+const BARE_NUMBER = /^[\d.,\u00A0 ]+$/u;
 const PLAIN = /^(?<integer>\d+)(?:[.,](?<fraction>\d+))?$/u;
 
 /**
@@ -25,7 +27,7 @@ export function parseMeasureInput(text: string, measure: Measure): Result<number
   if (trimmed === '') return { ok: false, reason: 'empty' };
   const match = GROUPED.exec(trimmed) ?? PLAIN.exec(trimmed);
   const { integer = '', fraction = '' } = match?.groups ?? {};
-  if (LEADING_ZERO_GROUP.test(trimmed) && (match === null || fraction.length > 2)) return { ok: false, reason: 'leading_zero' };
+  if (BARE_NUMBER.test(trimmed) && LEADING_ZERO_GROUP.test(trimmed) && (match === null || fraction.length > 2)) return { ok: false, reason: 'leading_zero' };
   if (match === null) return { ok: false, reason: 'invalid' };
   if (fraction.length > 2) return { ok: false, reason: 'too_precise' };
   const hundredths = Number(integer.replace(/\D/g, '')) * 100 + Number(fraction.padEnd(2, '0'));

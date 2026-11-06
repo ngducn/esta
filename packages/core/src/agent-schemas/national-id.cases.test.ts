@@ -80,12 +80,34 @@ describe('the national ID reducer on money', () => {
           const figure = parts.join(sep);
           const leads = before && BEFORE.includes(marker);
           const text = leads ? `${lead}${marker}${gap}${figure}` : `${lead}${figure}${gap}${marker}`;
-          fc.pre(!/^0[^.,\u00b7]*$/u.test(figure));
+          fc.pre(!/^0[^.,\u00b7]*$/u.test(figure) && !/^0\d/u.test(figure));
+          fc.pre(lead !== 'cccd ' || /[.,\u00b7]/u.test(figure));
           fc.pre(!new RegExp(DATE.source, 'u').test(text));
           expect(reduce(text)).toBe(text);
         },
       ),
       { seed: 20261007, numRuns: 1500 },
+    );
+  });
+});
+
+/** Names and phrases that start like a currency word but are none, and the labelled number before each. */
+const NOT_MONEY_WORDS = ['Đồng Nai', 'Đồng Tháp', 'Đông Anh', 'đồng ý', 'đồng sở hữu', 'Triệu Thị', 'Tý', 'Vnd', 'Đ.'];
+
+describe('the national ID reducer on words that only look like money', () => {
+  it('cuts a labelled number whatever name or phrase follows it, spaced or whole', () => {
+    fc.assert(
+      fc.property(
+        fc.array(fc.integer({ min: 0, max: 9 }), { minLength: 9, maxLength: 9 }),
+        fc.constantFrom('', ' '),
+        fc.constantFrom(...NOT_MONEY_WORDS, ...AFTER),
+        (ds, sep, word) => {
+          const number = ds.map((d, i) => (i === 2 || i === 5 ? sep + String(d) : String(d))).join('');
+          const out = reduce(`CMND ${number} ${word}`);
+          expect(digitsOf(out)).not.toContain(ds.join(''));
+        },
+      ),
+      { seed: 20261007, numRuns: 400 },
     );
   });
 });

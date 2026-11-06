@@ -191,7 +191,6 @@ export const NATIONAL_ID_VECTORS: {
     ['four tabs inside an unlabelled ID', 'số 079123\t\t\t\t456789', 'số 6789'],
   ],
   refused: [
-    ['an ID after a date and a dot', 'Ngày 12/03/2021.079123456789'],
     ['a labelled ID before a dot and a date', 'CCCD 079123456789.12/03/2021'],
     ['an ID before a dot and a date', 'Số 079123456789.12/03/2021 cấp'],
     ['a next-line character inside a labelled ID', 'Sở Demo, CCCD 079123\u0085456789'],

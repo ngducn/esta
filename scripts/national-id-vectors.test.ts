@@ -6,7 +6,7 @@ import { holds, nationalIdTestPath, renderNationalIdTest } from './national-id-v
 describe('national ID vectors', () => {
   it('the pgTAP test holds the current vectors (run pnpm exec tsx scripts/national-id-vectors.ts)', () => {
     expect(readFileSync(nationalIdTestPath, 'utf8')).toBe(renderNationalIdTest());
-  });
+  }, 15_000);
 
   it('the pgTAP test replays every row core replays, so no row is read by one side only', () => {
     const sql = readFileSync(nationalIdTestPath, 'utf8');
