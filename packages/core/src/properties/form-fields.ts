@@ -37,6 +37,8 @@ export const KIND_FIELDS: { readonly [K in PropertyKind]: readonly KindField[] }
 
 export type KindFieldTexts = Partial<Record<KindDetailKey, string>>;
 
+const KIND_DETAIL_KEYS_ORDER = Object.keys(INPUTS) as KindDetailKey[];
+
 const INTEGER = /^-?[0-9]{1,6}$/;
 
 function readValue(input: KindFieldInput, text: string): string | number | null {
@@ -70,6 +72,15 @@ export function readKindDetails<K extends PropertyKind>(kind: K, texts: KindFiel
     details[key] = value;
   }
   return { ok: true, value: details as DetailsOf<K> };
+}
+
+/**
+ * The details typed in the form that the chosen kind has no field for, so saving drops them: a land property changed to
+ * a warehouse loses its frontage and road width (#397).
+ */
+export function droppedDetailKeys(kind: PropertyKind, texts: KindFieldTexts): KindDetailKey[] {
+  const kept = new Set<KindDetailKey>(KIND_FIELDS[kind].map(({ key }) => key));
+  return KIND_DETAIL_KEYS_ORDER.filter((key) => !kept.has(key) && (texts[key] ?? '').trim() !== '');
 }
 
 /** An amount as Mẹ types it back into a money field, `1.200.000`; `parseVndInput` reads it unchanged. */

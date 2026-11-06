@@ -1,5 +1,6 @@
 import { formatDate, formatVnd } from '@esta/core/format';
-import { shownStatus } from '@esta/core/schemas/legal';
+import type { IsoDate } from '@esta/core/date';
+import { landTermEnded, shownStatus } from '@esta/core/schemas/legal';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { StatusShape, statusBadge, statusMarks } from '@/components/status-shape';
 import { cn } from '@/lib/utils';
@@ -7,23 +8,33 @@ import type { LegalRow } from '@esta/ops';
 import type { PartyOption } from '@/server/properties/legal';
 import { LegalCard } from './legal-card';
 
-const statusMark = { valid: 'paid', undated: 'draft', mortgaged: 'due', replaced: 'ended', lost: 'overdue' } as const;
+const statusMark = { valid: 'paid', undated: 'draft', term_ended: 'due', mortgaged: 'due', replaced: 'ended', lost: 'overdue' } as const;
 
 export async function CertificateCard({
   propertyId,
   certificate,
+  parcels,
+  today,
   parties,
   canEdit,
 }: {
   propertyId: string;
   certificate: LegalRow<'certificates'>;
+  parcels: readonly LegalRow<'parcels'>[];
+  today: IsoDate;
   parties: ReadonlyMap<string, PartyOption>;
   canEdit: boolean;
 }) {
   const [t, locale] = await Promise.all([getTranslations('propertyLegal'), getLocale()]);
   const holders = certificate.holder_party_ids.flatMap((id) => parties.get(id)?.fullName ?? []);
   const { mortgage } = certificate;
-  const status = shownStatus(certificate);
+  const status = shownStatus(
+    certificate,
+    landTermEnded(
+      parcels.filter((parcel) => parcel.certificate_id === certificate.id).flatMap((parcel) => parcel.purposes),
+      today,
+    ),
+  );
   const mark = statusMark[status];
   const facts = [
     certificate.serial_no === null ? null : t('serial', { serial: certificate.serial_no }),

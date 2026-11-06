@@ -137,6 +137,15 @@ export default defineConfig(
     },
   },
   {
+    files: ['apps/web/src/app/**/page.tsx', 'apps/web/src/app/**/layout.tsx'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { paths: [{ name: '@/server/clock', importNames: ['readRequestClock'], message: 'Pages and layouts read the clock through getClock; readRequestClock is for route handlers (#53).' }] },
+      ],
+    },
+  },
+  {
     // The esta rules are not registered for eslint-rules/, which holds their sources and tests.
     ignores: ['apps/web/src/app/dev/**', 'eslint-rules/**'],
     plugins: { '@eslint-community/eslint-comments': eslintComments },
