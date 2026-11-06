@@ -32,6 +32,7 @@ const SENTINELS: Readonly<Record<string, ExtractionRefusal | CommonRefusal>> = {
   ESTA_NO_PROPERTY: { kind: 'no_property' },
   ESTA_PROPERTY_NOT_FOUND: { kind: 'no_property' },
   ESTA_FORBIDDEN: { kind: 'forbidden' },
+  ESTA_EXTRACTION_STEP: { kind: 'failed' },
 };
 
 /** `accept_extraction`'s arguments: the plan's writes and the fields they came from, ready for one call. */
