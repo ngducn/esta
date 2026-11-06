@@ -14,7 +14,7 @@ import { loadReceivingAccount } from '@/server/invoices/qr';
 import { createSessionClient } from '@/server/supabase/server';
 import { loadOpenTasks } from '@/server/tasks/load';
 
-export type HomeLease = TodaySnapshot['leases'][number] & { readonly propertyId: string; readonly wholeUnit: boolean };
+type HomeLease = TodaySnapshot['leases'][number] & { readonly propertyId: string; readonly wholeUnit: boolean };
 
 /** Today's list reads the board's own rows, so a bill there and on Thu tiền is one bill in one state. */
 export type HomeSnapshot = Omit<TodaySnapshot, 'bills' | 'leases'> & { readonly bills: readonly CollectionRow[]; readonly leases: readonly HomeLease[] };

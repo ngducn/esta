@@ -13,7 +13,7 @@ import { buildSdkEnv, buildSdkOptions } from './options';
 import { decideToolUse, isWebTool, pathPolicyHook, rememberSearchHits, toolCaps, type DenialCode, type ToolCap, type ToolPolicy } from './path-policy';
 import { fromSdkResult, type SessionResult } from './result';
 
-export type ToolCall = { readonly name: string; readonly input: Record<string, unknown> };
+type ToolCall = { readonly name: string; readonly input: Record<string, unknown> };
 
 export type BuiltInResult = ToolCall & { readonly result: unknown };
 
@@ -27,7 +27,7 @@ export class SessionGoneError extends Error {
 const SESSION_GONE = 'No conversation found with session ID';
 
 /** A call the policy refused, as the run record keeps it: the tool and why, and the call's input except a WebSearch's, which holds what the model tried to send out (see `storedDenial`). */
-export type Denial = { readonly tool_name: string; readonly code: DenialCode; readonly tool_input: Record<string, unknown> };
+type Denial = { readonly tool_name: string; readonly code: DenialCode; readonly tool_input: Record<string, unknown> };
 
 const stoppedRuns = new WeakMap<object, SessionRun>();
 

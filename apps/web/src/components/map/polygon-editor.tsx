@@ -20,7 +20,7 @@ export type RingCheck =
   | { readonly kind: 'valid'; readonly squareMeters: number };
 
 /** What the panel may save: a ring with 3 distinct corners whose edges do not cross, and its estimated area. */
-export function checkRing(ring: readonly GeoPoint[] | null): RingCheck {
+function checkRing(ring: readonly GeoPoint[] | null): RingCheck {
   if (ring === null || ring.length === 0) return { kind: 'empty' };
   const normalized = normalizeRing(ring);
   if (!normalized.ok) return { kind: 'too_few' };

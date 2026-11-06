@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { seedId } from '../../supabase/seed/generator/ids.ts';
 
 const COUNT = 1000;
-export const BULK_LANE = 5;
+const BULK_LANE = 5;
 
 /** Adds 1,000 synthetic Demo properties to a household (lane household 5 by default), keyed by seed keys so a rerun converges. */
 export async function addBulkProperties(household: string = seedId(`seed:household:lane-${BULK_LANE}`)): Promise<void> {

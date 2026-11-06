@@ -2,7 +2,7 @@ import 'server-only';
 import { MAX_AMOUNT_VND, vnd } from '@esta/core/money';
 import { isoDateSchema } from '@esta/core/schemas/legal';
 import type { ColumnPreset } from '@esta/core/matching';
-import { idSchema, statementColumnsSchema } from '@esta/ops';
+import { idSchema, readAll, statementColumnsSchema } from '@esta/ops';
 import { z } from 'zod';
 import { LINE_REASONS, LINE_STATUSES, type BillLabel, type RefusedLine, type StatementLine } from '@/lib/statements/lines';
 import { createSessionClient } from '@/server/supabase/server';
@@ -15,8 +15,6 @@ export type StatementImportView = {
   readonly refused: readonly RefusedLine[];
   readonly lines: readonly StatementLine[];
 };
-
-const PAGE_SIZE = 1000;
 
 const money = z.number().int().min(-MAX_AMOUNT_VND).max(MAX_AMOUNT_VND).transform(vnd);
 
@@ -74,13 +72,9 @@ export async function loadStatementImport(householdId: string, importId: string)
   if (header.error) throw new Error(`Reading the import failed: ${header.error.message}`);
   if (header.data === null) return null;
   const stored = importSchema.parse(header.data);
-  const rows: z.output<typeof lineSchema>[] = [];
-  for (let from = 0; ; from += PAGE_SIZE) {
-    const { data, error } = await supabase.rpc('statement_import_lines', { p_import_id: importId }).range(from, from + PAGE_SIZE - 1);
-    if (error) throw new Error(`Reading the import's lines failed: ${error.message}`);
-    rows.push(...z.array(lineSchema).parse(data));
-    if (data.length < PAGE_SIZE) break;
-  }
+  const rows = z.array(lineSchema).parse(
+    await readAll("the import's lines", (from, to) => supabase.rpc('statement_import_lines', { p_import_id: importId }).range(from, to)),
+  );
   const named = (row: z.output<typeof lineSchema>) => (row.invoice_id === null ? row.candidate_invoice_ids : [row.invoice_id]);
   const bills = await billLabels(householdId, [...new Set(rows.flatMap(named))]);
   // A line is numbered from the header, so the first line under it is 1 whatever account lines the bank prints above.

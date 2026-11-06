@@ -16,8 +16,8 @@ type RentalRefusal = 'invalid' | 'duplicate' | 'wholeLeased' | 'failed';
 export type RentalWrite = { readonly ok: true; readonly id: string } | { readonly ok: false; readonly reason: RentalRefusal };
 
 /** What a delete hands back, so `Hoàn tác` puts the row back under its own id and re-links its accounts. */
-export type DeletedUnit = { readonly propertyId: string; readonly row: { readonly id: string } & Record<string, unknown>; readonly accounts: readonly string[] };
-export type DeletedAccount = { readonly propertyId: string; readonly row: { readonly id: string } & Record<string, unknown> };
+type DeletedUnit = { readonly propertyId: string; readonly row: { readonly id: string } & Record<string, unknown>; readonly accounts: readonly string[] };
+type DeletedAccount = { readonly propertyId: string; readonly row: { readonly id: string } & Record<string, unknown> };
 
 const uuid = z.uuid();
 const UNIQUE_VIOLATION = '23505';

@@ -22,6 +22,11 @@ describe('AddressBlock', () => {
     expect(lines(container)).toEqual([['Theo sổ và hiện nay', legal.replace(' ', '  ')]]);
   });
 
+  it('reads two addresses that differ only in letter case as one, as the certificate review and the property list do', () => {
+    const { container } = renderInLocale(<AddressBlock legal="5 HÀNG BẠC, Phường Hoàn Kiếm, Hà Nội" current="5 Hàng Bạc, Phường Hoàn Kiếm, Hà Nội" />);
+    expect(lines(container)).toEqual([['Theo sổ và hiện nay', '5 Hàng Bạc, Phường Hoàn Kiếm, Hà Nội']]);
+  });
+
   it('says there is no address when both are missing', () => {
     const { container } = renderInLocale(<AddressBlock legal={null} current={null} />);
     expect(container.textContent).toBe('Chưa có địa chỉ');

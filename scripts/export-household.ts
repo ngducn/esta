@@ -2,7 +2,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createClient } from '@supabase/supabase-js';
 import { readClock } from '../packages/ops/src/clock.ts';
-import { writeExport, zipPartsSink } from '../packages/db/src/export/index.ts';
+import { writeExport, zipPartsSink } from '../packages/ops/src/export/index.ts';
 import { DEMO_PASSWORD } from '../supabase/seed/generator/households.ts';
 import { localTarget } from './export-source.ts';
 import { slotEnv } from './slot-env.ts';

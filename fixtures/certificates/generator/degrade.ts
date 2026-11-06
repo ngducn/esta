@@ -7,7 +7,7 @@ export const VARIANTS = ['scan', 'photo', 'low-light'] as const;
 
 export type Variant = (typeof VARIANTS)[number];
 
-export const JPEG_QUALITY = 70;
+const JPEG_QUALITY = 70;
 
 const TABLE = [74, 66, 59] as const;
 
@@ -155,7 +155,7 @@ function dim(photo: Raster, rng: Rng): Raster {
   return blurred;
 }
 
-export function encodeJpeg(raster: Raster): Uint8Array {
+function encodeJpeg(raster: Raster): Uint8Array {
   return new Uint8Array(jpeg.encode({ width: raster.width, height: raster.height, data: raster.data }, JPEG_QUALITY).data);
 }
 

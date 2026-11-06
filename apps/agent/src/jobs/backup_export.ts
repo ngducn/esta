@@ -3,7 +3,7 @@ import { scheduledPeriod } from '@esta/core/agent-schedule';
 import { isIsoDate, type IsoDate } from '@esta/core/date';
 import { daysBetween } from '@esta/core/date/calendar';
 import type { Json } from '@esta/db';
-import { dirSink, objectsUnder, writeExport, type ExportSink } from '@esta/db/export';
+import { dirSink, objectsUnder, writeExport, type ExportSink } from '@esta/ops/export';
 import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { chmod, mkdir, readdir, rename, rm } from 'node:fs/promises';
@@ -83,7 +83,7 @@ export type ExportsStore = {
   remove(paths: readonly string[]): Promise<void>;
 };
 
-export function exportsStore(db: AgentDb): ExportsStore {
+function exportsStore(db: AgentDb): ExportsStore {
   return {
     async *list(prefix) {
       for await (const object of objectsUnder(db, EXPORTS_BUCKET, prefix)) yield { path: object.path, createdAt: object.createdAt };

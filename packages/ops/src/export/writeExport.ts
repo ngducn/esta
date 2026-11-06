@@ -2,11 +2,11 @@ import type { Clock } from '@esta/core';
 import { buildManifest, csvHead, csvRows, EXPORT_TABLES, type ExportExporter, type ExportManifest, type HouseholdTable } from '@esta/core/export';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
+import { POSTGREST_PAGE_SIZE } from '../kit';
 import type { ExportSink } from './sink';
 
 export const EXPORT_BUCKETS = ['documents', 'property-photos'] as const;
 
-const PAGE_ROWS = 1000;
 const LIST_LIMIT = 100;
 const encoder = new TextEncoder();
 const pageSchema = z.array(z.record(z.string(), z.unknown()));
@@ -93,7 +93,7 @@ async function waitingForRemoval(client: SupabaseClient, householdId: string): P
   return new Set(z.array(z.string()).parse(data));
 }
 
-export async function writeExport(client: SupabaseClient, householdId: string, sink: ExportSink, { clock, exporter, pageRows = PAGE_ROWS, complete = false }: WriteExportOptions): Promise<WrittenExport> {
+export async function writeExport(client: SupabaseClient, householdId: string, sink: ExportSink, { clock, exporter, pageRows = POSTGREST_PAGE_SIZE, complete = false }: WriteExportOptions): Promise<WrittenExport> {
   const counts: { table: string; rows: number }[] = [];
   const documentPaths = new Map<string, string>();
   for (const table of EXPORT_TABLES) {

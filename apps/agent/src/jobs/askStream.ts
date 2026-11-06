@@ -30,7 +30,7 @@ export function resolveLinks(text: string, sheet: FactSheet): { readonly text: s
 const CITED_HANDLE = /\{\{(f\d+)\./g;
 
 /** The pages the template cites through a source record's fields, numbered in the order it first cites them. */
-export function sourceRefs(template: string, sheet: FactSheet): SourceRef[] {
+function sourceRefs(template: string, sheet: FactSheet): SourceRef[] {
   const sources: SourceRef[] = [];
   for (const [, handle = ''] of template.matchAll(CITED_HANDLE)) {
     const record = sheet.get(handle);

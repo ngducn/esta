@@ -11,13 +11,13 @@ const MINUTE_MS = 60_000;
 /** A failed notice is tried again after 1, 2, 4 ... minutes, never more than this apart. */
 const MAX_BACKOFF_MS = 30 * MINUTE_MS;
 /** A notice still unsent this long after it was queued is dropped, so an outage of hours still delivers once and a dead address cannot loop forever. */
-export const GIVE_UP_AFTER_MS = 24 * 60 * MINUTE_MS;
+const GIVE_UP_AFTER_MS = 24 * 60 * MINUTE_MS;
 /** A notice claimed this long ago and never finished was cut off by a crash; it is marked failed, not resent (at most once). */
-export const INTERRUPTED_AFTER_MS = 10 * MINUTE_MS;
+const INTERRUPTED_AFTER_MS = 10 * MINUTE_MS;
 export const INTERRUPTED_ERROR = 'interrupted: the worker stopped while sending, so this notice may not have gone out and is not resent';
 
 /** Delay after try number `attempts` before the next one. */
-export const backoffMs = (attempts: number): number => Math.min(MINUTE_MS * 2 ** Math.max(attempts - 1, 0), MAX_BACKOFF_MS);
+const backoffMs = (attempts: number): number => Math.min(MINUTE_MS * 2 ** Math.max(attempts - 1, 0), MAX_BACKOFF_MS);
 /** A note older than this when the worker first sees it is not announced, so turning notices on never mails last week. */
 const NEW_NOTE_WINDOW_MS = 6 * 60 * 60 * 1000;
 const ERROR_LIMIT = 300;

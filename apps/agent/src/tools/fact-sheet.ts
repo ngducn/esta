@@ -37,7 +37,7 @@ export function sameAnswer<A extends unknown[], T>(run: (...args: A) => Promise<
 }
 
 export const typedVnd = (value: Vnd | null): TypedValue | null => (value === null ? null : { kind: 'vnd', value });
-export const typedBp = (value: number | null): TypedValue | null => (value === null ? null : { kind: 'bp', value });
+const typedBp = (value: number | null): TypedValue | null => (value === null ? null : { kind: 'bp', value });
 
 type Field<S extends string, D = string | null> = { readonly [K in `${S}_display`]: D } & { readonly [K in `${S}_typed`]: TypedValue | null };
 

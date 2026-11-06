@@ -39,7 +39,7 @@ export async function expectMorningBrief(page: Page) {
 }
 
 /** What a property's ledger received in October 2026, summed from the allocations as the signed-in member reads them. */
-export async function receivedInOctober(page: Page, nickname: string): Promise<{ propertyId: string; collected: number }> {
+async function receivedInOctober(page: Page, nickname: string): Promise<{ propertyId: string; collected: number }> {
   const [property] = await memberRest<{ id: string }[]>(page, 'GET', `properties?nickname=eq.${encodeURIComponent(nickname)}&select=id`);
   const propertyId = property?.id ?? '';
   const rows = await memberRest<{ amount_vnd: number }[]>(page, 'GET', `allocation_facts?property_id=eq.${propertyId}&received_on=gte.2026-10-01&received_on=lte.2026-10-31&select=amount_vnd`);

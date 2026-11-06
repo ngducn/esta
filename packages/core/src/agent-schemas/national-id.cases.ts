@@ -35,10 +35,6 @@ export const NATIONAL_ID_CASES: readonly (readonly [name: string, text: string, 
 ];
 
 /** A 12-digit number, and the text around it that Mẹ or Ryan may type or name a file with. */
-const chars = (...codes: number[]) => codes.map((code) => String.fromCodePoint(code));
-export const NATIONAL_ID_JOINERS: readonly string[] = ['', ' ', '.', '-', ...chars(0x2212, 0x2013, 0x2011, 0xa0, 0x200b)];
-/** Only a label makes a slash join digit groups: unlabelled, `123456/789012` is a document number. */
-export const NATIONAL_ID_LABELLED_JOINERS: readonly string[] = ['/', ...chars(0x2215, 0x2044, 0x29f8, 0xff0f)];
 export const NATIONAL_ID_SURROUNDS: readonly (readonly [before: string, after: string])[] = [
   ['', ''],
   ['cccd ', ''],
@@ -51,7 +47,7 @@ export const NATIONAL_ID_SURROUNDS: readonly (readonly [before: string, after: s
 ];
 
 /**
- * Numbers that are no ID and must come out of the reducer as they went in, next to the ID joiners above: a phone, a
+ * Numbers that are no ID and must come out of the reducer as they went in: a phone, a
  * price, a date, a certificate number, a map sheet and parcel, and a document number.
  */
 export const NATIONAL_ID_KEPT: readonly (readonly [name: string, text: string])[] = [

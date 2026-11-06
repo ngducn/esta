@@ -20,9 +20,9 @@ import { NO_PENDING, withWrites, type Pending, type Write } from './view';
 
 export const PLAN_TTL_MINUTES = 30;
 /** An apply that has held its claim this long died mid-batch, and the next apply finishes the batch. */
-export const CLAIM_LEASE_MINUTES = 5;
+const CLAIM_LEASE_MINUTES = 5;
 export const MAX_ITEMS = 200;
-export const MAX_BATCHES_PER_HOUR = 20;
+const MAX_BATCHES_PER_HOUR = 20;
 
 export type ItemPlan =
   | { readonly status: 'change'; readonly change: Json; readonly preview?: Json }
@@ -118,7 +118,7 @@ const storedPlanSchema = z.object({
 });
 type StoredItem = z.output<typeof storedPlanSchema>['items'][number];
 
-export type Reported<T> = T & { readonly index: number; readonly op: OpKind; readonly id: string | null };
+type Reported<T> = T & { readonly index: number; readonly op: OpKind; readonly id: string | null };
 export type PlannedBatch = { readonly planId: string; readonly expiresAt: string; readonly items: readonly Reported<ItemPlan>[] };
 export type PlanRefusal = { readonly kind: 'items_refused'; readonly items: readonly Reported<ItemPlan>[] } | { readonly kind: 'rate_limited' };
 export type AppliedBatch = { readonly planId: string; readonly status: 'applied' | 'partial'; readonly items: readonly Reported<ItemOutcome>[] };

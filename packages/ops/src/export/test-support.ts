@@ -15,7 +15,7 @@ export function fakeStorage(files: Record<string, string>) {
   };
 }
 
-export async function collect(data: EntryData): Promise<string> {
+async function collect(data: EntryData): Promise<string> {
   if (data instanceof Uint8Array) return decoder.decode(data);
   let text = '';
   for await (const chunk of data) text += decoder.decode(chunk);

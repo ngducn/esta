@@ -1,8 +1,7 @@
 import { MapPin, ScrollText } from 'lucide-react';
+import { sameAddress } from '@esta/core/address';
 import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
-
-const comparable = (address: string) => address.normalize('NFC').trim().replace(/\s+/g, ' ');
 
 /**
  * `legal` is the address printed on the certificate (Theo sổ), `current` the two-tier address in
@@ -11,7 +10,7 @@ const comparable = (address: string) => address.normalize('NFC').trim().replace(
 export function AddressBlock({ legal, current }: { legal: string | null; current: string | null }) {
   const t = useTranslations('components.address');
   const lines =
-    legal !== null && current !== null && comparable(legal) === comparable(current)
+    legal !== null && current !== null && sameAddress(legal, current)
       ? [{ key: 'same', label: t('same'), text: current, muted: false }]
       : [
           ...(current === null ? [] : [{ key: 'current', label: t('current'), text: current, muted: false }]),

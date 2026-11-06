@@ -1,7 +1,7 @@
 import { parseInstant } from '@esta/core';
 import { isoDate, type IsoDate } from '@esta/core/date';
 import { addDays } from '@esta/core/date/calendar';
-import { dirSink } from '@esta/db/export';
+import { dirSink } from '@esta/ops/export';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';

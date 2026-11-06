@@ -2,11 +2,11 @@ import type { Clock } from '@esta/core';
 import { EXPORT_SCHEMA_VERSION, EXPORT_TABLES } from '@esta/core/export';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
+import { POSTGREST_PAGE_SIZE } from '../kit';
 import type { ExportSink } from './sink';
 import { addObject, csvChunks, jsonChunks, objectsUnder, type Row } from './writeExport';
 
 const IN_CHUNK = 40;
-const PAGE_ROWS = 1000;
 const encoder = new TextEncoder();
 const pageSchema = z.array(z.record(z.string(), z.unknown()));
 
@@ -33,7 +33,7 @@ async function readWhere(client: SupabaseClient, householdId: string, tableName:
     let after: string | undefined;
     for (;;) {
       const base = client.from(tableName).select(table.columns.join(',')).eq('household_id', householdId).in(scope.column, chunk);
-      const { data, error } = await (after === undefined ? base : base.gt('id', after)).order('id').limit(PAGE_ROWS);
+      const { data, error } = await (after === undefined ? base : base.gt('id', after)).order('id').limit(POSTGREST_PAGE_SIZE);
       if (error) throw new Error(`Reading ${tableName} failed: ${error.message}`);
       const page = pageSchema.parse(data);
       const last = page.at(-1)?.id;

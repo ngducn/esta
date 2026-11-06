@@ -14,7 +14,7 @@ export type BriefBinding = NoteBinding & {
 };
 
 /** What the job result keeps of the brief for audit: the model's draft and the values that filled it (AGENT.md §6.3). */
-export type WrittenBrief = { readonly dedupe_key: string; readonly draft: BriefDraft; readonly cited: Array<FilledNote['cited'][number]>; readonly left_out: string[]; readonly added: boolean };
+type WrittenBrief = { readonly dedupe_key: string; readonly draft: BriefDraft; readonly cited: Array<FilledNote['cited'][number]>; readonly left_out: string[]; readonly added: boolean };
 
 const SECTION_ROOM = { todo: 5, watch: 5 } as const;
 

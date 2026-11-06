@@ -24,9 +24,9 @@ import { collectionRowActions } from './rowActions';
 export const GROUP_MARKS = { overdue: 'overdue', due: 'due', notDue: 'upcoming', paid: 'paid' } as const satisfies Record<CollectionGroupKey, MarkStatus>;
 
 /** Each owed row's code, and the default receiving account a transfer recorded from the board lands in. */
-export type BoardQrs = { readonly byInvoice: ReadonlyMap<string, InvoiceQrView>; readonly labels: QrSheetLabels; readonly account: PaymentAccount | null };
+type BoardQrs = { readonly byInvoice: ReadonlyMap<string, InvoiceQrView>; readonly labels: QrSheetLabels; readonly account: PaymentAccount | null };
 /** Each owed row's `Nhắc qua Zalo`, by invoice. */
-export type BoardReminders = { readonly byInvoice: ReadonlyMap<string, ReminderTarget>; readonly labels: ReminderLabels };
+type BoardReminders = { readonly byInvoice: ReadonlyMap<string, ReminderTarget>; readonly labels: ReminderLabels };
 
 export type BoardRowContext = {
   readonly month: IsoDate;

@@ -11,7 +11,7 @@ export const PING_PROMPT = [
   'Write nothing else: no numbers, no lists, no emoji.',
 ].join('\n');
 
-export type PingResult = { readonly reply: string };
+type PingResult = { readonly reply: string };
 
 export const pingTools = (db: AgentDb, householdId: string): EstaTools => new Map([estaTool('household_info', () => householdInfo(db, householdId))]);
 

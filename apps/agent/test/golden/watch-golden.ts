@@ -41,9 +41,9 @@ export function subjectKey(readable: string, household: string): string {
   }
 }
 
-export const triple = (fact: Pick<WatchFact, 'ruleId' | 'subjectKey' | 'severity'>) => `${fact.ruleId} ${fact.subjectKey} ${fact.severity}`;
+const triple = (fact: Pick<WatchFact, 'ruleId' | 'subjectKey' | 'severity'>) => `${fact.ruleId} ${fact.subjectKey} ${fact.severity}`;
 
-export const expectedTriples = (household: string) =>
+const expectedTriples = (household: string) =>
   WATCH_GOLDEN.expected.map((row) => `${row.rule_id} ${subjectKey(row.subject_key, household)} ${row.severity}`);
 
 export function compareFacts(facts: readonly WatchFact[], household: string) {

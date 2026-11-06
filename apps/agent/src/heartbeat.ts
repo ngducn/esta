@@ -2,7 +2,7 @@ import type { Clock } from '@esta/core';
 import type { TablesInsert } from '@esta/db';
 import type { AgentDb } from './supabase';
 
-export const HEARTBEAT_INTERVAL_MS = 60_000;
+const HEARTBEAT_INTERVAL_MS = 60_000;
 
 /** The page reads only the newest row, which a beating worker has just written, so older rows are stopped workers. */
 const HEARTBEAT_RETENTION_MS = 24 * 60 * 60_000;

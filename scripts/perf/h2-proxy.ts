@@ -33,7 +33,7 @@ https://localhost:${port} {
 `;
 }
 
-export function spkiHashOf(certPem: string): string {
+function spkiHashOf(certPem: string): string {
   const der = new X509Certificate(certPem).publicKey.export({ type: 'spki', format: 'der' });
   return createHash('sha256').update(der).digest('base64');
 }

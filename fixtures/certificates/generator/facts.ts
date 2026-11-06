@@ -1,7 +1,7 @@
 import type { AnnotationKind, CertificateForm } from '../../../packages/core/src/agent-schemas/certificate_v1.ts';
 import { isoDate, type IsoDate } from '../../../packages/core/src/index.ts';
 
-export type HolderFacts = {
+type HolderFacts = {
   readonly full_name: string;
   readonly birth_year: number | null;
   /** Synthetic and printed in full, so P2-03 can prove the reduction to `id_last4`. */
@@ -10,9 +10,9 @@ export type HolderFacts = {
   readonly relation: string | null;
 };
 
-export type PurposeFacts = { readonly land_use_code: string; readonly area_m2: number; readonly term: string };
+type PurposeFacts = { readonly land_use_code: string; readonly area_m2: number; readonly term: string };
 
-export type ParcelFacts = {
+type ParcelFacts = {
   readonly parcel_no: string | null;
   readonly map_sheet_no: string | null;
   readonly address_text: string;
@@ -22,7 +22,7 @@ export type ParcelFacts = {
   readonly origin_text: string | null;
 };
 
-export type StructureFacts = {
+type StructureFacts = {
   readonly kind: string;
   readonly footprint_m2: number | null;
   readonly floor_area_m2: number | null;
@@ -32,7 +32,7 @@ export type StructureFacts = {
   readonly ownership_term: string | null;
 };
 
-export type AnnotationFacts = { readonly date: IsoDate; readonly text: string; readonly kind: AnnotationKind };
+type AnnotationFacts = { readonly date: IsoDate; readonly text: string; readonly kind: AnnotationKind };
 
 export type CertificateFacts = {
   readonly form: CertificateForm;

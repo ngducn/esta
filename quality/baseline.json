@@ -159,6 +159,10 @@
         "apps/web/src/server/properties/wizard.ts": 1
       }
     },
+    "postgrest-page-literal": {
+      "value": 0,
+      "files": {}
+    },
     "web-cap-literal": {
       "value": 0,
       "files": {}
@@ -259,9 +263,9 @@
       }
     },
     "duplicate-core-export": {
-      "value": 9,
+      "value": 8,
       "files": {
-        "packages/core/src/schemas/legal.ts": 7,
+        "packages/core/src/schemas/legal.ts": 6,
         "packages/core/src/tax/attribute.ts": 2
       }
     },
@@ -369,17 +373,16 @@
         "apps/web/src/app/(app)/properties/[id]/legal/actions.test.ts": 1,
         "apps/web/src/server/agent/suggestions.test.ts": 1,
         "apps/web/src/server/agent/thread.test.ts": 2,
-        "packages/db/src/export/partyExport.test.ts": 1,
-        "packages/db/src/export/writeExport.test.ts": 1
+        "packages/ops/src/export/partyExport.test.ts": 1,
+        "packages/ops/src/export/writeExport.test.ts": 1
       }
     },
     "testid-query": {
-      "value": 2124,
+      "value": 2123,
       "files": {
         "apps/web/src/components/assistant/answer-stream.test.tsx": 6,
         "apps/web/src/components/assistant/thread-composer.test.tsx": 6,
         "apps/web/src/components/assistant/worker-status-line.test.tsx": 1,
-        "apps/web/src/components/data-table.test.tsx": 1,
         "apps/web/src/components/date-input.test.tsx": 2,
         "apps/web/src/components/documents/document-edit-sheet.test.tsx": 8,
         "apps/web/src/components/documents/upload-sheet.test.tsx": 3,
@@ -599,8 +602,8 @@
         "packages/core/src/reports/propertyPnl.ts": 1,
         "packages/core/src/reports/rentRoll.ts": 1,
         "packages/core/src/vietqr/invoiceQr.ts": 1,
-        "packages/db/src/export/partyExport.ts": 1,
-        "packages/db/src/export/writeExport.ts": 1
+        "packages/ops/src/export/partyExport.ts": 1,
+        "packages/ops/src/export/writeExport.ts": 1
       }
     }
   },

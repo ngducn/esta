@@ -63,7 +63,7 @@ export function withSeedNames(tables: Record<string, Row[]>): Record<string, Row
   return tables;
 }
 
-export const ARCHIVED_PROPERTY = '00000000-0000-4000-8000-0000000a7c01';
+const ARCHIVED_PROPERTY = '00000000-0000-4000-8000-0000000a7c01';
 const DI_AN = '93cc970b-f9c2-52f5-bc34-1f1edb76742c';
 
 /** The ask tables plus an archived property that still has October income and an expense, which no household figure counts. */

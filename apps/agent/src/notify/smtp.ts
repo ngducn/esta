@@ -5,7 +5,7 @@ export type OutgoingMail = { readonly from: string; readonly to: string; readonl
 export type Mailer = { send(mail: OutgoingMail): Promise<void> };
 
 /** How long a mail host may take to connect, greet or answer before a send fails, so a dead host costs seconds, not minutes. */
-export const SMTP_TIMEOUT_MS = 10_000;
+const SMTP_TIMEOUT_MS = 10_000;
 
 export function smtpMailer(smtpUrl: string, timeoutMs: number = SMTP_TIMEOUT_MS): Mailer {
   const transport = createTransport({ url: smtpUrl, connectionTimeout: timeoutMs, greetingTimeout: timeoutMs, socketTimeout: timeoutMs });
