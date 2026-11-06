@@ -1,6 +1,8 @@
 import { isoDate } from '@esta/core/date';
 import { monthCollected } from '@esta/core/collections';
 import { billsDueIn, checkReportInvariants, holds, monthlyCollections, occupancy, ownerSummary, portfolioSummary, propertyPnl, rentRoll, yearPeriod } from '@esta/core/reports';
+import { formatVnd } from '@esta/core/format';
+import { vnd } from '@esta/core/money';
 import { computeTaxPosition } from '@esta/core/tax';
 import { readMonthCollected, readReportSnapshot, readTaxInputs } from '@esta/ops';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -24,6 +26,8 @@ const { household: HOUSEHOLD, ryan } = integrationLane(import.meta.url, 1);
 const { client, signIn } = memberClient(ryan, HOUSEHOLD);
 const { activateLease, createTenant, saveLease, terminateLease } = await import('@/server/actions/leases');
 const { recordPayment } = await import('@/server/actions/payments');
+const { ledgerTool } = await import('../../../../agent/src/tools/ledger');
+const { runSheet } = await import('../../../../agent/src/tools/fact-sheet');
 const created: string[] = [];
 
 async function letTownhouseOwingOctober(): Promise<{ propertyId: string; leaseId: string }> {
@@ -149,6 +153,11 @@ describe('readReportSnapshot as leases end and properties go (FIN-4, SPEC §5.4)
     if (spent.error) throw spent.error;
 
     const october = isoDate('2026-10-01');
+    const askHouseholdYear = async () => {
+      const { cite } = runSheet();
+      const answer = await ledgerTool(client, HOUSEHOLD, 'vi', new Map(), cite)({ year: 2026 });
+      return [answer.ledger.income_display, answer.ledger.expenses_display, answer.ledger.net_display];
+    };
     const read = async () => {
       const snapshot = await readReportSnapshot(client, HOUSEHOLD, PERIOD);
       const row = monthlyCollections(snapshot, collectionLabels).rows.find((one) => one.key === '2026-10');
@@ -160,6 +169,7 @@ describe('readReportSnapshot as leases end and properties go (FIN-4, SPEC §5.4)
         ask: monthCollected(billsDueIn(snapshot.invoices, october)),
         pnl: propertyPnl(year, pnlLabels).totals.cells.slice(1).map((one) => one.value),
         owners: ownerSummary(year, ownerLabels).totals.cells.slice(2, 4).map((one) => one.value),
+        askLedger: await askHouseholdYear(),
       };
     };
     const inSql = async () => {
@@ -184,6 +194,8 @@ describe('readReportSnapshot as leases end and properties go (FIN-4, SPEC §5.4)
       expect(screens.home, 'Tổng quan and Thu tiền').toEqual(figures);
       expect(screens.ask, 'Hỏi').toEqual(figures);
       expect(screens.pnl, 'Lãi lỗ: Thu, Tổng chi, Còn lại').toEqual([sql.received, sql.spent, sql.received - sql.spent]);
+      const dong = (value: number) => formatVnd(vnd(value), 'vi');
+      expect(screens.askLedger, "Hỏi's ledger tool, whole household").toEqual([dong(sql.received), dong(sql.spent), dong(sql.received - sql.spent)]);
       expect(screens.owners, 'the owner summary: income and expenses').toEqual([sql.received, sql.spent]);
     };
     const before = { screens: await read(), sql: await inSql() };

@@ -18,7 +18,7 @@ const inputSchema = z.strictObject({
 });
 const USAGE = 'ledger takes {"property": a handle from list_properties, or none for the whole household, "year", "month": 1 to 12, or none for the whole year}';
 
-/** `ledger` (AGENT.md §4): income received and expenses paid in a month or a year, at one property or the whole household. */
+/** `ledger` (AGENT.md §4): income received and expenses paid in a month or a year, at one property or the whole household. Money received or spent at an archived property still counts, as on Lãi lỗ. */
 export function ledgerTool(db: AgentDb, householdId: string, locale: Locale, properties: PropertyHandles, cite: RunSheet['cite']) {
   const amounts = (sums: LedgerSums) => ({
     income_display: formatVnd(sums.incomeVnd, locale),
@@ -30,7 +30,7 @@ export function ledgerTool(db: AgentDb, householdId: string, locale: Locale, pro
     const property = handle === undefined ? null : propertyByHandle(properties, handle);
     const from = monthStart(year, month ?? 1);
     const to = addDays(addMonths(from, month === undefined ? 12 : 1), -1);
-    const facts = await readLedgerFacts(db, householdId, { ...(property === null ? {} : { propertyId: property.id }), from, to });
+    const facts = await readLedgerFacts(db, householdId, { ...(property === null ? {} : { propertyId: property.id }), from, to, keepArchived: true });
     const { totals, months } = buildLedger({ ...facts, from, to });
     const ledger = cite({
       property_label: property?.property_label ?? null,
