@@ -145,7 +145,8 @@ export const extractionAccept = defineOp<AcceptInput, Acceptance, ExtractionAcce
     const fieldsHeld = held.filter((index) => index < values.length);
     if (fieldsHeld.length > 0) return refuse({ kind: 'review', reason: 'national_id', paths: fieldsHeld.flatMap((index) => values[index]?.path ?? []) });
     if (target.schemaName === 'certificate_v1' && !input.confirmed) {
-      const mismatched = await mismatchedPaths(ctx, document.propertyId, planned.plan.acceptedFields);
+      const mismatched = await mismatchedPaths(ctx, document.propertyId, planned.plan.acceptedFields).catch(() => null);
+      if (mismatched === null) return refuse({ kind: 'failed' });
       if (mismatched.length > 0) return refuse({ kind: 'review', reason: 'mismatch', paths: mismatched });
     }
     return change({

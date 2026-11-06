@@ -36,12 +36,12 @@ insert into public.agent_items (household_id, kind, severity, title, dedupe_key)
 
 -- Two holders, a certificate, a parcel and a structure, in the order the plan writes them.
 select format($j$[
-  {"table": "parties", "row": {"id": "00000000-0000-4000-8000-00000000a001", "household_id": %1$L, "kind": "individual", "full_name": "Nguyễn Văn Demo", "id_last4": "1234", "address_text": null, "tags": ["owner"]}},
-  {"table": "certificates", "row": {"id": "00000000-0000-4000-8000-00000000c001", "household_id": %1$L, "property_id": "00000000-0000-4000-8000-0000000000b1", "form": "gcn_2024", "serial_no": "DEMO 1", "book_entry_no": "CS 1", "issued_on": "2024-01-02", "issued_by": null, "holder_party_ids": ["00000000-0000-4000-8000-00000000a001"], "annotations": [], "document_id": "00000000-0000-4000-8000-00000000d0a1", "extraction_id": "00000000-0000-4000-8000-00000000f0f0"}},
-  {"table": "parcels", "row": {"id": "00000000-0000-4000-8000-00000000b001", "household_id": %1$L, "property_id": "00000000-0000-4000-8000-0000000000b1", "certificate_id": "00000000-0000-4000-8000-00000000c001", "parcel_no": "56", "map_sheet_no": "12", "area_m2": 82.7, "use_form": "private", "purposes": [], "origin_text": null}},
-  {"table": "structures", "row": {"id": "00000000-0000-4000-8000-00000000b002", "household_id": %1$L, "property_id": "00000000-0000-4000-8000-0000000000b1", "certificate_id": "00000000-0000-4000-8000-00000000c001", "kind": "house", "footprint_m2": 40, "floor_area_m2": 80, "floors": 2, "structure_text": null, "completed_year": 2010, "ownership_term": null}},
-  {"table": "properties", "row": {"id": "00000000-0000-4000-8000-0000000000b1", "household_id": %1$L, "certificate_address_text": "Thửa 56, tờ 12"}}
-]$j$, :'a') as steps \gset
+  {"table": "parties", "row": {"id": "00000000-0000-4000-8000-00000000a001", "household_id": %1$s, "kind": "individual", "full_name": "Nguyễn Văn Demo", "id_last4": "1234", "address_text": null, "tags": ["owner"]}},
+  {"table": "certificates", "row": {"id": "00000000-0000-4000-8000-00000000c001", "household_id": %1$s, "property_id": "00000000-0000-4000-8000-0000000000b1", "form": "gcn_2024", "serial_no": "DEMO 1", "book_entry_no": "CS 1", "issued_on": "2024-01-02", "issued_by": null, "holder_party_ids": ["00000000-0000-4000-8000-00000000a001"], "annotations": [], "document_id": "00000000-0000-4000-8000-00000000d0a1", "extraction_id": "00000000-0000-4000-8000-00000000f0f0"}},
+  {"table": "parcels", "row": {"id": "00000000-0000-4000-8000-00000000b001", "household_id": %1$s, "property_id": "00000000-0000-4000-8000-0000000000b1", "certificate_id": "00000000-0000-4000-8000-00000000c001", "parcel_no": "56", "map_sheet_no": "12", "area_m2": 82.7, "use_form": "private", "purposes": [], "origin_text": null}},
+  {"table": "structures", "row": {"id": "00000000-0000-4000-8000-00000000b002", "household_id": %1$s, "property_id": "00000000-0000-4000-8000-0000000000b1", "certificate_id": "00000000-0000-4000-8000-00000000c001", "kind": "house", "footprint_m2": 40, "floor_area_m2": 80, "floors": 2, "structure_text": null, "completed_year": 2010, "ownership_term": null}},
+  {"table": "properties", "row": {"id": "00000000-0000-4000-8000-0000000000b1", "household_id": %1$s, "certificate_address_text": "Thửa 56, tờ 12"}}
+]$j$, to_json(:'a'::text)::text) as steps \gset
 select jsonb_set(:'steps'::jsonb, '{2,row,certificate_id}', '"00000000-0000-4000-8000-00000000dead"') as bad_steps \gset
 
 -- Nobody but a member of the household accepts.
