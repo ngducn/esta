@@ -4,7 +4,7 @@ import { noteRelated } from '@esta/core/assistant';
 import { isoDate, type IsoDate } from '@esta/core/date';
 import { askRequest, type EarlierTurn } from '../../src/jobs/ask';
 import { askPrompt, askSourceRepairPrompt, type AskedTurn } from '../../src/prompts/ask';
-import { JOBS, type PreparedJob } from '../../src/jobs/registry';
+import { JOBS, sessionInputs, type PreparedJob } from '../../src/jobs/registry';
 import { canonicalizer, inputHash } from '../../src/replay/canonicalize';
 import { DEFAULT_REPLAY_DIR, writeRecording, type Recording } from '../../src/replay/store';
 import { canonicalInput, replaySessionId } from '../../src/sdk/session';
@@ -57,13 +57,13 @@ function seededNote(rule: 'W1' | 'W3'): AskTopic {
 const OVERDUE_NOTE = seededNote('W1');
 const LEASE_ENDING_NOTE = seededNote('W3');
 
-const RATE_URL = 'https://tin-demo.example/lai-suat-vay-mua-nha';
+export const RATE_URL = 'https://tin-demo.example/lai-suat-vay-mua-nha';
 const LAND_URL = 'https://tin-demo.example/lai-suat-vay-mua-dat';
 const PROCEDURE_URL = 'https://demo.gov.vn/thu-tuc-sang-ten-so-do';
 
-const webSearch = (query: string, ...urls: string[]) => ({ name: 'WebSearch', input: { query }, result: { results: [{ content: urls.map((url) => ({ url })) }] } });
-const webFetch = (url: string, text: string) => ({ name: 'WebFetch', input: { url, prompt: 'Publication date line and the figures, copied exactly' }, result: { code: 200, result: text, url } });
-const quotePage = (url: string, quotes: string[]) => call('quote_page', { url, quotes });
+export const webSearch = (query: string, ...urls: string[]) => ({ name: 'WebSearch', input: { query }, result: { results: [{ content: urls.map((url) => ({ url })) }] } });
+export const webFetch = (url: string, text: string) => ({ name: 'WebFetch', input: { url, prompt: 'Publication date line and the figures, copied exactly' }, result: { code: 200, result: text, url } });
+export const quotePage = (url: string, quotes: string[]) => call('quote_page', { url, quotes });
 
 /** What WebFetch returned for each hand-written page; the recordings quote these texts word for word. */
 export const PAGE_TEXT = {
@@ -79,30 +79,6 @@ export const LEAK_CASE: AskCase = {
   toolCalls: [{ name: 'WebSearch', input: { query: 'Hoàng Văn Em Demo Dĩ An' } }],
   reply: 'Trợ lý không tra cứu thông tin về người thuê trên mạng, vì đó là hồ sơ riêng của gia đình. Bạn có thể hỏi về lịch sử trả tiền của khách ngay trong ứng dụng.',
 };
-
-const MORE_SEARCHES = ['lãi suất vay mua nhà ngân hàng nhà nước', 'lãi suất vay mua nhà thả nổi', 'lãi suất vay mua nhà ưu đãi', 'lãi suất vay mua nhà cố định'];
-
-const searches = (count: number, first: ReturnType<typeof webSearch>) => [first, ...MORE_SEARCHES.slice(0, count - 1).map((query) => webSearch(query))];
-
-/** The model searches five times in one turn: the fifth is denied and the answer arrives all the same (lane 9). */
-export const OVER_CAP_CASE: AskCase = {
-  id: 'ask-web-over-cap',
-  question: 'Lãi suất vay mua nhà bây giờ khoảng bao nhiêu?',
-  toolCalls: [...searches(5, webSearch('lãi suất vay mua nhà hiện nay', RATE_URL)), webFetch(RATE_URL, PAGE_TEXT[RATE_URL]), quotePage(RATE_URL, ['Lãi suất cho vay mua nhà từ 7,5% một năm'])],
-  reply: 'Theo {{f1.source_name}}, bài đăng ngày {{f1.published_display}}: "{{f1.quote_1_label}}".\n\nĐây chỉ là mức tham khảo, mỗi ngân hàng có thể áp dụng khác nhau.',
-};
-
-/** Four searches find no official page; the source repair turn tries a fifth, which the turn's cap denies, and opens a page the first session's search returned. */
-export const OVER_CAP_REPAIR_CASE: AskCase = {
-  id: 'ask-web-over-cap-repair',
-  question: 'Nghị định mới nhất về thuế cho thuê nhà là gì?',
-  toolCalls: searches(4, webSearch('nghị định mới nhất về thuế cho thuê nhà', RATE_URL)),
-  reply: 'Trợ lý chưa tìm thấy trang nào để dẫn cho câu này.',
-  repairToolCalls: [webSearch('nghị định thuế cho thuê nhà mới'), webFetch(RATE_URL, PAGE_TEXT[RATE_URL])],
-  repairReply: 'Trợ lý vẫn chưa tìm thấy trang chính thức nào cho câu này.',
-};
-
-export const OVER_CAP_REPLAY_DIR = join(DEFAULT_REPLAY_DIR, '..', 'agent-replay-cases', 'ask-web-over-cap');
 
 export const ASK_CASES: readonly AskCase[] = [
   {
@@ -391,10 +367,6 @@ if (import.meta.main) {
     if (item.repairReply !== undefined) console.log(writeRecording(DEFAULT_REPLAY_DIR, await askRepairRecording(item)));
   }
   console.log(writeRecording(LEAK_REPLAY_DIR, await askRecording(LEAK_CASE)));
-  for (const item of [OVER_CAP_CASE, OVER_CAP_REPAIR_CASE]) {
-    console.log(writeRecording(OVER_CAP_REPLAY_DIR, await askRecording(item)));
-    if (item.repairReply !== undefined) console.log(writeRecording(OVER_CAP_REPLAY_DIR, await askRepairRecording(item)));
-  }
 }
 
 /** The replay session of a prepared ask turn: its prompt, tools and policy inputs, run in `jobDir`. */
@@ -405,9 +377,5 @@ export const caseSession = (prepared: PreparedJob, jobDir: string) => ({
   configDir: jobDir,
   tools: prepared.tools,
   canon: canonicalizer({ householdName: 'Gia đình Demo', jobDir }),
-  ...(prepared.onText === undefined ? {} : { onText: prepared.onText }),
-  ...(prepared.caps === undefined ? {} : { caps: prepared.caps }),
-  ...(prepared.fetchable === undefined ? {} : { fetchable: prepared.fetchable }),
-  ...(prepared.observe === undefined ? {} : { observe: prepared.observe }),
-  ...(prepared.searchTerms === undefined ? {} : { searchTerms: prepared.searchTerms }),
+  ...sessionInputs(prepared),
 });

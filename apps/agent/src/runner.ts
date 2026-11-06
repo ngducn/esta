@@ -8,7 +8,7 @@ import type { RunMode } from './env';
 import { writeFailureItems } from './failure-items';
 import type { WorkerState } from './heartbeat';
 import { InvalidJobError } from './jobs/extract-document';
-import { jobSpec, plainJobSpec, type AgentJob, type JobSpec, type PlainJobSpec, type PreparedJob } from './jobs/registry';
+import { jobSpec, plainJobSpec, sessionInputs, type AgentJob, type JobSpec, type PlainJobSpec, type PreparedJob } from './jobs/registry';
 import { canonicalizer, inputHash } from './replay/canonicalize';
 import { MissingRecordingError } from './replay/store';
 import { countToolCalls, judgeResult, type Failure, type FailureKind, type Outcome } from './sdk/result';
@@ -151,12 +151,7 @@ async function runSession(worker: Worker, job: AgentJob, { waiting, failed }: In
       configDir: work.configDir,
       tools: prepared.tools,
       canon: canonicalizer({ householdName: await householdName(worker.db, job.household_id), jobDir: work.dir }),
-      ...(prepared.caps === undefined ? {} : { caps: prepared.caps }),
-      ...(prepared.fetchable === undefined ? {} : { fetchable: prepared.fetchable }),
-      ...(prepared.observe === undefined ? {} : { observe: prepared.observe }),
-      ...(prepared.searchTerms === undefined ? {} : { searchTerms: prepared.searchTerms }),
-      ...(prepared.onWebTool === undefined ? {} : { onWebTool: prepared.onWebTool }),
-      ...(prepared.onText === undefined ? {} : { onText: prepared.onText }),
+      ...sessionInputs(prepared),
       ...(prepared.modelRole === undefined ? {} : { modelRole: prepared.modelRole }),
     };
     const first = await firstTurnOrRebuilt(worker, job, prepared, request);

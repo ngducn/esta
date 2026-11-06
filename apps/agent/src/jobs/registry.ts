@@ -45,7 +45,14 @@ export type PreparedJob = {
   rebuild?(): Promise<string | null>;
   /** Another model than the kind's, as an operator's Suy nghĩ kỹ hơn asks. */
   readonly modelRole?: ModelRole;
-} & Pick<SessionRequest, 'caps' | 'fetchable' | 'observe' | 'searchTerms' | 'onWebTool' | 'onText'>;
+} & SessionInputs;
+
+/** What a prepared job hands each of its sessions: the web caps and links shared across the turn, and the hooks. */
+export type SessionInputs = Pick<SessionRequest, 'caps' | 'fetchable' | 'observe' | 'searchTerms' | 'onWebTool' | 'onText'>;
+
+const INPUT_KEYS = ['caps', 'fetchable', 'observe', 'searchTerms', 'onWebTool', 'onText'] as const;
+
+export const sessionInputs = (prepared: SessionInputs): SessionInputs => Object.fromEntries(INPUT_KEYS.flatMap((key) => (prepared[key] === undefined ? [] : [[key, prepared[key]]])));
 
 /** The session the job's last turn ran in, and that turn's replay key, for a job a later one resumes. */
 export type FinishedRun = { readonly reply: string; readonly model: string; readonly sessionId?: string | null; readonly turnHash?: string };

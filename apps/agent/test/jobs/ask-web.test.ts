@@ -10,7 +10,8 @@ import { canonicalInput } from '../../src/sdk/session';
 import { JOBS } from '../../src/jobs/registry';
 import { pollOnce } from '../../src/runner';
 import { answerRow, askTables, askWorker, withSeedNames } from '../ask-seed';
-import { ASK_CONTEXT, LEAK_CASE, LEAK_REPLAY_DIR, OVER_CAP_CASE, OVER_CAP_REPAIR_CASE, OVER_CAP_REPLAY_DIR } from '../golden/ask-cases';
+import { ASK_CONTEXT, LEAK_CASE, LEAK_REPLAY_DIR } from '../golden/ask-cases';
+import { OVER_CAP_CASE, OVER_CAP_REPAIR_CASE, OVER_CAP_REPLAY_DIR } from '../golden/ask-web-cases';
 import { tempDirs } from '../job-dir';
 
 const tempDir = tempDirs();
@@ -50,18 +51,13 @@ async function runCase(question: string, replayDir: string) {
 }
 
 describe('a turn searches at most four times, whatever sessions it takes', () => {
-  it('denies the fifth search of one session, still answers, and books four searches', async () => {
-    const { tables, run } = await runCase(OVER_CAP_CASE.question, OVER_CAP_REPLAY_DIR);
+  it.each([
+    ['one session makes the fifth search', OVER_CAP_CASE.question, '7,5%'],
+    ['a repair session makes it, and opens a page the first session found', OVER_CAP_REPAIR_CASE.question, 'chưa tìm được nguồn chính thức'],
+  ])('denies the fifth search, still answers and books four when %s', async (_, question, answer) => {
+    const { tables, run } = await runCase(question, OVER_CAP_REPLAY_DIR);
     expect(tables.agent_jobs?.[0]).toMatchObject({ status: 'done', error: null });
-    expect(answerRow(tables)).toMatchObject({ status: 'done', content_md: expect.stringContaining('7,5%') });
-    expect(run.usage.permission_denials).toMatchObject([{ tool_name: 'WebSearch', code: 'cap' }]);
-    expect(run.tool_calls).toMatchObject({ WebSearch: 4, WebFetch: 1 });
-  });
-
-  it('denies the fifth search of the turn when a repair session makes it, and lets it open a page the first session found', async () => {
-    const { tables, run } = await runCase(OVER_CAP_REPAIR_CASE.question, OVER_CAP_REPLAY_DIR);
-    expect(tables.agent_jobs?.[0]).toMatchObject({ status: 'done', error: null });
-    expect(answerRow(tables)).toMatchObject({ status: 'done', content_md: expect.stringContaining('chưa tìm được nguồn chính thức') });
+    expect(answerRow(tables)).toMatchObject({ status: 'done', content_md: expect.stringContaining(answer) });
     expect(run.usage.permission_denials).toMatchObject([{ tool_name: 'WebSearch', code: 'cap' }]);
     expect(run.tool_calls).toMatchObject({ WebSearch: 4, WebFetch: 1 });
   });
