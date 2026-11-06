@@ -75,7 +75,8 @@ export default defineConfig(
   {
     // Two addresses are the same by `sameAddress` alone (Q-10); the screens that compared them by hand disagreed.
     files: ['apps/**/*.{ts,tsx}', 'packages/**/*.ts'],
-    ignores: ['packages/core/src/address/**'],
+    // The two person-name matchers compare `normalizeName` of a full name, which is not an address.
+    ignores: ['packages/core/src/address/**', 'packages/core/src/extraction/acceptance.ts', 'packages/core/src/lease/fromExtraction.ts'],
     rules: { 'esta/no-address-equality': 'error' },
   },
   {

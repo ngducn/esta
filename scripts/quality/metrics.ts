@@ -383,11 +383,7 @@ export const METRICS: readonly Metric[] = [
     message: 'A role is compared with a string literal such as `\'admin\'` or `\'viewer\'`.',
     home: {
       use: 'Ask the member (the can method of `getCurrentMember`, which calls `can`); a new capability goes in the one table in apps/web/src/server/access.ts, and a new page or route in `ROUTE_ACCESS`.',
-      helpers: [
-        { name: 'getCurrentMember', file: 'apps/web/src/server/member.ts' },
-        { name: 'can', file: 'apps/web/src/server/access.ts' },
-        { name: 'ROUTE_ACCESS', file: 'apps/web/src/server/route-access.ts' },
-      ],
+      helpers: [{ name: 'getCurrentMember', file: 'apps/web/src/server/member.ts' }, { name: 'can', file: 'apps/web/src/server/access.ts' }, { name: 'ROUTE_ACCESS', file: 'apps/web/src/server/route-access.ts' }],
     },
     section: 'targets',
     scope: WEB_SRC,

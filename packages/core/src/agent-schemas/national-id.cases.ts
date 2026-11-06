@@ -47,7 +47,7 @@ export const NATIONAL_ID_SURROUNDS: readonly (readonly [before: string, after: s
 ];
 
 /**
- * Numbers that are no ID and must come out of the reducer as they went in, next to the ID joiners above: a phone, a
+ * Numbers that are no ID and must come out of the reducer as they went in: a phone, a
  * price, a date, a certificate number, a map sheet and parcel, and a document number.
  */
 export const NATIONAL_ID_KEPT: readonly (readonly [name: string, text: string])[] = [

@@ -255,12 +255,30 @@ export const pageScrollWidths: Finder = (source) =>
     return (ts.isPropertyAccessExpression(owner) && PAGE_ROOTS.has(owner.name.text)) || (ts.isIdentifier(owner) && isRootParameter(owner));
   });
 
-/** A number such as `999` or `100` inside `.range(…)`: a page size spelled out where `POSTGREST_PAGE_SIZE` belongs. 0 and 1 are the bounds of a first page. */
-export const pageSizeLiterals: Finder = (source) =>
-  calls(source)
-    .filter((call) => ts.isPropertyAccessExpression(call.expression) && call.expression.name.text === 'range')
-    .flatMap((call) => call.arguments.flatMap((argument) => numericLiterals(argument)))
-    .filter((literal) => Number(literal.text) > 1);
+const PAGE_NAME = /^(?!MAX_).*(PAGE|ROWS)/u;
+const PAGE_START = /^(from|start|offset|to|end|last)/iu;
+const PAGE_EDGES = new Set(['999', '1000']);
+
+/** A page size spelled out where `POSTGREST_PAGE_SIZE` belongs: a number above 1 in `.range(`, 999 or 1000 in `.limit(` or added to or taken from a `from`, `start` or `offset`, or a numeric `const` of 100 or more named for pages or rows (a `MAX_` cap is another thing). 0 and 1 are the bounds of a first page. */
+export const pageSizeLiterals: Finder = (source) => {
+  const inCalls = calls(source)
+    .filter((call) => ts.isPropertyAccessExpression(call.expression) && ['range', 'limit'].includes(call.expression.name.text))
+    .flatMap((call) => {
+      const ranged = ts.isPropertyAccessExpression(call.expression) && call.expression.name.text === 'range';
+      return call.arguments.flatMap((argument) => numericLiterals(argument)).filter((literal) => (ranged ? Number(literal.text) > 1 : PAGE_EDGES.has(literal.text)));
+    });
+  const arithmetic = nodes(source, ts.SyntaxKind.BinaryExpression).flatMap((node) => {
+    if (!ts.isBinaryExpression(node) || (node.operatorToken.kind !== ts.SyntaxKind.PlusToken && node.operatorToken.kind !== ts.SyntaxKind.MinusToken)) return [];
+    const [literal, other] = ts.isNumericLiteral(node.right) ? [node.right, node.left] : [node.left, node.right];
+    return ts.isNumericLiteral(literal) && PAGE_EDGES.has(literal.text) && ts.isIdentifier(other) && PAGE_START.test(other.text) ? [literal] : [];
+  });
+  const constants = declarations(source).flatMap((declaration) => {
+    const initializer = declaration.initializer === undefined ? undefined : unwrap(declaration.initializer);
+    const isConst = ts.isVariableDeclarationList(declaration.parent) && (declaration.parent.flags & ts.NodeFlags.Const) !== 0;
+    return isConst && ts.isIdentifier(declaration.name) && PAGE_NAME.test(declaration.name.text) && initializer !== undefined && ts.isNumericLiteral(initializer) && Number(initializer.text) >= 100 ? [initializer] : [];
+  });
+  return [...new Set([...inCalls, ...arithmetic, ...constants])];
+};
 
 function numericLiterals(node: ts.Node): ts.NumericLiteral[] {
   const found: ts.NumericLiteral[] = ts.isNumericLiteral(node) ? [node] : [];

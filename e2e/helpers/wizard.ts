@@ -153,7 +153,7 @@ export const noSidewaysScroll = (page: Page) => page.evaluate(() => document.doc
 
 export type WizardIds = { propertyId: string; documentId: string | null };
 
-export function wizardIds(page: Page): WizardIds {
+function wizardIds(page: Page): WizardIds {
   const params = new URL(page.url()).searchParams;
   return { propertyId: params.get('property') ?? '', documentId: params.get('document') };
 }
@@ -187,7 +187,7 @@ export async function startWizard(
   return wizardIds(page);
 }
 
-export const fieldRows = (page: Page) => page.getByTestId('extraction-field');
+const fieldRows = (page: Page) => page.getByTestId('extraction-field');
 const fieldRow = (page: Page, path: string) => page.locator(`[data-testid="extraction-field"][data-path="${path}"]`);
 
 export async function acceptEvery(page: Page) {

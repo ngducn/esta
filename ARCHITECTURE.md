@@ -22,7 +22,7 @@ Every `scripts/check-*.ts` gate runs from the `check` script in `package.json`, 
 
 ## Dead code and the package boundaries
 
-`pnpm knip` (`knip.jsonc`, in `pnpm check`) fails on a file, an export or an exported type that no other file imports, tests and e2e specs included. Delete it, or drop the `export` keyword when the file uses it itself. Knip has no ignore list. `knip.jsonc` names only entries it cannot see, such as the connector's CLI files that `scripts/connector.ts` picks by name, each with its reason beside it. A new entry needs the same.
+`pnpm knip` (`knip.jsonc`, in `pnpm check`) fails on a file, an export or an exported type that no other file imports, tests included, and the e2e specs and helpers that knip's Playwright plugin finds. Exports of `packages/*` entry modules are not checked. Delete it, or drop the `export` keyword when the file uses it itself. Knip has no ignore list. `knip.jsonc` names only entries it cannot see, such as the connector's CLI files that `scripts/connector.ts` picks by name, each with its reason beside it. A new entry needs the same.
 
 `packages/db` holds the generated Supabase types and nothing else. A lint block in `eslint.config.mjs` fails an import of another workspace and any export that is not a type or the generated file (`eslint-rules/db-boundary.test.ts`). Code that reads or writes rows lives in `packages/ops`, which holds the household export (`packages/ops/src/export`).
 

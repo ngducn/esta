@@ -11,7 +11,7 @@ const FORCE_ADDED: Record<string, string> = {
 
 describe('.gitignore', () => {
   it('ignores no folder that holds source: a bare `reports/` once hid apps/web/src/app/(app)/reports from knip and from `git add`', () => {
-    const tracked = execFileSync('git', ['ls-files', '-ci', '--exclude-standard'], { cwd: root, encoding: 'utf8' }).split('\n').filter((path) => path !== '');
+    const tracked = execFileSync('git', ['ls-files', '-ci', '--exclude-per-directory=.gitignore'], { cwd: root, encoding: 'utf8' }).split('\n').filter((path) => path !== '');
     expect(tracked.filter((path) => !(path in FORCE_ADDED))).toEqual([]);
   });
 });
