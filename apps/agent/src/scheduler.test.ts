@@ -1,7 +1,7 @@
 import { clockAt, parseInstant } from '@esta/core';
 import { describe, expect, it } from 'vitest';
 import { scheduleJobs, SCHEDULED_PRIORITY } from './scheduler';
-import { fakeDb } from './test/fake-db';
+import { memoryDb } from '@esta/ops/test/memory-db';
 
 const TZ = 'Asia/Ho_Chi_Minh';
 const at = (now: string) => clockAt({ kind: 'table', now: parseInstant(now) }, TZ);
@@ -9,7 +9,7 @@ const at = (now: string) => clockAt({ kind: 'table', now: parseInstant(now) }, T
 describe('scheduleJobs', () => {
   it('queues portfolio_watch for every household once its time has come, behind jobs people queue', async () => {
     const tables = { households: [{ id: 'h1' }, { id: 'h2' }], agent_jobs: [] as Record<string, unknown>[] };
-    const db = fakeDb(tables);
+    const db = memoryDb(tables);
     expect(await scheduleJobs(db, at('2026-10-07T01:59:00+07:00'), TZ)).toBe(0);
     expect(await scheduleJobs(db, at('2026-10-07T06:39:00+07:00'), TZ), 'backup_export at 02:00 and research_scan at 06:00').toBe(4);
     expect(await scheduleJobs(db, at('2026-10-07T06:45:00+07:00'), TZ)).toBe(2);
@@ -21,7 +21,7 @@ describe('scheduleJobs', () => {
 
   it('adds the brief at its own time, nothing on a later tick or a restart the same day, and the new day in schedule order', async () => {
     const tables = { households: [{ id: 'h1' }], agent_jobs: [] as Record<string, unknown>[] };
-    const db = fakeDb(tables);
+    const db = memoryDb(tables);
     await scheduleJobs(db, at('2026-10-07T06:45:00+07:00'), TZ);
     expect(await scheduleJobs(db, at('2026-10-07T09:00:00+07:00'), TZ)).toBe(1);
     expect(await scheduleJobs(db, at('2026-10-07T09:01:00+07:00'), TZ)).toBe(0);

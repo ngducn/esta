@@ -97,6 +97,14 @@ describe('depositActions', () => {
   });
 });
 
+describe('depositActions edges', () => {
+  it('offers using the deposit only when something is held and an invoice still owes', () => {
+    expect(depositActions(state(0, { active: true, owesInvoice: true }))).toEqual(['received']);
+    expect(depositActions(state(1, { owesInvoice: true }))).toEqual(['applied', 'deduction', 'refunded']);
+    expect(depositActions(state(1, { owesInvoice: false }))).toEqual(['deduction', 'refunded']);
+  });
+});
+
 describe('depositPrefill', () => {
   it('opens a refund with everything held, and a use on rent with what the invoice owes up to what is held', () => {
     expect(depositPrefill('refunded', state(1_200_000), null, null)).toBe(1_200_000);
@@ -111,8 +119,42 @@ describe('depositPrefill', () => {
   });
 });
 
+describe('depositPrefill edges', () => {
+  const first = state(0, { hasEntries: false });
+
+  it('has nothing to open with when the invoice owes nothing known, or the lease has no deposit', () => {
+    expect(depositPrefill('applied', state(2_800_000), null, null)).toBeNull();
+    expect(depositPrefill('received', first, null, null)).toBeNull();
+    expect(depositPrefill('received', first, vnd(0), null)).toBeNull();
+    expect(depositPrefill('deduction', first, vnd(6_000_000), null)).toBeNull();
+    expect(depositPrefill('refunded', first, vnd(6_000_000), null)).toBe(0);
+  });
+});
+
+describe('deriveDepositLedger order', () => {
+  it('reads entries in date order whatever order they arrive in, and keeps the given order within a day', () => {
+    const arrived = [entry('later', 'applied', 100, '2026-10-02'), entry('first', 'received', 300, '2026-10-01')];
+    expect(held(arrived)).toEqual({ rows: [['first', 300], ['later', 200]], heldVnd: 200 });
+    const sameDay = [entry('c', 'received', 300, '2026-10-01'), entry('a', 'received', 100, '2026-10-01'), entry('b', 'refunded', 50, '2026-10-01')];
+    expect(held(sameDay).rows.map(([id]) => id)).toEqual(['c', 'a', 'b']);
+    const reversed = [entry('b', 'refunded', 50, '2026-10-01'), entry('a', 'received', 100, '2026-10-01')];
+    expect(deriveDepositLedger(reversed)).toMatchObject({ ok: false, reason: 'exceeds_held', entryId: 'b' });
+  });
+});
+
 describe('previewDepositEntry', () => {
   const ledger = [entry('received', 'received', 2_800_000, '2025-09-16')];
+
+  it('checks the invoice only for an applied entry that names what is owed', () => {
+    expect(previewDepositEntry(ledger, entry('new', 'applied', 2_000_000, '2026-10-07'), null)).toEqual({ ok: true, heldVnd: 800_000 });
+    expect(previewDepositEntry(ledger, entry('new', 'deduction', 2_000_000, '2026-10-07'), vnd(1_000_000))).toEqual({ ok: true, heldVnd: 800_000 });
+    expect(previewDepositEntry(ledger, entry('new', 'applied', 1_300_000, '2026-10-07'), vnd(1_300_000))).toEqual({ ok: true, heldVnd: 1_500_000 });
+  });
+
+  it('refuses an entry of nothing, and says what is held when the entry takes out too much', () => {
+    expect(previewDepositEntry(ledger, entry('new', 'received', 0, '2026-10-07'), null)).toEqual({ ok: false, reason: 'non_positive_amount' });
+    expect(previewDepositEntry(ledger, entry('new', 'received', -5, '2026-10-07'), null)).toEqual({ ok: false, reason: 'non_positive_amount' });
+  });
 
   it('shows the held balance after the entry', () => {
     expect(previewDepositEntry(ledger, entry('new', 'applied', 1_300_000, '2026-10-07'), vnd(1_300_000))).toEqual({ ok: true, heldVnd: 1_500_000 });

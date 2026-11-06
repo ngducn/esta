@@ -16,4 +16,8 @@ describe('vnd', () => {
   it.each([1.5, 2 ** 53, -(2 ** 53), Number.NaN, Number.POSITIVE_INFINITY])('throws on %s', (n) => {
     expect(() => vnd(n)).toThrow(RangeError);
   });
+
+  it('names the amount it refused', () => {
+    expect(() => vnd(1.5)).toThrow('Not a safe integer VND amount: 1.5');
+  });
 });

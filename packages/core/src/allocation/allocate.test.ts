@@ -132,6 +132,24 @@ describe('owedFor', () => {
   });
 });
 
+describe('the order invoices are paid in', () => {
+  const settled = (open: readonly OpenInvoice[]) => plan(open.length * 10, open).allocations.map(([id]) => id);
+
+  it('takes the earlier period when two invoices fall due the same day', () => {
+    expect(settled([invoice('later', '2026-10-25', 10, '2026-10-01'), invoice('earlier', '2026-10-25', 10, '2026-09-01')])).toEqual(['earlier', 'later']);
+    expect(settled([invoice('earlier', '2026-10-25', 10, '2026-09-01'), invoice('later', '2026-10-25', 10, '2026-10-01')])).toEqual(['earlier', 'later']);
+  });
+
+  it('takes the lower id when due date and period are the same, whatever order they arrive in', () => {
+    const byId = Object.fromEntries(['a', 'b', 'c'].map((id) => [id, invoice(id, '2026-10-25', 10)]));
+    for (const arrival of ['abc', 'cba', 'bca', 'bac']) expect(settled([...arrival].map((id) => byId[id] as OpenInvoice))).toEqual(['a', 'b', 'c']);
+  });
+
+  it('puts the earlier due date first even when its period starts later', () => {
+    expect(settled([invoice('x', '2026-10-25', 10, '2026-01-01'), invoice('y', '2026-09-25', 10, '2026-09-01')])).toEqual(['y', 'x']);
+  });
+});
+
 describe('openInvoicesOldestFirst', () => {
   it('keeps issued invoices that still owe, oldest due first, and drops drafts and paid ones', () => {
     const invoices = [
