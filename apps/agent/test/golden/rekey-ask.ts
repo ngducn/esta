@@ -2,7 +2,8 @@ import { existsSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { inputHash, type CanonicalInput } from '../../src/replay/canonicalize';
 import { DEFAULT_REPLAY_DIR, recordingPath, recordingSchema, writeRecording, type Recording } from '../../src/replay/store';
-import { askPrompt } from '../../src/prompts/ask';
+import { repairTexts } from '@esta/core/guard';
+import { askPrompt, repairTail } from '../../src/prompts/ask';
 import { ASK_CONTEXT, askCase, caseInput } from './ask-cases';
 
 /** A first-turn prompt opens with the system prompt; follow-up and repair prompts do not. */
@@ -20,6 +21,13 @@ export function headOf(prompt: string): string | null {
   const rules = prompt.indexOf('\n6. ');
   return prompt.startsWith(OPENING) && rules >= 0 ? prompt.slice(0, prompt.indexOf('\n', rules + 1)) : null;
 }
+
+/** The closing line repair turns were recorded with before it named the rejected words (P5-10d). */
+const OLD_REPAIR_TAIL = '\nWrite the whole answer again from the start with these fixed. The handles you already have still hold.';
+
+/** A repair prompt recorded with the old closing line, now with the current one; any other prompt as it is. */
+export const withCurrentRepairTail = (prompt: string): string =>
+  prompt.endsWith(OLD_REPAIR_TAIL) ? `${prompt.slice(0, -OLD_REPAIR_TAIL.length)}\n${repairTail(repairTexts(prompt))}` : prompt;
 
 /** The key of a recording's input as the store writes it. */
 export const hashOf = (input: Recording['input']): string => inputHash(input as CanonicalInput);
@@ -50,25 +58,11 @@ export async function currentOffer() {
 }
 
 /**
- * The repair lines to drop, by the key of the repair turn they are in: a text the guard no longer rejects (`hai bên` as
- * both parties, P5-10d) is no longer named, so the repair message the same reply is sent back with has one line fewer.
- */
-export const DROPPED_REPAIR_LINES: ReadonlyMap<string, readonly string[]> = new Map([
-  ['0350c82652036b01efc9a2b8627f7f938c3b6b18cc3ad98f4b1b5af72e8a6a4c', ['hai']],
-]);
-
-const withoutLines = (prompt: string, texts: readonly string[]): string =>
-  prompt
-    .split('\n')
-    .filter((line) => !texts.some((text) => line.startsWith(`"${text}": `)))
-    .join('\n');
-
-/**
  * Re-keys every ask recording to today's prompt: the rules at the start of a first-turn prompt and the tools it offers
  * are taken from the code, the rest of the prompt, the tool calls and the reply stay as recorded, and a turn that
  * resumes another follows that one's new key. Returns the files written and removed.
  */
-export async function rekeyAsk(dir: string = DEFAULT_REPLAY_DIR, dropped: ReadonlyMap<string, readonly string[]> = DROPPED_REPAIR_LINES): Promise<{ written: string[]; removed: string[] }> {
+export async function rekeyAsk(dir: string = DEFAULT_REPLAY_DIR): Promise<{ written: string[]; removed: string[] }> {
   const offer = await currentOffer();
   const old = new Map<string, { file: string; recording: Recording }>();
   const dirOf = new Map<string, string>();
@@ -85,8 +79,7 @@ export async function rekeyAsk(dir: string = DEFAULT_REPLAY_DIR, dropped: Readon
     if (recording === undefined) return;
     const resumes = recording.input.resumesInputHash;
     if (resumes !== undefined && old.has(resumes)) settle(resumes);
-    const drops = dropped.get(hash);
-    const prompt = drops === undefined ? recording.input.prompt : withoutLines(recording.input.prompt, drops);
+    const prompt = withCurrentRepairTail(recording.input.prompt);
     const head = headOf(prompt);
     const day = dayOf(prompt);
     const next = head === null || day === null ? prompt : currentHead(day) + prompt.slice(head.length);
@@ -94,7 +87,7 @@ export async function rekeyAsk(dir: string = DEFAULT_REPLAY_DIR, dropped: Readon
     const input = { ...rest, prompt, ...(head === null ? {} : { prompt: next, ...offer }), ...(resumes === undefined ? {} : { resumesInputHash: renamed.get(resumes) ?? resumes }) };
     const key = hashOf(input);
     renamed.set(hash, key);
-    rekeyed.set(hash, { ...recording, input, inputHash: key, ...(drops === undefined ? {} : { label: `${recording.label} Repair line dropped for ${drops.join(', ')} (P5-10d): the guard no longer rejects it.` }) });
+    rekeyed.set(hash, { ...recording, input, inputHash: key });
   };
   for (const hash of old.keys()) settle(hash);
   const written: string[] = [];
@@ -114,6 +107,10 @@ export async function rekeyAsk(dir: string = DEFAULT_REPLAY_DIR, dropped: Readon
 }
 
 if (import.meta.main) {
-  const { written, removed } = await rekeyAsk();
-  console.log(`Re-keyed ${written.length} ask recordings, removed ${removed.length} old keys`);
+  // The ask cases that live beside the main set (`fixtures/agent-replay-cases/<case>/ask`) carry the same rules and repair line.
+  const cases = join(DEFAULT_REPLAY_DIR, '..', 'agent-replay-cases');
+  const dirs = [DEFAULT_REPLAY_DIR, ...readdirSync(cases).map((name) => join(cases, name)).filter((dir) => existsSync(join(dir, 'ask')))];
+  const results = [];
+  for (const dir of dirs) results.push(await rekeyAsk(dir));
+  console.log(`Re-keyed ${results.flatMap((r) => r.written).length} ask recordings, removed ${results.flatMap((r) => r.removed).length} old keys`);
 }

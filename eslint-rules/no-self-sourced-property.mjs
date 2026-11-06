@@ -85,6 +85,17 @@ export default {
       }
       return null;
     };
+    /** Every import `name` comes from, through the variables built from it (`const missing = LIST.filter((t) => !CASES.includes(t))` holds both). */
+    const allRootImports = (name, scope, seen = new Set()) => {
+      if (seen.has(name)) return [];
+      seen.add(name);
+      const variable = findVariable(scope, name);
+      const def = variable?.defs[0];
+      if (!def) return [];
+      if (def.type === 'ImportBinding') return def.parent.importKind === 'type' || def.node.importKind === 'type' ? [] : [{ local: name, source: String(def.parent.source.value) }];
+      if (def.type !== 'Variable' || !def.node.init) return [];
+      return [...referencedNames(def.node.init)].flatMap((inner) => allRootImports(inner, variable.scope, seen));
+    };
     const importedFrom = (name, scope, seen) => {
       const found = rootImport(name, scope, seen);
       return found && !TEST_MODULE.test(found.source) ? found.source : null;
@@ -101,13 +112,12 @@ export default {
           context.report({ node: argument, messageId: 'selfSourced', data: { name, source: `'${source}'` } });
           return;
         }
-        const root = rootImport(name, scope, new Set());
-        if (root && CASES_MODULE.test(root.source)) drawnFromCases.push({ node: argument, local: root.local });
+        for (const root of allRootImports(name, scope)) if (CASES_MODULE.test(root.source)) drawnFromCases.push({ node: argument, local: root.local });
       }
     };
 
     const noteEquality = (sides, scope) => {
-      const roots = sides.map((side) => [...referencedNames(side)].map((name) => rootImport(name, scope, new Set())).filter(Boolean));
+      const roots = sides.map((side) => [...referencedNames(side)].flatMap((name) => allRootImports(name, scope)));
       roots.forEach((own, index) => {
         const others = roots.filter((_, other) => other !== index).flat();
         if (others.some(({ source }) => !TEST_MODULE.test(source))) for (const { local, source } of own) if (CASES_MODULE.test(source)) mirrored.add(local);
@@ -116,7 +126,7 @@ export default {
 
     /** One asserted expression that holds both a *.cases import and production code puts them on the same side (`expect(PROD.filter((t) => !listed.has(t))).toEqual([])`): a subset check, the same mirror. */
     const noteSubset = (expression, scope) => {
-      const roots = [...referencedNames(expression)].map((name) => rootImport(name, scope, new Set())).filter(Boolean);
+      const roots = [...referencedNames(expression)].flatMap((name) => allRootImports(name, scope));
       if (!roots.some(({ source }) => !TEST_MODULE.test(source))) return;
       for (const { local, source } of roots) if (CASES_MODULE.test(source)) mirrored.add(local);
     };

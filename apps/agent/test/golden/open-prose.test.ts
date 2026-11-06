@@ -16,9 +16,9 @@ import { replayedReads } from './ask-reads';
 /**
  * The fixed replay set of the live open-prose guard probe (`pnpm agent:guard-probe`, P5-12): what the model wrote for
  * each prompt, guarded again with today's word table. A first pass may be rejected only for the text listed here: a
- * number or count the model typed. `hai bên` as both parties, `ba mẹ` and `cả hai` pass in the contexts of
- * `passesInPhrases` (P5-10d), while `hai bên thuê` counts tenants and is still rejected
- * (docs/plan/trail/p5-12-guard-probe.md, docs/plan/trail/phase-5-guard.md). Any other reject is a false one.
+ * number or count the model typed, or the `hai` of `hai bên` (both parties): the guard reads no idiom, so `hai bên`, `ba mẹ`
+ * and `cả hai` are rejected like any number word and the style rule of the prompt steers the model away from them
+ * (docs/plan/trail/phase-5-guard.md, P5-10d). Any other reject is a false one.
  */
 const FIRST_PASS_REJECTS: Readonly<Record<string, readonly string[]>> = {
   'vi-zalo-reminder': ['5'],
@@ -27,11 +27,12 @@ const FIRST_PASS_REJECTS: Readonly<Record<string, readonly string[]>> = {
   'vi-zalo-thanks': ['Hai'],
   'vi-rent-tax': ['hai'],
   'vi-red-pink-book': ['hai'],
-  'vi-raise-rent': ['Q7:'],
+  'vi-raise-rent': ['Q7:', 'hai'],
   // A legal answer with no official page is sent back for one, which names no text (P5-10d).
   'vi-bank-letter': [SOURCE_REJECT],
   'vi-transfer-procedure': ['hai'],
   'vi-notarize-lease': [SOURCE_REJECT],
+  'vi-repair-first': ['hai'],
 };
 
 const reads = replayedReads();

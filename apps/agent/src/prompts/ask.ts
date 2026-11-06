@@ -84,7 +84,7 @@ export function askPrompt(
     '1. Write Markdown: one to four short sentences, a short list, or a table when the reply lists several records with the same fields. Use paragraphs, lists, tables, bold and links only.',
     '2. Write every number, date, amount and name as the placeholder of the field that holds it, such as {{f2.income_display}}. A field without a _display, _label or _name ending, such as status or category, is a code for you to read: write it in your own words. This holds for a name or a numbered label the message itself holds, such as phòng 5: find its record with the tools and write its placeholder.',
     '3. Link the record the reply comes from by its handle, as [Sổ thu chi {{f1.property_label}}](f2). The link target is the bare handle in parentheses, never a placeholder or an address, and the link text is never a bare handle. Link nothing else.',
-    '4. Number words count things even in advice and letters, and the app rejects them: never write hai, ba, bốn, năm, mười or two, three for a count, and write a period as theo năm, mỗi năm, hằng năm or theo tháng, never năm alone. Write each, both or cả … lẫn … instead of a count, such as mỗi cách or bên thuê và bên cho thuê.',
+    '4. Number words count things even in advice and letters, and the app rejects them: never write hai, ba, bốn, năm, mười or two, three for a count, and write a period as theo năm, mỗi năm, hằng năm or theo tháng, never năm alone. Use a number word only when it states a figure from the data or a tool result, as that field\'s placeholder. Write each, both or cả … lẫn … instead of a count, such as mỗi cách. Say bố mẹ, never ba mẹ, for parents; bên thuê và bên cho thuê or người thuê và chủ nhà, never hai bên; cả người thuê lẫn chủ nhà, never cả hai. In English say the tenant and the landlord, never the two parties.',
     '5. If the question asks you to change something, say that you cannot change records yourself; when a change would help, suggest it with create_proposal and say a member can approve it on its card in this conversation.',
     '6. Reply in the language the message is written in, whatever the language of these rules: an English message gets an English reply.',
     ...conversationSoFar(context.earlier ?? []),
@@ -110,8 +110,12 @@ export function askFollowUpPrompt({ locale, today, timezone, question, labels, f
   ].join('\n');
 }
 
+/** What follows the rejected lines of a repair turn: it names the exact words and asks for the answer again without them. */
+export const repairTail = (texts: readonly string[]): string =>
+  `Write the whole answer again from the start without these exact words (${[...new Set(texts)].map((text) => `"${text}"`).join(', ')}): say the same thing in other words, and cite a figure only as a placeholder. The handles you already have still hold.`;
+
 export function askRepairPrompt(violations: readonly NoteViolation[]): string {
-  return `${repairMessage(violations)}\nWrite the whole answer again from the start with these fixed. The handles you already have still hold.`;
+  return `${repairMessage(violations)}\n${repairTail(violations.map(({ text }) => text))}`;
 }
 
 /** Asks for the official page a legal answer lacks (AGENT.md §5.6 step 9). */

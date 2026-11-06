@@ -1,17 +1,10 @@
 import { cpSync, existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { repairMessage } from '@esta/core/guard';
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_REPLAY_DIR, writeRecording } from '../../src/replay/store';
-import { askRecordingFiles, currentHead, currentOffer, dayOf, hashOf, headOf, readAskRecording, rekeyAsk } from './rekey-ask';
-
-/** A temporary copy of the north-star recordings, and the first of them. */
-function copiedFirst() {
-  const dir = mkdtempSync(join(tmpdir(), 'esta-rekey-'));
-  cpSync(join(DEFAULT_REPLAY_DIR, 'northstar'), join(dir, 'northstar'), { recursive: true });
-  const [file] = askRecordingFiles(dir);
-  return { dir, file: file ?? '', first: readAskRecording(file ?? '') };
-}
+import { askRecordingFiles, currentHead, currentOffer, dayOf, hashOf, headOf, readAskRecording, rekeyAsk, withCurrentRepairTail } from './rekey-ask';
 
 describe('ask recordings are keyed to the current prompt (re-keyed only by script)', () => {
   const files = askRecordingFiles();
@@ -39,13 +32,16 @@ describe('ask recordings are keyed to the current prompt (re-keyed only by scrip
   });
 
   it('re-keys a recording whose rules are old and its follower, and keeps the reply and tool calls', async () => {
-    const { dir, file, first } = copiedFirst();
+    const dir = mkdtempSync(join(tmpdir(), 'esta-rekey-'));
+    cpSync(join(DEFAULT_REPLAY_DIR, 'northstar'), join(dir, 'northstar'), { recursive: true });
+    const [file] = askRecordingFiles(dir);
+    const first = readAskRecording(file ?? '');
     const oldInput = { ...first.input, prompt: first.input.prompt.replace('\n6. ', '\n6. (old rule) '), mcpTools: first.input.mcpTools.slice(1) };
     const old = { ...first, input: oldInput, inputHash: hashOf(oldInput) };
     const followInput = { ...first.input, prompt: 'Write it again.', resumesInputHash: old.inputHash };
     const follower = { ...first, input: followInput, inputHash: hashOf(followInput), reply: 'again' };
     const target = join(dir, 'northstar');
-    rmSync(file);
+    rmSync(file ?? '');
     writeRecording(target, old);
     writeRecording(target, follower);
     await rekeyAsk(dir);
@@ -60,24 +56,9 @@ describe('ask recordings are keyed to the current prompt (re-keyed only by scrip
     expect(existsSync(join(target, 'ask', `${old.inputHash}.json`))).toBe(false);
   });
 
-  it('drops the repair lines for a text the guard no longer rejects, re-keys the turn and moves its follower', async () => {
-    const { dir, first } = copiedFirst();
-    const repair = '"Q7:": Do not type a number.\n"hai": Do not write a number word.\nWrite the whole answer again.';
-    const repairInput = { ...first.input, prompt: repair, resumesInputHash: first.inputHash };
-    const repairing = { ...first, input: repairInput, inputHash: hashOf(repairInput), reply: 'repaired', label: 'repair' };
-    const followInput = { ...first.input, prompt: 'Once more.', resumesInputHash: repairing.inputHash };
-    const follower = { ...first, input: followInput, inputHash: hashOf(followInput), reply: 'again' };
-    const target = join(dir, 'northstar');
-    writeRecording(target, repairing);
-    writeRecording(target, follower);
-    await rekeyAsk(dir, new Map([[repairing.inputHash, ['hai']]]));
-    const after = askRecordingFiles(dir).map(readAskRecording);
-    const dropped = after.find(({ reply }) => reply === 'repaired');
-    const next = after.find(({ reply }) => reply === 'again');
-    expect(dropped?.input.prompt).toBe('"Q7:": Do not type a number.\nWrite the whole answer again.');
-    expect(dropped?.inputHash).toBe(hashOf(dropped?.input ?? first.input));
-    expect(dropped?.label).toContain('hai');
-    expect(next?.input.resumesInputHash).toBe(dropped?.inputHash);
-    expect(existsSync(join(target, 'ask', `${repairing.inputHash}.json`))).toBe(false);
+  it('gives a repair turn recorded with the old closing line the one that names the rejected words', () => {
+    const old = `${repairMessage([{ rule: 'word', text: 'hai' }, { rule: 'number', text: '5' }])}\nWrite the whole answer again from the start with these fixed. The handles you already have still hold.`;
+    expect(withCurrentRepairTail(old)).toContain('without these exact words ("hai", "5")');
+    expect(withCurrentRepairTail(withCurrentRepairTail(old))).toBe(withCurrentRepairTail(old));
   });
 });
