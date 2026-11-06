@@ -1,7 +1,7 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { PROPERTY_KINDS, kindDetailsSchema, type PropertyKind } from '../schemas/property';
-import { KIND_FIELDS, kindDetailsText, readKindDetails, type KindFieldTexts } from './form-fields';
+import { KIND_FIELDS, droppedDetailKeys, kindDetailsText, readKindDetails, type KindFieldTexts } from './form-fields';
 
 const typed: Record<PropertyKind, { texts: KindFieldTexts; details: Record<string, unknown> }> = {
   townhouse: { texts: { room_count: '3' }, details: {} },
@@ -69,5 +69,32 @@ describe('kindDetailsText', () => {
   it('ignores keys of other kinds and values of the wrong type', () => {
     expect(kindDetailsText('townhouse', { room_count: 3 })).toEqual({});
     expect(kindDetailsText('rooming_house', { room_count: [3] })).toEqual({});
+  });
+});
+
+describe('droppedDetailKeys (#397)', () => {
+  const land = { frontage_m: '8', road_width_m: '4,5' };
+
+  it('names the typed details the new kind has no field for, which saving would delete', () => {
+    expect(droppedDetailKeys('warehouse', land)).toEqual(['frontage_m', 'road_width_m']);
+    expect(droppedDetailKeys('apartment', { ...land, floor: '12' })).toEqual(['frontage_m', 'road_width_m']);
+  });
+
+  it('names nothing while the kind still has a field for each detail, or the field is blank', () => {
+    expect(droppedDetailKeys('residential_land', land)).toEqual([]);
+    expect(droppedDetailKeys('agricultural_land', land)).toEqual([]);
+    expect(droppedDetailKeys('warehouse', { frontage_m: '  ', road_width_m: '' })).toEqual([]);
+  });
+
+  it('agrees with what readKindDetails saves for every kind: a detail is dropped exactly when it is typed and not saved', () => {
+    const everything: KindFieldTexts = { building_name: 'A', block: 'B', floor: '3', unit_no: '4', management_fee_vnd: '1.000.000', room_count: '5', frontage_m: '8', road_width_m: '4' };
+    for (const kind of Object.keys(KIND_FIELDS) as (keyof typeof KIND_FIELDS)[]) {
+      const read = readKindDetails(kind, everything);
+      if (!read.ok) throw new Error(kind);
+      const saved = new Set(Object.keys(read.value));
+      const dropped = new Set(droppedDetailKeys(kind, everything));
+      expect([...dropped].filter((key) => saved.has(key))).toEqual([]);
+      expect(dropped.size + saved.size).toBe(Object.keys(everything).length);
+    }
   });
 });
