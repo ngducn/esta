@@ -21,14 +21,14 @@ test('the operator sees a failed nightly job beside the worker line, and nothing
   const failedAt = new Date(Date.now() + TEN_YEARS_MS);
   await serviceInsert(page, 'cron_runs', JOBS.map((job) => run(job, job !== 'invoices', failedAt)));
   await page.goto('/settings');
-  const line = page.getByTestId('cron-status');
+  const line = page.getByRole('status').filter({ hasText: 'Việc chạy mỗi đêm' });
   await expect(line).toContainText('Việc chạy mỗi đêm bị lỗi lần gần nhất: lập hóa đơn.');
   await expect(line).not.toContainText('không chạy xong');
-  await expect(page.getByTestId('worker-status')).toBeVisible();
-  await page.getByTestId('settings-assistant').screenshot({ path: test.info().outputPath('cron-status-390.png') });
+  await expect(page.getByText('Việc mới sẽ được làm khi Trợ lý chạy')).toBeVisible();
+  await page.getByRole('region', { name: 'Trợ lý' }).screenshot({ path: test.info().outputPath('cron-status-390.png') });
 
   await serviceInsert(page, 'cron_runs', JOBS.map((job) => run(job, true, new Date(failedAt.getTime() + 1_000))));
   await page.goto('/settings');
-  await expect(page.getByTestId('worker-status')).toBeVisible();
-  await expect(page.getByTestId('cron-status')).toHaveCount(0);
+  await expect(page.getByText('Việc mới sẽ được làm khi Trợ lý chạy')).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: 'Việc chạy mỗi đêm' })).toHaveCount(0);
 });

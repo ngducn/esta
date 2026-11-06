@@ -3,7 +3,8 @@ import type { Clock } from '@esta/core';
 import type { CronJob } from '@esta/core/ops';
 import { readRequestClock } from '../clock';
 import { requireCronSecret } from './auth';
-import { describeRun, recordCronRun, type CronResult } from './cron-runs';
+import { recordCronRun } from '@esta/ops';
+import { describeRun, type CronResult } from './cron-runs';
 import { cronClient, type CronClient } from './supabase';
 
 /** Every run, including one that throws, leaves a `cron_runs` row, so a night that failed or never ran shows on the operator's status line. */

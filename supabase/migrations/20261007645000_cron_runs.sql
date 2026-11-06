@@ -18,6 +18,9 @@ alter table public.cron_runs enable row level security;
 revoke all on table public.cron_runs from public, anon, authenticated, service_role;
 grant select, insert on table public.cron_runs to service_role;
 
+create policy cron_runs_service_select on public.cron_runs for select to service_role using (true);
+create policy cron_runs_service_insert on public.cron_runs for insert to service_role with check (true);
+
 create function public.cron_job_status(p_household_id uuid)
 returns table (job text, started_at timestamptz, finished_at timestamptz, ok boolean)
 language sql
