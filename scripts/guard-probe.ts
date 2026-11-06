@@ -1,14 +1,15 @@
-import { mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { appendFileSync, mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
+import { reduceNationalIds } from '../packages/core/src/agent-schemas/index.ts';
 import { isoDate } from '../packages/core/src/date/iso-date.ts';
 import { OPEN_PROSE, type OpenProsePrompt } from '../packages/core/src/guard/fixtures/open-prose.ts';
 import { assertStartAllowed, parseAgentEnv, type RunMode } from '../apps/agent/src/env.ts';
 import { askRequest } from '../apps/agent/src/jobs/ask.ts';
 import { JOBS } from '../apps/agent/src/jobs/registry.ts';
 import { canonicalizer, inputHash } from '../apps/agent/src/replay/canonicalize.ts';
-import { DEFAULT_REPLAY_DIR, writeRecording } from '../apps/agent/src/replay/store.ts';
+import { DEFAULT_REPLAY_DIR, writeRecording, type Recording } from '../apps/agent/src/replay/store.ts';
 import { judgeResult } from '../apps/agent/src/sdk/result.ts';
 import { canonicalInput, liveSession, type SessionRequest } from '../apps/agent/src/sdk/session.ts';
 import { serviceClient } from '../apps/agent/src/supabase.ts';
@@ -33,6 +34,8 @@ type ProbeRow = {
   readonly id: string;
   readonly firstPass: 'passed' | 'rejected';
   readonly rejectedBy: readonly string[];
+  /** What the turn after the repair was rejected for, when it was: the guard's texts, or the missing official source. */
+  readonly repairRejectedBy: readonly string[];
   readonly repair: 'passed' | 'rejected' | null;
   readonly status: 'done' | 'error';
   readonly model: string;
@@ -49,6 +52,35 @@ function liveMode(): { mode: LiveMode; env: ReturnType<typeof parseAgentEnv> } {
   if (mode.agentMode !== 'live') throw new Error('agent:guard-probe runs live only');
   if (/fable/iu.test(mode.model)) throw new Error(`Refusing to probe with ESTA_MODEL_ROUTINE=${mode.model}, a Fable model`);
   return { mode, env };
+}
+
+/** What the tools read in this probe run, to tell a run the model made up from one a tool returned. */
+let seenReads: unknown = null;
+const ID_RUN = /\p{Nd}(?:[\s.-]?\p{Nd}){8,}/gu;
+/** Where a refused recording's capture goes: outside the repo, since it names a digit run. */
+const CAPTURE_DIR = process.env.ESTA_PROBE_CAPTURE_DIR ?? join(tmpdir(), 'esta-guard-probe');
+
+/**
+ * When `writeRecording` is about to refuse a recording for a national ID run (SPEC D11), writes outside the repo which
+ * field held it, the run's last four digits, the text around it with every digit masked, and whether the same digits
+ * appear in the question or in a tool result the model read. The recording itself is never kept.
+ */
+function captureIdRefusal(item: OpenProsePrompt, recording: Recording, readsSeen: unknown): void {
+  const fields = { toolCalls: JSON.stringify(recording.toolCalls), reply: recording.reply };
+  const modelOutput = { toolCalls: recording.toolCalls, reply: recording.reply };
+  if (JSON.stringify(reduceNationalIds(modelOutput)) === JSON.stringify(modelOutput)) return;
+  const sources = { question: item.question, toolResults: JSON.stringify(readsSeen) };
+  const lines = Object.entries(fields).flatMap(([field, text]) =>
+    [...text.matchAll(ID_RUN)].map((match) => {
+      const digits = match[0].replace(/\P{Nd}/gu, '');
+      const mask = (part: string) => part.replace(/\p{Nd}/gu, '#');
+      const around = `${mask(text.slice(Math.max(0, match.index - 20), match.index))}[${digits.length} digits, last four ${digits.slice(-4)}]${mask(text.slice(match.index + match[0].length, match.index + match[0].length + 20))}`;
+      const found = Object.entries(sources).filter(([, source]) => source.replace(/\P{Nd}/gu, '').includes(digits)).map(([name]) => name);
+      return `${item.id} ${field}: ${around} | same digits in: ${found.length === 0 ? 'neither the question nor a tool result' : found.join(', ')}`;
+    }),
+  );
+  mkdirSync(CAPTURE_DIR, { recursive: true });
+  appendFileSync(join(CAPTURE_DIR, 'id-refusal.txt'), `${lines.length === 0 ? `${item.id}: refused, no digit run matched the capture pattern` : lines.join('\n')}\n`);
 }
 
 async function probe(item: OpenProsePrompt, mode: LiveMode, reads: ReturnType<typeof askReads>): Promise<ProbeRow> {
@@ -69,6 +101,7 @@ async function probe(item: OpenProsePrompt, mode: LiveMode, reads: ReturnType<ty
   const request: SessionRequest = { spec: JOBS.ask, prompt: prepared.prompt, jobDir, configDir, tools: prepared.tools, canon, onText };
   const passes: Array<'passed' | 'rejected'> = [];
   let rejectedBy: string[] = [];
+  let repairRejectedBy: string[] = [];
   let model: string;
   try {
     let turn = request;
@@ -80,7 +113,7 @@ async function probe(item: OpenProsePrompt, mode: LiveMode, reads: ReturnType<ty
       if (!outcome.ok) throw new Error(`${item.id} failed live with ${outcome.failure.kind}: ${outcome.failure.message}`);
       model = run.model;
       const input = canonicalInput(turn);
-      writeRecording(DEFAULT_REPLAY_DIR, {
+      const recorded: Recording = {
         version: 1,
         kind: 'ask',
         inputHash: inputHash(input),
@@ -91,16 +124,23 @@ async function probe(item: OpenProsePrompt, mode: LiveMode, reads: ReturnType<ty
         wallMs: Math.round(performance.now() - started),
         toolCalls: run.toolCalls.map((call) => ({ name: call.name, input: JSON.parse(canon.canonical(JSON.stringify(call.input))) as Record<string, unknown> })),
         reply: canon.canonical(streamed === '' ? outcome.reply : streamed),
+      };
+      captureIdRefusal(item, recorded, seenReads);
+      writeRecording(DEFAULT_REPLAY_DIR, recorded);
+      let again = '';
+      const repair = await prepared.nextTurn?.().catch((error: unknown) => {
+        again = error instanceof Error ? error.message : String(error);
+        return 'rejected again';
       });
-      const repair = await prepared.nextTurn?.().catch(() => 'rejected again');
       if (repair === null || repair === undefined) {
         passes.push('passed');
         await prepared.finish({ reply: outcome.reply, model: run.model, sessionId: run.result.sessionId, turnHash: inputHash(input) });
-        return { id: item.id, firstPass: passes[0] ?? 'passed', rejectedBy, repair: passes[1] ?? null, status: 'done', model };
+        return { id: item.id, firstPass: passes[0] ?? 'passed', rejectedBy, repairRejectedBy, repair: passes[1] ?? null, status: 'done', model };
       }
       passes.push('rejected');
-      if (repair === 'rejected again') return { id: item.id, firstPass: 'rejected', rejectedBy, repair: 'rejected', status: 'error', model };
+      if (repair === 'rejected again') return { id: item.id, firstPass: 'rejected', rejectedBy, repairRejectedBy: [again], repair: 'rejected', status: 'error', model };
       if (passes.length === 1) rejectedBy = rejectedTexts(repair);
+      else if (passes.length === 2) repairRejectedBy = rejectedTexts(repair);
       turn = { ...request, prompt: repair, resume: { sessionId: run.result.sessionId, afterInputHash: inputHash(input) } };
     }
   } finally {
@@ -113,6 +153,7 @@ async function main() {
   const { mode, env } = liveMode();
   const db = serviceClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, 'guard-probe');
   const recorded = recordedReads();
+  seenReads = recorded;
   const reads = recordingReads(askReads(db, HOUSEHOLD, { locale: 'vi', asOf: ASK_CONTEXT.today }), recorded);
   const only = values.only?.split(',');
   const rows: ProbeRow[] = [];
