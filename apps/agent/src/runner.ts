@@ -12,7 +12,7 @@ import { jobSpec, plainJobSpec, sessionInputs, type AgentJob, type JobSpec, type
 import { canonicalizer, inputHash } from './replay/canonicalize';
 import { MissingRecordingError } from './replay/store';
 import { countToolCalls, judgeResult, storedDenial, type Failure, type FailureKind, type Outcome } from './sdk/result';
-import { canonicalInput, liveSession, pruneTranscripts, replaySession, SessionGoneError, type SessionRequest, type SessionRun } from './sdk/session';
+import { canonicalInput, liveSession, pruneTranscripts, replaySession, SessionGoneError, stoppedRun, type SessionRequest, type SessionRun } from './sdk/session';
 import type { AgentDb } from './supabase';
 import { NumberGuardError } from './tools/create-item';
 import { mcpToolName } from './tools/server';
@@ -170,10 +170,21 @@ async function runSession(worker: Worker, job: AgentJob, { waiting, failed }: In
     if (spec.workDir === 'conversation' && session.result.sessionId !== null) tidyTranscripts(job, work.configDir, session.result.sessionId);
     return { outcome: { ...outcome, result }, session };
   } catch (error) {
-    return { outcome: { ok: false, failure: failureOf(error) }, session };
+    return { outcome: { ok: false, failure: failureOf(error) }, session: session ?? stoppedRun(error) };
   } finally {
     work?.close();
   }
+}
+
+const waitingOnUsage = new WeakMap<Worker, Set<string>>();
+
+/** The heartbeat reads one state for the whole worker, so it stays paused until no job is left waiting on the usage limit (#361). */
+function settleUsageLimit(worker: Worker, jobId: string, waits: boolean): WorkerState {
+  const jobs = waitingOnUsage.get(worker) ?? new Set<string>();
+  waitingOnUsage.set(worker, jobs);
+  if (waits) jobs.add(jobId);
+  else jobs.delete(jobId);
+  return jobs.size > 0 ? 'usage_limited' : 'ok';
 }
 
 async function finishJob(worker: Worker, job: AgentJob, startedAt: Instant, inputs: Inputs): Promise<Outcome> {
@@ -197,7 +208,7 @@ async function finishJob(worker: Worker, job: AgentJob, startedAt: Instant, inpu
   if (run.error) throw new Error(`Writing the run failed: ${run.error.message}`);
   // Paused only while the job waits to try again; once it has no attempt left, its Thử lại item says what happened.
   const waits = !outcome.ok && outcome.failure.kind === 'usage_limit' && nextAttempt(job, outcome.failure, finishedAt).status === 'queued';
-  if (session !== null) worker.setState(waits ? 'usage_limited' : 'ok');
+  if (session !== null) worker.setState(settleUsageLimit(worker, job.id, waits));
 
   if (outcome.ok) {
     await ownJob(worker, job, 'Finishing the job', { status: 'done', result: outcome.result ?? null, error: null, finished_at: finishedAt });
