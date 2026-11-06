@@ -6,7 +6,7 @@ import { canonicalizer } from '../replay/canonicalize';
 import { DEFAULT_REPLAY_DIR, MissingRecordingError } from '../replay/store';
 import { judgeResult } from '../sdk/result';
 import { replaySession, type SessionRequest } from '../sdk/session';
-import { fakeDb } from '../test/fake-db';
+import { memoryDb } from '@esta/ops/test/memory-db';
 import { PING_PROMPT, pingTools } from './ping';
 import { JOBS } from './registry';
 
@@ -16,7 +16,7 @@ const emptyDir = mkdtempSync(join(tmpdir(), 'esta-replay-empty-'));
 afterAll(() => rmSync(emptyDir, { recursive: true, force: true }));
 
 function pingRequest(householdName: string): SessionRequest {
-  const db = fakeDb({
+  const db = memoryDb({
     households: [
       { id: HOUSEHOLD, name: householdName, locale: 'vi' },
       { id: OTHER, name: 'Gia đình Demo 7', locale: 'vi' },

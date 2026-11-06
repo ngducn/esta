@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(48);
+select plan(57);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 select tests.user_id('member.a@test.esta.test') as member_a \gset
@@ -130,6 +130,34 @@ select is(public.proposal_refusal(:'b', (select proposal from public.agent_items
 select tests.clear_request();
 reset role;
 select is(has_function_privilege('authenticated', 'public.proposal_refusal(uuid, jsonb)', 'execute'), false, 'only the worker asks it directly');
+
+-- #331: a task's due date is checked on the day the proposal is made, at the business day's edges; approving later is not.
+select set_config('esta.actor', 'system:test', true);
+create function pg_temp.due(p_household uuid, p_on text) returns text language sql as $$
+  select public.proposal_refusal(p_household, jsonb_build_object('type', 'create_task', 'params', jsonb_build_object('title', 'x', 'due_on', p_on)))
+$$;
+select tests.act_as_service('{"x-esta-actor": "agent:test-worker"}');
+select is(pg_temp.due(:'a', '2026-10-06'), 'ESTA_PROPOSAL_DUE_PAST', 'a due date before today is refused');
+select is(pg_temp.due(:'a', '2026-10-07'), null, 'today is not');
+select is(pg_temp.due(:'a', null), null, 'a task with no due date is not');
+reset role;
+update public.test_clock set frozen_now = '2026-10-07T23:59:00+07:00';
+select tests.act_as_service('{"x-esta-actor": "agent:test-worker"}');
+select is(pg_temp.due(:'a', '2026-10-07'), null, 'at 23:59 on 07/10 that day is still today');
+reset role;
+update public.test_clock set frozen_now = '2026-10-08T00:01:00+07:00';
+select tests.act_as_service('{"x-esta-actor": "agent:test-worker"}');
+select is(pg_temp.due(:'a', '2026-10-07'), 'ESTA_PROPOSAL_DUE_PAST', 'at 00:01 on 08/10 it is yesterday');
+reset role;
+select is(private.proposal_refusal(:'a', jsonb_build_object('type', 'create_task', 'params', jsonb_build_object('title', 'x', 'due_on', '2026-10-07')), private.business_date(private.audit_now())), null,
+  'but approving that card now is not refused for its date');
+update public.test_clock set frozen_now = '2026-10-07T09:00:00+07:00';
+
+-- #331: the verdict is the database's. There is one approve_proposal and it takes only the item.
+select is((select count(*)::int from pg_proc where proname = 'approve_proposal' and pronamespace = 'public'::regnamespace), 1, 'approve_proposal has one overload');
+select is((select pg_get_function_arguments(oid) from pg_proc where proname = 'approve_proposal' and pronamespace = 'public'::regnamespace), 'p_item_id uuid',
+  'and takes no verdict from its caller');
+select throws_ok($$ select public.approve_proposal('00000000-0000-4000-8000-0000000002a2', true) $$, '42883', null, 'a caller cannot pass one');
 
 -- #333 at the month's edges, by the business day in Asia/Ho_Chi_Minh: a bill joins the board on the first of the month
 -- it is due in and stays while it is owed.

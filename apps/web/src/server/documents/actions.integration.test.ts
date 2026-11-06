@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { createHash, randomBytes } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import { seedId } from '../../../../../supabase/seed/generator/ids';
+import { integrationLane, outsiderEmail } from '@/test/lanes';
 import { putSigned, service, signedInAs, stackName, stackUp } from '@/test/stack';
 
 const session = vi.hoisted(() => ({
@@ -19,9 +20,8 @@ vi.mock('@/server/supabase/server', () => ({ createSessionClient: async () => se
 
 const { createDocumentUpload, openDocument, registerDocument, updateDocument } = await import('./actions');
 
-const LANE = 9;
-const household = seedId(`seed:household:lane-${LANE}`);
-const propertyId = seedId(`seed:property:lane-${LANE}:bao-loc`);
+const { lane, household, me } = integrationLane(import.meta.url);
+const propertyId = seedId(`seed:property:lane-${lane}:bao-loc`);
 const bytes = randomBytes(2048);
 const file = { filename: 'giay-to.pdf', mime: 'application/pdf', size: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex') };
 const created: string[] = [];
@@ -40,8 +40,8 @@ describe.skipIf(!stackUp)(`document actions against ${stackName}`, () => {
   let outsider: SupabaseClient;
 
   beforeAll(async () => {
-    member = await signedInAs(`me.lane${LANE}@demo.esta.test`);
-    outsider = await signedInAs('me.lane8@demo.esta.test');
+    member = await signedInAs(me);
+    outsider = await signedInAs(outsiderEmail('me'));
     session.client = member;
     session.member = { role: 'member', household: { id: household } };
   });

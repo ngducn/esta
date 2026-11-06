@@ -7,7 +7,7 @@ import { JOBS } from '../../src/jobs/registry';
 import { canonicalizer, inputHash, type CanonicalInput } from '../../src/replay/canonicalize';
 import { DEFAULT_REPLAY_DIR, recordingSchema, writeRecording } from '../../src/replay/store';
 import { canonicalInput } from '../../src/sdk/session';
-import { fakeDb } from '../../src/test/fake-db';
+import { memoryDb } from '@esta/ops/test/memory-db';
 import { mcpToolName } from '../../src/tools/server';
 import { CASES, clockOn, HOUSEHOLD, labels, snapshot } from '../full-seed';
 
@@ -79,7 +79,7 @@ export function rewriteWatchRecordings({ replay, cases }: { readonly replay: str
   const stale = new Set(readdirSync(dir).map((file) => join(dir, file)).filter(isHandWritten));
   const inputs: CanonicalInput[] = [];
   for (const [locale, { label, notes }] of Object.entries(NOTES) as Array<[Locale, (typeof NOTES)[Locale]]>) {
-    const prepared = portfolioWatchRequest({ db: fakeDb({}), householdId: HOUSEHOLD, jobId: 'watch-recording', locale, asOf: isoDate('2026-10-07'), timezone: 'Asia/Ho_Chi_Minh', clock: clockOn('2026-10-07T06:40:00+07:00'), read: async () => ({ snapshot, labels }) });
+    const prepared = portfolioWatchRequest({ db: memoryDb({}), householdId: HOUSEHOLD, jobId: 'watch-recording', locale, asOf: isoDate('2026-10-07'), timezone: 'Asia/Ho_Chi_Minh', clock: clockOn('2026-10-07T06:40:00+07:00'), read: async () => ({ snapshot, labels }) });
     const input = canonicalInput({ spec: JOBS.portfolio_watch, prompt: prepared.prompt, canon: canonicalizer({ householdName: 'Gia đình Demo' }) });
     const toolCalls = [{ name: mcpToolName('watch_facts'), input: {} }, ...notes.map((note) => ({ name: mcpToolName('create_item'), input: { ...note, related: [...note.related] } }))];
     const written = writeRecording(replay, { version: 1, kind: 'portfolio_watch', inputHash: inputHash(input), input, label, model: HAND_WRITTEN, numTurns: toolCalls.length + 1, toolCalls, reply: 'xong' });

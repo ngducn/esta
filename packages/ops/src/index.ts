@@ -51,7 +51,7 @@ export { runOp, settle, type Op, type OpContext } from './op';
 export { readPropertyDetail, readPropertyForm, searchProperties, type PropertyDetailRow, type PropertyRow, type StoredProperty } from './properties';
 export { partyRedact, REDACTED_NAME, type PartyRedacted, type PartyRefusal } from './party-ops';
 export { personCreate, type PersonRefusal, type PersonSaved, type PossibleDuplicate } from './person-ops';
-export { statementColumnsSchema, statementCommit, statementImport, statementLink, type LinkRefusal, type StatementCommitted, type StatementImported, type StatementRefusal } from './statement-ops';
+export { statementColumnsSchema, statementCommit, statementImport, statementLink, statementUndo, type LinkRefusal, type StatementCommitted, type StatementImported, type StatementRefusal, type StatementUndone } from './statement-ops';
 export { propertyCreate, propertyEdit, type CodeTaken, type PropertySaved } from './property-ops';
 export { proposalApprove, type ProposalDecided, type ProposalRefusal } from './proposal-ops';
 export { findPerson, findProperty, getLease, getProperty, listLeases, listProperties, personQuerySchema, rankCandidates, rankPeople, type ReadContext } from './read';

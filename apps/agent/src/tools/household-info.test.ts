@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { fakeDb } from '../test/fake-db';
+import { memoryDb } from '@esta/ops/test/memory-db';
 import { householdInfo } from './household-info';
 
 const A = 'aaaaaaaa-0000-5000-8000-000000000000';
 const B = 'bbbbbbbb-0000-5000-8000-000000000000';
 
-const db = fakeDb({
+const db = memoryDb({
   households: [
     { id: A, name: 'Gia đình Demo 1', locale: 'vi' },
     { id: B, name: 'Gia đình Demo 2', locale: 'en' },

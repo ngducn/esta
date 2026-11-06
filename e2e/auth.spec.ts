@@ -203,6 +203,25 @@ test('an invited address claims its invite only after its email is confirmed by 
   expect(ownerGrant.status(), 'the password the owner chose signs in').toBe(200);
 });
 
+test('the raw sign-up endpoint tells a stranger an address has an account and nothing else (#153, accepted)', async ({ request }) => {
+  const known = uniqueEmail('known');
+  const created = await request.post(`${authApi.url}/admin/users`, { headers: e2eServiceHeaders(), data: { email: known, email_confirm: true, password: `Demo-${randomUUID()}` } });
+  expect(created.ok()).toBe(true);
+  const probe = (email: string) => request.post(`${authApi.url}/signup`, { headers: authApi.headers, data: { email, password: `Demo-${randomUUID()}` } });
+
+  const taken = await probe(known);
+  expect(taken.status()).toBe(422);
+  expect(await taken.json(), 'the known address answers with a code and a message, no id, session or profile').toEqual({
+    code: 422,
+    error_code: 'user_already_exists',
+    msg: 'User already registered',
+  });
+
+  const fresh = await probe(uniqueEmail('fresh'));
+  expect(fresh.status(), 'the difference an attacker sees is the status').toBe(200);
+  expect(await fresh.json(), 'a new address gets no session either').not.toHaveProperty('access_token');
+});
+
 test('a wrong code shows the error and creates no session', async ({ page }) => {
   await requestCode(page, uniqueEmail('wrong'));
   await page.getByLabel('Mã 6 chữ số').fill('000000');

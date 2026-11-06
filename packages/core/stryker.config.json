@@ -1,0 +1,36 @@
+{
+  "$schema": "https://raw.githubusercontent.com/stryker-mutator/stryker/master/packages/core/schema/stryker-core.schema.json",
+  "testRunner": "vitest",
+  "plugins": [
+    "@stryker-mutator/vitest-runner"
+  ],
+  "mutate": [
+    "src/money/vnd.ts",
+    "src/money/round.ts",
+    "src/allocation/allocate.ts",
+    "src/allocation/deposits.ts",
+    "src/allocation/status.ts",
+    "src/tax/attribute.ts",
+    "src/tax/inputs.ts",
+    "src/tax/position.ts",
+    "src/tax/rules.ts"
+  ],
+  "coverageAnalysis": "perTest",
+  "reporters": [
+    "clear-text",
+    "json"
+  ],
+  "jsonReporter": {
+    "fileName": "reports/mutation/mutation.json"
+  },
+  "//": "break is 91, one point under the measured 92.0 to 92.5, so one equivalent mutant (a change no test can see) does not fail the job; raise it only after killing mutants.",
+  "thresholds": {
+    "high": 95,
+    "low": 92,
+    "break": 91
+  },
+  "vitest": {
+    "configFile": "vitest.mutation.config.ts"
+  },
+  "inPlace": true
+}

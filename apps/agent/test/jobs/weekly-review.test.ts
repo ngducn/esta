@@ -2,7 +2,7 @@ import { isoDate } from '@esta/core/date';
 import { describe, expect, it, vi } from 'vitest';
 import { JOBS } from '../../src/jobs/registry';
 import { reviewedWeek } from '../../src/jobs/weekly-review';
-import { fakeDb } from '../../src/test/fake-db';
+import { memoryDb } from '@esta/ops/test/memory-db';
 import { askTables } from '../ask-seed';
 import { clockOn, HOUSEHOLD } from '../full-seed';
 import { weeklyRecording } from '../golden/weekly-fixture';
@@ -32,7 +32,7 @@ const W41 = `weekly_review:${HOUSEHOLD}:2026-W41`;
 async function weeklyRun(tables: Record<string, Row[]>, { day = '2026-10-11', key = W41, jobId = `job:${key}` }: { day?: string; key?: string; jobId?: string } = {}) {
   const job = { id: jobId, household_id: HOUSEHOLD, kind: 'weekly_review', idempotency_key: key };
   if (!(tables.agent_jobs ?? []).some((row) => row.id === jobId)) (tables.agent_jobs ??= []).push(job);
-  const db = fakeDb(tables, [], {}, {}, { proposal_refusal: () => null });
+  const db = memoryDb(tables, [], {}, {}, { proposal_refusal: () => null });
   const prepared = await JOBS.weekly_review.handler.prepare({ db, job: job as never, jobDir: '', timezone: 'Asia/Ho_Chi_Minh', waiting: [], failed: [], clock: clockOn(`${day}T08:00:00+07:00`) });
   const call = toolCaller(prepared);
   for (const { name, input } of reads) await call(name, input);

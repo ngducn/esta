@@ -6,7 +6,7 @@ import { vnd } from '@esta/core/money';
 import { vacantDays } from '@esta/core/reports';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { fakeDb } from '../../src/test/fake-db';
+import { memoryDb } from '@esta/ops/test/memory-db';
 import type { AskReads } from '../../src/tools/ask-reads';
 import { collectionsTool, portfolioOverviewTool } from '../../src/tools/collections';
 import { runSheet } from '../../src/tools/fact-sheet';
@@ -26,7 +26,7 @@ const fact = (question: string, figure: string) => truth.find((row) => row.quest
 
 async function tools(reads: AskReads = replayedReads(withDraftAndArchivedLeases(RECORDED))) {
   const { cite } = runSheet();
-  const properties = listPropertiesTool(fakeDb(askTables('')), HOUSEHOLD, cite);
+  const properties = listPropertiesTool(memoryDb(askTables('')), HOUSEHOLD, cite);
   await properties.run();
   const context = { reads, locale: 'vi' as const, asOf: ASOF, cite, properties: properties.records };
   return { context, handle: (label: string) => [...properties.records.values()].find((property) => property.property_label === label)?.handle ?? '' };
@@ -91,7 +91,7 @@ describe('what was collected and what was received are two figures (q1, P5-10c)'
     expect(board.month_collected.collected_display).toBe(formatVnd(vnd(0), 'vi'));
     expect(board.month_collected.basis).toContain('not the money received in the month');
     expect(board.month_collected.basis).toContain('ledger');
-    const ledger = await ledgerTool(fakeDb(askTables('')), HOUSEHOLD, 'vi', context.properties, context.cite)({ property: diAn, year: 2026, month: 10 });
+    const ledger = await ledgerTool(memoryDb(askTables('')), HOUSEHOLD, 'vi', context.properties, context.cite)({ property: diAn, year: 2026, month: 10 });
     expect(ledger.ledger.income_display).toBe(formatVnd(vnd(Number(fact('q1', 'di-an income received in October 2026'))), 'vi'));
   });
 

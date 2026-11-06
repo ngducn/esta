@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { askRequest, type EarlierTurn } from '../../src/jobs/ask';
-import { fakeDb } from '../../src/test/fake-db';
+import { memoryDb } from '@esta/ops/test/memory-db';
 import { ANSWER, askRpcs, askTables, CONVERSATION, QUESTION, withSeedNames } from '../ask-seed';
 import { clockOn, HOUSEHOLD } from '../full-seed';
 import { ASK_CONTEXT } from '../golden/ask-cases';
@@ -18,7 +18,7 @@ async function prompts(question: string, locale: 'vi' | 'en') {
     { id: '00000000-0000-4000-8000-0000000c0a12', household_id: HOUSEHOLD, conversation_id: CONVERSATION, role: 'assistant', content_md: 'Đã thu một khoản.', status: 'done' },
   );
   const request = (earlier: EarlierTurn | null) =>
-    askRequest({ db: fakeDb(tables, [], {}, {}, askRpcs(tables)), householdId: HOUSEHOLD, jobId: 'language', conversationId: CONVERSATION, questionId: QUESTION, answerId: ANSWER, locale, asOf: ASK_CONTEXT.today, timezone: ASK_CONTEXT.timezone, question, earlier, seed: [], deep: false, topic: null, reads: replayedReads(), clock: clockOn('2026-10-07T07:00:00+07:00') });
+    askRequest({ db: memoryDb(tables, [], {}, {}, askRpcs(tables)), householdId: HOUSEHOLD, jobId: 'language', conversationId: CONVERSATION, questionId: QUESTION, answerId: ANSWER, locale, asOf: ASK_CONTEXT.today, timezone: ASK_CONTEXT.timezone, question, earlier, seed: [], deep: false, topic: null, reads: replayedReads(), clock: clockOn('2026-10-07T07:00:00+07:00') });
   const [first, followUp] = await Promise.all([request(null), request(FOLLOWING)]);
   return { first: first.prompt, followUp: followUp.prompt, rebuilt: await followUp.rebuild?.() };
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fakeDb } from '../../src/test/fake-db';
+import { memoryDb } from '@esta/ops/test/memory-db';
 import { runSheet } from '../../src/tools/fact-sheet';
 import { ledgerTool } from '../../src/tools/ledger';
 import { listPropertiesTool } from '../../src/tools/list-properties';
@@ -11,7 +11,7 @@ const DI_AN = '93cc970b-f9c2-52f5-bc34-1f1edb76742c';
 const OTHER = '00000000-0000-4000-8000-00000000b0b0';
 
 async function ledgerFor(householdId: string, tables = askTables('')) {
-  const db = fakeDb(tables);
+  const db = memoryDb(tables);
   const { sheet, cite } = runSheet();
   const properties = listPropertiesTool(db, householdId, cite);
   await properties.run();

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fakeDb } from '../../src/test/fake-db';
+import { memoryDb } from '@esta/ops/test/memory-db';
 import { NumberGuardError } from '../../src/tools/create-item';
 import { proposalWriter } from '../../src/tools/create-proposal';
 import { runSheet } from '../../src/tools/fact-sheet';
@@ -26,7 +26,7 @@ async function setup() {
   const tables: Record<string, Array<Record<string, unknown>>> = { agent_items: [], ...seedRecords() };
   const { sheet, cite } = runSheet();
   await watchFactsTool(async () => ({ snapshot, labels }), 'vi', cite, snapshot.asOf).run();
-  const writer = proposalWriter({ db: fakeDb(tables, [], {}, {}, { proposal_refusal: proposalRefusal }), householdId: HOUSEHOLD, jobId: 'job-propose', locale: 'vi', sheet, clock: clockOn('2026-10-07T08:00:00+07:00') });
+  const writer = proposalWriter({ db: memoryDb(tables, [], {}, {}, { proposal_refusal: proposalRefusal }), householdId: HOUSEHOLD, jobId: 'job-propose', locale: 'vi', sheet, clock: clockOn('2026-10-07T08:00:00+07:00') });
   return { tables, writer };
 }
 

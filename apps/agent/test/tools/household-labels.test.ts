@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fakeDb } from '../../src/test/fake-db';
+import { memoryDb } from '@esta/ops/test/memory-db';
 import { searchDenial } from '../../src/sdk/search-guard';
 import { familySearchTerms, householdLabels } from '../../src/tools/household-labels';
 import { askTables, withSeedNames } from '../ask-seed';
@@ -10,12 +10,12 @@ const OTHER = '00000000-0000-4000-8000-00000000a0b0';
 
 describe('the household labels (#348)', () => {
   it('reads the property nicknames, unit labels, party names and place names of the seeded household', async () => {
-    const labels = await householdLabels(fakeDb(withSeedNames(askTables(''))), HOUSEHOLD);
+    const labels = await householdLabels(memoryDb(withSeedNames(askTables(''))), HOUSEHOLD);
     expect(labels).toEqual(expect.arrayContaining([...SEED_LABELS]));
   });
 
   it('holds a place by its full name and as people say it, a ward by its name without its number', async () => {
-    const db = fakeDb({
+    const db = memoryDb({
       properties: [{ id: 'p1', household_id: OTHER, code: 'A', nickname: 'Nhà A', kind: 'townhouse', use_mode: 'rental', legal_status: 'certified', current_address: { commune_code: '24823', province_code: '75' }, deleted_at: null }],
       admin_units: [
         { code: '24823', name: 'Phường 1 Bảo Lộc' },
@@ -28,14 +28,14 @@ describe('the household labels (#348)', () => {
   });
 
   it('holds no name of another household', async () => {
-    const labels = await householdLabels(fakeDb({ ...withSeedNames(askTables('')) }), OTHER);
+    const labels = await householdLabels(memoryDb({ ...withSeedNames(askTables('')) }), OTHER);
     expect(labels).toEqual([]);
   });
 });
 
 describe('the terms of the seeded household', () => {
   it('let the market questions of thread case T8 search the web', async () => {
-    const terms = await familySearchTerms(fakeDb(withSeedNames(askTables(''))), HOUSEHOLD);
+    const terms = await familySearchTerms(memoryDb(withSeedNames(askTables(''))), HOUSEHOLD);
     for (const query of ['giá đất Bảo Lộc 2026', 'giá căn hộ Thủ Đức hiện nay', 'giá nhà phố hiện nay']) expect(searchDenial(query, terms)).toBeNull();
     expect(searchDenial('Hoàng Văn Em Demo Dĩ An', terms)).not.toBeNull();
   });
@@ -44,7 +44,7 @@ describe('the terms of the seeded household', () => {
 describe('the terms no web search may hold', () => {
   const HH = '00000000-0000-4000-8000-00000000a0c0';
   const db = () =>
-    fakeDb({
+    memoryDb({
       households: [{ id: HH, name: 'Gia đình Demo Hoàng' }],
       household_members: [{ household_id: HH, display_name: 'Ryan Demo Nguyễn' }],
       properties: [
