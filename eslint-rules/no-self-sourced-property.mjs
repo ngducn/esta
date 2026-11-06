@@ -1,6 +1,8 @@
 const PICKERS = new Set(['constantFrom', 'subarray', 'shuffledSubarray']);
 const CALLBACK_METHODS = new Set(['map', 'flatMap', 'filter', 'find', 'some', 'every', 'reduce', 'sort', 'toSorted']);
 const TEST_MODULE = /(?:\.cases|\.test)(?:\.[cm]?[jt]sx?)?$/u;
+const CASES_MODULE = /\.cases(?:\.[cm]?[jt]sx?)?$/u;
+const EQUALITY_MATCHERS = new Set(['toEqual', 'toStrictEqual', 'deepEqual', 'deepStrictEqual']);
 
 const calleeName = (callee) => {
   if (callee.type === 'Identifier') return callee.name;
@@ -42,22 +44,30 @@ const findVariable = (scope, name) => {
   return null;
 };
 
-/** @type {import('eslint').Rule.RuleModule} */
+/**
+ * One file at a time: the test that pins a cases table to its production list has to be in the file whose property draws
+ * from the table, since a lint rule here sees no other file. A table pinned from another file is not caught.
+ *
+ * @type {import('eslint').Rule.RuleModule}
+ */
 export default {
   meta: {
     type: 'problem',
     docs: {
       description:
-        'A fast-check property that draws its inputs from a list imported from production code cannot find a spelling that list misses.',
+        'A fast-check property that draws its inputs from a list imported from production code, or from a *.cases.ts table that a test in the same file asserts equal to one, or checks a subset of one, cannot find a spelling that list misses.',
     },
     messages: {
+      mirroredCases:
+        '`{{name}}` is a hand copy of a production list: this file asserts it equal to one or checks a subset of one, so a property drawing from it is self-sourced. Write the inputs in the test, independent of the list.',
       selfSourced:
         '`{{name}}` comes from {{source}}, so this property can only draw what that list already holds. Generate the inputs independently (arbitrary strings, Unicode classes, the full range), or draw from a list in this file or a *.cases.ts table.',
     },
     schema: [],
   },
   create(context) {
-    const importedFrom = (name, scope, seen) => {
+    /** The value import `name` comes from, through the variables built from it: its local name and module. */
+    const rootImport = (name, scope, seen) => {
       if (seen.has(name)) return null;
       seen.add(name);
       const variable = findVariable(scope, name);
@@ -65,17 +75,35 @@ export default {
       if (!def) return null;
       if (def.type === 'ImportBinding') {
         if (def.parent.importKind === 'type' || def.node.importKind === 'type') return null;
-        const source = String(def.parent.source.value);
-        return TEST_MODULE.test(source) ? null : source;
+        return { local: name, source: String(def.parent.source.value) };
       }
       if (def.type === 'Variable' && def.node.init) {
         for (const inner of referencedNames(def.node.init)) {
-          const source = importedFrom(inner, variable.scope, seen);
-          if (source) return source;
+          const found = rootImport(inner, variable.scope, seen);
+          if (found) return found;
         }
       }
       return null;
     };
+    /** Every import `name` comes from, through the variables built from it (`const missing = LIST.filter((t) => !CASES.includes(t))` holds both). */
+    const allRootImports = (name, scope, seen = new Set()) => {
+      if (seen.has(name)) return [];
+      seen.add(name);
+      const variable = findVariable(scope, name);
+      const def = variable?.defs[0];
+      if (!def) return [];
+      if (def.type === 'ImportBinding') return def.parent.importKind === 'type' || def.node.importKind === 'type' ? [] : [{ local: name, source: String(def.parent.source.value) }];
+      if (def.type !== 'Variable' || !def.node.init) return [];
+      return [...referencedNames(def.node.init)].flatMap((inner) => allRootImports(inner, variable.scope, seen));
+    };
+    const importedFrom = (name, scope, seen) => {
+      const found = rootImport(name, scope, seen);
+      return found && !TEST_MODULE.test(found.source) ? found.source : null;
+    };
+
+    /** Imports from a *.cases module that a test asserts equal to something built from production code. */
+    const mirrored = new Set();
+    const drawnFromCases = [];
 
     const check = (argument, scope) => {
       for (const name of referencedNames(argument)) {
@@ -84,7 +112,23 @@ export default {
           context.report({ node: argument, messageId: 'selfSourced', data: { name, source: `'${source}'` } });
           return;
         }
+        for (const root of allRootImports(name, scope)) if (CASES_MODULE.test(root.source)) drawnFromCases.push({ node: argument, local: root.local });
       }
+    };
+
+    const noteEquality = (sides, scope) => {
+      const roots = sides.map((side) => [...referencedNames(side)].flatMap((name) => allRootImports(name, scope)));
+      roots.forEach((own, index) => {
+        const others = roots.filter((_, other) => other !== index).flat();
+        if (others.some(({ source }) => !TEST_MODULE.test(source))) for (const { local, source } of own) if (CASES_MODULE.test(source)) mirrored.add(local);
+      });
+    };
+
+    /** One asserted expression that holds both a *.cases import and production code puts them on the same side (`expect(PROD.filter((t) => !listed.has(t))).toEqual([])`): a subset check, the same mirror. */
+    const noteSubset = (expression, scope) => {
+      const roots = [...referencedNames(expression)].flatMap((name) => allRootImports(name, scope));
+      if (!roots.some(({ source }) => !TEST_MODULE.test(source))) return;
+      for (const { local, source } of roots) if (CASES_MODULE.test(source)) mirrored.add(local);
     };
 
     const fastCheckRoot = (node) => {
@@ -121,10 +165,23 @@ export default {
     };
 
     return {
+      'Program:exit'() {
+        for (const { node, local } of drawnFromCases) {
+          if (mirrored.has(local)) context.report({ node, messageId: 'mirroredCases', data: { name: local } });
+        }
+      },
       CallExpression(node) {
         const name = calleeName(node.callee);
         if (!name) return;
         const scope = context.sourceCode.getScope(node);
+        const assertion = name === 'expect' || (node.callee.type === 'MemberExpression' && node.callee.object.type === 'Identifier' && node.callee.object.name === 'assert');
+        if (assertion && node.arguments[0]) noteSubset(node.arguments[0], scope);
+        if (EQUALITY_MATCHERS.has(name)) {
+          const subject = node.callee.object;
+          if (subject?.type === 'CallExpression' && calleeName(subject.callee) === 'expect') noteEquality([...subject.arguments, ...node.arguments], scope);
+          else if (node.arguments.length >= 2) noteEquality(node.arguments.slice(0, 2), scope);
+          return;
+        }
         if ((name === 'map' || name === 'chain') && node.callee.type === 'MemberExpression' && fastCheckRoot(node.callee.object)) {
           const callback = node.arguments[0];
           if (callback && (callback.type === 'ArrowFunctionExpression' || callback.type === 'FunctionExpression')) {

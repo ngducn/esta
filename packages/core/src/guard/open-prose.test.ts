@@ -31,12 +31,26 @@ describe('the compounds the open-prose probe added (P5-12)', () => {
     for (const note of rejected) expect(rules(note), note).toContain('word');
   });
 
-  // `hai bên` (both parties) and `ba mẹ` (parents) are written the same as a count of tenants or a family of three, so
-  // they are rejected like any count and the repair turn rewrites them.
-  it('rejects hai and ba before bên or mẹ, where they can count people', () => {
-    for (const note of ['Có hai bên thuê.', 'Ba mẹ con chị Hoa thuê phòng.', 'Còn hai bên phòng.', 'Ba mẹ ba mẹ.', 'Hai bên ký hợp đồng.', 'Ba mẹ muốn để lại nhà cho các con.']) {
+  // The guard reads no idiom: `hai bên`, `ba mẹ` and `cả hai` are judged like any other number word, and the assistant's
+  // style rule steers the model to `bố mẹ` and `cả người thuê lẫn chủ nhà` instead (P5-10d, docs/plan/trail/phase-5-guard.md).
+  it('rejects hai and ba before bên or mẹ, and cả hai, whatever follows', () => {
+    for (const note of [
+      'Có hai bên thuê.',
+      'Ba mẹ con chị Hoa thuê phòng.',
+      'Còn hai bên phòng.',
+      'Hai bên ký hợp đồng.',
+      'Ba mẹ vẫn giữ nhà.',
+      'Cả hai đều đồng ý.',
+      'Tài sản chung của cả hai.',
+      'Phí quản lý thường là một phần trăm tiền thu.',
+      'Thuế GTGT với nhà ở cho thuê là không phần trăm.',
+    ]) {
       expect(rules(note), note).toContain('word');
     }
+  });
+
+  it('passes a third party', () => {
+    expect(rules('Bảo hiểm cho bên thứ ba.')).toEqual([]);
   });
 
   it('reads a hyphen as the space it stands for, so a date word joined by one is still rejected', () => {
