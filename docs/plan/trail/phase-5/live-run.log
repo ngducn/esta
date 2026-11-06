@@ -1,0 +1,102 @@
+$ node --import tsx scripts/live-run.ts --mode live
+auth=subscription model=claude-sonnet-5-5
+ESTA_SLOT=8 api=http://127.0.0.1:55121 agent mode=live
+PASS  morning_brief    job done
+PASS  portfolio_watch  job done
+PASS  research_scan    job done
+PASS  portfolio_watch  left a note, every action fact told (4 notes)
+PASS  watch            §7.1 facts equal the golden set (8 matched, missing [], extra [])
+PASS  morning_brief    §7.3 at most 300 words (212 words)
+PASS  morning_brief    §7.3 every link resolves (8 links)
+PASS  morning_brief    §7.3 sections in order (Cần làm > Theo dõi > Thị trường)
+PASS  morning_brief    §7.3 no placeholder left
+PASS  research_scan    §7.5 an item or the explicit empty item (1 items)
+PASS  research_scan    §7.5 summaries within the limit, in Vietnamese
+PASS  research_scan    §7.5 no duplicate link
+PASS  research_scan    §7.5 related properties exist
+PASS  research_scan    §7.5 every source URL returns 200 (200 https://daibieunhandan.vn/tp-ho-chi-minh-hoan-thien-mang-luoi-giao-thong-nang-nang-luc-ket-noi-10432836.html)
+FAIL  q1               §7.4 answer states the ground truth (missing 1.000.000 ₫)
+PASS  q2               §7.4 answer states the ground truth (18.2 s, first text at 17.2 s)
+PASS  q3               §7.4 answer states the ground truth (15.2 s, first text at 14.2 s)
+PASS  q4               §7.4 answer states the ground truth (10.2 s, first text at 10.2 s)
+FAIL  q5               §7.4 answer states the ground truth (status error; missing 386.899.628 ₫ | 482.658.469 ₫)
+PASS  q6               §7.4 answer states the ground truth (16.1 s, first text at 15.1 s)
+PASS  q7               §7.4 answer states the ground truth (13.1 s, first text at 12.1 s)
+PASS  q8               §7.4 answer states the ground truth (15.2 s, first text at 15.2 s)
+PASS  q9               §7.4 answer states the ground truth (12.2 s, first text at 12.2 s)
+PASS  q10              §7.4 answer states the ground truth (10.1 s, first text at 9.1 s)
+PASS  t1               §7.4 answer states the ground truth (23.4 s, first text at 22.3 s)
+FAIL  t2               §7.4 answer states the ground truth (a number in an answer that has none)
+PASS  t3               §7.4 answer states the ground truth (9.1 s, first text at 9.1 s)
+PASS  t4               §7.4 answer states the ground truth (9.1 s, first text at 7.1 s)
+PASS  t5               §7.4 answer states the ground truth (24.2 s, first text at 17.1 s)
+PASS  t6               §7.4 answer states the ground truth (8.1 s, first text at 7.1 s)
+PASS  t7               §7.4 answer states the ground truth (30.5 s, first text at 30.2 s)
+[agent] denied WebSearch: a search holds no amount, in digits or in words, so no price or loan leaves Esta
+[agent] denied WebSearch: a search holds no amount, in digits or in words, so no price or loan leaves Esta
+PASS  t8               §7.4 answer states the ground truth (22.1 s, first text at 15.1 s)
+FAIL  weekly_review    job done (failed: weekly_review asks for the deep model, and ESTA_MODEL_DEEP is not set)
+FAIL  weekly_review    saved one weekly note (0 notes)
+FAIL  usage            every run is live (23 runs, total_cost_usd 1.3438)
+PASS  usage            no job past its AGENT.md §3 timeout
+FAIL  usage            subscription auth mode (subscription, none)
+PASS  extraction       §7.2 meets its targets (schema-valid 100.0%, required exact 99.1%, high-confidence 99.7%)
+[agent] denied WebFetch: WebFetch may open only a page this run's WebSearch returned, with its link as the search gave it
+[agent] denied WebFetch: WebFetch may open only a page this run's WebSearch returned, with its link as the search gave it
+/private/tmp/owner-p5-10b/wt/scripts/guard-probe.ts:130
+  if (failures.length > 0) throw new Error(`Not probed:\n${failures.join('\n')}`);
+                                 ^
+
+Error: Not probed:
+The Live guard probe vi-transfer-procedure, repair turn on the full seed at 2026-10-07 07:00 (P5-12). recording holds a full national ID number, so it was not written
+    at main (/private/tmp/owner-p5-10b/wt/scripts/guard-probe.ts:130:34)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async <anonymous> (/private/tmp/owner-p5-10b/wt/scripts/guard-probe.ts:133:1)
+
+Node.js v24.22.0
+FAIL  guard-probe      no row in error, no repair rejected (26 prompts, 13 first pass rejected, 3 repair rejected, 0 in error)
+
+| Kind | Check | Result | Detail |
+| --- | --- | --- | --- |
+| morning_brief | job done | pass |  |
+| portfolio_watch | job done | pass |  |
+| research_scan | job done | pass |  |
+| portfolio_watch | left a note, every action fact told | pass | 4 notes |
+| watch | §7.1 facts equal the golden set | pass | 8 matched, missing [], extra [] |
+| morning_brief | §7.3 at most 300 words | pass | 212 words |
+| morning_brief | §7.3 every link resolves | pass | 8 links |
+| morning_brief | §7.3 sections in order | pass | Cần làm > Theo dõi > Thị trường |
+| morning_brief | §7.3 no placeholder left | pass |  |
+| research_scan | §7.5 an item or the explicit empty item | pass | 1 items |
+| research_scan | §7.5 summaries within the limit, in Vietnamese | pass |  |
+| research_scan | §7.5 no duplicate link | pass |  |
+| research_scan | §7.5 related properties exist | pass |  |
+| research_scan | §7.5 every source URL returns 200 | pass | 200 https://daibieunhandan.vn/tp-ho-chi-minh-hoan-thien-mang-luoi-giao-thong-nang-nang-luc-ket-noi-10432836.html |
+| q1 | §7.4 answer states the ground truth | FAIL | missing 1.000.000 ₫ |
+| q2 | §7.4 answer states the ground truth | pass | 18.2 s, first text at 17.2 s |
+| q3 | §7.4 answer states the ground truth | pass | 15.2 s, first text at 14.2 s |
+| q4 | §7.4 answer states the ground truth | pass | 10.2 s, first text at 10.2 s |
+| q5 | §7.4 answer states the ground truth | FAIL | status error; missing 386.899.628 ₫ / 482.658.469 ₫ |
+| q6 | §7.4 answer states the ground truth | pass | 16.1 s, first text at 15.1 s |
+| q7 | §7.4 answer states the ground truth | pass | 13.1 s, first text at 12.1 s |
+| q8 | §7.4 answer states the ground truth | pass | 15.2 s, first text at 15.2 s |
+| q9 | §7.4 answer states the ground truth | pass | 12.2 s, first text at 12.2 s |
+| q10 | §7.4 answer states the ground truth | pass | 10.1 s, first text at 9.1 s |
+| t1 | §7.4 answer states the ground truth | pass | 23.4 s, first text at 22.3 s |
+| t2 | §7.4 answer states the ground truth | FAIL | a number in an answer that has none |
+| t3 | §7.4 answer states the ground truth | pass | 9.1 s, first text at 9.1 s |
+| t4 | §7.4 answer states the ground truth | pass | 9.1 s, first text at 7.1 s |
+| t5 | §7.4 answer states the ground truth | pass | 24.2 s, first text at 17.1 s |
+| t6 | §7.4 answer states the ground truth | pass | 8.1 s, first text at 7.1 s |
+| t7 | §7.4 answer states the ground truth | pass | 30.5 s, first text at 30.2 s |
+| t8 | §7.4 answer states the ground truth | pass | 22.1 s, first text at 15.1 s |
+| weekly_review | job done | FAIL | failed: weekly_review asks for the deep model, and ESTA_MODEL_DEEP is not set |
+| weekly_review | saved one weekly note | FAIL | 0 notes |
+| usage | every run is live | FAIL | 23 runs, total_cost_usd 1.3438 |
+| usage | no job past its AGENT.md §3 timeout | pass |  |
+| usage | subscription auth mode | FAIL | subscription, none |
+| extraction | §7.2 meets its targets | pass | schema-valid 100.0%, required exact 99.1%, high-confidence 99.7% |
+| guard-probe | no row in error, no repair rejected | FAIL | 26 prompts, 13 first pass rejected, 3 repair rejected, 0 in error |
+
+Outputs in /private/tmp/owner-p5-10b/wt/docs/plan/trail/phase-5 (live)
+[ELIFECYCLE] Command failed with exit code 1.
