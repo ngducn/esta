@@ -98,6 +98,11 @@ const CATALOG = {
       quotes: z.array(z.string()).optional(),
     },
   },
+  quote_page: {
+    description:
+      'Quote a page you read with WebFetch in this turn: {"url": the page, "quotes": figures copied exactly from the page, each with the words around it, at least three words}. It answers one record with source_name, published_display when the page writes a date, and quote_n_label for each quote that matches; cite quote n as {{fN.quote_n_label}}. A quote that does not match is refused with the reason, and the others still count. Write no figure from a page except through it.',
+    input: { url: z.string(), quotes: z.array(z.string()) },
+  },
   create_brief: {
     description:
       'Save the morning brief: {"summary": one line of plain text, "todo": [lines], "watch": [lines]}, each line {"text": one line of plain text, "related": the handles of the facts it tells}. It answers {"saved": true}, or names what to fix before you call it again.',

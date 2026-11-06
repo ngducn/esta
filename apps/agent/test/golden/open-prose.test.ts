@@ -2,15 +2,14 @@ import { isoDate } from '@esta/core/date';
 import { OPEN_PROSE } from '@esta/core/guard/fixtures/open-prose';
 import { describe, expect, it } from 'vitest';
 import { askRequest } from '../../src/jobs/ask';
-import { JOBS } from '../../src/jobs/registry';
-import { canonicalizer, inputHash } from '../../src/replay/canonicalize';
+import { inputHash } from '../../src/replay/canonicalize';
 import { DEFAULT_REPLAY_DIR } from '../../src/replay/store';
 import { canonicalInput, replaySession, type SessionRequest } from '../../src/sdk/session';
 import { fakeDb } from '../../src/test/fake-db';
 import { ANSWER, answerRow, askRpcs, askTables, CONVERSATION, QUESTION } from '../ask-seed';
 import { clockOn, HOUSEHOLD } from '../full-seed';
 import { tempJobDir } from '../job-dir';
-import { ASK_CASES, ASK_CONTEXT, rejectedTexts } from './ask-cases';
+import { ASK_CASES, ASK_CONTEXT, caseSession, rejectedTexts } from './ask-cases';
 import { replayedReads } from './ask-reads';
 
 /**
@@ -37,7 +36,7 @@ const jobDir = tempJobDir('esta-probe-replay-');
 async function replayProbe(question: string, id: string) {
   const tables = askTables(question);
   const prepared = await askRequest({ db: fakeDb(tables, [], {}, {}, askRpcs(tables)), householdId: HOUSEHOLD, jobId: `probe-${id}`, conversationId: CONVERSATION, questionId: QUESTION, answerId: ANSWER, locale: 'vi', asOf: isoDate('2026-10-07'), timezone: ASK_CONTEXT.timezone, question, earlier: null, seed: [], deep: false, topic: null, reads, clock: clockOn('2026-10-07T07:00:00+07:00') });
-  const request: SessionRequest = { spec: JOBS.ask, prompt: prepared.prompt, jobDir, configDir: jobDir, tools: prepared.tools, canon: canonicalizer({ householdName: 'Gia đình Demo', jobDir }), ...(prepared.onText === undefined ? {} : { onText: prepared.onText }) };
+  const request: SessionRequest = caseSession(prepared, jobDir);
   let turn = request;
   let firstRejected: string[] | null = null;
   for (;;) {

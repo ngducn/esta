@@ -35,7 +35,10 @@ export default async function DiagnosticsPage({ searchParams }: { searchParams: 
   const duration = (ms: number) => t('duration', { minutes: Math.floor(Math.round(ms / 1000) / 60), seconds: Math.round(ms / 1000) % 60 });
   // `mcp__esta__household_info` reads as `household_info`: the SDK's server prefix is one long word a phone cannot wrap.
   const tools = (run: DiagnosticRun) =>
-    Object.entries(run.toolCalls).map(([name, count]) => assistant('toolCall', { name: name.replace(/^mcp__[^_]+__/, ''), count })).join(', ') || assistant('noToolCalls');
+    [
+      ...Object.entries(run.toolCalls).map(([name, count]) => assistant('toolCall', { name: name.replace(/^mcp__[^_]+__/, ''), count })),
+      ...run.denials.map(({ tool, code }) => assistant('toolDenied', { name: tool.replace(/^mcp__[^_]+__/, ''), reason: assistant(`denialReason.${code}`) })),
+    ].join(', ') || assistant('noToolCalls');
   const runColumns = ['time', 'kind', 'status', 'turns', 'duration', 'model', 'cost', 'toolCalls'] as const;
   const runRow = (run: DiagnosticRun): ExportCell[] => [
     textCell(operatorTime(run.startedAt)),

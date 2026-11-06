@@ -52,7 +52,7 @@ export const EXPORT_TABLES: readonly HouseholdTable[] = [
   table('notifications', ['agent_items'], 'agent_item_id attempts channel created_at created_by error household_id id last_attempt_at sent_at status updated_at user_id', 'own'),
   table('owner_tax_inputs', ['parties'], 'created_at created_by household_id id notes other_business_revenue_vnd party_id updated_at year'),
   table('properties', [], 'acquired_on acquisition_kind acquisition_price_vnd boundary certificate_address_text code cover_photo_path created_at created_by current_address deleted_at household_id id kind kind_details legal_status location nickname notes updated_at use_mode'),
-  table('messages', ['agent_items', 'agent_jobs', 'conversations', 'properties'], 'content_md conversation_id created_at created_by deferred_until household_id id job_id refs role status topic_item_id topic_property_id updated_at', 'chats'),
+  table('messages', ['agent_items', 'agent_jobs', 'conversations', 'properties'], 'activity content_md conversation_id created_at created_by deferred_until household_id id job_id refs role status topic_item_id topic_property_id updated_at', 'chats'),
   table('ownership_shares', ['parties', 'properties'], 'created_at created_by household_id id named_on_certificate party_id property_id share_bp since updated_at'),
   table('research_items', ['agent_jobs'], 'created_at created_by effective_on household_id id job_id kind province_codes published_on related_property_ids relevance source_name source_url summary_vi title_vi updated_at url_normalized why_it_matters_vi'),
   table('research_topics', [], 'active created_at created_by household_id id label property_ids province_codes query_templates source topic_key updated_at'),

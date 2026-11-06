@@ -4,8 +4,12 @@ import { realpathSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, sep } from 'node:path';
 import { z } from 'zod';
 import { mcpToolName } from '../tools/server';
+import { searchDenial, type SearchTerm } from './search-guard';
 
-export type ToolDecision = { readonly allow: true } | { readonly allow: false; readonly reason: string };
+/** Why a call was denied, as a word the run record keeps instead of the call's input. */
+export type DenialCode = 'number' | 'family_data' | 'cap' | 'not_fetchable' | 'policy';
+
+export type ToolDecision = { readonly allow: true } | { readonly allow: false; readonly reason: string; readonly code: DenialCode };
 
 export type ToolPolicy = {
   readonly allowed: ReadonlySet<string>;
@@ -15,6 +19,8 @@ export type ToolPolicy = {
   readonly caps?: ReadonlyMap<string, ToolCap>;
   /** The links this run's WebSearch returned, as `fetchKey` folds them: the only pages WebFetch may open, so a page cannot send the model elsewhere (#323). */
   readonly fetchable?: Set<string>;
+  /** The names, nicknames and streets of the household's records, which no WebSearch query may hold. */
+  readonly searchTerms?: readonly SearchTerm[];
 };
 
 export type ToolCap = { readonly max: number; used: number };
@@ -44,16 +50,18 @@ export function rememberSearchHits(policy: ToolPolicy, toolName: string, result:
   }
 }
 
-function searched(policy: ToolPolicy, toolName: string, input: Readonly<Record<string, unknown>>): string | null {
+type Broken = { readonly code: DenialCode; readonly reason: string };
+
+function searched(policy: ToolPolicy, toolName: string, input: Readonly<Record<string, unknown>>): Broken | null {
   if (toolName !== 'WebFetch' || policy.fetchable === undefined) return null;
   const key = fetchKey(String(input.url));
-  return key.ok && policy.fetchable.has(key.value) ? null : "WebFetch may open only a page this run's WebSearch returned, with its link as the search gave it";
+  return key.ok && policy.fetchable.has(key.value) ? null : { code: 'not_fetchable', reason: "WebFetch may open only a page this run's WebSearch returned, with its link as the search gave it" };
 }
 
 function withinCap(policy: ToolPolicy, toolName: string): ToolDecision {
   const cap = policy.caps?.get(toolName);
   if (cap === undefined) return { allow: true };
-  if (cap.used >= cap.max) return { allow: false, reason: `${toolName} reached this run's cap of ${cap.max} calls` };
+  if (cap.used >= cap.max) return { allow: false, code: 'cap', reason: `${toolName} reached this run's cap of ${cap.max} calls` };
   cap.used += 1;
   return { allow: true };
 }
@@ -85,33 +93,40 @@ function isInside(dir: string, target: string): boolean {
 }
 
 export function decideToolUse(policy: ToolPolicy, toolName: string, input: Readonly<Record<string, unknown>>): ToolDecision {
-  if (!policy.allowed.has(toolName)) return { allow: false, reason: `${toolName} is not a tool of this job` };
+  if (!policy.allowed.has(toolName)) return { allow: false, code: 'policy', reason: `${toolName} is not a tool of this job` };
   if (toolName.startsWith(ESTA_TOOL_PREFIX)) return { allow: true };
   const web = WEB_RULES.get(toolName);
   if (web !== undefined) {
-    const broken = web(input) ?? searched(policy, toolName, input);
-    return broken === null ? withinCap(policy, toolName) : { allow: false, reason: broken };
+    const invalid = web(input);
+    const broken: Broken | null =
+      invalid === null ? (searched(policy, toolName, input) ?? (toolName === 'WebSearch' && policy.searchTerms !== undefined ? searchDenial(String(input.query), policy.searchTerms) : null)) : { code: 'policy', reason: invalid };
+    return broken === null ? withinCap(policy, toolName) : { allow: false, ...broken };
   }
   const field = PATH_FIELDS.get(toolName);
-  if (field === undefined) return { allow: false, reason: `${toolName} has no input rule` };
+  if (field === undefined) return { allow: false, code: 'policy', reason: `${toolName} has no input rule` };
   const raw = input[field];
-  if (typeof raw !== 'string' || raw === '') return { allow: false, reason: `${toolName} needs a ${field}` };
+  if (typeof raw !== 'string' || raw === '') return { allow: false, code: 'policy', reason: `${toolName} needs a ${field}` };
   // Whether Read trims before it expands `~` is unproven, so a padded path never reaches the checks below (#54).
-  if (raw !== raw.trim()) return { allow: false, reason: `${JSON.stringify(raw)} has leading or trailing whitespace` };
+  if (raw !== raw.trim()) return { allow: false, code: 'policy', reason: `${JSON.stringify(raw)} has leading or trailing whitespace` };
   // The SDK's Read expands a leading `~` to a home directory, which no job directory contains.
-  if (raw.startsWith('~')) return { allow: false, reason: `${raw} is outside the job directory` };
+  if (raw.startsWith('~')) return { allow: false, code: 'policy', reason: `${raw} is outside the job directory` };
   const target = realTarget(policy.jobDir, raw);
-  return isInside(policy.jobDir, target) ? { allow: true } : { allow: false, reason: `${raw} is outside the job directory` };
+  return isInside(policy.jobDir, target) ? { allow: true } : { allow: false, code: 'policy', reason: `${raw} is outside the job directory` };
 }
 
 /** `allowedTools` auto-approves before `canUseTool` runs, so the policy runs as a PreToolUse hook (S1 correction 1). */
-export function pathPolicyHook(policy: ToolPolicy, onDeny: (toolName: string, reason: string) => void): HookCallback {
+export const isWebTool = (toolName: string): boolean => WEB_RULES.has(toolName);
+
+export function pathPolicyHook(policy: ToolPolicy, onDeny: (toolName: string, reason: string, code: DenialCode, toolInput: Record<string, unknown>) => void, onWebTool?: () => Promise<void>): HookCallback {
   return async (input) => {
     if (input.hook_event_name !== 'PreToolUse') return {};
     const toolInput = typeof input.tool_input === 'object' && input.tool_input !== null ? (input.tool_input as Record<string, unknown>) : {};
     const decision = decideToolUse(policy, input.tool_name, toolInput);
-    if (decision.allow) return {};
-    onDeny(input.tool_name, decision.reason);
+    if (decision.allow) {
+      if (isWebTool(input.tool_name)) await onWebTool?.();
+      return {};
+    }
+    onDeny(input.tool_name, decision.reason, decision.code, toolInput);
     return {
       hookSpecificOutput: {
         hookEventName: 'PreToolUse',

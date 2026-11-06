@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(51);
+select plan(54);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 select set_config('esta.actor', 'system:test', true);
@@ -213,6 +213,13 @@ select is_empty(
   $$ select 1 from public.audit_log where table_name = 'messages' and row_id = '00000000-0000-4000-8000-0000000f0301' $$,
   'nor its audit row, which names the note');
 reset role;
+
+select is((select activity from public.messages where household_id = :'a' and role = 'assistant' limit 1), null, 'an answer starts with no activity');
+select throws_ok(
+  format($$ update public.messages set activity = 'search' where household_id = %L and role = 'assistant' $$, :'a'),
+  '23514', null, 'the only activity is web');
+select public.finish_answer(:'a', (select id from public.messages where household_id = :'a' and role = 'assistant' and status = 'streaming' limit 1), 'Xong.', '[]', 0);
+select is((select count(*)::int from public.messages where household_id = :'a' and activity is not null), 0, 'finishing an answer clears its activity');
 
 select * from finish();
 rollback;

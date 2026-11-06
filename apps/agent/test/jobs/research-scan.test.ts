@@ -61,9 +61,9 @@ describe('the web caps in the PreToolUse policy (AGENT.md §5.2)', () => {
     const policy = { allowed: new Set(['WebSearch', 'WebFetch']), jobDir: '/jobs/x', caps: toolCaps({ WebSearch: 2, WebFetch: 1 }) };
     const search = () => decideToolUse(policy, 'WebSearch', { query: 'quy hoạch Dĩ An' }).allow;
     expect([search(), search(), search()]).toEqual([true, true, false]);
-    expect(decideToolUse(policy, 'WebFetch', { url: 'http://example.vn/a' })).toEqual({ allow: false, reason: 'WebFetch reads one https page' });
+    expect(decideToolUse(policy, 'WebFetch', { url: 'http://example.vn/a' })).toEqual({ allow: false, code: expect.any(String), reason: 'WebFetch reads one https page' });
     expect(decideToolUse(policy, 'WebFetch', { url: 'https://example.vn/a' }).allow).toBe(true);
-    expect(decideToolUse(policy, 'WebFetch', { url: 'https://example.vn/b' })).toEqual({ allow: false, reason: "WebFetch reached this run's cap of 1 calls" });
+    expect(decideToolUse(policy, 'WebFetch', { url: 'https://example.vn/b' })).toEqual({ allow: false, code: expect.any(String), reason: "WebFetch reached this run's cap of 1 calls" });
     expect(decideToolUse(policy, 'WebSearch', { query: ' ' }).allow).toBe(false);
   });
 
@@ -161,7 +161,7 @@ describe('add_research_item', () => {
 describe('what the model types is checked before Mẹ reads it (#323)', () => {
   const searchResult = (...urls: string[]) => ({ query: 'q', results: [{ tool_use_id: 't', content: urls.map((url) => ({ title: 'Demo', url })) }, 'commentary'], durationSeconds: 1 });
 
-  const denied = { allow: false, reason: "WebFetch may open only a page this run's WebSearch returned, with its link as the search gave it" };
+  const denied = { allow: false, code: "not_fetchable", reason: "WebFetch may open only a page this run's WebSearch returned, with its link as the search gave it" };
 
   it('lets WebFetch open only a page this run’s WebSearch returned, folding only host case, www, port 443, a trailing slash and the fragment', () => {
     const policy = { allowed: new Set(['WebSearch', 'WebFetch']), jobDir: '/jobs/x', fetchable: new Set<string>() };

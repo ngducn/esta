@@ -1644,6 +1644,7 @@ export type Database = {
       }
       messages: {
         Row: {
+          activity: string | null
           content_md: string
           conversation_id: string
           created_at: string
@@ -1660,6 +1661,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          activity?: string | null
           content_md?: string
           conversation_id: string
           created_at?: string
@@ -1676,6 +1678,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          activity?: string | null
           content_md?: string
           conversation_id?: string
           created_at?: string

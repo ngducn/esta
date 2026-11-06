@@ -21,7 +21,7 @@ class FakeSource {
   }
 }
 
-const labels: AnswerLabels = { streaming: 'Đang trả lời', deferred: 'Trả lời vào ngày mai', error: 'Chưa trả lời được', stalled: 'Đứt kết nối' };
+const labels: AnswerLabels = { streaming: 'Đang trả lời', deferred: 'Trả lời vào ngày mai', error: 'Chưa trả lời được', stalled: 'Đứt kết nối', searching: 'Trợ lý đang tra cứu trên mạng', citation: 'Nguồn {index}: {source}', dated: '{name} · {date}' };
 const ID = '0b6c1f9e-7d1a-4c55-9a3e-5b0c2d1e0c02';
 const CONVERSATION = '0b6c1f9e-7d1a-4c55-9a3e-5b0c2d1e0c01';
 
@@ -82,5 +82,24 @@ describe('an answer streaming on its page', () => {
     expect(status()).toBe('stalled');
     expect(screen.getByText('Tháng 9')).toBeTruthy();
     expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it('reads the web line, with no animated element, until the first sentence replaces it', () => {
+    const { send } = stream();
+    send({ content: '', status: 'streaming', refs: [], activity: 'web' });
+    const line = screen.getByTestId('answer-line');
+    expect(line.textContent).toBe(labels.searching);
+    expect(line.querySelector('svg, [class*="animate"]')).toBeNull();
+    send({ content: 'Lãi suất khoảng 7,5%.', status: 'streaming', refs: [], activity: null });
+    expect(screen.queryByTestId('answer-line')).toBeNull();
+  });
+
+  it('lists each source as a numbered chip that opens its page, with its name and date', () => {
+    const { send } = stream();
+    const source = { kind: 'source', n: 1, url: 'https://demo-news.example/lai-suat', source_name: 'demo-news.example', published_on: '2026-10-05' };
+    send({ content: 'Lãi suất khoảng 7,5%.', status: 'done', refs: [source] });
+    const chip = screen.getByTestId('citation-chip') as HTMLAnchorElement;
+    expect(chip.href).toBe(source.url);
+    expect(chip.textContent).toContain('demo-news.example · 05/10/2026');
   });
 });

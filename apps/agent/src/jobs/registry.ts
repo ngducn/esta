@@ -3,7 +3,7 @@ import type { ScheduledJob } from '@esta/core/agent-schedule';
 import type { Json, Tables } from '@esta/db';
 import type { Locale } from '@esta/core/format';
 import type { AgentDb } from '../supabase';
-import type { BuiltInResult } from '../sdk/session';
+import type { SessionRequest } from '../sdk/session';
 import type { EstaToolName, EstaTools } from '../tools/server';
 import { failAsk, prepareAsk } from './ask';
 import { runBackupExport } from './backup_export';
@@ -39,16 +39,20 @@ export type PreparedJob = {
   readonly tools: EstaTools;
   /** Checks the job's effects and returns `agent_jobs.result`; throws when the model did not do the task. */
   finish(run: FinishedRun): Promise<Json>;
-  readonly caps?: Readonly<Record<string, number>>;
-  observe?(call: BuiltInResult): void;
-  onText?(delta: string): Promise<void>;
   nextTurn?(): Promise<string | null>;
   /** The earlier turn this job continues, as a follow-up question does (AGENT.md §8). */
   readonly resume?: { readonly sessionId: string | null; readonly afterInputHash: string };
   rebuild?(): Promise<string | null>;
   /** Another model than the kind's, as an operator's Suy nghĩ kỹ hơn asks. */
   readonly modelRole?: ModelRole;
-};
+} & SessionInputs;
+
+/** What a prepared job hands each of its sessions: the web caps and links shared across the turn, and the hooks. */
+export type SessionInputs = Pick<SessionRequest, 'caps' | 'fetchable' | 'observe' | 'searchTerms' | 'onWebTool' | 'onText'>;
+
+const INPUT_KEYS = ['caps', 'fetchable', 'observe', 'searchTerms', 'onWebTool', 'onText'] as const;
+
+export const sessionInputs = (prepared: SessionInputs): SessionInputs => Object.fromEntries(INPUT_KEYS.flatMap((key) => (prepared[key] === undefined ? [] : [[key, prepared[key]]])));
 
 /** The session the job's last turn ran in, and that turn's replay key, for a job a later one resumes. */
 export type FinishedRun = { readonly reply: string; readonly model: string; readonly sessionId?: string | null; readonly turnHash?: string };
@@ -160,10 +164,10 @@ export const JOBS = {
   },
   ask: {
     kind: 'ask',
-    builtInTools: [],
-    mcpTools: ['list_properties', 'portfolio_overview', 'get_property', 'property_metrics', 'list_leases', 'collections', 'ledger', 'tax_position', 'payment_behavior', 'create_proposal'],
-    maxTurns: 15,
-    timeoutMs: 2 * 60_000,
+    builtInTools: ['WebSearch', 'WebFetch'],
+    mcpTools: ['list_properties', 'portfolio_overview', 'get_property', 'property_metrics', 'list_leases', 'collections', 'ledger', 'tax_position', 'payment_behavior', 'create_proposal', 'quote_page'],
+    maxTurns: 20,
+    timeoutMs: 3 * 60_000,
     modelRole: 'routine',
     workDir: 'conversation',
     handler: { prepare: prepareAsk, onFailed: failAsk },

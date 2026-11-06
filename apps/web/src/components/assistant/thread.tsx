@@ -19,7 +19,7 @@ import type { Thread, ThreadEntry } from '@/server/agent/thread';
 import type { TopicChoice } from '@/server/agent/topic';
 import type { ReminderLabels } from '@/server/reminders/board';
 import { AnswerStream } from './answer-stream';
-import { AnswerView } from './answer-view';
+import { AnswerView, linkRefs } from './answer-view';
 import { AssistantNote } from './assistant-note';
 import { CopyAnswer } from './copy-answer';
 import { AssistantMonogram } from './monogram';
@@ -147,13 +147,13 @@ function Question({ message, time, t, ask }: { message: ConversationMessage; tim
 }
 
 function Answer({ message, time, t, ask }: { message: ConversationMessage; time: string; t: Translate; ask: AskTranslate }) {
-  const labels = { streaming: ask('answering'), deferred: ask('deferred'), error: ask('answerFailed'), stalled: ask('stalled') };
+  const labels = { streaming: ask('answering'), deferred: ask('deferred'), error: ask('answerFailed'), stalled: ask('stalled'), searching: ask('searching'), citation: t('citationLabel', { index: '{index}', source: '{source}' }), dated: t('market.source', { name: '{name}', date: '{date}' }), };
   const shownAnswer =
     message.status === 'streaming' ? (
-      <AnswerStream id={message.id} conversationId={message.conversationId} initial={{ content: message.content, status: message.status, refs: message.refs }} labels={labels} />
+      <AnswerStream id={message.id} conversationId={message.conversationId} initial={{ content: message.content, status: message.status, refs: message.refs, activity: message.activity ?? null }} labels={labels} />
     ) : (
       <AnswerView shown={message} labels={labels}>
-        <SafeMarkdown refs={message.refs} className="max-w-prose">
+        <SafeMarkdown refs={linkRefs(message.refs)} className="max-w-prose">
           {message.content}
         </SafeMarkdown>
       </AnswerView>

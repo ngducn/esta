@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { countToolCalls, judgeResult, type SessionResult } from './result';
+import { countToolCalls, judgeResult, storedDenial, type SessionResult } from './result';
 
 const session = (overrides: Partial<SessionResult>): SessionResult => ({
   isError: false,
@@ -58,10 +58,21 @@ describe('judgeResult', () => {
 });
 
 describe('countToolCalls', () => {
+  it('leaves out a call the policy denied, and a tool that only had denied calls', () => {
+    expect(countToolCalls(['WebSearch', 'WebSearch', 'WebFetch'], [{ tool_name: 'WebSearch' }, { tool_name: 'WebFetch' }])).toEqual({ WebSearch: 1 });
+  });
+
   it('keeps names and counts only', () => {
     expect(countToolCalls(['mcp__esta__household_info', 'Read', 'mcp__esta__household_info'])).toEqual({
       mcp__esta__household_info: 2,
       Read: 1,
     });
+  });
+});
+
+describe('storedDenial', () => {
+  it('drops a denied WebSearch\'s query and keeps another tool\'s input', () => {
+    expect(storedDenial({ tool_name: 'WebSearch', code: 'family_data', tool_input: { query: 'x' } }, 't')).toEqual({ tool_name: 'WebSearch', code: 'family_data', at: 't' });
+    expect(storedDenial({ tool_name: 'Read', code: 'policy', tool_input: { file_path: '/etc/hosts' } }, 't')).toEqual({ tool_name: 'Read', code: 'policy', at: 't', tool_input: { file_path: '/etc/hosts' } });
   });
 });

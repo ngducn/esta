@@ -1116,6 +1116,14 @@
     "unknown": "Không rõ",
     "noToolCalls": "Không gọi công cụ",
     "toolCall": "{name} × {count}",
+    "toolDenied": "{name} bị chặn ({reason})",
+    "denialReason": {
+      "number": "có số tiền hoặc số điện thoại",
+      "family_data": "có tên hoặc địa chỉ của gia đình",
+      "cap": "quá số lần cho phép",
+      "not_fetchable": "trang không do tìm kiếm trả về",
+      "policy": "không được phép"
+    },
     "retrySelf": "Có thể nhập tay.",
     "retryAsk": "Người quản trị có thể cho trợ lý đọc lại.",
     "retryJob": "Thử lại",
@@ -1229,6 +1237,8 @@
       "longQuestion": "Câu hỏi dài quá. Hãy viết ngắn hơn.",
       "sendFailed": "Chưa gửi được câu hỏi. Kiểm tra kết nối rồi thử lại.",
       "answering": "Trợ lý đang trả lời",
+      "searching": "Trợ lý đang tra cứu trên mạng",
+      "noSource": "Trợ lý chưa tìm được nguồn chính thức cho câu này, nên chưa dám trả lời. Bạn nên hỏi cơ quan có thẩm quyền hoặc công chứng viên để chắc chắn.",
       "answerFailed": "Trợ lý chưa trả lời được câu này. Bạn có thể hỏi lại.",
       "stalled": "Trợ lý chưa trả lời xong. Tải lại trang để xem tiếp.",
       "deferred": "Hôm nay Trợ lý đã trả lời đủ câu hỏi. Câu hỏi này sẽ được trả lời vào ngày mai.",
