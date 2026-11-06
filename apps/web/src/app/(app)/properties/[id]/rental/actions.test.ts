@@ -8,7 +8,10 @@ const db = vi.hoisted(() => ({ units: [] as { id: string; label: string; sort_or
 
 vi.mock('server-only', () => ({}));
 vi.mock('next/cache', () => ({ revalidatePath: () => undefined }));
-vi.mock('@/server/member', () => ({ requireMember: async () => ({ role: 'member', household: { id: '0943e55d-b0a6-5aef-839d-07c8693c520e' } }) }));
+vi.mock('@/server/member', async () => {
+  const { fakeMember } = await import('@/test/fake-member');
+  return { requireMember: async () => fakeMember('member', '0943e55d-b0a6-5aef-839d-07c8693c520e') };
+});
 vi.mock('@/server/ops', () => ({ webOpContext: async () => ({}) }));
 vi.mock('@/server/properties/rental', () => ({
   ACCOUNT_COLUMNS: '',

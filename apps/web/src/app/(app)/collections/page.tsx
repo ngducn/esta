@@ -48,7 +48,7 @@ export default async function CollectionsPage({ searchParams }: { searchParams: 
   const today = clock.today();
   const month = parseBoardMonth(typeof params.month === 'string' ? params.month : undefined, today);
   const status = parseBoardFilter(typeof params.status === 'string' ? params.status : undefined);
-  const canEdit = member.role !== 'viewer';
+  const canEdit = member.can('edit');
   const [rows, collected, account, openInvoices, nav, t, locale, messages, qrLabels, reminderLabels] = await Promise.all([
     loadCollectionRows(member.household.id, month),
     loadMonthCollected(member.household.id, month),
@@ -99,7 +99,7 @@ export default async function CollectionsPage({ searchParams }: { searchParams: 
         title={nav('collections')}
         meta={<p>{t('pageMeta', { month: monthLabel, count: rows.length })}</p>}
         actions={
-          member.role === 'admin' ? (
+          member.can('import') ? (
             <Link href="/collections/import" data-testid="statement-import-link" className={buttonVariants({ variant: 'secondary' })}>
               <FileSpreadsheet aria-hidden="true" />
               {t('importStatement')}

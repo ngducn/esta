@@ -34,7 +34,7 @@ export default async function AssistantPage({ searchParams }: { searchParams: Pr
     loadTopicChoice(member.household.id, { ...(reply === undefined ? {} : { reply }), ...(about === undefined ? {} : { about }) }),
     loadSuggestions(member.household.id, (unit, property) => places('place', { unit, property })),
   ]);
-  const canDecide = member.role !== 'viewer';
+  const canDecide = member.can('edit');
   const notes = thread.entries.flatMap((entry) => (entry.kind === 'note' ? [entry.note] : []));
   const details = await loadProposalDetails(member.household.id, notes, clock.today(), canDecide);
   const reminderLabels = [...details.values()].some((detail) => detail.reminder !== null) ? await loadReminderLabels() : null;
@@ -50,7 +50,7 @@ export default async function AssistantPage({ searchParams }: { searchParams: Pr
           today={clock.today()}
           timezone={env.ESTA_TIMEZONE}
           canDecide={canDecide}
-          isOperator={member.isOperator}
+          isOperator={member.can('operate')}
           proposals={{ details, reminderLabels }}
           topic={topic}
           suggestions={suggestions}

@@ -4,7 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import { seedId } from '../../../../../supabase/seed/generator/ids';
-import { integrationLane } from '@/test/lanes';
+import { integrationLane, withCapabilities } from '@/test/lanes';
 import { putSigned, service, signedInAs, stackName, stackUp } from '@/test/stack';
 
 const session = vi.hoisted(() => ({
@@ -17,7 +17,7 @@ vi.mock('server-only', () => ({}));
 vi.mock('next/cache', () => ({ revalidatePath: () => undefined }));
 vi.mock('@/server/env', () => ({ env: { ESTA_SIGNED_URL_TTL_SECONDS: 300 } }));
 vi.mock('@/server/clock', () => ({ readRequestClock: async () => ({ now: () => '2026-10-07T09:00:00+07:00', today: () => session.today }) }));
-vi.mock('@/server/member', () => ({ requireMember: async () => session.member }));
+vi.mock('@/server/member', () => ({ requireMember: async () => withCapabilities(session.member) }));
 vi.mock('@/server/supabase/server', () => ({ createSessionClient: async () => session.client }));
 
 const { saveExpense, deleteExpense, restoreExpense } = await import('./actions');

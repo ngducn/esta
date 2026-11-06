@@ -7,7 +7,7 @@ import { SettingsSection } from './settings-section';
 
 export async function HouseholdSection({ member }: { member: Member }) {
   const t = await getTranslations('settings');
-  const admin = member.role === 'admin';
+  const admin = member.can('household');
   return (
     <SettingsSection id="household" title={t('household')} intro={admin ? t('householdIntro') : t('householdReadOnly')}>
       <Card className="flex flex-col gap-4">

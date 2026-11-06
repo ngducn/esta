@@ -10,7 +10,7 @@ import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import truthFile from '../../../../../fixtures/certificates/gcn_2024-photo/truth.json';
 import billTruth from '../../../../../fixtures/utility-bills/electricity-q7-scan/truth.json';
 import { seedId } from '../../../../../supabase/seed/generator/ids';
-import { integrationLane, outsiderEmail } from '@/test/lanes';
+import { integrationLane, outsiderEmail, withCapabilities } from '@/test/lanes';
 import { service, signedInAs, stackName, stackUp } from '@/test/stack';
 
 const session = vi.hoisted(() => ({
@@ -20,11 +20,10 @@ const session = vi.hoisted(() => ({
 
 vi.mock('server-only', () => ({}));
 vi.mock('next/cache', () => ({ revalidatePath: () => undefined }));
-vi.mock('@/server/member', () => ({ requireMember: async () => session.member }));
+vi.mock('@/server/member', () => ({ requireMember: async () => withCapabilities(session.member) }));
 vi.mock('@/server/supabase/server', () => ({ createSessionClient: async () => session.client }));
 
 const { saveExtractionReview } = await import('./actions');
-
 
 const { lane, household, ryan } = integrationLane(import.meta.url);
 const propertyId = seedId(`seed:property:lane-${lane}:bao-loc`);

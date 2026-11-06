@@ -13,7 +13,7 @@ type Params = Promise<{ partyId: string }>;
 
 export default async function TenantPage({ params }: { params: Params }) {
   const member = await requireMember();
-  if (member.role !== 'admin') notFound();
+  if (!member.can('tenants')) notFound();
   const [{ partyId }, t, leasesT, locale] = await Promise.all([params, getTranslations('tenants'), getTranslations('leases'), getLocale()]);
   const tenant = await loadTenantPage(partyId);
   if (tenant === null) notFound();

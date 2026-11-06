@@ -11,7 +11,7 @@ import { AccountActions } from './account-actions';
 
 /** PLT-1 `Tài khoản nhận tiền`: every account with its sample QR, so Mẹ can scan it before tenants rely on it. */
 export async function ReceivingAccounts({ member }: { member: Member }) {
-  const admin = member.role === 'admin';
+  const admin = member.can('household');
   const [t, locale, accounts, qrLabels, sheet] = await Promise.all([
     getTranslations('settings'),
     getLocale(),

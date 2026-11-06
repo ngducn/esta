@@ -34,7 +34,7 @@ export default async function PropertyFinancePage({ params, searchParams }: { pa
   const property = await loadPropertyDetail(id);
   if (property === null) notFound();
   const member = await requireMember();
-  const canEdit = member.role !== 'viewer';
+  const canEdit = member.can('edit');
   const clock = await getClock();
   const today = clock.today();
   const monthParam = queryParam(query.month);

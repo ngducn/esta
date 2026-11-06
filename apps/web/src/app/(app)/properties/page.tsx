@@ -64,7 +64,7 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
     getLocale(),
     archivedId === null ? null : loadArchivedNickname(member.household.id, archivedId),
   ]);
-  const canEdit = member.role !== 'viewer';
+  const canEdit = member.can('edit');
   const addAction = canEdit ? { label: t('add'), href: '/properties/new', icon: Plus } : undefined;
   const photos = await signCoverPhotos(member.id, list.rows.flatMap((row) => (row.coverPhotoPath === null ? [] : [row.coverPhotoPath])));
 
