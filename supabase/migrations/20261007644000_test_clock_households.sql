@@ -20,8 +20,7 @@ begin
   return (select m.household_id from public.household_members m where m.user_id = auth.uid() order by m.created_at, m.id limit 1);
 end;
 $$;
-revoke all on function private.clock_household() from public, anon;
-grant execute on function private.clock_household() to authenticated, service_role;
+revoke all on function private.clock_household() from public, anon, authenticated;
 
 create or replace function private.audit_now()
 returns timestamptz
