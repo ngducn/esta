@@ -1,3 +1,4 @@
+import { join } from 'node:path';
 import { cloneOccurrences, DEV_ROUTES, duplicateExports, filesOver, matchPositions, TEST_FILE, type Clone, type Corpus, type Occurrence, type Scope } from './measure.ts';
 import {
   alwaysOpenPopups,
@@ -12,7 +13,10 @@ import {
   sqlstateReads,
   viewports,
 } from './smells.ts';
+import { directWrites, literalRoleChecks, longFunctions, MAX_FUNCTION_LINES, memberRoles, notKebabCase } from './structure.ts';
 import { classLists, comments, elements, imported, importsModule, uses, type Finder } from './syntax.ts';
+
+const REPO_ROOT = join(import.meta.dirname, '..', '..');
 
 export type Helper = { readonly name: string; readonly file: string };
 
@@ -43,6 +47,12 @@ const WEB_SERVER: Scope = { include: /^apps\/web\/src\/(server\/|app\/|proxy\.ts
 const E2E_SPECS: Scope = { include: /^e2e\//, exclude: /^e2e\/helpers\// };
 const EVERY_FILE: Scope = { include: /./ };
 const NOT_TESTS: Scope = { include: /./, exclude: TEST_FILE };
+
+const WEB_SRC: Scope = { include: /^apps\/web\/src\//, exclude: NOT_PRODUCT };
+const SOURCE_NAMES: Scope = {
+  include: /^(apps\/web\/src|apps\/agent\/src|packages\/[^/]+\/src)\/.*\.tsx?$/,
+  exclude: NOT_PRODUCT,
+};
 
 const without = (scope: Scope, home: RegExp): Scope => ({
   include: scope.include,
@@ -300,5 +310,46 @@ export const METRICS: readonly Metric[] = [
     section: 'e2e-helpers',
     scope: E2E_SPECS,
     find: pageScrollWidths,
+  }),
+  syntax({
+    id: 'long-function',
+    message: `A function, arrow function or method longer than ${MAX_FUNCTION_LINES} lines (a component counts).`,
+    home: { use: 'Split by state (a hook or a reducer) or by mode (one component per variant).' },
+    section: 'targets',
+    scope: PRODUCT_CODE,
+    find: longFunctions,
+  }),
+  syntax({
+    id: 'direct-write',
+    message: 'Web code writes to Supabase itself (`.insert`, `.update`, `.upsert`, `.delete` on a query, or `.rpc`).',
+    home: {
+      use: 'An op in packages/ops, run with `runOp` from a server action that builds its context with `webOpContext`.',
+      helpers: [
+        { name: 'runOp', file: 'packages/ops/src/op.ts' },
+        { name: 'webOpContext', file: 'apps/web/src/server/ops.ts' },
+      ],
+    },
+    section: 'targets',
+    scope: WEB_SRC,
+    find: directWrites,
+  }),
+  syntax({
+    id: 'literal-role-check',
+    message: 'A role is compared with a string literal such as `\'admin\'` or `\'viewer\'`.',
+    home: {
+      use: 'One access table (Q-08). No role helper exists yet; until the table lands, read the role from `requireMember` in apps/web/src/server/member.ts and add no new comparison.',
+      helpers: [{ name: 'requireMember', file: 'apps/web/src/server/member.ts' }],
+    },
+    section: 'targets',
+    scope: WEB_SRC,
+    find: literalRoleChecks(memberRoles(REPO_ROOT)),
+  }),
+  syntax({
+    id: 'file-name-case',
+    message: 'A source file whose name is not kebab-case.',
+    home: { use: 'Name the file in kebab-case (Next.js special files such as page.tsx already are).' },
+    section: 'targets',
+    scope: SOURCE_NAMES,
+    find: (source) => (notKebabCase(source.fileName) ? [source] : []),
   }),
 ];

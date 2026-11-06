@@ -6,11 +6,14 @@ import { parseSlot, slotWorkdir } from './slot.ts';
 export type PublicTable = { readonly name: string; readonly rls: boolean };
 export type TestFile = { readonly path: string; readonly text: string };
 
-/** FND-2 holds only for tables that have row level security and a pgTAP file that names them. */
+/** SQL with its `--` and block comments removed; a quoted string that holds dashes stays whole. */
+export const stripSqlComments = (sql: string) => sql.replace(/'(?:[^']|'')*'|--[^\n]*|\/\*[\s\S]*?\*\//g, (match) => (match.startsWith("'") ? match : ' '));
+
+/** FND-2 holds only for tables that have row level security and a pgTAP file that names them in SQL, not in a comment. */
 export function coverageProblems(tables: readonly PublicTable[], files: readonly TestFile[]): string[] {
   return tables.flatMap(({ name, rls }) => [
     ...(rls ? [] : [`public.${name} has no row level security`]),
-    ...(files.some(({ text }) => new RegExp(`\\b${name}\\b`).test(text)) ? [] : [`public.${name} is named in no pgTAP file under supabase/tests`]),
+    ...(files.some(({ text }) => new RegExp(`\\b${name}\\b`).test(stripSqlComments(text))) ? [] : [`public.${name} is named in no pgTAP file under supabase/tests`]),
   ]);
 }
 
