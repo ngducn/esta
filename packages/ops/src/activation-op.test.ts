@@ -1,8 +1,8 @@
 import { formatVnd } from '@esta/core/format';
 import { vnd } from '@esta/core/money';
 import { describe, expect, it } from 'vitest';
-import { leaseActivate } from './activation-op';
-import { demoBills as bills, fakeDb, HOUSEHOLD, LEASE, OCTOBER, opContext as context, storedLease, viewLease, type Sent } from './test/fake-db';
+import { billRowSchema, leaseActivate } from './activation-op';
+import { demoBills as bills, fakeDb, HOUSEHOLD, LEASE, OCTOBER, opContext as context, PROPERTY, storedLease, trashedProperty, viewLease, type Sent } from './test/fake-db';
 import { NO_PENDING, withWrites } from './view';
 
 const plannedLease = withWrites(NO_PENDING, [{ kind: 'create', table: 'leases', row: viewLease() }]);
@@ -13,13 +13,22 @@ function input(raw: unknown) {
   return parsed.data;
 }
 
-const answer = (lease: unknown) => (request: Sent) => (request.table === 'leases' ? [lease] : request.table === 'invoices' ? [OCTOBER] : []);
+const answer = (lease: unknown) => (request: Sent) =>
+  request.table === 'leases'
+    ? [lease]
+    : request.table === 'invoices'
+      ? [OCTOBER]
+      : request.table === 'properties'
+        ? [{ id: PROPERTY, nickname: 'Demo Nhà Q1' }]
+        : request.table === 'rpc/preview_lease_bills'
+          ? bills
+          : [];
 
 describe('leaseActivate', () => {
   it('plans the activation of a lease planned earlier in the batch, and lays it over the lease for later items', async () => {
-    const planned = await leaseActivate.plan(context(fakeDb().db, plannedLease), input({ lease_id: LEASE, paid_through: '2026-09-30' }));
-    expect(planned).toEqual({ ok: true, value: { kind: 'change', change: { lease_id: LEASE, paid_through: '2026-09-30' } } });
-    expect(leaseActivate.writes?.(input({ lease_id: LEASE, paid_through: '2026-09-30' }))).toEqual([
+    const planned = await leaseActivate.plan(context(fakeDb((request) => (request.table === 'leases' ? [] : answer(null)(request))).db, plannedLease), input({ lease_id: LEASE, paid_through: '2026-09-30' }));
+    expect(planned).toEqual({ ok: true, value: { kind: 'change', change: { lease_id: LEASE, paid_through: '2026-09-30', bills } } });
+    expect(leaseActivate.writes?.({ ...input({ lease_id: LEASE, paid_through: '2026-09-30' }), bills: [] })).toEqual([
       { kind: 'set', table: 'leases', id: LEASE, set: { status: 'active', paid_through_date: '2026-09-30' } },
     ]);
   });
@@ -47,16 +56,31 @@ describe('leaseActivate', () => {
 
   it("names what activate_lease raised from the op's own table", async () => {
     const raised = (message: string, code: string) => fakeDb(answer(storedLease()), (request) => (request.table === 'rpc/activate_lease' ? { code, message } : null)).db;
-    const change = input({ lease_id: LEASE, paid_through: '2026-09-30' });
+    const change = { ...input({ lease_id: LEASE, paid_through: '2026-09-30' }), bills: [] };
     expect(await leaseActivate.apply(context(raised('ESTA_LEASE_OVERLAP', '23P01')), change)).toEqual({ ok: false, reason: { kind: 'overlap' } });
     expect(await leaseActivate.apply(context(raised('ESTA_LEASE_ALREADY_ACTIVE', '55000')), change)).toEqual({ ok: false, reason: { kind: 'already_active' } });
     expect(await leaseActivate.apply(context(raised('ESTA_LEASE_TRANSITION', '23514')), change)).toEqual({ ok: false, reason: { kind: 'cannot_activate', reasons: ['not_draft'] } });
     expect(await leaseActivate.apply(context(raised('ESTA_LEASE_NOT_FOUND', 'P0002')), change)).toEqual({ ok: false, reason: { kind: 'not_found' } });
+    expect(await leaseActivate.apply(context(raised('ESTA_PROPERTY_NOT_FOUND', 'P0002')), change)).toEqual({ ok: false, reason: { kind: 'not_found' } });
+    expect(await leaseActivate.apply(context(raised('ESTA_ACTIVATION_BILLS_CHANGED', '40001')), change)).toEqual({ ok: false, reason: { kind: 'bills_changed' } });
+  });
+
+  it('hands the approved bills to activate_lease so it can check them under the lease lock', async () => {
+    const { db, sent } = fakeDb(answer(storedLease()));
+    await leaseActivate.apply(context(db), { ...input({ lease_id: LEASE, paid_through: '2026-09-30' }), bills: bills.map((bill) => billRowSchema.parse(bill)) });
+    expect(sent.find((request) => request.table === 'rpc/activate_lease')?.body).toEqual({ p_lease_id: LEASE, p_paid_through: '2026-09-30', p_expected_bills: bills });
+  });
+
+  it('refuses a draft whose property is in the trash as not found (#241)', async () => {
+    const { db } = fakeDb(trashedProperty(answer(storedLease())));
+    expect(await leaseActivate.plan(context(db), input({ lease_id: LEASE, paid_through: null }))).toEqual({ ok: false, reason: { kind: 'not_found' } });
   });
 
   it('previews the bills of the lease as the batch reads it, for this household, with display strings', async () => {
-    const { db, sent } = fakeDb((request) => (request.table === 'rpc/preview_lease_bills' ? bills : []));
-    const preview = await leaseActivate.preview?.(context(db, plannedLease), input({ lease_id: LEASE, paid_through: '2026-09-30' }));
+    const { db, sent } = fakeDb((request) => (request.table === 'rpc/preview_lease_bills' ? bills : request.table === 'properties' ? [{ id: PROPERTY, nickname: 'Demo Nhà Q1' }] : []));
+    const planned = await leaseActivate.plan(context(db, plannedLease), input({ lease_id: LEASE, paid_through: '2026-09-30' }));
+    if (!planned.ok || planned.value.kind !== 'change') throw new Error('expected a change');
+    const preview = await leaseActivate.preview?.(context(db, plannedLease), planned.value.change);
     expect(preview).toEqual({
       paid_through_display: '30/09/2026',
       bills: [

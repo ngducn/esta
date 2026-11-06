@@ -98,7 +98,14 @@ describe('leaseCreate', () => {
 });
 
 describe('leaseEdit', () => {
-  const stored = (lease: Record<string, unknown>, units: unknown[] = []) => fakeDb((request) => (request.table === 'leases' ? [lease] : request.table === 'units' ? units : []));
+  const stored = (lease: Record<string, unknown>, units: unknown[] = []) =>
+    fakeDb((request) => (request.table === 'leases' ? [lease] : request.table === 'units' ? units : request.table === 'properties' ? [{ id: PROPERTY, nickname: 'Demo Nhà Q1' }] : []));
+
+  it('refuses an edit of a draft whose property is in the trash, even a note-free no-op (#241)', async () => {
+    const { db } = fakeDb(trashedProperty((request) => (request.table === 'leases' ? [storedLease()] : [])));
+    expect(await leaseEdit.plan(context(db), parsed(leaseEdit.input, { id: LEASE, set: { rent_vnd: 9_500_000 } }))).toEqual({ ok: false, reason: { kind: 'not_found' } });
+    expect(await leaseEdit.plan(context(db), parsed(leaseEdit.input, { id: LEASE, set: demoDraft }))).toEqual({ ok: false, reason: { kind: 'not_found' } });
+  });
 
   it('lists only the terms that change, with their values before', async () => {
     const { db } = stored(storedLease());

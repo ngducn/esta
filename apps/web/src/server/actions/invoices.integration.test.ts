@@ -1,7 +1,9 @@
+import { isoDate } from '@esta/core/date';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { integrationLane } from '@/test/lanes';
 import { memberClient } from '@/test/member-client';
 import { service } from '@/test/stack';
+import { twoAtOnce } from '@/test/two-at-once';
 
 // `pnpm test:integration` (scripts/web-integration.ts) passes the slot's stack and sets its database clock to
 // 2026-10-07. A void cannot be undone and the cron test reads every seeded lease, so this file bills its own Demo
@@ -12,6 +14,7 @@ const { client, signIn } = memberClient(ryan, HOUSEHOLD);
 const { issueInvoice, voidInvoice } = await import('./invoices');
 const { addReceivingAccount, editReceivingAccount, removeReceivingAccount, setDefaultReceivingAccount } = await import('./receiving-accounts');
 const { terminateLease } = await import('./leases');
+const { loadPropertyLeases } = await import('@/server/leases/load');
 
 const run = Math.floor(Math.random() * 1e6)
   .toString()
@@ -161,4 +164,73 @@ describe('receiving account actions against local Supabase (PLT-1)', () => {
     expect(await removeReceivingAccount({ id: spare })).toEqual({ ok: true, value: undefined });
     expect((await accounts()).map((row) => row.id).toSorted()).toEqual([added, seeded].toSorted());
   });
+});
+
+const LONG_AGO = '1926-01-01';
+/** A draft lease on its own room of the Demo property, started on a date of the test's choosing. */
+async function draftLease(start: string, rent: number) {
+  const unit = crypto.randomUUID();
+  const lease = crypto.randomUUID();
+  await post('units', { id: unit, household_id: HOUSEHOLD, property_id: ids.property, label: `Phòng ${lease.slice(0, 4)}`, kind: 'room' });
+  await post('leases', {
+    id: lease, household_id: HOUSEHOLD, property_id: ids.property, unit_id: unit, tenant_party_id: ids.tenant, start_date: start, rent_vnd: rent,
+    billing_cycle_months: 1, period_anchor: 'calendar_month', utilities_mode: 'tenant_direct', due_offset_days: 0,
+  });
+  return { unit, lease };
+}
+
+describe('the database keeps a room to one lease (#198)', () => {
+  it('lets one of two leases that start together on a room win, and tells the other the room is taken', async () => {
+    const first = await draftLease('2026-10-01', 3_000_000);
+    const second = crypto.randomUUID();
+    await post('leases', {
+      id: second, household_id: HOUSEHOLD, property_id: ids.property, unit_id: first.unit, tenant_party_id: ids.tenant, start_date: '2026-10-01', rent_vnd: 3_100_000,
+      billing_cycle_months: 1, period_anchor: 'calendar_month', utilities_mode: 'tenant_direct', due_offset_days: 0,
+    });
+    const both = [first.lease, second];
+    let next = 0;
+    const outcomes = await twoAtOnce(async () => (await client.rpc('activate_lease', { p_lease_id: both[next++] ?? '' })).error?.message ?? 'activated');
+    expect(outcomes.map((outcome) => (outcome.status === 'fulfilled' ? outcome.value : 'threw')).sort()).toEqual(['ESTA_LEASE_OVERLAP', 'activated']);
+    const { data } = await client.from('leases').select('status').in('id', both);
+    expect(data?.map((row) => row.status).sort()).toEqual(['active', 'draft']);
+  }, 30_000);
+
+  it('refuses a second active lease on a held room, even from the service role', async () => {
+    const held = await draftLease('2026-10-01', 3_000_000);
+    const activated = await client.rpc('activate_lease', { p_lease_id: held.lease });
+    expect(activated.error).toBeNull();
+    await expect(
+      post('leases', {
+        household_id: HOUSEHOLD, property_id: ids.property, unit_id: held.unit, tenant_party_id: ids.tenant, start_date: '2026-11-01', rent_vnd: 3_000_000, status: 'active',
+      }),
+    ).rejects.toThrow(/23P01/);
+  });
+});
+
+describe('the rental tab with more than one page of bills (#226)', () => {
+  it('shows the newest unpaid bills of a lease that holds more than 1,000 older ones', async () => {
+    const { lease } = await draftLease(LONG_AGO, 3_000_000);
+    const activated = await client.rpc('activate_lease', { p_lease_id: lease });
+    expect(activated.error).toBeNull();
+    // Every month from January 1926 to September 2026, so no draft is left for the nightly cron test that runs after this file.
+    const nights = Array.from({ length: 1209 }, (_, n) => `${1926 + Math.floor(n / 12)}-${String((n % 12) + 1).padStart(2, '0')}-01`);
+    for (let from = 0; from < nights.length; from += 50) {
+      await Promise.all(
+        nights.slice(from, from + 50).map((night) =>
+          service(`/rest/v1/rpc/run_invoicing`, { method: 'POST', body: JSON.stringify({ p_household_id: HOUSEHOLD, p_as_of: night, p_issued_at: `${night}T00:30:00+07:00` }) }),
+        ),
+      );
+    }
+    const raw = await client.from('invoice_balances').select('id').eq('lease_id', lease).order('period_start');
+    expect(raw.data, 'PostgREST cuts a plain read at 1,000 rows, which is what the tab used to show').toHaveLength(1000);
+    const { count } = await client.from('invoices').select('id', { count: 'exact', head: true }).eq('lease_id', lease);
+    expect(count).toBeGreaterThan(1200);
+
+    const { invoices } = await loadPropertyLeases(ids.property, isoDate('2026-10-07'));
+    expect(invoices.filter((invoice) => invoice.leaseId === lease)).toHaveLength(count ?? -1);
+    expect(invoices.filter((invoice) => invoice.leaseId === lease && invoice.periodStart >= '2026-10-01').map((invoice) => [invoice.periodStart, invoice.status])).toEqual([
+      ['2026-10-01', 'issued'],
+      ['2026-11-01', 'draft'],
+    ]);
+  }, 180_000);
 });

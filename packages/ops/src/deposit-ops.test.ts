@@ -2,7 +2,7 @@ import { formatVnd } from '@esta/core/format';
 import { MAX_AMOUNT_VND, vnd } from '@esta/core/money';
 import { describe, expect, it } from 'vitest';
 import { depositRecord } from './deposit-ops';
-import { fakeDb, LEASE, opContext as context, storedLease, viewLease, type Sent } from './test/fake-db';
+import { fakeDb, LEASE, opContext as context, PROPERTY, storedLease, trashedProperty, viewLease, type Sent } from './test/fake-db';
 import { NO_PENDING, withWrites } from './view';
 
 const KEY = '0b6c1f9e-7d1a-4c55-9a3e-5b0c2d1e0008';
@@ -15,7 +15,10 @@ function input(raw: unknown) {
   return parsed.data;
 }
 
-const leaseIs = (status: string) => (request: Sent) => (request.table === 'leases' ? [storedLease({ status })] : []);
+const HOME = { id: PROPERTY, nickname: 'Demo Nhà Q1' };
+const leaseIs = (status: string, entries: readonly unknown[] = []) => (request: Sent) =>
+  request.table === 'leases' ? [storedLease({ status })] : request.table === 'properties' ? [HOME] : request.table === 'deposit_entries' && !request.query.has('idempotency_key') ? entries : [];
+const stored = (kind: string, amount_vnd: number, on_date = '2026-03-01') => ({ id: `${KEY}-${kind}-${amount_vnd}`, lease_id: LEASE, kind, amount_vnd, on_date });
 
 describe('depositRecord', () => {
   it('takes a receipt, a deduction or a refund, and leaves applying the deposit to a bill to the screen', () => {
@@ -31,12 +34,34 @@ describe('depositRecord', () => {
       { kind: 'create', table: 'leases', row: viewLease() },
       { kind: 'set', table: 'leases', id: LEASE, set: { status: 'active', paid_through_date: null } },
     ]);
-    expect(await depositRecord.plan(context(fakeDb().db, activated), input(received))).toEqual({ ok: true, value: { kind: 'change', change: received } });
+    expect(await depositRecord.plan(context(fakeDb((request) => (request.table === 'properties' ? [HOME] : [])).db, activated), input(received))).toEqual({ ok: true, value: { kind: 'change', change: received } });
   });
 
   it('plans a refund on a terminated lease, as record_deposit_entry takes one', async () => {
     const refund = input({ ...received, kind: 'refunded' });
-    expect(await depositRecord.plan(context(fakeDb(leaseIs('terminated')).db), refund)).toEqual({ ok: true, value: { kind: 'change', change: refund } });
+    expect(await depositRecord.plan(context(fakeDb(leaseIs('terminated', [stored('received', 18_000_000)])).db), refund)).toEqual({ ok: true, value: { kind: 'change', change: refund } });
+  });
+
+  it('refuses a deduction or a refund larger than the deposit held, so the batch does not land partly (#241)', async () => {
+    const db = fakeDb(leaseIs('active', [stored('received', 5_000_000)])).db;
+    expect(await depositRecord.plan(context(db), input({ ...received, kind: 'refunded', amount_vnd: 5_000_001 }))).toEqual({ ok: false, reason: { kind: 'exceeds_held' } });
+    expect(await depositRecord.plan(context(db), input({ ...received, kind: 'deduction', amount_vnd: 5_000_001, note: 'Demo: sửa cửa' }))).toEqual({ ok: false, reason: { kind: 'exceeds_held' } });
+    expect((await depositRecord.plan(context(db), input({ ...received, kind: 'refunded', amount_vnd: 5_000_000 }))).ok).toBe(true);
+  });
+
+  it('counts the deposit items planned earlier in the batch, in the refusal and in what is held after (#241)', async () => {
+    const db = fakeDb(leaseIs('active', [stored('received', 5_000_000)])).db;
+    const earlier = withWrites(NO_PENDING, depositRecord.writes?.(input({ ...received, id: ENTRY, kind: 'refunded', amount_vnd: 3_000_000, on_date: '2026-04-01' })) ?? []);
+    const second = input({ ...received, kind: 'refunded', amount_vnd: 3_000_000, on_date: '2026-05-01' });
+    expect(await depositRecord.plan(context(db, earlier), second)).toEqual({ ok: false, reason: { kind: 'exceeds_held' } });
+    const fits = input({ ...second, amount_vnd: 2_000_000 });
+    expect(await depositRecord.plan(context(db, earlier), fits)).toEqual({ ok: true, value: { kind: 'change', change: fits } });
+    expect(await depositRecord.preview?.(context(db, earlier), fits)).toMatchObject({ held_after_display: formatVnd(vnd(0), 'vi') });
+  });
+
+  it('refuses a deposit on a lease whose property is in the trash (#241)', async () => {
+    const db = fakeDb(trashedProperty(leaseIs('active'))).db;
+    expect(await depositRecord.plan(context(db), input(received))).toEqual({ ok: false, reason: { kind: 'not_found' } });
   });
 
   it('plans unchanged for a key already written, before it reads the lease', async () => {
@@ -59,12 +84,12 @@ describe('depositRecord', () => {
   });
 
   it('previews the amount, the day and what the lease holds after it', async () => {
-    const held = fakeDb((request) => (request.table === 'lease_deposits' ? [{ held_vnd: 18_000_000 }] : []));
+    const held = fakeDb(leaseIs('active', [stored('received', 18_000_000)]));
     expect(await depositRecord.preview?.(context(held.db), input({ ...received, kind: 'deduction', amount_vnd: 2_000_000, on_date: '2026-10-01', note: 'Demo: sửa cửa' }))).toEqual({
       amount_display: formatVnd(vnd(2_000_000), 'vi'),
       on_date_display: '01/10/2026',
       held_after_display: formatVnd(vnd(16_000_000), 'vi'),
     });
-    expect(await depositRecord.preview?.(context(fakeDb().db), input(received))).toMatchObject({ held_after_display: formatVnd(vnd(18_000_000), 'vi') });
+    expect(await depositRecord.preview?.(context(fakeDb(leaseIs('active')).db), input(received))).toMatchObject({ held_after_display: formatVnd(vnd(18_000_000), 'vi') });
   });
 });

@@ -1,5 +1,8 @@
+import { DEPOSIT_KINDS, type DepositKind } from '@esta/core/allocation';
+import type { IsoDate } from '@esta/core/date';
 import type { Phone } from '@esta/core/phone';
 import { leaseDraftSchema, leaseRowSchema } from '@esta/core/schemas/lease';
+import { isoDateSchema } from '@esta/core/schemas/legal';
 import { z } from 'zod';
 import type { OpContext } from './op';
 
@@ -13,6 +16,8 @@ export type ViewRows = {
   readonly units: { readonly id: string; readonly property_id: string; readonly label: string };
   readonly parties: { readonly id: string; readonly full_name: string; readonly phone: string | null; readonly id_last4: string | null };
   readonly leases: z.output<typeof leaseViewSchema>;
+  /** What a lease's deposit holds, so a later item in the batch reads the entries an earlier one will write. */
+  readonly deposit_entries: { readonly id: string; readonly lease_id: string; readonly kind: DepositKind; readonly amount_vnd: number; readonly on_date: IsoDate };
 };
 export type ViewTable = keyof ViewRows;
 
@@ -22,6 +27,7 @@ export type Lookup = {
   readonly units: { readonly id: string } | { readonly property_id: string; readonly label: string };
   readonly parties: { readonly id: string } | { readonly phone: Phone } | { readonly id_last4: string };
   readonly leases: { readonly id: string };
+  readonly deposit_entries: { readonly lease_id: string };
 };
 
 type Rows = { readonly [T in ViewTable]: { readonly table: T; readonly row: ViewRows[T] } };
@@ -60,6 +66,12 @@ const READ: { readonly [T in ViewTable]: (ctx: ViewContext, where: Lookup[T]) =>
   properties: async (ctx, where) => rowsOf(await ctx.db.from('properties').select('id, nickname').eq('household_id', ctx.householdId).is('deleted_at', null).match(where), 'properties'),
   units: async (ctx, where) => rowsOf(await ctx.db.from('units').select('id, property_id, label').eq('household_id', ctx.householdId).match(where), 'units'),
   parties: async (ctx, where) => rowsOf(await ctx.db.from('parties').select('id, full_name, phone, id_last4').eq('household_id', ctx.householdId).match(where), 'parties'),
+  deposit_entries: async (ctx, where) =>
+    rowsOf(await ctx.db.from('deposit_entries').select('id, lease_id, kind, amount_vnd, on_date').eq('household_id', ctx.householdId).match(where), 'deposit_entries').map((row) => ({
+      ...row,
+      kind: z.enum(DEPOSIT_KINDS).parse(row.kind),
+      on_date: isoDateSchema.parse(row.on_date),
+    })),
   leases: async (ctx, where) => {
     const stored = rowsOf(await ctx.db.from('leases').select(LEASE_VIEW_COLUMNS).eq('household_id', ctx.householdId).match(where), 'leases');
     return z

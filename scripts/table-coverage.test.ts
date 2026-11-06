@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { coverageProblems, hiddenRowProblems } from './table-coverage.ts';
+import { coverageProblems, exclusionProblems, hiddenRowProblems } from './table-coverage.ts';
 
 const files = [{ path: 'supabase/tests/leases.test.sql', text: "select tests.cannot_write('public.leases');" }];
 
@@ -51,5 +51,20 @@ describe('hiddenRowProblems', () => {
       "public.conversation limits who may read its rows, and no pgTAP file calls tests.hidden_everywhere('conversation', ...)",
       "public.agent_items limits who may read its rows, and no pgTAP file calls tests.hidden_everywhere('agent_items', ...)",
     ]);
+  });
+});
+
+describe('exclusionProblems', () => {
+  const proof = [{ path: 'supabase/tests/a.test.sql', text: `select throws_ok($$ insert ... $$, '23P01', 'conflicting key value violates exclusion constraint "leases_room_one_holder"', 'x');` }];
+
+  it('passes a constraint that a test names beside the 23P01 it expects', () => {
+    expect(exclusionProblems(['leases_room_one_holder'], proof)).toEqual([]);
+  });
+
+  it('fails a constraint no test names, and one a test names without expecting 23P01', () => {
+    expect(exclusionProblems(['invoices_lease_one_bill_per_day'], proof)).toEqual([
+      'the exclusion constraint invoices_lease_one_bill_per_day has no pgTAP file that names it and expects 23P01 from the write it forbids',
+    ]);
+    expect(exclusionProblems(['leases_room_one_holder'], [{ path: 'b.sql', text: 'select "leases_room_one_holder";' }])).toHaveLength(1);
   });
 });

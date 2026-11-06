@@ -45,6 +45,9 @@ Review checklist for classes no mechanical check catches (a reviewer reads for e
 2. Clock edges, until `clockEdges()` (Q-16) is used by every period-keyed test.
 3. Count, then write, until `twoAtOnce` (Q-16) covers the write.
 4. A denylist where an allowlist belongs: a fix that refuses the bad spellings it was shown (monthly rates, #439) instead of accepting only the good ones. Ask for a property test that random neighbours of the input never pass.
+5. A rule only TypeScript keeps: if TS refuses it, the database refuses it too (a constraint, an exclusion constraint or a definer function under one lock), tried by a pgTAP write as the service role. `pnpm db:test` fails an exclusion constraint no pgTAP file names beside 23P01.
+6. A preview that shows more than the change compares: what Ryan sees before OK (bills, held balance) is part of the change compared at apply, or the preview is computed from the change alone.
+7. A loop over households or leases in a job: one failure is caught per item, logged with its id, returned in the summary and answered with a non-200 status (`cronHandler` answers 500 when `ok` is false).
 
 ## Planned tiers for the remaining PRs
 
