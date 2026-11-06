@@ -16,6 +16,10 @@ This file names the one place each recurring concern lives. Before you write a p
 
 To add a smell, add one entry to `METRICS` with a finder in `scripts/quality/smells.ts`, a case that it counts and a look-alike that it does not in `scripts/quality/smells.test.ts`, and a section here. Main does not measure a new metric yet, so record its first count with `pnpm quality --update --allow-raise "<new metric>"`. A finder that matches correct code teaches people to ignore the check, so match an exact call, import or type shape, not a loose word. Point "Use instead" only at a helper that exists and is exported, or at the issue that creates the home; a test checks both.
 
+## Gates in `pnpm check`
+
+Every `scripts/check-*.ts` gate runs from the `check` script in `package.json`, and every other `scripts/*.ts` entry point that no file imports has a script that runs it. `scripts/package-scripts.test.ts` fails otherwise, so a merge that drops a script line (a gate that stops running looks like green) turns red. A gate that cannot run in `pnpm check`, or a tool run only by hand or by CI, goes on the allowlist in that test with a one-line reason. Add a new gate to the `check` chain, not to the allowlist.
+
 ## Duplicated code
 
 `pnpm quality` runs jscpd 5 over the source files and counts every block of 50 or more tokens that appears twice (`clones`) and the lines inside those blocks (`duplicated-lines`). An edit of up to five lines inside a copied block keeps it one clone. The token threshold is jscpd's default. It registers the duplicates the 2026-10-19 review measured: the two upload flows, the legal and rental item actions, and the e2e setup copied between specs.
