@@ -9,7 +9,8 @@ import type { DeliveryConfig, Mailer } from './smtp';
 
 /** A notice that keeps failing stops after this many tries, so a dead address cannot loop forever. */
 export const MAX_SEND_ATTEMPTS = 30;
-const LOOKBACK_DAYS = 1;
+/** A note older than this when the worker first sees it is not announced, so turning notices on never mails last week. */
+const NEW_NOTE_WINDOW_MS = 6 * 60 * 60 * 1000;
 const ERROR_LIMIT = 300;
 
 const itemRow = z.object({
@@ -40,7 +41,7 @@ async function read<T>(label: string, query: PromiseLike<{ data: unknown[] | nul
 /** Queues a notice row for each member who should hear of a recent brief or action note, once per member, note and channel. */
 async function queueNotices(db: AgentDb, clock: Clock): Promise<void> {
   const today = clock.today();
-  const since = startOfDay(addDays(today, -LOOKBACK_DAYS));
+  const since = new Date(Date.parse(clock.now()) - NEW_NOTE_WINDOW_MS).toISOString();
   const items = (await read('the recent notes', db.from('agent_items').select(ITEM_COLUMNS).eq('status', 'new').gte('created_at', since).order('created_at'), itemRow)).filter(
     (item) => noticeKind(item) !== null,
   );

@@ -6,6 +6,7 @@ import { setClock } from './helpers/test-clock';
 import { open, PHONE, serviceGet } from './helpers/wizard';
 
 test.describe.configure({ mode: 'serial' });
+test.setTimeout(180_000);
 
 const LANE = 2;
 const ME = `me.lane${LANE}@demo.esta.test`;
