@@ -1,6 +1,9 @@
+/** A digit string written in another script, from the code point of that script's zero. */
+const inScript = (zero: number, digits: string) => digits.replace(/\d/gu, (digit) => String.fromCodePoint(zero + Number(digit)));
+
 /**
- * Spellings of a full ID number that must never be saved whole. `reduced` is what the reducer keeps; the SQL check
- * (`holds_national_id`) is not yet held to this table, see the follow-up on #425.
+ * Spellings of a full ID number that must never be saved whole. `reduced` is what the reducer keeps. The SQL check
+ * (`holds_national_id`) replays every row through `NATIONAL_ID_REPLAYED` in `national-id-vectors.ts`, so core and the database cannot drift apart.
  */
 export const NATIONAL_ID_CASES: readonly (readonly [name: string, text: string, reduced: string])[] = [
   ['a number then a dot and a digit in a file name', 'hop-dong-demo-079123456789.2.pdf', 'hop-dong-demo-6789.2.pdf'],
@@ -32,6 +35,12 @@ export const NATIONAL_ID_CASES: readonly (readonly [name: string, text: string, 
   ['backslash groups', 'cccd 079\\123\\456\\789', 'cccd 6789'],
   ['wave dash groups with no label', '079〜123〜456〜789', '6789'],
   ['zero-width spaces between groups', 'cccd 079​123​456​789', 'cccd 6789'],
+  ['Arabic-Indic digits after a label', `cccd ${inScript(0x660, '079123456789')}`, `cccd ${inScript(0x660, '6789')}`],
+  ['Arabic-Indic digits with no label', inScript(0x660, '079123456789'), inScript(0x660, '6789')],
+  ['extended Arabic-Indic digits in groups', `cccd ${inScript(0x6f0, '079 123 456 789')}`, `cccd ${inScript(0x6f0, '6789')}`],
+  ['Devanagari digits', `Số ${inScript(0x966, '079123456789')}`, `Số ${inScript(0x966, '6789')}`],
+  ['Thai digits in groups', `Số ${inScript(0xe50, '079.123.456.789')}`, `Số ${inScript(0xe50, '6789')}`],
+  ['Arabic-Indic digits mixed with ASCII', `cccd 0791${inScript(0x660, '23456789')}`, `cccd ${inScript(0x660, '6789')}`],
 ];
 
 /** A 12-digit number, and the text around it that Mẹ or Ryan may type or name a file with. */

@@ -1,20 +1,35 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { NATIONAL_ID_CASES, NATIONAL_ID_KEPT, NATIONAL_ID_SURROUNDS } from './national-id.cases';
+import * as cases from './national-id.cases';
+import { NATIONAL_ID_SURROUNDS } from './national-id.cases';
+import { NATIONAL_ID_REPLAYED } from './national-id-vectors';
 import { DATE, reduceNationalIds } from './reduce-national-ids';
 
 const leaf = (value: unknown) => ({ value, confidence: 0.95, page: 1 });
 const reduce = (text: string): string => String(reduceNationalIds({ notes_text: leaf(text) }).notes_text.value);
 
 describe('the national ID reducer on its case table', () => {
-  it.each(NATIONAL_ID_CASES)('%s', (_name, text, reduced) => {
+  it.each(NATIONAL_ID_REPLAYED.reduced)('%s', (_name, text, reduced) => {
     expect(reduce(text)).toBe(reduced);
     expect(reduce(reduce(text))).toBe(reduced);
   });
 });
 
+/** Tables here that feed a property and are no rows of text to read. */
+const PROPERTY_INPUTS: ReadonlySet<string> = new Set(['NATIONAL_ID_SURROUNDS']);
+const isRows = (value: unknown): value is readonly (readonly unknown[])[] =>
+  Array.isArray(value) && value.length > 0 && value.every((row) => Array.isArray(row) && row.length >= 2 && row.every((cell) => typeof cell === 'string'));
+
+describe('the national ID case tables', () => {
+  it('every table of rows in the case file is in NATIONAL_ID_REPLAYED, which the pgTAP test replays through the database check', () => {
+    const replayed = new Set<unknown>([...NATIONAL_ID_REPLAYED.reduced, ...NATIONAL_ID_REPLAYED.kept]);
+    const stray = Object.entries(cases).flatMap(([name, table]) => (!PROPERTY_INPUTS.has(name) && isRows(table) && !table.every((row) => replayed.has(row)) ? [name] : []));
+    expect(stray).toEqual([]);
+  });
+});
+
 describe('the national ID reducer on numbers that are no ID', () => {
-  it.each(NATIONAL_ID_KEPT)('%s', (_name, text) => {
+  it.each(NATIONAL_ID_REPLAYED.kept)('%s', (_name, text) => {
     expect(reduce(text)).toBe(text);
   });
 });
