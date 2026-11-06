@@ -74,7 +74,12 @@ function handWrittenClasses(css: string): Set<string> {
 
 export async function unknownClasses(): Promise<Use[]> {
   const require = createRequire(join(root, 'apps/web/package.json'));
-  const tailwind = require('tailwindcss') as typeof import('tailwindcss');
+  const tailwind = require('tailwindcss') as {
+    __unstable__loadDesignSystem: (
+      css: string,
+      options: { base: string; loadStylesheet: (id: string, base: string) => Promise<{ path: string; base: string; content: string }> },
+    ) => Promise<{ candidatesToCss: (candidates: string[]) => Array<string | null> }>;
+  };
   const tailwindDir = dirname(require.resolve('tailwindcss/package.json'));
   const loadStylesheet = async (id: string, base: string) => {
     const path = id === 'tailwindcss' ? join(tailwindDir, 'index.css') : id.startsWith('tailwindcss/') ? join(tailwindDir, `${id.slice('tailwindcss/'.length)}.css`) : resolve(base, id);

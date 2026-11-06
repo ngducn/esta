@@ -14,8 +14,8 @@ describe('twoAtOnce', () => {
     });
     expect(peak).toBe(2);
     expect([first, second]).toEqual([
-      { ok: true, value: 'done' },
-      { ok: true, value: 'done' },
+      { status: 'fulfilled', value: 'done' },
+      { status: 'fulfilled', value: 'done' },
     ]);
   });
 
@@ -26,7 +26,7 @@ describe('twoAtOnce', () => {
       if (calls === 2) throw new Error('second refused');
       return calls;
     });
-    expect(outcomes[0]).toEqual({ ok: true, value: 1 });
-    expect(outcomes[1]).toMatchObject({ ok: false, error: new Error('second refused') });
+    expect(outcomes[0]).toEqual({ status: 'fulfilled', value: 1 });
+    expect(outcomes[1]).toMatchObject({ status: 'rejected', reason: new Error('second refused') });
   });
 });

@@ -107,7 +107,7 @@ describe('payment actions against local Supabase (LSE-7)', () => {
   it('returns the same payment for a repeated key and writes one', async () => {
     const raw = input(await openInvoices('Phòng 6', '2026-10'), '2tr8');
     const [first, second] = await twoAtOnce(() => record(raw));
-    if (!first.ok || !second.ok) throw new Error('both calls with one key must answer');
+    if (first.status !== 'fulfilled' || second.status !== 'fulfilled') throw new Error('both calls with one key must answer');
     expect(second.value.id).toBe(first.value.id);
     const { count } = await client.from('payments').select('id', { count: 'exact', head: true }).eq('idempotency_key', raw.idempotencyKey);
     expect(count).toBe(1);
