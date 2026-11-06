@@ -6,3 +6,9 @@ allowBuilds:
   esbuild: false
   '@parcel/watcher': false
   '@swc/core': false
+
+# Transitive advisories under @anthropic-ai/claude-agent-sdk and satori (no direct dependent to bump).
+overrides:
+  body-parser: '>=2.4.0 <3'
+  fast-uri: '>=3.1.9 <4'
+  fflate: '>=0.7.5'
