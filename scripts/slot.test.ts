@@ -79,6 +79,27 @@ describe('slotConfig', () => {
     expect(boundPorts(toml)).toEqual(boundPorts(baseToml).map((port) => port + slot * 100));
   });
 
+  it('keeps the cloud project blocks out of a local stack, and out of the LAN site url', () => {
+    expect(baseToml).toContain('[remotes.production]');
+    expect(baseToml).toContain('[remotes.preview]');
+    for (const toml of [slotConfig(baseToml, 3), slotConfig(baseToml, 3, '192.168.1.7')]) {
+      expect(toml).not.toContain('remotes');
+      expect(toml).not.toContain('env(ESTA_');
+    }
+  });
+
+  it('gives each cloud project its own site url, a sign-in callback and a mail limit that fits custom SMTP', () => {
+    const remotes = baseToml.slice(baseToml.indexOf('[remotes.production]'));
+    for (const name of ['PRODUCTION', 'PREVIEW']) {
+      expect(remotes).toContain(`project_id = "env(ESTA_${name}_PROJECT_REF)"`);
+      expect(remotes).toContain(`site_url = "env(ESTA_${name}_URL)"`);
+      expect(remotes).toContain(`additional_redirect_urls = ["env(ESTA_${name}_CALLBACK_URL)"]`);
+    }
+    expect(remotes).toMatch(/\[remotes\.production\.auth\.external\.google\]\nenabled = false/);
+    expect(remotes).toMatch(/\[remotes\.preview\.auth\.external\.google\]\nenabled = true/);
+    expect(remotes.match(/email_sent = 30/g)).toHaveLength(2);
+  });
+
   it('keeps LAN origins out of the base config', () => {
     expect(baseToml).not.toMatch(/https:\/\/(10|172|192)\./);
     expect(slotConfig(baseToml, 13)).not.toMatch(/https:\/\/(10|172|192)\./);

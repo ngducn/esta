@@ -7,9 +7,8 @@ const baseURL = `http://localhost:${port}`;
 
 // CI serves a production build, which compiles every page before the first test and keeps first visits fast.
 // `ESTA_E2E_SERVER=dev` serves `pnpm dev` instead, which starts quicker when a developer reruns one spec.
-// `ESTA_E2E_BUILD=prod` asks for the build locally, which is how DEPLOY.md runs the north-star before a release.
 const servers = ['build', 'dev'] as const;
-const server = process.env.ESTA_E2E_SERVER ?? (process.env.CI || process.env.ESTA_E2E_BUILD === 'prod' ? 'build' : 'dev');
+const server = process.env.ESTA_E2E_SERVER ?? (process.env.CI ? 'build' : 'dev');
 if (!servers.some((name) => name === server)) throw new Error(`ESTA_E2E_SERVER must be one of ${servers.join(', ')}, got "${server}"`);
 
 // The seed holds one fixed day's state, so the app under test must not read the wall clock: on 2026-11-02 the
