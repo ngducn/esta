@@ -16,6 +16,7 @@ const NOT_IN_A_SCRIPT: Record<string, string> = {
   'function-size.ts': 'a one-off spike measurement of the receipt route (S7)',
   'roundtrip-checks.ts': 'run directly by CI and tools/ci-local.sh',
   'seed-bulk-properties.ts': 'loads the bulk-property e2e data, run directly (supabase/seed/README.md)',
+  'stack-secrets.ts': 'run by tools/ci/stack-keys.sh, which CI calls to mask the local stack keys in the job log',
 };
 
 function reachableFrom(name: string, seen = new Set<string>()): Set<string> {

@@ -40,7 +40,7 @@ const AUTH = /^(apps\/web\/src\/(app\/sign-in\/|server\/(sign-in|member|public-p
 const ONBOARDING = /^apps\/web\/src\/app\/onboarding\//;
 const APP_AND_PACKAGES = /^(apps|packages)\//;
 const INVITE_OR_ROLE_PATH = /^(apps|packages)\/.*[/._-](invites?|roles?)([/._-]|$)/;
-const INVITE_OR_ROLE_TEXT = /invit(e|ation)|\bcreate_household\b|\bmember_role\b|\bhousehold_members\b|\b(is_operator|operator_flag)\b/i;
+const INVITE_OR_ROLE_TEXT = /invit(e|ation)|\bcreate_household\b|member_role|\bhousehold_members\b|\b(is_operator|operator_flag)\b/i;
 const SECURITY_LINT_RULES = new Set([
   'eslint-rules/service-role-allowlist.mjs',
   'eslint-rules/no-browser-supabase-client.mjs',
@@ -48,7 +48,9 @@ const SECURITY_LINT_RULES = new Set([
 ]);
 const MIGRATIONS = /^supabase\/migrations\//;
 const SUPABASE_CONFIG = 'supabase/config.toml';
-const AUTH_SECTION = /^auth(\.|\n)/;
+const SECURITY_SECTION = /^(auth|storage|api)(\.|\n)/;
+const ESLINT_CONFIG = 'eslint.config.mjs';
+const LINT_GUARD_TEXT = /\besta\/|\bglobalIgnores\b/;
 const SCREENS = /^apps\/web\/src\/(app|components)\//;
 const DEPLOY_AND_SEED = /^(\.github\/|supabase\/seed\/|apps\/web\/(src\/)?middleware\.[cm]?[jt]s$|(apps\/web\/)?next\.config\.[cm]?[jt]s$)/;
 const PACKAGE_JSON = /(^|\/)package\.json$/;
@@ -98,7 +100,8 @@ const addsOnlyScripts = (change: Change) => {
 const withSections = (text: string) => {
   let section = '';
   return text.split('\n').map((line) => {
-    section = /^\s*\[+([^\]]+)\]/.exec(line)?.[1] ?? section;
+    const header = /^\s*\[+([^\]]+)\]/.exec(line)?.[1];
+    if (header !== undefined) section = header.replace(/["'\s]/g, '');
     return `${section}\n${line}`;
   });
 };
@@ -108,7 +111,15 @@ function changesAuthSettings({ path, before, after }: Change): boolean {
   if (path !== SUPABASE_CONFIG) return false;
   if (before === undefined || after === undefined) return true;
   const [oldLines, newLines] = [withSections(before), withSections(after)];
-  return [...subtract(newLines, oldLines), ...subtract(oldLines, newLines)].some((line) => AUTH_SECTION.test(line));
+  return [...subtract(newLines, oldLines), ...subtract(oldLines, newLines)].some((line) => SECURITY_SECTION.test(line));
+}
+
+/** A changed line that names an `esta/*` rule or `globalIgnores`, added or removed, so switching a guard off counts. */
+function changesLintGuards({ path, before, after }: Change): boolean {
+  if (path !== ESLINT_CONFIG) return false;
+  if (before === undefined || after === undefined) return true;
+  const [oldLines, newLines] = [before.split('\n'), after.split('\n')];
+  return [...subtract(newLines, oldLines), ...subtract(oldLines, newLines)].some((line) => LINT_GUARD_TEXT.test(line));
 }
 
 export const RULES: readonly Rule[] = [
@@ -127,8 +138,9 @@ export const RULES: readonly Rule[] = [
     match: (change) => inCode(INVITE_OR_ROLE_PATH)(change) || addsText(APP_AND_PACKAGES, INVITE_OR_ROLE_TEXT)(change),
   },
   { tier: 'rigorous', reason: 'Changes a lint rule that guards the security boundary', match: ({ path }) => SECURITY_LINT_RULES.has(path) },
+  { tier: 'rigorous', reason: 'Switches an esta lint rule or the lint ignore list in eslint.config.mjs, where the security guards are enabled', match: changesLintGuards },
   { tier: 'rigorous', reason: 'Adds, edits or removes a migration, and every migration counts as rigorous whatever it says', match: ({ path }) => MIGRATIONS.test(path) },
-  { tier: 'rigorous', reason: 'Changes sign-in settings in the Supabase configuration, or a configuration that cannot be read', match: changesAuthSettings },
+  { tier: 'rigorous', reason: 'Changes auth, storage or api settings in the Supabase configuration, or a configuration that cannot be read', match: changesAuthSettings },
   {
     tier: 'rigorous',
     reason: 'Adds or changes an install or pre/post script, which runs code on every install or every run of another script',
@@ -188,7 +200,7 @@ function readBlob(rev: string, path: string): string | undefined {
   return result.stdout.toString('utf8');
 }
 
-const wantsText = (path: string) => PACKAGE_JSON.test(path) || path === SUPABASE_CONFIG || APP_AND_PACKAGES.test(path);
+const wantsText = (path: string) => PACKAGE_JSON.test(path) || path === SUPABASE_CONFIG || path === ESLINT_CONFIG || APP_AND_PACKAGES.test(path);
 
 /** Three dots compare from where the branch left the base, so commits that landed on the base since do not count as this change. */
 function changesBetween(base: string, head: string): Change[] {
