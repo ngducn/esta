@@ -1,6 +1,6 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
@@ -22,6 +22,7 @@ import { DEMO_PASSWORD, householdId, householdSeeds } from '../supabase/seed/gen
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { checkClockSet } from './clock-set.ts';
 import { parseSlot } from './slot.ts';
+import { exitCodeFor, resolveMode, type ResultRow } from './live-run-policy.ts';
 import { slotEnv } from './slot-env.ts';
 
 /** AGENT.md §7.6: every job kind once on the `full` seed, with the clock frozen at the §7 day. */
@@ -36,8 +37,7 @@ const TERMINAL = new Set(['done', 'failed', 'dead']);
 const { values } = parseArgs({ options: { mode: { type: 'string' }, out: { type: 'string' }, only: { type: 'string' } } });
 const root = join(import.meta.dirname, '..');
 const slot = parseSlot(process.env.ESTA_SLOT);
-const mode = values.mode ?? process.env.ESTA_AGENT_MODE ?? 'live';
-if (mode !== 'live' && mode !== 'replay') throw new Error(`--mode is live or replay, not ${mode}`);
+const mode = resolveMode(values.mode);
 const live = mode === 'live';
 const outDir = values.out ?? (live ? join(root, 'docs', 'plan', 'trail', 'phase-5') : join(tmpdir(), 'esta-live-run'));
 const only = values.only?.split(',');
@@ -59,8 +59,7 @@ const [demo] = householdSeeds(0);
 if (demo === undefined) throw new Error('no demo household seed');
 const HOUSEHOLD = householdId(demo);
 
-type Row = { readonly check: string; readonly id: string; readonly pass: boolean | null; readonly detail: string };
-const rows: Row[] = [];
+const rows: ResultRow[] = [];
 const record = (id: string, check: string, pass: boolean | null, detail = '') => {
   rows.push({ id, check, pass, detail });
   console.log(`${pass === null ? 'SKIP' : pass ? 'PASS' : 'FAIL'}  ${id.padEnd(16)} ${check}${detail === '' ? '' : ` (${detail})`}`);
@@ -200,16 +199,26 @@ const yieldOf = () => formatBps(Number(fact('q9', 'q1 gross yield bp')), 'vi');
 type AskCheck = {
   readonly id: string;
   readonly question: string;
-  readonly figures?: ReadonlyArray<() => string>;
+  readonly figures?: ReadonlyArray<() => string | readonly string[]>;
+  readonly sourceChip?: true;
   readonly topic?: { readonly kind: 'item' | 'property'; readonly id: string };
   readonly noNumber?: true;
   readonly english?: true;
 };
 
+const ROOM_2_RENT = 2_500_000;
+
+/** The annuity formula on 2 tỷ over 180 months at 9% a year, which AGENT.md §7.4 T6 holds the answer to within 1 đồng. */
+function loanPayment(): string[] {
+  const monthly = 0.09 / 12;
+  const payment = Math.round((2_000_000_000 * monthly) / (1 - (1 + monthly) ** -180));
+  return [payment - 1, payment, payment + 1].map((amount) => formatVnd(vnd(amount), 'vi'));
+}
+
 const BAO_LOC = seedId('seed:property:demo:bao-loc');
 const OVERDUE_NOTE = seedId('seed:agent-item:W1-demo');
 
-/** AGENT.md §7.4: the ten golden questions, then the thread cases that need nothing the web or the calculator PRs bring. */
+/** AGENT.md §7.4: the ten golden questions, then the thread cases T1 to T8. */
 const ASKS: readonly AskCheck[] = [
   { id: 'q1', question: 'Tháng này thu được bao nhiêu từ Dĩ An?', figures: [money('q1', 'di-an income received in October 2026')] },
   { id: 'q2', question: 'Phòng nào ở Dĩ An đang quá hạn đóng tiền?', figures: [plain('q2', 'di-an units overdue'), money('q2', 'di-an amount overdue')] },
@@ -225,13 +234,16 @@ const ASKS: readonly AskCheck[] = [
   { id: 't2', question: 'Có nên cho thuê theo năm thay vì theo tháng không?', noNumber: true },
   { id: 't3', question: 'Khách này trễ mấy lần rồi?', topic: { kind: 'item', id: OVERDUE_NOTE }, figures: [plain('t1', 'di-an overdue tenant')] },
   { id: 't4', question: 'Tài sản này đang thế chấp ở đâu?', topic: { kind: 'property', id: BAO_LOC }, figures: [plain('q8', 'bao-loc mortgage bank')] },
+  { id: 't5', question: 'Nếu tăng tiền phòng 2 ở Dĩ An lên 4tr thì mỗi năm thu thêm bao nhiêu?', figures: [() => formatVnd(vnd((4_000_000 - ROOM_2_RENT) * 12), 'vi')] },
+  { id: 't6', question: 'Vay 2 tỷ trong 15 năm, lãi 9%/năm thì mỗi tháng trả bao nhiêu?', figures: [loanPayment] },
+  { id: 't7', question: 'Lãi suất vay mua nhà bây giờ khoảng bao nhiêu?', sourceChip: true },
   { id: 't8', question: 'Giá đất Bảo Lộc bây giờ khoảng bao nhiêu?', noNumber: true },
 ];
-const PENDING_ASKS = [
-  ['t5', 'needs the what-if calculator (P5-15)'],
-  ['t6', 'needs the what-if calculator (P5-15)'],
-  ['t7', 'needs the web quote answer (#429)'],
-] as const;
+
+async function sourceChips(refs: unknown): Promise<Array<{ url: string; status: number }>> {
+  const urls = [...new Set(JSON.stringify(refs).match(/https?:\/\/[^"\\\s]+/g) ?? [])];
+  return Promise.all(urls.map(async (url) => ({ url, status: await fetch(url, { redirect: 'follow' }).then((response) => response.status, () => 0) })));
+}
 
 const squash = (text: string) => text.replace(/[\u00a0\u202f]/g, ' ');
 
@@ -255,9 +267,11 @@ async function runAsks() {
       record(ask.id, '§7.4 asked', false, sent.error.message);
       continue;
     }
+    const first: { seconds: number | null } = { seconds: null };
     const answer = await settled(
       async () => {
-        const reply = await must(db.from('messages').select('content_md, status').eq('household_id', HOUSEHOLD).eq('conversation_id', sent.data).eq('role', 'assistant'), 'Reading the answer');
+        const reply = await must(db.from('messages').select('content_md, status, refs').eq('household_id', HOUSEHOLD).eq('conversation_id', sent.data).eq('role', 'assistant'), 'Reading the answer');
+        if (first.seconds === null && (reply[0]?.content_md ?? '') !== '') first.seconds = (Date.now() - started) / 1000;
         return reply[0] !== undefined && reply[0].status !== 'streaming' ? reply[0] : null;
       },
       jobTimeout('ask') * 2,
@@ -266,19 +280,21 @@ async function runAsks() {
     const text = squash(answer.content_md ?? '');
     const links = [...text.matchAll(/\]\((esta:\/\/[^)]+)\)/g)].map(([, link]) => link ?? '');
     const present = await existingLinks(db, HOUSEHOLD, links);
-    const missing = (ask.figures ?? []).map((figure) => squash(figure())).filter((figure) => !text.includes(figure));
+    const missing = (ask.figures ?? []).map((figure) => [figure()].flat().map(squash)).filter((options) => !options.some((option) => text.includes(option))).map((options) => options.join(' or '));
+    const chips = ask.sourceChip === true ? await sourceChips(answer.refs) : null;
     const problems = [
       ...(answer.status === 'done' ? [] : [`status ${answer.status}`]),
       ...(missing.length === 0 ? [] : [`missing ${missing.join(' | ')}`]),
       ...(links.every((link) => present.has(link)) ? [] : ['a link does not resolve']),
       ...(/\{\{|\}\}/.test(text) ? ['placeholder left'] : []),
+      ...(chips === null || (chips.length > 0 && chips.every(({ status }) => status === 200)) ? [] : [`source chips ${chips.map(({ url, status }) => `${status} ${url}`).join('; ') || 'none'}`]),
       ...(ask.noNumber === true && /\p{N}|₫|%/u.test(text) ? ['a number in an answer that has none'] : []),
       ...(ask.english === true && !/\b(paid|late|the)\b/i.test(text) ? ['not in English'] : []),
     ];
-    record(ask.id, '§7.4 answer states the ground truth', problems.length === 0, problems.join('; ') || `${((Date.now() - started) / 1000).toFixed(1)} s`);
-    answers[ask.id] = { question: ask.question, answer: text };
+    const seconds = `${((Date.now() - started) / 1000).toFixed(1)} s, first text at ${first.seconds?.toFixed(1)} s`;
+    record(ask.id, '§7.4 answer states the ground truth', problems.length === 0, problems.join('; ') || seconds);
+    answers[ask.id] = { question: ask.question, answer: text, refs: answer.refs, seconds, firstContentS: first.seconds };
   }
-  for (const [id, why] of PENDING_ASKS) record(id, '§7.4 thread case', null, why);
   save('ask', answers);
 }
 
@@ -298,10 +314,29 @@ async function recordUsage() {
   if (live) record('usage', 'subscription auth mode', usage.every((run) => run.auth_mode === 'subscription'), [...new Set(usage.map((run) => run.auth_mode))].join(', '));
 }
 
-function liveOnly() {
-  const why = live ? 'run `pnpm extraction:eval --mode live --set synthetic` and `pnpm agent:guard-probe`' : 'live only; replay is covered by `ESTA_AGENT_MODE=replay pnpm --filter agent test`';
-  record('extraction', '§7.2 meets its targets', null, why);
-  record('guard-probe', 'no false reject, no row in error', null, why);
+function runScript(script: string, args: readonly string[]): Promise<{ code: number | null; stdout: string }> {
+  return new Promise((resolve) => {
+    const child = spawn(process.execPath, ['--import', 'tsx', script, ...args], { cwd: root, env: process.env, stdio: ['ignore', 'pipe', 'inherit'] });
+    let stdout = '';
+    child.stdout.on('data', (chunk: Buffer) => (stdout += chunk.toString()));
+    child.once('close', (code) => resolve({ code, stdout }));
+  });
+}
+
+/** AGENT.md §7.2 targets: every extraction schema-valid, required fields exact at 90%, high-confidence fields correct at 97%. */
+async function checkExtraction() {
+  const { code, stdout } = await runScript('scripts/extraction-eval.ts', ['--mode', 'live', '--set', 'synthetic']);
+  save('extraction', { code, report: stdout });
+  const [, valid, required, confident] = /schema-valid ([\d.]+)%, required exact ([\d.]+)%, high-confidence precision ([\d.]+)%/.exec(stdout) ?? [];
+  const met = code === 0 && Number(valid) === 100 && Number(required) >= 90 && Number(confident) >= 97;
+  record('extraction', '§7.2 meets its targets', met, `schema-valid ${valid}%, required exact ${required}%, high-confidence ${confident}%`);
+}
+
+async function checkGuardProbe() {
+  const out = join(outDir, 'guard-probe.json');
+  const { code } = await runScript('scripts/guard-probe.ts', ['--out', out]);
+  const { summary } = JSON.parse(readFileSync(out, 'utf8')) as { summary: { prompts: number; firstPassRejected: number; repairRejected: number; error: number } };
+  record('guard-probe', 'no row in error, no repair rejected', code === 0 && summary.error === 0 && summary.repairRejected === 0, `${summary.prompts} prompts, ${summary.firstPassRejected} first pass rejected, ${summary.repairRejected} repair rejected, ${summary.error} in error`);
 }
 
 function table(): string {
@@ -321,7 +356,13 @@ async function main() {
     await runAsks();
     await runWeekly();
     await recordUsage();
-    liveOnly();
+    if (live) {
+      await checkExtraction();
+      await checkGuardProbe();
+    } else {
+      record('extraction', '§7.2 meets its targets', null, 'live only; replay is covered by `ESTA_AGENT_MODE=replay pnpm --filter agent test`');
+      record('guard-probe', 'no row in error, no repair rejected', null, 'live only; replay is covered by `ESTA_AGENT_MODE=replay pnpm --filter agent test`');
+    }
   } finally {
     worker.kill('SIGTERM');
     await db.from('test_clock').delete().eq('id', true);
@@ -329,7 +370,7 @@ async function main() {
   mkdirSync(outDir, { recursive: true });
   writeFileSync(join(outDir, 'table.md'), `${table()}\n`);
   console.log(`\n${table()}\n\nOutputs in ${outDir} (${mode})`);
-  if (rows.some((row) => row.pass === false)) process.exitCode = 1;
+  process.exitCode = exitCodeFor(rows, mode);
 }
 
 await main();
