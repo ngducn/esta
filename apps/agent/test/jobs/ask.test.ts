@@ -140,6 +140,7 @@ describe('the ask job (AGENT.md §5.6)', () => {
     const { tables, shown, job } = await run([BAD, BAD]);
     expect(job.status).toBe('failed');
     expect(job.error).toMatch(/^number_guard:/);
+    expect(job.error, 'the error names the text, so an operator reads what was rejected without opening the note').toContain('"hai"');
     expect(answerRow(tables)).toMatchObject({ status: 'error', content_md: '' });
     expect(shown.some((content) => content.includes('hai'))).toBe(false);
     expect(tables.agent_items).toEqual([expect.objectContaining({ audience: 'operator', kind: 'system', dedupe_key: `number_guard:${ASK_JOB}` })]);
