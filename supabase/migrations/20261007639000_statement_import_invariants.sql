@@ -27,11 +27,26 @@ as $$
   order by abs(p.received_on - p_row.posted_on), p.received_on, p.id;
 $$;
 
+-- A description as core's `normalizeDescription` reads it (twin: packages/core/src/matching/memo.ts, vectors in
+-- supabase/tests/fixtures/statement_text.csv): lower case, đ and ð as d, diacritics dropped, then A to Z and 0 to 9 only,
+-- upper case. Not `public.esta_unaccent`, which also folds ß, æ, ø and ł to letters that core drops.
+create function private.statement_text_key(p_text text)
+returns text
+language sql
+immutable
+strict
+parallel safe
+set search_path = ''
+as $$
+  select upper(regexp_replace(translate(normalize(lower(p_text), NFD), 'đð', 'dd'), '[^a-z0-9]', '', 'g'));
+$$;
+
 -- `Xem trước`, with three guards the caller's planning cannot give (#266). The account's row is locked, so two previews
--- of one statement take turns and the second sees the first's lines. A postable line the account already holds under the
--- same bank reference, amount and a date within 14 days (core's KNOWN_REFERENCE_WINDOW_DAYS) is left out, as the
--- fingerprint leaves out an identical one. And a memo match names its bill: the description holds ESTA and that bill's
--- memo code.
+-- of one statement take turns and the second sees the first's lines. A postable line the account already holds is left
+-- out, as core's `knownLines` leaves it out when it plans (the one rule, here under the lock for every line): the same
+-- amount and, if both carry a bank reference, the same reference within 14 days (KNOWN_REFERENCE_WINDOW_DAYS), otherwise
+-- the same description key within 3 days (KNOWN_WINDOW_DAYS). Each held line answers for one new line, so two identical
+-- counter deposits stay two. And a memo match names its bill: the description holds ESTA and that bill's memo code.
 create or replace function public.create_statement_import(
   p_import_id uuid,
   p_bank_account_id uuid,
@@ -62,7 +77,7 @@ begin
     where r.status = 'memo_match' and not exists (
       select from public.invoices i
       where i.id = r.invoice_id and i.household_id = v_household
-        and upper(regexp_replace(coalesce(r.description, ''), '[^A-Za-z0-9]', '', 'g')) like '%ESTA' || i.memo_code || '%'
+        and private.statement_text_key(coalesce(r.description, '')) like '%ESTA' || i.memo_code || '%'
     )
   ) then
     raise exception 'ESTA_STATEMENT_ROWS' using errcode = '22023';
@@ -74,16 +89,27 @@ begin
   )
   select v_household, p_import_id, r.row_index, r.posted_on, r.amount_vnd, r.description, coalesce(r.bank_ref, ''), r.fingerprint, r.status, r.reason,
     r.invoice_id, coalesce(r.candidate_invoice_ids, '{}')
-  from jsonb_to_recordset(p_rows) r (
-    row_index integer, posted_on date, amount_vnd bigint, description text, bank_ref text, fingerprint text, status text, reason text,
-    invoice_id uuid, candidate_invoice_ids uuid[]
-  )
-  where r.status = 'ignored' or coalesce(r.bank_ref, '') = '' or not exists (
-    select from public.statement_rows o
+  from (
+    select n.*, private.statement_text_key(coalesce(n.description, '')) as text_key,
+      row_number() over (partition by n.amount_vnd, private.statement_text_key(coalesce(n.description, '')) order by n.row_index) as nth
+    from jsonb_to_recordset(p_rows) n (
+      row_index integer, posted_on date, amount_vnd bigint, description text, bank_ref text, fingerprint text, status text, reason text,
+      invoice_id uuid, candidate_invoice_ids uuid[]
+    )
+  ) r
+  cross join lateral (
+    select
+      count(*) filter (where coalesce(r.bank_ref, '') <> '' and o.bank_ref <> '' and o.bank_ref = r.bank_ref) as by_reference,
+      count(*) filter (
+        where (coalesce(r.bank_ref, '') = '' or o.bank_ref = '') and abs(o.posted_on - r.posted_on) <= 3
+          and private.statement_text_key(coalesce(o.description, '')) = r.text_key
+      ) as by_description
+    from public.statement_rows o
     join public.statement_imports oi on oi.id = o.import_id
     where oi.bank_account_id = p_bank_account_id and o.household_id = v_household and o.reason is distinct from 'duplicate'
-      and o.amount_vnd = r.amount_vnd and o.bank_ref = r.bank_ref and abs(o.posted_on - r.posted_on) <= 14
-  )
+      and o.amount_vnd = r.amount_vnd and abs(o.posted_on - r.posted_on) <= 14
+  ) held
+  where r.status = 'ignored' or (held.by_reference = 0 and r.nth > held.by_description)
   on conflict (household_id, fingerprint) where reason is distinct from 'duplicate' do nothing;
   if exists (
     select from public.statement_rows r

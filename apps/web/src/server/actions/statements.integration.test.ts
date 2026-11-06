@@ -302,6 +302,23 @@ describe('statement import invariants against local Supabase (#255, #266)', () =
     expect(await posted(made)).toEqual([]);
   });
 
+  it('stores a part-paid transfer without a bank reference once when two previews of it run at the same moment (#266)', async () => {
+    const account = crypto.randomUUID();
+    await insert('bank_accounts', { id: account, household_id: HOUSEHOLD, bank_bin: '970422', account_no: `6${run}${Math.floor(Math.random() * 1e4).toString().padStart(4, '0')}`, account_name: 'DEMO Q 19B NOREF' });
+    const partPaid = { ...again, lines: again.lines.slice(0, 3).map((line) => ({ ...line, bankRef: '', amount: vnd(1_000_000) })) };
+    const plain = await readFile(statementCsv(partPaid, 'a'), 'sao-ke-r.csv');
+    const valueDated = await readFile(statementCsv({ ...partPaid, lines: partPaid.lines.map((line) => ({ ...line, date: addDays(line.date, -1) })) }, 'a'), 'sao-ke-r-2.csv');
+    const files = [plain, valueDated];
+    let next = 0;
+    const outcomes = await twoAtOnce(() => importStatement({ ...input(files[next++ % 2] as Decoded, 'sao-ke-r.csv'), bank_account_id: account }));
+    const made = outcomes.flatMap((outcome) => (outcome.status === 'fulfilled' && outcome.value.ok ? [outcome.value.value.import_id] : []));
+    expect(made.length, 'at least one preview was kept').toBeGreaterThan(0);
+    for (const id of made) await commitStatement({ import_id: id, confirmed_row_ids: [] });
+    expect((await posted(made)).map((payment) => payment.amount_vnd)).toEqual([1_000_000, 1_000_000, 1_000_000]);
+    for (const id of made) expect(await undoStatement({ import_id: id })).toMatchObject({ ok: true });
+    expect(await posted(made)).toEqual([]);
+  });
+
   it('takes an imported payment back, a line or the whole import, and leaves the bills owing again (#255)', async () => {
     const fresh = householdStatement(bills, isoDate('2026-10-07'), `QC${run}`);
     const imported = await importStatement(accountOf(await readFile(statementCsv(fresh, 'c'), 'statement-q.csv'), 'statement-q.csv'));
