@@ -29,6 +29,7 @@ describe('slotPorts', () => {
       db: 54322,
       studio: 54323,
       inbucket: 54324,
+      smtp: 54325,
       webLan: 3443,
       apiLan: 8443,
       inbucketLan: 9443,

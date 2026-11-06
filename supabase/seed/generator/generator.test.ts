@@ -53,7 +53,7 @@ describe('generate', () => {
     expect(insertedRows(sql, 'public.parcels')).toHaveLength(28);
     expect(insertedRows(sql, 'public.structures')).toHaveLength(20);
     expect(insertedRows(sql, 'public.ownership_shares')).toHaveLength(36);
-    expect(insertedRows(sql, 'public.notification_preferences')).toHaveLength(8);
+    expect(insertedRows(sql, 'public.notification_preferences')).toHaveLength(16);
     expect(sql).toContain("'ryan.lane3@demo.esta.test'");
   });
 
