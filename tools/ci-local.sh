@@ -177,7 +177,7 @@ run_job() {
 		pnpm install --frozen-lockfile && tools/ci/jobs/design.sh
 		;;
 	mutation)
-		pnpm install --frozen-lockfile && tools/ci/mutation.sh
+		pnpm install --frozen-lockfile && tools/ci/jobs/mutation.sh
 		;;
 	*)
 		echo "unknown job $1" >&2

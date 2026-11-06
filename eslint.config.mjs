@@ -18,6 +18,8 @@ export default defineConfig(
     'test-results/',
     'supabase/.slots/',
     'apps/web/src/lib/cn-tables.ts',
+    // Stryker writes these beside its config while it runs; mutation.sh removes them on exit.
+    'packages/core/stryker-setup-*.js',
     // The design system's own preview script, copied from Ryan's artifact as a record, not app code.
     'docs/design/',
   ]),

@@ -91,4 +91,25 @@ describe('memoryDb answers the real client like PostgREST', () => {
     const db = looseDb({ rooms: rooms() });
     expect((await db.from('rooms').select('id').textSearch('name', 'x')).error?.message).toMatch(/does not read/);
   });
+
+  it('fails loudly on an embedded select instead of returning plain rows', async () => {
+    const db = looseDb({ rooms: rooms() });
+    expect((await db.from('rooms').select('id, owner(*)')).error?.message).toMatch(/does not read an embedded/);
+    expect((await db.from('rooms').select('id, owner:people(name)')).error?.message).toMatch(/does not read an embedded/);
+  });
+
+  it('fails loudly on a column no row has, in the select list, a filter or an order, but not on an empty table', async () => {
+    const db = looseDb({ rooms: rooms(), empty: [] });
+    expect((await db.from('rooms').select('id, rnet')).error?.message).toBe('column rooms.rnet does not exist');
+    expect((await db.from('rooms').select('id').eq('rnet', 9)).error?.message).toBe('column rooms.rnet does not exist');
+    expect((await db.from('rooms').select('id').order('rnet')).error?.message).toBe('column rooms.rnet does not exist');
+    expect((await db.from('empty').select('id').eq('anything', 1)).error).toBeNull();
+  });
+
+  it('knows a real table by its generated columns: a nullable one a fixture leaves out reads as empty, a typo is refused even on an empty table', async () => {
+    const db = looseDb({ parties: [{ id: 'p1' }], notifications: [] });
+    expect((await db.from('parties').select('id').is('short_name', null)).data).toEqual([{ id: 'p1' }]);
+    expect((await db.from('parties').select('id').eq('shortname', 'x')).error?.message).toBe('column parties.shortname does not exist');
+    expect((await db.from('notifications').select('id').eq('last_attemp_at', 'x')).error?.message).toBe('column notifications.last_attemp_at does not exist');
+  });
 });

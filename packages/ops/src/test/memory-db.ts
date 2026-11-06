@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import type { Db } from '../db';
 import { clientOver, json, type Wire } from './fake-db';
 
@@ -127,6 +128,38 @@ function filtersOf(url: URL): Predicate[] {
   return [...url.searchParams].filter(([key]) => !NOT_FILTERS.has(key)).map(([key, value]) => (key === 'or' || key === 'and' ? group(key, value) : condition(key, value)));
 }
 
+let schema: Map<string, Set<string>> | undefined;
+
+/** The columns of each table and view, read from the generated database types, so a fixture row that leaves a nullable column out still has it. */
+function columnsByTable(): Map<string, Set<string>> {
+  if (schema !== undefined) return schema;
+  const text = readFileSync(new URL('../../../db/src/database.types.ts', import.meta.url), 'utf8');
+  schema = new Map();
+  for (const [, table = '', body = ''] of text.matchAll(/^ {6}(\w+): \{\n {8}Row: \{\n([\s\S]*?)\n {8}\}/gm)) {
+    schema.set(table, new Set([...body.matchAll(/^ {10}(\w+)\??:/gm)].map((match) => match[1] ?? '')));
+  }
+  return schema;
+}
+
+/** A column the table does not have is a typo or a missing migration; Postgres answers 42703, never an empty list. A table the generated types do not know (a test's own) has the columns its rows carry. */
+function requireColumns(table: string, all: Row[], columns: string[]): void {
+  const known = columnsByTable().get(table) ?? new Set(all.flatMap((row) => Object.keys(row)));
+  if (known.size === 0) return;
+  const missing = columns.find((column) => !known.has(column));
+  if (missing !== undefined) throw new Error(`column ${table}.${missing} does not exist`);
+}
+
+const SELECT_SYNTAX = /[(:!]/;
+
+/** The plain column names a request reads: the select list, each top-level filter and each order key. */
+function columnsRead(url: URL): string[] {
+  const select = url.searchParams.get('select');
+  const listed = select === null || select === '*' ? [] : select.split(',').map((column) => column.trim()).filter((column) => column !== '*');
+  const filtered = [...url.searchParams.keys()].filter((key) => !NOT_FILTERS.has(key) && key !== 'or' && key !== 'and');
+  const ordered = (url.searchParams.get('order') ?? '').split(',').filter((key) => key !== '').map((key) => key.split('.')[0] ?? '');
+  return [...listed, ...filtered, ...ordered];
+}
+
 /** Postgres orders null last on `asc` and first on `desc` unless the request says otherwise. */
 function sorter(url: URL): (a: Row, b: Row) => number {
   const keys = (url.searchParams.get('order') ?? '').split(',').filter((key) => key !== '').map((key) => key.split('.'));
@@ -170,6 +203,8 @@ export function memoryDb(tables: Record<string, Row[]>, writes: Recorded[] = [],
     const name = url.pathname.replace('/rest/v1/', '');
     if (name.startsWith('rpc/')) return call(rpcs, name.slice(4), method === 'GET' ? Object.fromEntries(url.searchParams) : wire.text === '' ? {} : (JSON.parse(wire.text) as Record<string, unknown>));
     const all = (tables[name] ??= []);
+    if (SELECT_SYNTAX.test(url.searchParams.get('select') ?? '')) unsupported('an embedded, aliased or hinted select');
+    requireColumns(name, all, columnsRead(url));
     const prefer = headers.get('Prefer') ?? '';
     const wantsRows = prefer.includes('return=representation');
     const matching = () => all.filter((row) => filtersOf(url).every((test) => test(row))).toSorted(sorter(url));
@@ -203,9 +238,9 @@ export function memoryDb(tables: Record<string, Row[]>, writes: Recorded[] = [],
   return clientOver(handle);
 }
 
-/** Plain column lists narrow a row to those columns; `*` and embedded tables keep the whole row. */
+/** Plain column lists narrow a row to those columns; `*` keeps the whole row. */
 function project(row: Row, select: string | null): Row {
-  if (select === null || select.includes('*') || /[():]/.test(select)) return row;
+  if (select === null || select.includes('*')) return row;
   return Object.fromEntries(select.split(',').map((column) => column.trim()).filter((column) => column in row).map((column) => [column, row[column]]));
 }
 

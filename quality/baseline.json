@@ -371,7 +371,7 @@
       }
     },
     "testid-query": {
-      "value": 2116,
+      "value": 2124,
       "files": {
         "apps/web/src/components/assistant/answer-stream.test.tsx": 6,
         "apps/web/src/components/assistant/thread-composer.test.tsx": 6,
@@ -447,8 +447,8 @@
         "e2e/properties-map.spec.ts": 33,
         "e2e/property-completeness.spec.ts": 18,
         "e2e/property-detail.spec.ts": 29,
-        "e2e/property-form.spec.ts": 65,
-        "e2e/property-legal.spec.ts": 63,
+        "e2e/property-form.spec.ts": 71,
+        "e2e/property-legal.spec.ts": 65,
         "e2e/property-owners.spec.ts": 51,
         "e2e/property-units.spec.ts": 51,
         "e2e/property-wizard.spec.ts": 66,
@@ -790,6 +790,12 @@
       "from": 2109,
       "to": 2116,
       "reason": "new metrics test-db-fake and testid-query record their first counts, merged with main's new specs (Q-09a)"
+    },
+    {
+      "metric": "testid-query",
+      "from": 2116,
+      "to": 2124,
+      "reason": "testid-query: main's property form spec added 8 test-id queries since the metric's first count (Q-09a)"
     }
   ]
 }

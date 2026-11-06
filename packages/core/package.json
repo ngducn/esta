@@ -74,7 +74,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run --passWithNoTests",
-    "test:mutation": "stryker run"
+    "test:mutation": "./mutation.sh"
   },
   "dependencies": {
     "mdast-util-from-markdown": "^2.1.0",

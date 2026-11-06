@@ -144,7 +144,7 @@ Fix the code instead of disabling a rule inline. When an exception is right, put
 
 **Role and label queries.** A test finds a control the way Mẹ does, by role or label (`getByRole`, `getByLabel`). `getByTestId` and a `[data-testid=…]` selector (`testid-query`) stay only where no role or label names the element, and a test file that you change converts the queries it holds.
 
-**Mutation testing.** `pnpm test:mutation` runs Stryker over the money, allocation and tax sources of `packages/core` and fails below the floor in `stryker.config.json`. A surviving mutant that a real defect would look like gets the test that kills it; the floor is the measured score rounded down and only goes up. The `mutation` job in CI runs `tools/ci/mutation.sh`.
+**Mutation testing.** `pnpm test:mutation` runs Stryker over the money, allocation and tax sources of `packages/core` and fails below the floor in `stryker.config.json`. A surviving mutant that a real defect would look like gets the test that kills it; the floor is the measured score rounded down minus one point (91 against 92.0 to 92.5), so one equivalent mutant does not fail the job, and it only goes up. The `mutation` job in CI runs `tools/ci/jobs/mutation.sh`.
 
 ## Targets
 
