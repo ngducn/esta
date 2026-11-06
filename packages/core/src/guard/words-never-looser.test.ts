@@ -19,13 +19,18 @@ describe('the words table is never looser than main', () => {
 
   // The pass-through fields a sentence can reach: each passes the word in one named neighbour only.
   it.each([
-    ['passesAfterPhrase: bên thứ ba', 'Bảo hiểm cho bên thứ ba.', 'Bảo hiểm cho hai bên ba.'],
-    ['passesAfterPhrase: tiên số một', 'Con số ưu tiên số một.', 'Con số ưu tiên số hai.'],
     ['passesBeforeName: from May Demo', 'Thư from May Demo.', 'Thư from May.'],
     ['countedAfter: cả năm + classifier', 'Cả năm khách ở đây.', 'Cả năm phòng ở đây.'],
   ])('%s passes only its own sentence', (_field, passing, failing) => {
     expect(rejects(passing), passing).toBe(false);
     expect(rejects(failing), failing).toBe(true);
+  });
+
+  it('holds no phrase that lets a number word through (#496)', () => {
+    expect([...WORDS].filter(([, row]) => 'passesAfterPhrase' in row)).toEqual([]);
+    for (const note of ['Phòng của khách là số một.', 'Tầng này là số một.', 'Căn trống là số một.', 'Bảo hiểm cho bên thứ ba.', 'An toàn là ưu tiên số một.', 'Mối lo số một là tiền thuê.']) {
+      expect(rejects(note), note).toBe(true);
+    }
   });
 
   it('judges every trăm, as main does', () => {

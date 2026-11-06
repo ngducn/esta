@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "kind": "ask",
+  "inputHash": "8082a90b55562fbcdd1e3dd2350c36cb3b519c8c53930b1ab46207a4ad283a43",
+  "input": {
+    "version": 1,
+    "kind": "ask",
+    "prompt": "The question is about law, tax or procedure, so the reply needs an official page (*.gov.vn, chinhphu.vn, baochinhphu.vn, provincial portals, thuvienphapluat.vn, luatvietnam.vn). Search for one, fetch it with WebFetch, quote it with quote_page and name it as {{fN.source_name}}. Write the whole answer again from the start. The handles you already have still hold.",
+    "builtInTools": [
+      "WebSearch",
+      "WebFetch"
+    ],
+    "mcpTools": [
+      "list_properties",
+      "portfolio_overview",
+      "get_property",
+      "property_metrics",
+      "list_leases",
+      "collections",
+      "ledger",
+      "tax_position",
+      "payment_behavior",
+      "create_proposal",
+      "quote_page",
+      "calculate"
+    ],
+    "maxTurns": 20,
+    "resumesInputHash": "70f7fb1e627a27d66ed8e92d7b3db02ec8b2e71d663532394c43ec30e33cbca0"
+  },
+  "label": "Hand-written repair turn of procedure-no-source, which still finds no official source; the live recording waits for the P5-10 live run.",
+  "model": "hand-written",
+  "numTurns": 1,
+  "toolCalls": [],
+  "reply": "Trợ lý vẫn chưa tìm thấy trang chính thức nào cho câu này."
+}

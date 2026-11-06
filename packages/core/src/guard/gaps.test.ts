@@ -99,7 +99,7 @@ describe('the number guard gaps of #314', () => {
 });
 
 describe('a real number beside the new rules is still rejected', () => {
-  it.each(['Còn batriệu và hai triệu.', 'Cả năm hai phòng trống.', 'Trong May có ba phòng.', 'Quận Một và ba phòng.', 'Còn batỷ và hai triệu.', 'Cả năm hai phòng.', 'Phòng số một và năm phòng.', 'Phòng iv còn năm phòng.', 'Hai batriệu.'])('rejects %j', (note) => {
+  it.each(['Còn batriệu và hai triệu.', 'Cả năm hai phòng trống.', 'Trong May có ba phòng.', 'Quận Một và ba phòng.', 'Còn batỷ và hai triệu.', 'Cả năm hai phòng.', 'Phòng số một và năm phòng.', 'Phòng iv còn năm phòng.', 'Hai batriệu.', 'An toàn là ưu tiên số một.', 'Vấn đề số một là tiền thuê.', 'Mối lo số một là khách trả trễ.', 'Khách hàng là số một.'])('rejects %j', (note) => {
     expect(rules(note)).toContain('word');
   });
 
@@ -139,10 +139,6 @@ describe('ordinary prose that uses the same words stays accepted', () => {
     'Mỗi năm đất tăng giá.',
     'Quanh năm khách đông.',
     'Theo năm hợp đồng, tiền thuê được điều chỉnh.',
-    'An toàn là ưu tiên số một.',
-    'Vấn đề số một là tiền thuê.',
-    'Mối lo số một là khách trả trễ.',
-    'Khách hàng là số một.',
     'Trong số một vài khách trả trễ, có khách mới.',
     'Trong số một số khách, có người trả trễ.',
     'Trong quận một số nhà đang cho thuê.',
