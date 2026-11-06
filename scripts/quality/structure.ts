@@ -115,7 +115,7 @@ const WRITE_OR_PROBE = /\.(insert|upsert|update|delete)\(|\.eq\('id',/;
 const NESTED_FILTER = /['"`][\w]+\.deleted_at['"`]/;
 
 /** Readers that must see trashed rows, each named with the reason: an id-to-label lookup or a privacy search must still know a trashed room's words. */
-export const TRASH_READERS: readonly { readonly file: string; readonly fn?: string; readonly why: string }[] = [
+const TRASH_READERS: readonly { readonly file: string; readonly fn?: string; readonly why: string }[] = [
   { file: 'packages/ops/src/watch.ts', fn: 'readNameLabels', why: 'the labels the guard and the privacy search must still know after a room is trashed' },
   { file: 'apps/agent/src/tools/household-labels.ts', fn: 'familySearchTerms', why: 'privacy: a trashed holder name is still a family word to keep out of searches' },
   { file: 'apps/web/src/server/agent/open-link.ts', why: 'an old esta:// link to a trashed room still resolves to its property' },
@@ -162,7 +162,6 @@ export const unfilteredTrashReads: Finder = (source) => {
 export const SOFT_DELETE_READ = {
   message: 'A read of `units`, `utility_accounts` or `meters` (a `.from(…)` or a bare `units(…)` embed) that never filters `deleted_at`, so a trashed room or account comes back.',
   home: {
-    use: "`.is('deleted_at', null)` on the query, or `.is('unit.deleted_at', null)` on a unit:units!inner(deleted_at) embed for meters; a reader that must see the trash is named in `TRASH_READERS` in scripts/quality/structure.ts with its reason.",
-    helpers: [{ name: 'TRASH_READERS', file: 'scripts/quality/structure.ts' }],
+    use: "`.is('deleted_at', null)` on the query, or `.is('unit.deleted_at', null)` on a unit:units!inner(deleted_at) embed for meters; a reader that must see the trash is listed with its reason in the trash-readers allow-list in scripts/quality/structure.ts.",
   },
 } as const;
