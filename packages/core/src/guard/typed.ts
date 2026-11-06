@@ -28,8 +28,8 @@ const DATE_IN_WORDS = new RegExp(
 );
 /** A percent's period comes from an allowlist of year and month markers; any other word, before or after, or none, leaves it unread [app rule]. */
 const LEAD = String.raw`(?:(?:\s*\/\s*|\s+)(?:(?:mỗi|moi|một|mot|hàng|hang|hằng|trên|tren|theo|a|per)\s+)?`;
-/** A marker ends at the end of the text, a space, punctuation or a symbol; anything else, an unassigned code point included, makes it part of another word. */
-const MARKER_END = String.raw`(?=$|[\s\p{P}\p{S}])`;
+/** A marker ends at any character that is not a letter, a mark, a digit or an unassigned code point: a space, a format character such as U+200B, punctuation or a symbol. */
+const MARKER_END = String.raw`(?![\p{L}\p{M}\p{N}\p{Cn}])`;
 const YEAR_AFTER = String.raw`${LEAD}(?:năm|nam|year)${MARKER_END}|\s*\/\s*year${MARKER_END}|\s+p\.a\.)`;
 const MONTH_AFTER = String.raw`${LEAD}(?:1\s+)?(?:tháng|thang|th|month)${MARKER_END})`;
 const PERCENT = new RegExp(
@@ -105,7 +105,8 @@ const vndOf = (text: string): TypedValue | null => {
  * Reads the numbers Mẹ typed: amounts, yearly and monthly percents, dd/mm/yyyy dates, and a number followed by a unit word.
  * A unit word before a number (`phòng 2`) is a label, not a fact [app rule]. A year count reads as months.
  */
-export function extractTypedNumbers(text: string, locale: Locale = 'vi'): TypedNumber[] {
+export function extractTypedNumbers(message: string, locale: Locale = 'vi'): TypedNumber[] {
+  const text = message.normalize('NFC');
   const hits: Hit[] = [];
   let rest = text;
   const passes: Array<[RegExp, (m: RegExpExecArray) => TypedValue | null]> = [

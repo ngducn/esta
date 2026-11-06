@@ -129,6 +129,48 @@ describe('extractTypedNumbers', () => {
     for (const text of ['lãi 0,8% nam\u0DC7a', 'nam\u0DC7a 0,8%', 'lãi 0,8%/nam\u0DC7a', 'lãi 0,8% th\u0301a'])
       expect(kinds(text).filter((n) => n.kind === 'bp'), text).toEqual([]);
   });
+  it('B1c reads the rate when a format character or a no-break space follows the marker (Zalo and web pastes)', () => {
+    for (const tail of ['\u200B', '\uFEFF', '\u00A0', '\u200Bx', '\u00A0x']) {
+      expect(kinds(`lãi 9%/năm${tail}`), 'year').toEqual([{ kind: 'bp', value: 900 }]);
+      expect(kinds(`lãi 9% năm${tail}`), 'year').toEqual([{ kind: 'bp', value: 900 }]);
+      expect(kinds(`lãi 0,8%/tháng${tail}`), 'month').toEqual([{ kind: 'bp', value: 80, per: 'month' }]);
+      expect(kinds(`lãi 0,8% tháng${tail}`), 'month').toEqual([{ kind: 'bp', value: 80, per: 'month' }]);
+    }
+  });
+  it('B1c reads a rate written in decomposed Unicode (n, a, U+0306, m) the same as the composed one', () => {
+    expect(kinds('lãi 9%/na\u0306m'.normalize('NFD'))).toEqual([{ kind: 'bp', value: 900 }]);
+    expect(kinds('lãi 9% na\u0306m')).toEqual([{ kind: 'bp', value: 900 }]);
+    expect(kinds('lãi 0,8%/tha\u0301ng'.normalize('NFD'))).toEqual([{ kind: 'bp', value: 80, per: 'month' }]);
+    expect(kinds('lãi 0,8% một tha\u0301ng')).toEqual([{ kind: 'bp', value: 80, per: 'month' }]);
+  });
+  it('B1c property: any format character, separator, punctuation or symbol after a marker leaves the rate; any letter or digit removes it', () => {
+    const ending = fc
+      .integer({ min: 0, max: 0x10ffff })
+      .map((cp) => String.fromCodePoint(cp))
+      .filter((c) => /^[\p{Cf}\p{Z}\p{P}\p{S}]$/u.test(c));
+    const joining = fc
+      .integer({ min: 0, max: 0x10ffff })
+      .map((cp) => String.fromCodePoint(cp))
+      .filter((c) => /^[\p{L}\p{N}]$/u.test(c));
+    const spellings: Array<[string, object]> = [
+      ['lãi 9%/năm', { kind: 'bp', value: 900 }],
+      ['lãi 9% một năm', { kind: 'bp', value: 900 }],
+      ['lãi 0,8%/tháng', { kind: 'bp', value: 80, per: 'month' }],
+      ['lãi 0,8% mỗi tháng', { kind: 'bp', value: 80, per: 'month' }],
+    ];
+    fc.assert(
+      fc.property(ending, (c) => {
+        for (const [text, rate] of spellings) expect(kinds(text + c).filter((n) => n.kind === 'bp'), JSON.stringify(text + c)).toEqual([rate]);
+      }),
+      { numRuns: 500 },
+    );
+    fc.assert(
+      fc.property(joining, (c) => {
+        for (const [text] of spellings) expect(kinds(text + c).filter((n) => n.kind === 'bp'), JSON.stringify(text + c)).toEqual([]);
+      }),
+      { numRuns: 500 },
+    );
+  });
   it('B1b property: a percent next to any word outside the year and month lists never yields a rate', () => {
     const MARKERS = new Set(['năm', 'nam', 'year', 'tháng', 'thang', 'th', 'month']);
     const word = fc.stringMatching(/^[a-zà-ỹ]{1,8}$/u).filter((w) => !MARKERS.has(w) && w !== 'trong');

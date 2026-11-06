@@ -15,6 +15,7 @@ const referencedNames = (node, names = new Set()) => {
     return names;
   }
   if (node.type === 'CallExpression' && node.callee.type === 'Identifier') {
+    if (node.arguments.length === 0) names.add(node.callee.name);
     for (const argument of node.arguments) referencedNames(argument, names);
     return names;
   }
@@ -86,11 +87,52 @@ export default {
       }
     };
 
+    const fastCheckRoot = (node) => {
+      let current = node;
+      while (current) {
+        if (current.type === 'CallExpression') current = current.callee;
+        else if (current.type === 'MemberExpression') current = current.object;
+        else break;
+      }
+      if (current?.type !== 'Identifier') return false;
+      const def = findVariable(context.sourceCode.getScope(node), current.name)?.defs[0];
+      return def?.type === 'ImportBinding' && def.parent.source.value === 'fast-check';
+    };
+
+    const indexedByParameter = (fn, scope) => {
+      const params = new Set(fn.params.filter((p) => p.type === 'Identifier').map((p) => p.name));
+      const visit = (node) => {
+        if (!node || typeof node.type !== 'string') return null;
+        if (node.type === 'MemberExpression' && node.computed && node.object.type === 'Identifier' && referencedNames(node.property).size > 0) {
+          const uses = [...referencedNames(node.property)].some((n) => params.has(n));
+          const source = uses ? importedFrom(node.object.name, scope, new Set()) : null;
+          if (source) return { name: node.object.name, source };
+        }
+        for (const [key, value] of Object.entries(node)) {
+          if (key === 'parent' || key === 'loc' || key === 'range') continue;
+          for (const item of Array.isArray(value) ? value : [value]) {
+            const found = item && typeof item === 'object' ? visit(item) : null;
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+      return visit(fn.body);
+    };
+
     return {
       CallExpression(node) {
         const name = calleeName(node.callee);
         if (!name) return;
         const scope = context.sourceCode.getScope(node);
+        if ((name === 'map' || name === 'chain') && node.callee.type === 'MemberExpression' && fastCheckRoot(node.callee.object)) {
+          const callback = node.arguments[0];
+          if (callback && (callback.type === 'ArrowFunctionExpression' || callback.type === 'FunctionExpression')) {
+            const found = indexedByParameter(callback, scope);
+            if (found) context.report({ node: callback, messageId: 'selfSourced', data: { name: found.name, source: `'${found.source}'` } });
+          }
+          return;
+        }
         if (PICKERS.has(name)) {
           for (const argument of node.arguments) check(argument, scope);
           return;
