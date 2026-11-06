@@ -1,6 +1,7 @@
 import type { IsoDate } from '../date/iso-date';
 import { textCell, vndCell, type ExportCell, type ExportTable } from '../export/table';
 import { vnd } from '../money/vnd';
+import { monthCollected } from '../collections/group';
 import { monthsOf, type ReportInvoice, type ReportSnapshot } from './snapshot';
 
 export type CollectionsLabels = {
@@ -12,8 +13,15 @@ export type CollectionsLabels = {
   readonly total: string;
 };
 
-const amounts = (invoices: readonly ReportInvoice[]): ExportCell[] =>
-  (['totalVnd', 'allocatedVnd', 'outstandingVnd'] as const).map((field) => vndCell(vnd(invoices.reduce((sum, invoice) => sum + invoice[field], 0))));
+/** The issued bills due in `month` (any day of it), whichever property they are on. */
+export const billsDueIn = <B extends Pick<ReportInvoice, 'status' | 'dueDate'>>(invoices: readonly B[], month: IsoDate): B[] =>
+  invoices.filter((invoice) => invoice.status === 'issued' && invoice.dueDate.startsWith(month.slice(0, 7)));
+
+/** Billed and collected are `monthCollected`, the figure Tổng quan and Thu tiền show; what is owed is the sum of what each bill still owes. */
+const amounts = (invoices: readonly ReportInvoice[]): ExportCell[] => {
+  const { billedVnd, collectedVnd } = monthCollected(invoices);
+  return [vndCell(billedVnd), vndCell(collectedVnd), vndCell(vnd(invoices.reduce((sum, invoice) => sum + invoice.outstandingVnd, 0)))];
+};
 
 /**
  * FIN-4: the issued invoices due in each month of the period, keyed `YYYY-MM`: what they billed, what payments allocated to
@@ -30,7 +38,7 @@ export function monthlyCollections(snapshot: ReportSnapshot, labels: Collections
     ],
     rows: monthsOf(snapshot.from, snapshot.to).map((first) => ({
       key: first.slice(0, 7),
-      cells: [textCell(labels.monthName(first)), ...amounts(issued.filter((invoice) => invoice.dueDate.startsWith(first.slice(0, 7))))],
+      cells: [textCell(labels.monthName(first)), ...amounts(billsDueIn(issued, first))],
     })),
     totals: { key: 'total', cells: [textCell(labels.total), ...amounts(issued)] },
   };

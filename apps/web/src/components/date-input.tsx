@@ -2,7 +2,7 @@
 
 import { isIsoDate, type IsoDate } from '@esta/core/date';
 import { formatDate, formatDateLong } from '@esta/core/format';
-import { parseDateInput } from '@esta/core/parse/date-input';
+import { parseDateInput, parseOptionalDateInput } from '@esta/core/parse/date-input';
 import { CalendarDays } from 'lucide-react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useId, useRef, useState } from 'react';
@@ -14,7 +14,8 @@ import { useSettled } from '@/components/use-settled';
 type DateInputProps = {
   label: string;
   defaultValue?: IsoDate;
-  onValueChange?: (value: IsoDate | null) => void;
+  /** `readable` is false for text that is not a day on the calendar, which also gives a null value, as an empty field does. */
+  onValueChange?: (value: IsoDate | null, readable: boolean) => void;
   /** The text as typed, for a form that must tell an empty field from one that does not read as a date. */
   onTextChange?: (text: string) => void;
   name?: string;
@@ -36,8 +37,8 @@ export function DateInput({ label, defaultValue, onValueChange, onTextChange, na
   const change = (next: string) => {
     setText(next);
     onTextChange?.(next);
-    const parsed = parseDateInput(next);
-    onValueChange?.(parsed.ok ? parsed.value : null);
+    const parsed = parseOptionalDateInput(next);
+    onValueChange?.(parsed.ok ? parsed.value : null, parsed.ok);
   };
 
   return (

@@ -50,11 +50,11 @@ export type ReportSnapshot = {
   readonly to: IsoDate;
   readonly asOf: IsoDate;
   readonly properties: readonly ReportProperty[];
-  /** `allocation_facts` received in the period. */
+  /** `allocation_facts` received in the period, including those of properties archived since. */
   readonly incomes: readonly (IncomeFact & { readonly propertyId: string })[];
-  /** Live expenses paid in the period. */
+  /** `expenses` paid in the period, including those of properties archived since. */
   readonly expenses: readonly (ExpenseFact & { readonly propertyId: string })[];
-  /** Issued invoices due in the period on live properties. */
+  /** Every issued invoice due in the period, whether or not its property was archived since. */
   readonly invoices: readonly ReportInvoice[];
   /** The leases in effect on `asOf` on live properties, each with every invoice and scheduled period it has. */
   readonly leases: readonly ReportLease[];

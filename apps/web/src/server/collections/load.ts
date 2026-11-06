@@ -1,11 +1,11 @@
 import 'server-only';
 import { openInvoicesOldestFirst, type OpenInvoice } from '@esta/core/allocation';
-import { collectionState, worstCollectionState, type CollectionState } from '@esta/core/collections';
+import { collectionState, worstCollectionState, type CollectionState, type MonthCollected } from '@esta/core/collections';
 import type { IsoDate } from '@esta/core/date';
 import { firstOfMonth } from '@esta/core/date/calendar';
 import { vnd } from '@esta/core/money';
 import { isoDateSchema } from '@esta/core/schemas/legal';
-import { readCollectionRows, type CollectionRow } from '@esta/ops';
+import { readCollectionRows, readMonthCollected, type CollectionRow } from '@esta/ops';
 import { z } from 'zod';
 import { createSessionClient } from '@/server/supabase/server';
 
@@ -14,6 +14,11 @@ const money = z.number().int().min(0).transform(vnd);
 /** LSE-10's rows for `month` through the member's session. */
 export async function loadCollectionRows(householdId: string, month: IsoDate, propertyId?: string): Promise<CollectionRow[]> {
   return readCollectionRows(await createSessionClient(), householdId, month, propertyId);
+}
+
+/** `Đã thu X / Y` for `month` through the member's session: every bill due in it, archived property or not (`readMonthCollected`). */
+export async function loadMonthCollected(householdId: string, month: IsoDate): Promise<MonthCollected> {
+  return readMonthCollected(await createSessionClient(), householdId, month);
 }
 
 export async function householdHasLease(householdId: string): Promise<boolean> {

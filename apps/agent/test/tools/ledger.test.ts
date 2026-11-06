@@ -47,11 +47,14 @@ describe('ledger (AGENT.md §4)', () => {
     expect(household.ledger.income_display).not.toBe(diAn.ledger.income_display);
   });
 
-  it('leaves an archived property out of the household, as Reports does', async () => {
+  it("keeps an archived property's money in the household, as Lãi lỗ does", async () => {
     const { ledger } = await ledgerFor(HOUSEHOLD);
-    const live = await ledger({ year: 2026, month: 10 });
+    const live = (await ledger({ year: 2026, month: 10 })).ledger;
     const { ledger: withArchived } = await ledgerFor(HOUSEHOLD, withArchivedProperty(askTables('')));
-    expect((await withArchived({ year: 2026, month: 10 })).ledger).toMatchObject({ income_display: live.ledger.income_display, expenses_display: live.ledger.expenses_display });
+    const all = (await withArchived({ year: 2026, month: 10 })).ledger;
+    const vnd = (display: string) => Number(display.replace(/\D/g, ''));
+    expect(vnd(all.income_display) - vnd(live.income_display), 'Thu gains the archived 7.000.000').toBe(7_000_000);
+    expect(vnd(all.expenses_display) - vnd(live.expenses_display), 'Tổng chi gains the archived 900.000').toBe(900_000);
   });
 
   it('counts no payment another household recorded on the property', async () => {

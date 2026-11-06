@@ -1,10 +1,13 @@
 import { PAYMENT_STATUSES } from '@esta/core/allocation';
-import type { CollectionCandidate } from '@esta/core/collections';
+import { monthCollected, type CollectionCandidate, type MonthCollected } from '@esta/core/collections';
+import { addDays, addMonths, firstOfMonth } from '@esta/core/date/calendar';
 import type { IsoDate } from '@esta/core/date';
 import { vnd } from '@esta/core/money';
 import { isoDateSchema } from '@esta/core/schemas/legal';
 import { z } from 'zod';
 import type { Db } from './db';
+import { readInvoices } from './invoices';
+import { readLeases } from './leases';
 
 export type CollectionRow = CollectionCandidate & {
   /** A whole unit is named by its property alone. */
@@ -61,4 +64,20 @@ export async function readCollectionRows(db: Db, householdId: string, month: Iso
   const { data, error } = await query;
   if (error) throw new Error(`Reading the collections board failed: ${error.message}`);
   return z.array(candidateSchema).parse(data);
+}
+
+/**
+ * `Đã thu X / Y` for `month`, the one figure Báo cáo, Tổng quan, Thu tiền and Hỏi all show: every issued bill due in the
+ * month counts, whether or not its property was archived since, because archiving never changes money already billed or
+ * collected. The board's rows may leave an archived property out; this figure does not. `propertyId` limits it to one property.
+ */
+export async function readMonthCollected(db: Db, householdId: string, month: IsoDate, propertyId?: string): Promise<MonthCollected> {
+  const first = firstOfMonth(month);
+  const [bills, leases] = await Promise.all([
+    readInvoices(db, householdId, { issuedDueFrom: first, issuedDueTo: addDays(addMonths(first, 1), -1) }),
+    propertyId === undefined ? null : readLeases(db, householdId, { property_id: propertyId }),
+  ]);
+  if (leases === null) return monthCollected(bills);
+  const ofProperty = new Set(leases.map((lease) => lease.id));
+  return monthCollected(bills.filter((bill) => ofProperty.has(bill.leaseId)));
 }

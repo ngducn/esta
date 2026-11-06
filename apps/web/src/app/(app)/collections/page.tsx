@@ -1,5 +1,5 @@
 import { PageHeader } from '@/components/page-header';
-import { boardGroups, boardMonthParam, boardTotals, BOARD_FILTERS, groupCollections, longestOverdueDays, monthCollected, parseBoardFilter, parseBoardMonth, type BoardFilter } from '@esta/core/collections';
+import { boardGroups, boardMonthParam, boardTotals, BOARD_FILTERS, groupCollections, longestOverdueDays, parseBoardFilter, parseBoardMonth, type BoardFilter } from '@esta/core/collections';
 import { isoDate, type IsoDate } from '@esta/core/date';
 import { formatMonthWithin, formatMonthYear, formatVnd } from '@esta/core/format';
 import { addMonths, firstOfMonth } from '@esta/core/date/calendar';
@@ -19,7 +19,7 @@ import { UndoToastProvider } from '@/components/undo-toast-provider';
 import { sectionMetadata } from '@/components/shell/section-page';
 import { buttonVariants } from '@/components/ui/button-variants';
 import { getClock } from '@/server/clock';
-import { householdHasLease, loadCollectionRows, loadOpenInvoices, loadOwedBills, type PaymentInvoice } from '@/server/collections/load';
+import { householdHasLease, loadCollectionRows, loadMonthCollected, loadOpenInvoices, loadOwedBills, type PaymentInvoice } from '@/server/collections/load';
 import { boardQrs, loadQrLabels, loadReceivingAccount } from '@/server/invoices/qr';
 import { requireMember } from '@/server/member';
 import { boardReminders, loadReminderLabels } from '@/server/reminders/board';
@@ -49,8 +49,9 @@ export default async function CollectionsPage({ searchParams }: { searchParams: 
   const month = parseBoardMonth(typeof params.month === 'string' ? params.month : undefined, today);
   const status = parseBoardFilter(typeof params.status === 'string' ? params.status : undefined);
   const canEdit = member.role !== 'viewer';
-  const [rows, account, openInvoices, nav, t, locale, messages, qrLabels, reminderLabels] = await Promise.all([
+  const [rows, collected, account, openInvoices, nav, t, locale, messages, qrLabels, reminderLabels] = await Promise.all([
     loadCollectionRows(member.household.id, month),
+    loadMonthCollected(member.household.id, month),
     loadReceivingAccount(member.household.id),
     canEdit ? loadOpenInvoices(member.household.id) : new Map<string, PaymentInvoice[]>(),
     getTranslations('nav'),
@@ -80,7 +81,6 @@ export default async function CollectionsPage({ searchParams }: { searchParams: 
   const board = groupCollections(rows, month, today);
   const shown = boardGroups(board, status);
   const all = boardTotals(board);
-  const collected = monthCollected(board);
   const totals = boardTotals(shown);
   const overdue = boardTotals(boardGroups(board, 'overdue'));
   const paidInFull = boardTotals(boardGroups(board, 'paid')).count;

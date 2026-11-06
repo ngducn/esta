@@ -76,19 +76,22 @@ export function groupCollections<R extends CollectionCandidate>(rows: readonly R
   });
 }
 
-/** `Đã thu X / Y` for a board's month. */
+/** `Đã thu X / Y` for a month. */
 export type MonthCollected = { readonly collectedVnd: Vnd; readonly billedVnd: Vnd };
 
+/** What a bill charges and what payments settled on it. */
+export type BilledBill = { readonly totalVnd: Vnd; readonly allocatedVnd: Vnd };
+
 /**
- * Y is what the issued bills due in the board's month charge; X is what payments allocated to exactly those bills, each
- * capped at its bill, so a credit or an overpayment never lifts X past Y. Bills carried in from earlier months count
- * toward neither, so a late September rent paid in October leaves October's figure where it was.
+ * The one definition of a month's billed and collected figures, whatever screen shows them. `bills` are every issued bill
+ * due in the month, whether or not its property was archived since: Y is what they charge; X is what payments allocated
+ * to exactly those bills, each capped at its bill, so a credit or an overpayment never lifts X past Y. Bills carried in
+ * from earlier months are not passed, so a late September rent paid in October leaves October's figure where it was.
  */
-export function monthCollected<R extends CollectionCandidate>(board: readonly CollectionGroup<R>[]): MonthCollected {
-  const own = board.flatMap((group) => group.items).filter((item) => item.carriedFrom === null);
+export function monthCollected(bills: readonly BilledBill[]): MonthCollected {
   return {
-    collectedVnd: vnd(own.reduce((sum, { row }) => sum + Math.min(row.allocatedVnd, row.totalVnd), 0)),
-    billedVnd: vnd(own.reduce((sum, { row }) => sum + row.totalVnd, 0)),
+    collectedVnd: vnd(bills.reduce((sum, bill) => sum + Math.min(bill.allocatedVnd, bill.totalVnd), 0)),
+    billedVnd: vnd(bills.reduce((sum, bill) => sum + bill.totalVnd, 0)),
   };
 }
 

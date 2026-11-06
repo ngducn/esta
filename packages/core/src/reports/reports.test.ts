@@ -80,7 +80,7 @@ const snapshot = (period: { from: IsoDate; to: IsoDate }): ReportSnapshot => ({
 
 const year2026 = snapshot(yearPeriod(2026, ASOF));
 
-const pnlLabels = { property: 'Tài sản', income: 'Thu', expenses: 'Chi', noi: 'Lãi ròng', total: 'Tổng cộng' };
+const pnlLabels = { property: 'Tài sản', income: 'Thu', expenses: 'Chi', noi: 'Lãi ròng', total: 'Tổng cộng', archived: 'Đã lưu trữ' };
 const rollLabels = {
   place: 'Nơi thuê',
   tenant: 'Người thuê',
@@ -109,6 +109,19 @@ describe('propertyPnl (FIN-4)', () => {
       ['Nhà phố Q7 Demo', 60_000_000, 4_000_000, 56_000_000],
       ['Tổng cộng', 66_000_000, 4_500_000, 61_500_000],
     ]);
+  });
+
+  it("keeps the income and expenses of a property archived since in one last row, so archiving changes neither the total income nor a figure", () => {
+    const ARCHIVED = '00000000-0000-4000-8000-0000000000a9';
+    const gone = { ...year2026, incomes: [...year2026.incomes, { propertyId: ARCHIVED, receivedOn: d('2026-10-07'), amountVnd: vnd(45_000_000) }], expenses: [...year2026.expenses, { propertyId: ARCHIVED, paidOn: d('2026-10-08'), category: 'repair' as const, amountVnd: vnd(2_000_000) }] };
+    const table = propertyPnl(gone, pnlLabels);
+    expect(text(table)).toEqual([
+      ['Dãy trọ Dĩ An Demo', 6_000_000, 500_000, 5_500_000],
+      ['Nhà phố Q7 Demo', 60_000_000, 4_000_000, 56_000_000],
+      ['Đã lưu trữ', 45_000_000, 2_000_000, 43_000_000],
+      ['Tổng cộng', 111_000_000, 6_500_000, 104_500_000],
+    ]);
+    expect(checkReportInvariants(gone, { pnl: table }).filter((check) => !holds(check))).toEqual([]);
   });
 
   it('counts money on the day it was received, so 30/09 and 01/10 land in different months and 2025 stays out of 2026', () => {
@@ -149,6 +162,13 @@ describe('monthlyCollections (FIN-4)', () => {
     expect(row('2026-10')).toEqual(['Tháng 10', 6_200_000, 4_000_000, 2_200_000]);
     expect(row('2026-08')).toEqual(['Tháng 8', 3_000_000, 3_000_000, 0]);
     expect(table.totals.cells.map((cell) => cell.value)).toEqual(['Tổng cộng', 15_400_000, 10_000_000, 5_400_000]);
+  });
+
+  it('caps an overpaid bill at its total, so Đã thu plus Còn nợ is Phải thu', () => {
+    const bill = year2026.invoices.find((one) => one.status === 'issued' && one.dueDate.startsWith('2026-10') && one.outstandingVnd === 0);
+    if (bill === undefined) throw new Error('no settled October bill');
+    const over = monthlyCollections({ ...year2026, invoices: year2026.invoices.map((one) => (one === bill ? { ...one, allocatedVnd: vnd(one.totalVnd + 500_000) } : one)) }, collectionLabels);
+    expect(over.rows.find((one) => one.key === '2026-10')?.cells.map((cell) => cell.value)).toEqual(row('2026-10'));
   });
 
   it("keeps Phòng 5's unpaid September bill outstanding in September's row when the view is October's", () => {

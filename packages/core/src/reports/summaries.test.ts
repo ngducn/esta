@@ -81,7 +81,7 @@ describe('occupancy (FIN-4, AGENT.md §5.3 W4)', () => {
 
   it('totals the days and rates the whole', () => {
     expect(table.totals.cells.map((cell) => cell.value)).toEqual(['Tổng cộng', 210 + 0 + 280 + 280 + 258, 70 + 68 + 22, `${Math.round(((210 + 280 + 280 + 258) * 10_000) / (280 + 68 + 280 + 280 + 280))} bp`, '']);
-    expect(checkReportInvariants(emptySnapshot(YEAR), { pnl: propertyPnl(emptySnapshot(YEAR), { property: '', income: '', expenses: '', noi: '', total: '' }), occupancy: table }).filter((check) => !holds(check))).toEqual([]);
+    expect(checkReportInvariants(emptySnapshot(YEAR), { pnl: propertyPnl(emptySnapshot(YEAR), { property: '', income: '', expenses: '', noi: '', total: '', archived: '' }), occupancy: table }).filter((check) => !holds(check))).toEqual([]);
   });
 
   it('reads W4 from the last end date, from available_from, and not at all without either', () => {
@@ -148,6 +148,7 @@ describe('portfolioSummary (FIN-5)', () => {
 
 const ME = uuid();
 const RYAN = uuid();
+const DI_AN_GONE = uuid();
 const RULE = taxRuleRowSchema.parse(taxRules[0]);
 const taxLease = (id: string, propertyId: string, declaringPartyId: string | null = null) => ({ id, propertyId, active: true, terminatedOn: null, taxPayer: 'owner' as const, declaringPartyId, recurringCharges: [] });
 const monthly = (leaseId: string, rent: number) => schedulePeriods(leaseId, '2026-01-01', rent, 12).map(({ start, end, rentVnd }) => ({ leaseId, start, end, rentVnd }));
@@ -199,13 +200,21 @@ describe('ownerSummary (FIN-4, FIN-3)', () => {
   });
 
   it('adds up to the P&L, and fails the invariant when a share holder is missing from the owners', () => {
-    const pnl = propertyPnl(snapshot, { property: '', income: 'Thu', expenses: 'Chi', noi: '', total: '' });
+    const pnl = propertyPnl(snapshot, { property: '', income: 'Thu', expenses: 'Chi', noi: '', total: '', archived: '' });
     expect(checkReportInvariants(snapshot, { pnl, owners: table }).filter((check) => !holds(check))).toEqual([]);
     const missing = ownerSummary({ ...snapshot, owners: snapshot.owners.filter((owner) => owner.id !== RYAN) }, LABELS);
     expect(checkReportInvariants(snapshot, { pnl, owners: missing }).filter((check) => !holds(check))).toEqual([
       { kind: 'ownerSplit', column: 'income', expectedVnd: 110_000_001, reportedVnd: 70_000_001 },
       { kind: 'ownerSplit', column: 'expenses', expectedVnd: 1_000_001, reportedVnd: 600_001 },
     ]);
+  });
+
+  it("splits the income of a property archived since by its shares, so the rows still add up to the P&L", () => {
+    const gone = { ...snapshot, incomes: [...snapshot.incomes, { propertyId: DI_AN_GONE, receivedOn: d('2026-10-07'), amountVnd: vnd(10_000_000) }], tax: { ...snapshot.tax, shares: [...shares, { propertyId: DI_AN_GONE, partyId: RYAN, shareBp: 10_000 }] } };
+    const split = ownerSummary(gone, LABELS);
+    expect(row(split, RYAN)?.[2]).toBe(40_000_000 + 10_000_000);
+    const pnl = propertyPnl(gone, { property: '', income: 'Thu', expenses: 'Chi', noi: '', total: '', archived: 'Đã lưu trữ' });
+    expect(checkReportInvariants(gone, { pnl, owners: split }).filter((check) => !holds(check))).toEqual([]);
   });
 
   it('leaves the unattributed row out when every share is held', () => {

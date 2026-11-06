@@ -71,12 +71,9 @@ describe('boardTotals', () => {
 
 describe("the strip's Đã thu", () => {
   it('counts what came in toward the month’s own bills, each capped at its bill, as Tổng quan does, and the total row has no Đã thu of its own', () => {
-    const board = groupCollections(
-      [bill('Phòng 2', '2026-09-25', 2_800_000, 700_000, 'partial'), bill('Phòng 3', '2026-10-25', 2_500_000, 3_000_000, 'overpaid'), bill('Phòng 4', '2026-10-25', 3_200_000, 1_000_000, 'partial')],
-      isoDate('2026-10-01'),
-      isoDate('2026-10-07'),
-    );
-    expect(monthCollected(board)).toEqual({ collectedVnd: 2_500_000 + 1_000_000, billedVnd: 2_500_000 + 3_200_000 });
+    const rows = [bill('Phòng 2', '2026-09-25', 2_800_000, 700_000, 'partial'), bill('Phòng 3', '2026-10-25', 2_500_000, 3_000_000, 'overpaid'), bill('Phòng 4', '2026-10-25', 3_200_000, 1_000_000, 'partial')];
+    const board = groupCollections(rows, isoDate('2026-10-01'), isoDate('2026-10-07'));
+    expect(monthCollected(rows.filter((row) => row.dueDate.startsWith('2026-10')))).toEqual({ collectedVnd: 2_500_000 + 1_000_000, billedVnd: 2_500_000 + 3_200_000 });
     expect(boardTotals(board)).toEqual({ count: 3, owedVnd: 2_100_000 + 2_200_000 });
   });
 });

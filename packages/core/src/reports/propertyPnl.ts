@@ -3,7 +3,10 @@ import { buildLedger, type Ledger, type LedgerSums } from '../ledger/buildLedger
 import { vnd } from '../money/vnd';
 import type { ReportSnapshot } from './snapshot';
 
-export type PnlLabels = { readonly property: string; readonly income: string; readonly expenses: string; readonly noi: string; readonly total: string };
+export type PnlLabels = { readonly property: string; readonly income: string; readonly expenses: string; readonly noi: string; readonly total: string; readonly archived: string };
+
+/** The key of the row that carries the income and expenses of properties archived since they were received or paid. */
+const ARCHIVED_PNL_KEY = 'archived';
 
 /** The property's ledger over the snapshot's period, by the P4-03 rule: income on the day it was received. */
 export function propertyLedger(snapshot: ReportSnapshot, propertyId: string): Ledger {
@@ -15,15 +18,31 @@ export function propertyLedger(snapshot: ReportSnapshot, propertyId: string): Le
   });
 }
 
+/** Properties archived by now that still received income or paid expenses in the period, in id order. */
+export function archivedPropertyIds(snapshot: ReportSnapshot): string[] {
+  const live = new Set(snapshot.properties.map((property) => property.id));
+  return [...new Set([...snapshot.incomes, ...snapshot.expenses].map((fact) => fact.propertyId).filter((id) => !live.has(id)))].toSorted();
+}
+
 const collator = new Intl.Collator('vi', { numeric: true });
 
 type Amounts = Pick<LedgerSums, 'incomeVnd' | 'expensesVnd' | 'noiVnd'>;
 
 const cells = (sums: Amounts): ExportCell[] => [vndCell(sums.incomeVnd), vndCell(sums.expensesVnd), vndCell(sums.noiVnd)];
 
-/** FIN-4: one row per live property, keyed by its id, with its income, expenses and net for the period, and a totals row. */
+/**
+ * FIN-4: one row per live property, keyed by its id, with its income, expenses and net for the period, and a totals row.
+ * Income and expenses of properties archived since stay in the household's money: one last row carries them.
+ */
 export function propertyPnl(snapshot: ReportSnapshot, labels: PnlLabels): ExportTable {
-  const lines = snapshot.properties.toSorted((a, b) => collator.compare(a.name, b.name)).map((property) => ({ property, sums: propertyLedger(snapshot, property.id).totals }));
+  const lines: { property: { id: string; name: string }; sums: Amounts }[] = snapshot.properties
+    .toSorted((a, b) => collator.compare(a.name, b.name))
+    .map((property) => ({ property, sums: propertyLedger(snapshot, property.id).totals }));
+  const archived = archivedPropertyIds(snapshot).map((id) => propertyLedger(snapshot, id).totals);
+  if (archived.length > 0) {
+    const total = (pick: (sums: Amounts) => number) => vnd(archived.reduce((all, sums) => all + pick(sums), 0));
+    lines.push({ property: { id: ARCHIVED_PNL_KEY, name: labels.archived }, sums: { incomeVnd: total((s) => s.incomeVnd), expensesVnd: total((s) => s.expensesVnd), noiVnd: total((s) => s.noiVnd) } });
+  }
   const sum = (pick: (sums: Amounts) => number) => vnd(lines.reduce((total, line) => total + pick(line.sums), 0));
   return {
     columns: [
