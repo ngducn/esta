@@ -226,13 +226,14 @@ export const PHASE_CHECKS: Readonly<Record<string, readonly PhaseCheck[]>> = {
   '2': [
     cited('DOC-1', { e2e: ['documents-upload'] }),
     cited('DOC-2', { web: ['lib/capture/build-pdf.test.ts'], e2e: ['documents-multipage'] }),
-    cited('DOC-3', { web: ['server/extraction/actions.test.ts'], pgtap: ['document_search'], e2e: ['documents-vault'] }),
-    cited('DOC-4', { web: ['server/documents/actions.test.ts'], e2e: ['documents-upload', 'documents-vault'] }),
+    cited('DOC-3', { integration: ['server/extraction/actions.integration.test.ts'], pgtap: ['document_search'], e2e: ['documents-vault'] }),
+    cited('DOC-4', { integration: ['server/documents/actions.integration.test.ts'], e2e: ['documents-upload', 'documents-vault'] }),
     cited('DOC-5', { core: ['documents/categories.test.ts'], e2e: ['documents-upload', 'documents-extract', 'documents-vault'] }),
     cited('DOC-6', { core: ['extraction/acceptance.test.ts'], e2e: ['property-wizard'] }),
     cited('DOC-7', { core: ['documents/expiry.test.ts'], e2e: ['documents-vault'] }),
     cited('PRP-7', {
-      web: ['components/property-wizard/wizard-machine.test.ts', 'server/properties/wizard.test.ts'],
+      web: ['components/property-wizard/wizard-machine.test.ts'],
+      integration: ['server/properties/wizard.integration.test.ts'],
       e2e: ['property-wizard'],
     }),
     // The replay golden suite scores every synthetic certificate and bill against AGENT.md §7.2 and fails below a target.

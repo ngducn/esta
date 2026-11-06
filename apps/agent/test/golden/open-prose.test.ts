@@ -6,7 +6,7 @@ import { SOURCE_REJECT } from '../../src/prompts/ask';
 import { inputHash } from '../../src/replay/canonicalize';
 import { DEFAULT_REPLAY_DIR } from '../../src/replay/store';
 import { canonicalInput, replaySession, type SessionRequest } from '../../src/sdk/session';
-import { fakeDb } from '../../src/test/fake-db';
+import { memoryDb } from '@esta/ops/test/memory-db';
 import { ANSWER, answerRow, askRpcs, askTables, CONVERSATION, QUESTION } from '../ask-seed';
 import { clockOn, HOUSEHOLD } from '../full-seed';
 import { tempJobDir } from '../job-dir';
@@ -38,7 +38,7 @@ const jobDir = tempJobDir('esta-probe-replay-');
 
 async function replayProbe(question: string, id: string) {
   const tables = askTables(question);
-  const prepared = await askRequest({ db: fakeDb(tables, [], {}, {}, askRpcs(tables)), householdId: HOUSEHOLD, jobId: `probe-${id}`, conversationId: CONVERSATION, questionId: QUESTION, answerId: ANSWER, locale: 'vi', asOf: isoDate('2026-10-07'), timezone: ASK_CONTEXT.timezone, question, earlier: null, seed: [], deep: false, topic: null, reads, clock: clockOn('2026-10-07T07:00:00+07:00') });
+  const prepared = await askRequest({ db: memoryDb(tables, [], {}, {}, askRpcs(tables)), householdId: HOUSEHOLD, jobId: `probe-${id}`, conversationId: CONVERSATION, questionId: QUESTION, answerId: ANSWER, locale: 'vi', asOf: isoDate('2026-10-07'), timezone: ASK_CONTEXT.timezone, question, earlier: null, seed: [], deep: false, topic: null, reads, clock: clockOn('2026-10-07T07:00:00+07:00') });
   const request: SessionRequest = caseSession(prepared, jobDir);
   let turn = request;
   let firstRejected: string[] | null = null;

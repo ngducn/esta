@@ -29,7 +29,7 @@ export const MAX_VALUE_LENGTH = 200;
 /** The first rule a cell breaks, in this order. */
 const FILL_RULES: ReadonlyArray<{ readonly rule: NoteRule; readonly breaks: (cell: Cell) => boolean }> = [
   { rule: 'unknown_handle', breaks: ({ record }) => record === undefined },
-  { rule: 'unknown_field', breaks: ({ record, field }) => record !== undefined && !Object.hasOwn(record, field) },
+  { rule: 'unknown_field', breaks: ({ record, field }) => !Object.hasOwn(record ?? {}, field) },
   { rule: 'not_citable', breaks: ({ field }) => !CITABLE.test(field) },
   { rule: 'unsafe_value', breaks: ({ value }) => typeof value === 'string' && (UNSAFE.test(value) || value.length > MAX_VALUE_LENGTH) },
   { rule: 'empty_value', breaks: ({ value }) => typeof value === 'string' && value.trim() === '' },

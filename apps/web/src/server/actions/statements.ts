@@ -1,7 +1,7 @@
 'use server';
 
 import type { Result } from '@esta/core/result';
-import { runOp, statementCommit, statementImport, statementLink, type StatementCommitted, type StatementImported } from '@esta/ops';
+import { runOp, statementCommit, statementImport, statementLink, statementUndo, type StatementCommitted, type StatementImported, type StatementUndone } from '@esta/ops';
 import { revalidatePath } from 'next/cache';
 import { webOpContext } from '@/server/ops';
 
@@ -27,6 +27,14 @@ export async function commitStatement(raw: unknown): Promise<Result<StatementCom
 /** LSE-8 `Đã ghi tay`: a held line is the transfer recorded by hand, so that payment takes it and no money is added. */
 export async function linkStatementLine(raw: unknown): Promise<Result<StatementCommitted, 'failed'>> {
   const result = await runOp(statementLink, await webOpContext(), raw);
+  if (!result.ok) return { ok: false, reason: 'failed' };
+  revalidatePath('/collections', 'layout');
+  return result;
+}
+
+/** LSE-8 `Hoàn tác`: a posted line, or every posted line of the import, returns to unposted and its payment is removed. */
+export async function undoStatement(raw: unknown): Promise<Result<StatementUndone, 'failed'>> {
+  const result = await runOp(statementUndo, await webOpContext(), raw);
   if (!result.ok) return { ok: false, reason: 'failed' };
   revalidatePath('/collections', 'layout');
   return result;

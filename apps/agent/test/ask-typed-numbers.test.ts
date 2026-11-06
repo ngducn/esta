@@ -1,7 +1,7 @@
 import { isoDate } from '@esta/core/date';
 import { describe, expect, it } from 'vitest';
 import { askRequest } from '../src/jobs/ask';
-import { fakeDb } from '../src/test/fake-db';
+import { memoryDb } from '@esta/ops/test/memory-db';
 import { ANSWER, askRpcs, askTables, CONVERSATION, QUESTION } from './ask-seed';
 import { clockOn, HOUSEHOLD } from './full-seed';
 import { replayedReads } from './golden/ask-reads';
@@ -12,7 +12,7 @@ async function prepare(question: string, { earlier, seed }: { earlier?: string; 
   const tables = askTables(question);
   if (earlier !== undefined) tables.messages?.unshift({ id: 'e1', household_id: HOUSEHOLD, conversation_id: CONVERSATION, role: 'user', content_md: earlier, status: 'done', topic_item_id: null, topic_property_id: null });
   return askRequest({
-    db: fakeDb(tables, [], {}, {}, askRpcs(tables)),
+    db: memoryDb(tables, [], {}, {}, askRpcs(tables)),
     householdId: HOUSEHOLD,
     jobId: 'typed',
     conversationId: CONVERSATION,

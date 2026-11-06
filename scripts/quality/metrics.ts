@@ -6,12 +6,14 @@ import {
   catchToFailure,
   doubleCasts,
   failureArms,
+  handBuiltQueryBuilders,
   isoDateRefines,
   localIdSchemas,
   pageScrollWidths,
   putFetches,
   slowTestSettings,
   sqlstateReads,
+  testIdQueries,
   viewports,
 } from './smells.ts';
 import { directWrites, literalRoleChecks, longFunctions, MAX_FUNCTION_LINES, memberRoles, notKebabCase } from './structure.ts';
@@ -313,6 +315,28 @@ export const METRICS: readonly Metric[] = [
     section: 'e2e-helpers',
     scope: E2E_SPECS,
     find: pageScrollWidths,
+  }),
+  syntax({
+    id: 'test-db-fake',
+    message: 'A test builds its own stand-in for the Supabase query builder.',
+    home: {
+      use: '`memoryDb` in packages/ops/src/test/memory-db.ts for state, `fakeDb` in packages/ops/src/test/fake-db.ts for a request log; both answer the real client at the fetch level.',
+      helpers: [
+        { name: 'memoryDb', file: 'packages/ops/src/test/memory-db.ts' },
+        { name: 'fakeDb', file: 'packages/ops/src/test/fake-db.ts' },
+      ],
+    },
+    section: 'tests',
+    scope: without(EVERY_FILE, /^packages\/ops\/src\/test\//),
+    find: handBuiltQueryBuilders,
+  }),
+  syntax({
+    id: 'testid-query',
+    message: 'A test finds an element by `data-testid`.',
+    home: { use: 'A role or label query (getByRole, getByLabel), the way Mẹ finds the control; a test id only where no role or label names the element.' },
+    section: 'tests',
+    scope: { include: TEST_FILE },
+    find: testIdQueries,
   }),
   syntax({
     id: 'slow-test-setting',

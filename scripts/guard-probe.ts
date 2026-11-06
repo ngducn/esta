@@ -13,7 +13,7 @@ import { DEFAULT_REPLAY_DIR, writeRecording, type Recording } from '../apps/agen
 import { judgeResult } from '../apps/agent/src/sdk/result.ts';
 import { canonicalInput, liveSession, type SessionRequest } from '../apps/agent/src/sdk/session.ts';
 import { serviceClient } from '../apps/agent/src/supabase.ts';
-import { fakeDb } from '../apps/agent/src/test/fake-db.ts';
+import { memoryDb } from '../packages/ops/src/test/memory-db.ts';
 import { askReads } from '../apps/agent/src/tools/ask-reads.ts';
 import { ANSWER, askRpcs, askTables, CONVERSATION, QUESTION } from '../apps/agent/test/ask-seed.ts';
 import { clockOn, HOUSEHOLD } from '../apps/agent/test/full-seed.ts';
@@ -85,7 +85,7 @@ function captureIdRefusal(item: OpenProsePrompt, recording: Recording, readsSeen
 
 async function probe(item: OpenProsePrompt, mode: LiveMode, reads: ReturnType<typeof askReads>): Promise<ProbeRow> {
   const tables = askTables(item.question);
-  const db = fakeDb(tables, [], {}, {}, askRpcs(tables));
+  const db = memoryDb(tables, [], {}, {}, askRpcs(tables));
   const asOf = isoDate('2026-10-07');
   const prepared = await askRequest({ db, householdId: HOUSEHOLD, jobId: `guard-probe-${item.id}`, conversationId: CONVERSATION, questionId: QUESTION, answerId: ANSWER, locale: 'vi', asOf, timezone: ASK_CONTEXT.timezone, question: item.question, earlier: null, seed: [], deep: false, topic: null, reads, clock: clockOn('2026-10-07T07:00:00+07:00') });
   const jobDir = realpathSync(mkdtempSync(join(tmpdir(), 'esta-probe-job-')));

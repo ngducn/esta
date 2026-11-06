@@ -49,6 +49,7 @@ type Reply = { readonly data: unknown; readonly log: string; readonly isError?: 
 
 const SIGN_IN: Record<OperatorRefusal, string> = {
   signed_out: 'The connector is not signed in to Esta. Ask Ryan to run `pnpm connector:login` in the Esta repo.',
+  unreachable: 'Esta could not be reached, so the connector cannot tell who is signed in. Check the network and try again; the saved sign-in is kept.',
   no_household: 'This Esta account belongs to no household yet.',
   not_operator: 'Only the household operator can use the Esta connector.',
 };

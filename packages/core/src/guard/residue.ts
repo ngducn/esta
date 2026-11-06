@@ -24,7 +24,7 @@ const IS_MASK = /^[\uE000-\uF8FF]$/u;
 /** A letter outside ASCII, Latin-1 (except `Ø` and `ø`, which stand in for a zero) and the Vietnamese letters, or a mark that NFKC left uncombined. */
 const FOREIGN_LETTER = /[^\P{L}A-Za-z\u00C0-\u00D6\u00D9-\u00F6\u00F9-\u00FF\u0102\u0103\u0110\u0111\u0128\u0129\u0168\u0169\u01A0\u01A1\u01AF\u01B0\u1EA0-\u1EF9]|\p{M}/u;
 const DIGIT_RUN = /^[lIOo]{3,}/u;
-const LOWER_ROMAN = /^[ivx]{2,3}$/u;
+const LOWER_ROMAN = /^[ivx]{2,3}$/iu;
 const ROMAN = /^(?=[mdclxvi])m{0,4}(?:cm|cd|d?c{0,3})(?:xc|xl|l?x{0,3})(?:ix|iv|v?i{0,3})$/u;
 
 type Token = { readonly word: string; readonly lower: string; readonly start: number; readonly end: number };
@@ -75,7 +75,7 @@ function passes(row: WordRow, { neighbors, spacedBefore, spacedBeforeThat, space
 
 function isRoman({ word, lower }: Token, before: Token | undefined, after: Token | undefined): boolean {
   if (!ROMAN.test(lower)) return false;
-  if (LOWER_ROMAN.test(word) && before !== undefined && ROMAN_LABELS.has(before.lower)) return !ROMAN_WORDS.has(lower) || after === undefined;
+  if (LOWER_ROMAN.test(word) && word !== word.toUpperCase() && before !== undefined && ROMAN_LABELS.has(before.lower)) return !ROMAN_WORDS.has(lower) || after === undefined;
   if (lower.length === 1) return 'ivx'.includes(lower) && before !== undefined && ROMAN_LABELS.has(before.lower);
   return lower.length >= 4 || (word === word.toUpperCase() && !ROMAN_ACRONYMS.has(word));
 }

@@ -11,7 +11,7 @@ import { JOBS, type PreparedJob } from '../../src/jobs/registry';
 import { canonicalizer } from '../../src/replay/canonicalize';
 import { DEFAULT_REPLAY_DIR } from '../../src/replay/store';
 import { replaySession, type SessionRun } from '../../src/sdk/session';
-import { fakeDb } from '../../src/test/fake-db';
+import { memoryDb } from '@esta/ops/test/memory-db';
 import { askTables } from '../ask-seed';
 import { clockOn, HOUSEHOLD, seedRecords } from '../full-seed';
 import { WEEKLY_AS_OF } from './weekly-fixture';
@@ -31,7 +31,7 @@ tables.research_items = [
 ];
 const job = { id: 'job-weekly', household_id: HOUSEHOLD, kind: 'weekly_review', idempotency_key: `weekly_review:${HOUSEHOLD}:2026-W41` };
 tables.agent_jobs = [job];
-const db = fakeDb(tables, [], {}, {}, { proposal_refusal: () => null });
+const db = memoryDb(tables, [], {}, {}, { proposal_refusal: () => null });
 
 const items = (kind: string) => (tables.agent_items ?? []).filter((row) => row.kind === kind) as Array<Row & { title: string; body_md: string; dedupe_key: string; citations: Row[]; proposal: { type: string } }>;
 const money = (amount: number) => formatVnd(vnd(amount), 'vi');
@@ -64,7 +64,7 @@ describe('weekly_review golden on the full seed at 2026-10-11 08:00 (AGT-8)', ()
   it('links only records the household has', async () => {
     const links = items('weekly').flatMap((note) => [...note.body_md.matchAll(LINK)].map(([, link]) => link ?? ''));
     expect(links.length).toBeGreaterThan(0);
-    const present = await existingLinks(fakeDb(seedRecords()), HOUSEHOLD, links);
+    const present = await existingLinks(memoryDb(seedRecords()), HOUSEHOLD, links);
     expect(links.filter((link) => !present.has(link))).toEqual([]);
   });
 

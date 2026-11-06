@@ -60,9 +60,9 @@ describe('an undo racing a write to what the batch added', () => {
     const planned = plannedSchema.parse((await plan('Demo: thêm người thuê Khoa Demo', [{ op: 'person.create', input: { person: { full_name: 'Khoa Demo', phone: '0901 777 011', id_last4: null } } }])).json());
     const tenant = planned.items[0]?.id ?? '';
     expect(await apply(planned.planId)).toMatchObject({ status: 'applied' });
-    const answer = await undoDuring(planned.planId, `${actAs(ME)} update public.parties set phone = '+84987000111' where id = '${tenant}';`);
+    const answer = await undoDuring(planned.planId, `${actAs(ME)} update public.parties set phone = '+84987000999' where id = '${tenant}';`);
     expect(answer).toMatchObject({ undone: false, blockers: [{ table_name: 'parties', row_id: tenant, reason: 'edited_after', flow: 'edit' }] });
-    expect((await operator.db.from('parties').select('phone').eq('id', tenant).single()).data).toEqual({ phone: '+84987000111' });
+    expect((await operator.db.from('parties').select('phone').eq('id', tenant).single()).data).toEqual({ phone: '+84987000999' });
   });
 
   it('refuses as billed when the nightly run issues a bill for the lease Claude added while the undo waits, and keeps the bill', async () => {

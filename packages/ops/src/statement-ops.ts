@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from 'node:util';
 import { planImport, type ImportInvoice, type ImportRow, type StoredLine } from '@esta/core/matching';
 import { vnd } from '@esta/core/money';
 import { isoDateSchema } from '@esta/core/schemas/legal';
@@ -55,7 +56,10 @@ type ImportChange = Omit<ImportInput, 'rows'> & { readonly rows: readonly Import
 export type StatementImported = { readonly import_id: string; readonly known: number };
 export type StatementCommitted = { readonly posted: number; readonly skipped: number };
 /** Every line of the file is already in the import named, so nothing new would be stored. */
-export type StatementRefusal = { readonly kind: 'nothing_new'; readonly import_id: string };
+export type StatementRefusal =
+  | { readonly kind: 'nothing_new'; readonly import_id: string }
+  /** The import id was already used for another account or other columns, so a retry would open that import instead of this one. */
+  | { readonly kind: 'import_mismatch'; readonly import_id: string };
 
 const SENTINELS: Readonly<Record<string, CommonRefusal>> = {
   ESTA_BANK_ACCOUNT_NOT_FOUND: { kind: 'not_found' },
@@ -139,9 +143,12 @@ export const statementImport = defineOp<ImportInput, ImportChange, StatementImpo
   creates: 'statement_imports',
   input: importInputSchema,
   async plan(ctx, input) {
-    const existing = await ctx.db.from('statement_imports').select('id').eq('id', input.import_id).maybeSingle();
+    const existing = await ctx.db.from('statement_imports').select('id, bank_account_id, column_mapping').eq('id', input.import_id).maybeSingle();
     if (existing.error) throw new Error(`Reading the import failed: ${existing.error.message}`);
-    if (existing.data !== null) return unchanged({ import_id: input.import_id, known: 0 });
+    if (existing.data !== null) {
+      const same = existing.data.bank_account_id === input.bank_account_id && isDeepStrictEqual(existing.data.column_mapping, input.column_mapping);
+      return same ? unchanged({ import_id: input.import_id, known: 0 }) : refuse({ kind: 'import_mismatch', import_id: input.import_id });
+    }
     const today = ctx.clock.today();
     const late: Rejected[] = input.rows.filter((row) => row.date > today).map((row) => ({ index: row.index, field: 'date', reason: 'after_today' }));
     const [invoices, stored] = await Promise.all([readImportInvoices(ctx), readStoredLines(ctx, input.bank_account_id)]);
@@ -187,6 +194,12 @@ const lineStateSchema = z.object({
   hand_payments: z.array(z.object({ payment_id: z.uuid() }).loose()),
 });
 
+async function importExists(ctx: OpContext, importId: string): Promise<boolean> {
+  const imported = await ctx.db.from('statement_imports').select('id').eq('household_id', ctx.householdId).eq('id', importId).maybeSingle();
+  if (imported.error) throw new Error(`Reading the import failed: ${imported.error.message}`);
+  return imported.data !== null;
+}
+
 /** Each line of the import with what it can do now, as the database reads it (`statement_line_state`). */
 async function readLineStates(ctx: OpContext, importId: string): Promise<z.output<typeof lineStateSchema>[]> {
   const rows = await readAll("the import's lines", (from, to) => ctx.db.rpc('statement_import_lines', { p_import_id: importId }).select('id, state, hand_payments').range(from, to));
@@ -201,9 +214,7 @@ export const statementCommit = defineOp<Commit, Commit, StatementCommitted>({
   creates: null,
   input: commitInputSchema,
   async plan(ctx, input) {
-    const imported = await ctx.db.from('statement_imports').select('id').eq('household_id', ctx.householdId).eq('id', input.import_id).maybeSingle();
-    if (imported.error) throw new Error(`Reading the import failed: ${imported.error.message}`);
-    if (imported.data === null) return refuse({ kind: 'not_found' });
+    if (!(await importExists(ctx, input.import_id))) return refuse({ kind: 'not_found' });
     const confirmed = new Set(input.confirmed_row_ids);
     const posts = (await readLineStates(ctx, input.import_id)).some(
       (line) => line.state === 'memo_match' || (confirmed.has(line.id) && (line.state === 'suggested' || line.state === 'held')),
@@ -250,5 +261,38 @@ export const statementLink = defineOp<Link, Link, StatementCommitted, LinkRefusa
   async apply(ctx, { row_id, payment_id }) {
     const { error } = await ctx.db.rpc('link_statement_line', { p_row_id: row_id, p_payment_id: payment_id });
     return error ? refuse(dbRefusal(error, LINK_SENTINELS)) : { ok: true, value: { posted: 0, skipped: 0 } };
+  },
+});
+
+const undoInputSchema = z.strictObject({ import_id: idSchema, row_ids: z.array(idSchema).max(MAX_ROWS).optional() });
+type Undo = z.output<typeof undoInputSchema>;
+
+/** How many lines went back to unposted. */
+export type StatementUndone = { readonly undone: number };
+
+const UNDO_SENTINELS: Readonly<Record<string, CommonRefusal>> = {
+  ESTA_IMPORT_NOT_FOUND: { kind: 'not_found' },
+  ESTA_STATEMENT_LINE_NOT_FOUND: { kind: 'not_found' },
+};
+
+/**
+ * LSE-8 `Hoàn tác`: a posted line of the import, or every one, returns to unposted. The payment it made is removed with
+ * its allocations; a payment recorded by hand that the line was linked to is unlinked and kept. A line not posted plans
+ * as unchanged, so a repeated tap changes nothing.
+ */
+export const statementUndo = defineOp<Undo, Undo, StatementUndone>({
+  creates: null,
+  input: undoInputSchema,
+  async plan(ctx, input) {
+    if (!(await importExists(ctx, input.import_id))) return refuse({ kind: 'not_found' });
+    const lines = await readLineStates(ctx, input.import_id);
+    const asked = input.row_ids === undefined ? null : new Set(input.row_ids);
+    if (asked !== null && [...asked].some((id) => !lines.some((line) => line.id === id))) return refuse({ kind: 'not_found' });
+    const posted = lines.some((line) => line.state === 'posted' && (asked === null || asked.has(line.id)));
+    return posted ? change(input) : unchanged({ undone: 0 });
+  },
+  async apply(ctx, { import_id, row_ids }) {
+    const { data, error } = await ctx.db.rpc('undo_statement_import', { p_import_id: import_id, ...(row_ids === undefined ? {} : { p_row_ids: row_ids }) });
+    return error ? refuse(dbRefusal(error, UNDO_SENTINELS)) : { ok: true, value: { undone: data } };
   },
 });

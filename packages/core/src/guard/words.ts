@@ -94,8 +94,8 @@ const EXCEPTIONS: Readonly<Record<string, WordRow>> = {
   lẻ: { kind: 'number', passesAfter: ['bán'] },
   may: {
     kind: 'date',
-    bannedOnlyAfter: ['in', 'on', 'of', 'by', 'until', 'till', 'since', 'during', 'from', 'last', 'next', 'mid', 'before', 'after', 'tháng'],
-    passesBeforeName: ['by', 'from'],
+    bannedOnlyAfter: ['in', 'on', 'of', 'by', 'until', 'till', 'since', 'during', 'from', 'last', 'next', 'mid', 'before', 'after', 'tháng', 'for', 'this', 'to', 'through', 'early', 'late', 'vào', 'từ', 'đến'],
+    passesBeforeName: ['by', 'from', 'to', 'for', 'từ', 'đến'],
     passesLowercase: true,
     bannedBesideDateMask: true,
   },
@@ -114,7 +114,8 @@ export const WORDS: ReadonlyMap<string, WordRow> = new Map([
   ...plain('number', 'zero nought nil two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen'),
   ...plain('number', 'twenty thirty forty fifty sixty seventy eighty ninety dozen dozens half halves quarter quarters twice thrice triple twofold threefold'),
   ...plain('number', 'third fourth fifth sixth seventh eighth ninth tenth eleventh twelfth thirteenth fourteenth fifteenth sixteenth seventeenth'),
-  ...plain('number', 'eighteenth nineteenth twentieth thirtieth hundredth'),
+  ...plain('number', 'eighteenth nineteenth twentieth thirtieth hundredth thousandth millionth billionth'),
+  ...plain('number', 'twofold threefold fourfold fivefold tenfold hundredfold thousandfold'),
   ...plain('date', `${MONTHS} monday tuesday wednesday thursday friday saturday sunday fortnight giêng chạp rằm`),
   ...Object.entries(EXCEPTIONS),
 ]);

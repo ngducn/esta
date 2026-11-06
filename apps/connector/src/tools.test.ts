@@ -50,6 +50,7 @@ describe('connector tools', () => {
     ['signed_out', 'pnpm connector:login'],
     ['not_operator', 'Only the household operator'],
     ['no_household', 'belongs to no household'],
+    ['unreachable', 'could not be reached'],
   ] as const)('refuses every tool when the session is %s, and says what to do', async (refusal, says) => {
     const { client, logs } = await connect(refusal);
     const result = await client.callTool({ name: 'find_property', arguments: { text: 'Demo Bảo Lộc' } });

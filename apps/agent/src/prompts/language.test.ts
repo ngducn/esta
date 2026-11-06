@@ -1,6 +1,6 @@
 import { OPEN_PROSE } from '@esta/core/guard/fixtures/open-prose';
 import { describe, expect, it } from 'vitest';
-import { ENGLISH_NAMING_RECORDS, SEED_LABELS, VIETNAMESE_NAMING_RECORDS } from '../../test/reply-language-cases';
+import { ENGLISH_NAMING_RECORDS, SEED_LABELS, VIETNAMESE_NAMING_RECORDS, VIETNAMESE_WITH_ENGLISH_WORDS } from '../../test/reply-language-cases';
 import { replyLanguage } from './language';
 
 /**
@@ -97,6 +97,10 @@ describe('the language of the reply (#348)', () => {
 
   it.each(VIETNAMESE_NAMING_RECORDS.filter(isMarked))('answers the marked %j in Vietnamese even in a household that reads English, the names stripped', (message) => {
     expect(replyLanguage(message, 'en', SEED_LABELS)).toBe('vi');
+  });
+
+  it.each(VIETNAMESE_WITH_ENGLISH_WORDS)('answers %j in Vietnamese, the pasted text and the records it names not outvoting the request', (message) => {
+    expect(replyLanguage(message, 'vi', SEED_LABELS)).toBe('vi');
   });
 
   it('keeps every Vietnamese message of the table above Vietnamese when the household has its labels', () => {

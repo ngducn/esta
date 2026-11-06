@@ -54,7 +54,7 @@ export async function currentOffer() {
  * both parties, P5-10d) is no longer named, so the repair message the same reply is sent back with has one line fewer.
  */
 export const DROPPED_REPAIR_LINES: ReadonlyMap<string, readonly string[]> = new Map([
-  ['a67e8cedcfb1cd134c241ccd0e5b3e8b3b3c41e474df3a972973b24b8ab106c7', ['hai']],
+  ['0350c82652036b01efc9a2b8627f7f938c3b6b18cc3ad98f4b1b5af72e8a6a4c', ['hai']],
 ]);
 
 const withoutLines = (prompt: string, texts: readonly string[]): string =>

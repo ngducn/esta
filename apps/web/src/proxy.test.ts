@@ -26,6 +26,34 @@ describe('proxy signed Storage rewrite', () => {
   });
 });
 
+describe('proxy signed Storage previews stay out of shared caches and accept only reads', () => {
+  it.each(signedPaths)('keeps %s out of every shared cache', async (path) => {
+    const response = await proxy(new NextRequest(`http://localhost:3500${path}`));
+
+    expect(response.headers.get('cdn-cache-control')).toBe('no-store');
+    expect(response.headers.get('vercel-cdn-cache-control')).toBe('no-store');
+    expect(response.headers.get('cache-control')).toBe('private');
+  });
+
+  it.each(['GET', 'HEAD'])('rewrites a %s to Storage', async (method) => {
+    const response = await proxy(new NextRequest(`http://localhost:3500${signedPaths[1]}`, { method }));
+
+    expect(response.headers.get('x-middleware-rewrite')).not.toBeNull();
+  });
+
+  it.each(signedPaths.flatMap((path) => ['POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'].map((method) => [method, path] as const)))(
+    'answers a %s to %s with 405 and never reaches Storage',
+    async (method, path) => {
+      const response = await proxy(new NextRequest(`http://localhost:3500${path}`, method === 'OPTIONS' ? { method } : { method, body: 'x' }));
+
+      expect(response.status).toBe(405);
+      expect(response.headers.get('allow')).toBe('GET, HEAD');
+      expect(response.headers.get('x-middleware-rewrite')).toBeNull();
+      expect(response.headers.get('cdn-cache-control')).toBe('no-store');
+    },
+  );
+});
+
 describe('proxy signed-out redirect', () => {
   it('sends a signed-out visit to sign-in and remembers the page, so a notice link opens its note after sign-in', async () => {
     const url = 'http://localhost:3500/assistant?note=0b0a1c2e-1111-4222-8333-444455556666';
