@@ -6,7 +6,7 @@ import { JOBS } from '../../src/jobs/registry';
 import { canonicalizer } from '../../src/replay/canonicalize';
 import { DEFAULT_REPLAY_DIR } from '../../src/replay/store';
 import { replaySession, type SessionRun } from '../../src/sdk/session';
-import { fakeDb } from '../../src/test/fake-db';
+import { memoryDb } from '@esta/ops/test/memory-db';
 import { CASES } from '../full-seed';
 import { researchTables, scanRequest, withTitleCheck } from '../research-seed';
 
@@ -15,7 +15,7 @@ afterAll(() => rmSync(jobDir, { recursive: true, force: true }));
 
 async function replay(dir: string) {
   const tables = researchTables();
-  const prepared = scanRequest(withTitleCheck(fakeDb(tables), tables));
+  const prepared = scanRequest(withTitleCheck(memoryDb(tables), tables));
   const { caps, observe } = prepared;
   const run = await replaySession(
     { spec: JOBS.research_scan, prompt: prepared.prompt, jobDir, configDir: jobDir, tools: prepared.tools, canon: canonicalizer({ householdName: 'Gia đình Demo', jobDir }), ...(caps === undefined ? {} : { caps }), ...(observe === undefined ? {} : { observe }) },

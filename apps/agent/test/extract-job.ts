@@ -7,7 +7,7 @@ import { JOBS, type AgentJob } from '../src/jobs/registry';
 import { canonicalizer } from '../src/replay/canonicalize';
 import { DEFAULT_REPLAY_DIR } from '../src/replay/store';
 import { replaySession } from '../src/sdk/session';
-import { fakeDb, type Recorded } from '../src/test/fake-db';
+import { memoryDb, type Recorded } from '@esta/ops/test/memory-db';
 
 export const A = 'aaaaaaaa-0000-5000-8000-000000000001';
 export const B = 'bbbbbbbb-0000-5000-8000-000000000002';
@@ -43,14 +43,14 @@ export function twoHouseholds(writes: Recorded[] = [], titleA = 'Sổ hồng B�
     agent_items: [] as Record<string, unknown>[],
   };
   const files = { [`documents/${A}/${DOCUMENT_A}/so-hong.pdf`]: SCAN, [`documents/${B}/${DOCUMENT_B}/so-hong.pdf`]: SCAN };
-  return { tables, db: fakeDb(tables, writes, files, refuse) };
+  return { tables, db: memoryDb(tables, writes, files, refuse) };
 }
 
 export const extractJob = (payload: { document_id: string; extraction_id: string }, householdId = A): AgentJob =>
   ({ id: JOB_A, household_id: householdId, kind: 'extract_document', payload, attempts: 1, max_attempts: 4 }) as unknown as AgentJob;
 
 /** The worker's steps for one attempt in replay; `crash` stops after the session, before `finish`, as a killed worker would. */
-export async function attempt(db: ReturnType<typeof fakeDb>, job: AgentJob, { crash = false } = {}) {
+export async function attempt(db: ReturnType<typeof memoryDb>, job: AgentJob, { crash = false } = {}) {
   const jobDir = newJobDir();
   try {
     const prepared = await prepareExtractDocument({ db, job, jobDir, timezone: 'Asia/Ho_Chi_Minh', waiting: [], failed: [], clock });

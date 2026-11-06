@@ -10,7 +10,7 @@ import { JOBS } from '../../src/jobs/registry';
 import { canonicalizer, inputHash } from '../../src/replay/canonicalize';
 import { DEFAULT_REPLAY_DIR, writeRecording } from '../../src/replay/store';
 import { canonicalInput, replaySession } from '../../src/sdk/session';
-import { fakeDb, type Recorded } from '../../src/test/fake-db';
+import { memoryDb, type Recorded } from '@esta/ops/test/memory-db';
 import { clockOn, HOUSEHOLD, labels, snapshot } from '../full-seed';
 import { toolCaller } from '../replay-worker';
 
@@ -22,7 +22,7 @@ export type Read = () => Promise<{ snapshot: WatchSnapshot; labels: WatchLabels 
 /** A watch job on the full seed at 2026-10-07, or on the `read` and `asOf` given. */
 export function setup(tables: Record<string, Row[]> = { agent_items: [] }, jobId = 'job-1', locale: Locale = 'vi', read: Read = async () => ({ snapshot, labels }), asOf = '2026-10-07') {
   const writes: Recorded[] = [];
-  const prepared = portfolioWatchRequest({ db: fakeDb(tables, writes), householdId: HOUSEHOLD, jobId, locale, asOf: isoDate(asOf), timezone: 'Asia/Ho_Chi_Minh', clock, read });
+  const prepared = portfolioWatchRequest({ db: memoryDb(tables, writes), householdId: HOUSEHOLD, jobId, locale, asOf: isoDate(asOf), timezone: 'Asia/Ho_Chi_Minh', clock, read });
   return { tables, writes, prepared, call: toolCaller(prepared) };
 }
 

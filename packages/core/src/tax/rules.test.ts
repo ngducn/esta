@@ -59,6 +59,22 @@ describe('selectTaxRule', () => {
     expect(selectTaxRule([rule('2024-01-01', '2025-12-31')], 2026)).toEqual({ kind: 'no_rule', year: 2026 });
   });
 
+  it('applies a rule that starts on 31 December of the year, and the first of two that start the same day', () => {
+    const lastDay = rule('2026-12-31', null);
+    expect(selectTaxRule([lastDay], 2026)).toEqual({ kind: 'rule', rule: lastDay });
+    expect(selectTaxRule([lastDay], 2025)).toEqual({ kind: 'no_rule', year: 2025 });
+    const [one, two] = [rule('2026-03-01', null), rule('2026-03-01', '2030-01-01')];
+    expect(selectTaxRule([one, two], 2026)).toEqual({ kind: 'rule', rule: one });
+    expect(selectTaxRule([two, one], 2026)).toEqual({ kind: 'rule', rule: two });
+  });
+
+  it('skips a rule that ended before the year while a later rule is in force', () => {
+    const old = rule('2020-01-01', '2024-12-31');
+    const current = rule('2025-01-01', null);
+    expect(selectTaxRule([current, old], 2026)).toEqual({ kind: 'rule', rule: current });
+    expect(selectTaxRule([old, current], 2022)).toEqual({ kind: 'rule', rule: old });
+  });
+
   it('returns no_rule for an empty rule set', () => {
     expect(selectTaxRule([], 2026)).toEqual({ kind: 'no_rule', year: 2026 });
   });

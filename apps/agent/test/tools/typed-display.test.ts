@@ -2,7 +2,7 @@ import { displayTyped, typedValueSchema } from '@esta/core/calc';
 import { isoDate } from '@esta/core/date';
 import type { Locale } from '@esta/core/format';
 import { describe, expect, it } from 'vitest';
-import { fakeDb } from '../../src/test/fake-db';
+import { memoryDb } from '@esta/ops/test/memory-db';
 import { runSheet } from '../../src/tools/fact-sheet';
 import { readTools } from '../../src/tools/read-tools';
 import { askTables } from '../ask-seed';
@@ -25,7 +25,7 @@ function pairs(value: unknown, path = ''): Pair[] {
 
 async function everyRecord(locale: Locale): Promise<unknown[]> {
   const { cite } = runSheet();
-  const tools = new Map(readTools(fakeDb(askTables('')), HOUSEHOLD, { reads: replayedReads(), locale, asOf: isoDate('2026-10-07'), cite }));
+  const tools = new Map(readTools(memoryDb(askTables('')), HOUSEHOLD, { reads: replayedReads(), locale, asOf: isoDate('2026-10-07'), cite }));
   /** A read the fixture never recorded is skipped; every other failure is the test's own. */
   const call = async (name: string, input: Record<string, unknown> = {}) => {
     try {

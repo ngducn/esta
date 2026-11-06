@@ -232,6 +232,33 @@ describe('plans and applies the changes Ryan approved', () => {
     expect(row.data).toEqual({ id: digitTail, notes: 'Demo: chủ cũ CCCD 7890' });
   });
 
+  it('cuts an ID number Mẹ typed on Esta to its last four in the value before, which the stored plan and the audit row keep (#223)', async () => {
+    const id = randomUUID();
+    expect(await runOp(propertyCreate, await laneContext(), { id, property: demoProperty('BEFORE') })).toMatchObject({ ok: true });
+    const typedOnScreen = 'Demo: chủ cũ CCCD 001234567890';
+    expect((await db.from('properties').update({ notes: typedOnScreen }).eq('id', id)).error).toBeNull();
+
+    const planned = plannedSchema.parse((await plan([{ op: 'property.edit', input: { id, set: { notes: 'Demo: đã kiểm tra lại' } } }])).json());
+    expect(planned.items).toMatchObject([{ change: { id, before: { notes: 'Demo: chủ cũ CCCD 7890' }, set: { notes: 'Demo: đã kiểm tra lại' } } }]);
+    const stored = await db.from('change_batches').select('plan').eq('id', planned.planId).single();
+    expect(JSON.stringify(stored.data)).not.toContain('001234567890');
+    const audit = await db.from('audit_log').select('diff').eq('table_name', 'change_batches').eq('row_id', planned.planId);
+    expect(JSON.stringify(audit.data)).not.toContain('001234567890');
+
+    expect((await call(connector, 'apply_plan', { plan_id: planned.planId })).json()).toMatchObject({ status: 'applied', items: [{ status: 'landed' }] });
+    const row = await db.from('properties').select('notes').eq('id', id).single();
+    expect(row.data?.notes).toBe('Demo: đã kiểm tra lại');
+  });
+
+  it('still refuses a stale item when the value before changed beyond its hidden digits (#223)', async () => {
+    const id = randomUUID();
+    expect(await runOp(propertyCreate, await laneContext(), { id, property: demoProperty('STALE223') })).toMatchObject({ ok: true });
+    expect((await db.from('properties').update({ notes: 'Demo: CCCD 001234567890' }).eq('id', id)).error).toBeNull();
+    const planned = plannedSchema.parse((await plan([{ op: 'property.edit', input: { id, set: { notes: 'Demo: bản mới' } } }])).json());
+    expect((await db.from('properties').update({ notes: 'Demo: Mẹ sửa trước' }).eq('id', id)).error).toBeNull();
+    expect((await call(connector, 'apply_plan', { plan_id: planned.planId })).json()).toMatchObject({ items: [{ status: 'refused', refusal: { kind: 'stale' } }] });
+  });
+
   it('cuts an ID number in the batch summary to its last four, in the stored row and its audit row', async () => {
     const summary = 'Demo: thêm nhà cho chủ cũ CCCD 001234567890';
     const planned = plannedSchema.parse((await call(connector, 'plan_changes', { summary, items: [{ op: 'property.create', input: { property: demoProperty('SUMID') } }] })).json());

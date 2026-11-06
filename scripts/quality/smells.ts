@@ -265,6 +265,36 @@ export const putFetches: Finder = (source) =>
     return method !== undefined && ts.isPropertyAssignment(method) && ts.isStringLiteralLike(method.initializer) && method.initializer.text.toUpperCase() === 'PUT';
   });
 
+const QUERY_BUILDER_METHODS = new Set(['eq', 'neq', 'in', 'is', 'gte', 'lte', 'like', 'ilike', 'match', 'order', 'limit', 'range', 'single', 'maybeSingle']);
+
+/** An object literal that carries three or more query-builder methods: a hand-built stand-in for the Supabase client's query. */
+export const handBuiltQueryBuilders: Finder = (source) =>
+  nodes(source, ts.SyntaxKind.ObjectLiteralExpression)
+    .filter(ts.isObjectLiteralExpression)
+    .filter((literal) => {
+      const named = new Set(
+        literal.properties.flatMap((property) => {
+          const name = ts.isShorthandPropertyAssignment(property) ? property.name.text : property.name === undefined ? undefined : nameOf(property.name);
+          return name === undefined ? [] : [name];
+        }),
+      );
+      return [...named].filter((name) => QUERY_BUILDER_METHODS.has(name)).length >= 3;
+    });
+
+const TEST_ID_QUERIES = /^(get|query|find)(All)?ByTestId$/;
+
+/** `getByTestId(…)` and its siblings, and a selector string that reads `data-testid`. */
+export const testIdQueries: Finder = (source) => [
+  ...calls(source).filter((call) => {
+    const callee = unwrap(call.expression);
+    const name = ts.isIdentifier(callee) ? callee.text : ts.isPropertyAccessExpression(callee) ? callee.name.text : '';
+    return TEST_ID_QUERIES.test(name);
+  }),
+  ...[ts.SyntaxKind.StringLiteral, ts.SyntaxKind.NoSubstitutionTemplateLiteral, ts.SyntaxKind.TemplateHead]
+    .flatMap((kind) => nodes(source, kind))
+    .filter((node) => (ts.isStringLiteral(node) || ts.isTemplateLiteralToken(node)) && /\[data-testid\b/.test(node.text)),
+];
+
 const SLOWEST_UNREASONED_TEST_MS = 15_000;
 const TEST_CALLS = new Set(['it', 'test', 'describe', 'beforeAll', 'beforeEach', 'afterAll', 'afterEach']);
 const SUITE_WIDE_SETTINGS = new Set(['testTimeout', 'hookTimeout']);

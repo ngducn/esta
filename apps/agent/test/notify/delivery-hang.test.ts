@@ -2,7 +2,7 @@ import { createServer, type Server } from 'node:net';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { smtpMailer, type DeliveryConfig } from '../../src/notify/smtp';
 import { startDelivery } from '../../src/notify/start';
-import { fakeDb } from '../../src/test/fake-db';
+import { memoryDb } from '@esta/ops/test/memory-db';
 import { clockOn } from '../full-seed';
 
 type Row = Record<string, unknown>;
@@ -36,7 +36,7 @@ describe('a mail host that accepts and never greets', () => {
 
   it('a nudge returns at once and the caller is free to start the next job while the run waits on the host', async () => {
     const rows = tables();
-    const delivery = startDelivery(fakeDb(rows), config(), clockOn('2026-10-07T07:05:00+07:00'), () => undefined, smtpMailer(config().smtpUrl, 1_500));
+    const delivery = startDelivery(memoryDb(rows), config(), clockOn('2026-10-07T07:05:00+07:00'), () => undefined, smtpMailer(config().smtpUrl, 1_500));
     const started = Date.now();
     delivery.nudge();
     delivery.nudge();

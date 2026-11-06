@@ -4,6 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import { seedId } from '../../../../../supabase/seed/generator/ids';
+import { integrationLane } from '@/test/lanes';
 import { putSigned, service, signedInAs, stackName, stackUp } from '@/test/stack';
 
 const session = vi.hoisted(() => ({
@@ -23,9 +24,8 @@ const { saveExpense, deleteExpense, restoreExpense } = await import('./actions')
 const { loadExpenseVendors } = await import('./load');
 const { createDocumentUpload } = await import('@/server/documents/actions');
 
-const LANE = 6;
-const household = seedId(`seed:household:lane-${LANE}`);
-const propertyId = seedId(`seed:property:lane-${LANE}:q7`);
+const { lane, household, ryan } = integrationLane(import.meta.url);
+const propertyId = seedId(`seed:property:lane-${lane}:q7`);
 const otherHouseholdsExpense = seedId('seed:expense:lane-5:q7:2026-08:1');
 const created = { expenses: [] as string[], parties: [] as string[], documents: [] as string[] };
 
@@ -58,7 +58,7 @@ describe.skipIf(!stackUp)(`expense actions against ${stackName}`, () => {
   let member: SupabaseClient;
 
   beforeAll(async () => {
-    member = await signedInAs(`ryan.lane${LANE}@demo.esta.test`);
+    member = await signedInAs(ryan);
     session.client = member;
     session.member = { role: 'member', household: { id: household } };
   });

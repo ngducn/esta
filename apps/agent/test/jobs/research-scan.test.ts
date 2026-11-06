@@ -10,7 +10,7 @@ import { canonicalizer, inputHash } from '../../src/replay/canonicalize';
 import { writeRecording } from '../../src/replay/store';
 import { decideToolUse, rememberSearchHits, toolCaps } from '../../src/sdk/path-policy';
 import { canonicalInput, replaySession } from '../../src/sdk/session';
-import { fakeDb } from '../../src/test/fake-db';
+import { memoryDb } from '@esta/ops/test/memory-db';
 import { NumberGuardError } from '../../src/tools/create-item';
 import { listPropertiesTool } from '../../src/tools/list-properties';
 import { syncResearchTopics } from '../../src/tools/research-topics';
@@ -47,7 +47,7 @@ const item = (patch: Row = {}): Row => ({
 
 async function scan(options: { pages?: Record<string, string>; similarity?: number; overrides?: Parameters<typeof scanRequest>[1] } = {}) {
   const tables = researchTables();
-  const db = withTitleCheck(fakeDb(tables), tables);
+  const db = withTitleCheck(memoryDb(tables), tables);
   if (options.similarity !== undefined) Object.assign(db, { rpc: async () => ({ data: options.similarity, error: null }) });
   const prepared = scanRequest(db, options.overrides);
   for (const [url, result] of Object.entries(options.pages ?? { [PAGE]: PAGE_TEXT })) prepared.observe?.({ name: 'WebFetch', input: { url, prompt: 'x' }, result: { code: 200, codeText: 'OK', result, url, bytes: 1, durationMs: 1 } });
@@ -70,7 +70,7 @@ describe('the web caps in the PreToolUse policy (AGENT.md §5.2)', () => {
 
   it('reads the caps from the household settings, which may lower 12 and 8 but not raise them', async () => {
     const tables = researchTables();
-    const worker = replayWorker(fakeDb(tables), tables.agent_jobs ?? [], jobsDir, clockOn('2026-10-07T06:00:00+07:00'));
+    const worker = replayWorker(memoryDb(tables), tables.agent_jobs ?? [], jobsDir, clockOn('2026-10-07T06:00:00+07:00'));
     const prepare = (agent: Row) => {
       tables.household_settings = [{ household_id: RESEARCH_HOUSEHOLD, agent }];
       return JOBS.research_scan.handler.prepare({ db: worker.db, job: { household_id: RESEARCH_HOUSEHOLD, id: 'job-1' } as never, jobDir: jobsDir, timezone: 'Asia/Ho_Chi_Minh', waiting: [], failed: [], clock: worker.clock });
@@ -181,7 +181,7 @@ describe('what the model types is checked before Mẹ reads it (#323)', () => {
   });
 
   it('books a replayed fetch of a page no search returned as denied, and the page never reaches the job', async () => {
-    const prepared = scanRequest(fakeDb(researchTables()));
+    const prepared = scanRequest(memoryDb(researchTables()));
     const seen: string[] = [];
     const request = { spec: JOBS.research_scan, prompt: prepared.prompt, jobDir, configDir: jobDir, tools: prepared.tools, canon: canonicalizer({ householdName: 'Gia đình Demo' }), observe: ({ input }: { input: Record<string, unknown> }) => seen.push(String(input.url ?? input.query)) };
     const input = canonicalInput(request);
@@ -299,7 +299,7 @@ describe('research_scan job', () => {
     await prepared.finish({ reply: 'xong', model: 'm' });
     expect(tables.agent_items).toMatchObject([{ kind: 'research_scan_empty', title: 'Không có tin đáng chú ý cho các khu vực của gia đình hôm nay.' }]);
     const tables2 = researchTables();
-    await expect(scanRequest(fakeDb(tables2)).finish({ reply: 'xong', model: 'm' })).rejects.toThrow('without reading research_topics');
+    await expect(scanRequest(memoryDb(tables2)).finish({ reply: 'xong', model: 'm' })).rejects.toThrow('without reading research_topics');
   });
 
   it('runs at 06:00 from the queue in replay, keeping the recorded items and nothing more on a second run the same day', async () => {
@@ -307,7 +307,7 @@ describe('research_scan job', () => {
     const job = (id: string): Row => ({ id, household_id: RESEARCH_HOUSEHOLD, kind: 'research_scan', status: 'queued', run_after: '2026-10-06T23:00:00.000Z', attempts: 0, max_attempts: 4, payload: {}, idempotency_key: `research_scan:${RESEARCH_HOUSEHOLD}:2026-10-07:${id}` });
     tables.agent_jobs = [job('job-1')];
     tables.agent_runs = [];
-    const worker = replayWorker(fakeDb(tables), tables.agent_jobs, jobsDir, clockOn('2026-10-07T06:00:00+07:00'));
+    const worker = replayWorker(memoryDb(tables), tables.agent_jobs, jobsDir, clockOn('2026-10-07T06:00:00+07:00'));
     withTitleCheck(worker.db, tables);
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
     vi.spyOn(console, 'warn').mockImplementation(() => undefined);
@@ -331,7 +331,7 @@ describe('the research tools stay in their household (AGENT.md §4)', () => {
     const other = { ...tables.properties?.[0], id: 'other-property', household_id: 'household-b' };
     const gone = { ...tables.properties?.[1], id: 'gone-property', deleted_at: '2026-10-01T00:00:00Z' };
     tables.properties?.push(other, gone);
-    const { properties } = await listPropertiesTool(fakeDb(tables), RESEARCH_HOUSEHOLD, runSheet().cite).run();
+    const { properties } = await listPropertiesTool(memoryDb(tables), RESEARCH_HOUSEHOLD, runSheet().cite).run();
     expect(properties).toHaveLength(7);
     expect(properties.map((row) => row.id)).not.toContain('other-property');
     expect(properties[2]).toMatchObject({ handle: 'f3', property_label: 'Dãy trọ Dĩ An', commune_name: 'Phường Dĩ An', province_name: 'TP. Hồ Chí Minh' });
@@ -342,14 +342,14 @@ describe('the research tools stay in their household (AGENT.md §4)', () => {
     tables.admin_unit_legacy_map = [{ new_commune_code: '25942', old_province_name: 'Tỉnh Bình Dương', old_district_name: 'Thành phố Dĩ An', merge_kind: 'whole' }];
     const seeded = tables.research_topics?.length;
     tables.properties = (tables.properties ?? []).filter((row) => row.code !== 'BAOLOC');
-    await syncResearchTopics(fakeDb(tables), RESEARCH_HOUSEHOLD);
+    await syncResearchTopics(memoryDb(tables), RESEARCH_HOUSEHOLD);
     const topics = () => (tables.research_topics ?? []).map((row) => `${String(row.topic_key)}:${String(row.active)}`);
     expect(tables.research_topics).toHaveLength(seeded ?? 0);
     expect(topics()).toContain('province:68:false');
     expect(topics()).toContain('commune:24823:false');
     expect(topics().filter((topic) => topic.endsWith(':true'))).toHaveLength(13);
     const before = JSON.stringify(tables.research_topics);
-    await syncResearchTopics(fakeDb(tables), RESEARCH_HOUSEHOLD);
+    await syncResearchTopics(memoryDb(tables), RESEARCH_HOUSEHOLD);
     expect(JSON.stringify(tables.research_topics)).toBe(before);
   });
 });
