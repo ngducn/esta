@@ -8,15 +8,33 @@ import { importScript, runImport } from './import-export.ts';
 
 const [command, ...args] = process.argv.slice(2);
 
+const UPLOADER = '00000000-0000-0000-0000-000000000001';
+
+/** Renames only seeded files. A file a user uploaded has an owner and Storage refuses to move it (`private.refuse_registered_document_write`); earlier tests in the db job leave some, and the first seeded file in id order is given an owner here so a pick by id order fails every run, not one run in two. */
+async function oddNamesSkipUploadedFiles(email: string): Promise<void> {
+  const target = localTarget();
+  const householdId = runSql<{ id: string }>(target.dbUrl, `select household_id::text as id from public.household_members where invited_email = '${email.replaceAll("'", '')}'`)[0]?.id;
+  if (householdId === undefined) throw new Error(`No household member invited as ${email}`);
+  const owned = `bucket_id = 'documents' and name in (select (select storage_path from public.documents where id = first.id) from (select distinct on (mime) id, mime from public.documents where household_id = '${householdId}' and mime in ('image/jpeg', 'application/pdf') order by mime, id) first)`;
+  runSql(target.dbUrl, `do $x$ begin set local session_replication_role = replica; update storage.objects set owner_id = '${UPLOADER}' where ${owned}; end $x$;`);
+  try {
+    await oddDocumentNames(email);
+  } finally {
+    runSql(target.dbUrl, `do $x$ begin set local session_replication_role = replica; update storage.objects set owner_id = null where owner_id = '${UPLOADER}'; end $x$;`);
+  }
+}
+
 /** Gives a household one document whose file ends in `.jfif` and one with no extension, as a browser and a Mac can store them. */
 async function oddDocumentNames(email: string): Promise<void> {
   const target = localTarget();
   const householdId = runSql<{ id: string }>(target.dbUrl, `select household_id::text as id from public.household_members where invited_email = '${email.replaceAll("'", '')}'`)[0]?.id;
   if (householdId === undefined) throw new Error(`No household member invited as ${email}`);
   const pick = (mime: string, leaf: string) =>
-    runSql<{ id: string; storage_path: string }>(target.dbUrl, `select id::text as id, storage_path from public.documents where household_id = '${householdId}' and mime = '${mime}' order by id limit 1`).map((row) => ({ ...row, renamed: `${householdId}/${row.id}/${leaf}` }));
+    runSql<{ id: string; storage_path: string }>(target.dbUrl, `select d.id::text as id, d.storage_path from public.documents d join storage.objects o on o.bucket_id = 'documents' and o.name = d.storage_path where d.household_id = '${householdId}' and d.mime = '${mime}' and o.owner_id is null order by d.id limit 1`).map((row) => ({ ...row, renamed: `${householdId}/${row.id}/${leaf}` }));
   const storage = createClient(target.apiUrl, target.serviceKey, { auth: { persistSession: false } }).storage.from('documents');
-  for (const doc of [...pick('image/jpeg', 'scan.jfif'), ...pick('application/pdf', 'tai-lieu')]) {
+  const docs = [...pick('image/jpeg', 'scan.jfif'), ...pick('application/pdf', 'tai-lieu')];
+  if (docs.length !== 2) throw new Error(`Expected a seeded jpeg and a seeded pdf document with a file in Storage, found ${docs.length}`);
+  for (const doc of docs) {
     const { error } = await storage.move(doc.storage_path, doc.renamed);
     if (error) throw new Error(`Moving ${doc.storage_path} failed: ${error.message}`);
     runSql(target.dbUrl, `do $x$ begin set local session_replication_role = replica; update public.documents set storage_path = '${doc.renamed}' where id = '${doc.id}'; end $x$;`);
@@ -73,7 +91,7 @@ async function refusedImportLeavesNoFiles(paths: readonly string[]): Promise<voi
   console.log('a refused import left no household and no file in Storage');
 }
 
-if (command === 'odd-names' && args[0] !== undefined) await oddDocumentNames(args[0]);
+if (command === 'odd-names' && args[0] !== undefined) await oddNamesSkipUploadedFiles(args[0]);
 else if (command === 'rollback' && args.length > 0) failedImportLeavesNothing(args);
 else if (command === 'refused' && args.length > 0) await refusedImportLeavesNoFiles(args);
 else {
