@@ -362,9 +362,8 @@
       }
     },
     "long-function": {
-      "value": 14,
+      "value": 13,
       "files": {
-        "apps/agent/src/test/fake-db.ts": 1,
         "apps/connector/src/tools.ts": 1,
         "apps/web/src/app/(app)/properties/page.tsx": 1,
         "apps/web/src/components/documents/multi-page-capture.tsx": 1,
@@ -417,7 +416,7 @@
       }
     },
     "literal-role-check": {
-      "value": 54,
+      "value": 56,
       "files": {
         "apps/web/src/app/(app)/assistant/page.tsx": 1,
         "apps/web/src/app/(app)/collections/import/[id]/page.tsx": 1,
@@ -426,7 +425,7 @@
         "apps/web/src/app/(app)/collections/page.tsx": 2,
         "apps/web/src/app/(app)/documents/(vault)/(list)/page.tsx": 1,
         "apps/web/src/app/(app)/page.tsx": 1,
-        "apps/web/src/app/(app)/properties/[id]/activity/page.tsx": 1,
+        "apps/web/src/app/(app)/properties/[id]/activity/page.tsx": 2,
         "apps/web/src/app/(app)/properties/[id]/detail-frame.tsx": 3,
         "apps/web/src/app/(app)/properties/[id]/documents/page.tsx": 1,
         "apps/web/src/app/(app)/properties/[id]/edit/page.tsx": 1,
@@ -449,6 +448,7 @@
         "apps/web/src/app/onboarding/page.tsx": 1,
         "apps/web/src/components/settings/data-section.tsx": 1,
         "apps/web/src/components/settings/household-section.tsx": 1,
+        "apps/web/src/components/settings/member-actions.tsx": 1,
         "apps/web/src/components/settings/members-section.tsx": 1,
         "apps/web/src/components/settings/receiving-accounts.tsx": 1,
         "apps/web/src/proxy.ts": 1,
@@ -658,6 +658,12 @@
       "from": 0,
       "to": 65,
       "reason": "new metrics at today's counts (Q-01)"
+    },
+    {
+      "metric": "literal-role-check",
+      "from": 54,
+      "to": 56,
+      "reason": "Q-01 fix round: wider matchers for the new metrics"
     }
   ]
 }

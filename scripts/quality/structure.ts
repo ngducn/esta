@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import ts from 'typescript';
-import { calls, nodes, unwrap, type Finder } from './syntax.ts';
+import { calls, declarations, nodes, unwrap, type Finder } from './syntax.ts';
 
 export const MAX_FUNCTION_LINES = 150;
 
@@ -25,8 +25,8 @@ export const longFunctions: Finder = (source) =>
 
 const WRITE_METHODS = new Set(['insert', 'update', 'upsert', 'delete']);
 
-/** The receiver chain of a call, ending at the first `.from(…)` call: the shape of a Supabase query builder. */
-function startsAtFrom(expression: ts.Expression): boolean {
+/** The receiver chain of a call, ending at the first `.from(…)` call: the shape of a Supabase query builder. An identifier resolves to the initializer of a `const` of that name in the file. */
+function startsAtFrom(expression: ts.Expression, constants: ReadonlyMap<string, ts.Expression>, depth = 0): boolean {
   let current = unwrap(expression);
   for (;;) {
     if (ts.isCallExpression(current)) {
@@ -34,20 +34,34 @@ function startsAtFrom(expression: ts.Expression): boolean {
       current = unwrap(current.expression);
     } else if (ts.isPropertyAccessExpression(current) || ts.isElementAccessExpression(current)) {
       current = unwrap(current.expression);
+    } else if (ts.isIdentifier(current)) {
+      const initializer = constants.get(current.text);
+      return initializer !== undefined && depth < 5 && startsAtFrom(initializer, constants, depth + 1);
     } else {
       return false;
     }
   }
 }
 
-/** `.insert(`, `.update(`, `.upsert(` or `.delete(` on a `.from(…)` query, or any `.rpc(` call, reported at the method name. */
-export const directWrites: Finder = (source) =>
-  calls(source).flatMap((call) => {
+const constInitializers = (source: ts.SourceFile) => {
+  const map = new Map<string, ts.Expression>();
+  for (const declaration of declarations(source)) {
+    const isConst = ts.isVariableDeclarationList(declaration.parent) && (declaration.parent.flags & ts.NodeFlags.Const) !== 0;
+    if (isConst && ts.isIdentifier(declaration.name) && declaration.initializer !== undefined) map.set(declaration.name.text, declaration.initializer);
+  }
+  return map;
+};
+
+/** `.insert(`, `.update(`, `.upsert(` or `.delete(` on a `.from(…)` query (also one held in a `const`), or any `.rpc(` call, reported at the method name. */
+export const directWrites: Finder = (source) => {
+  const constants = constInitializers(source);
+  return calls(source).flatMap((call) => {
     const callee = call.expression;
     if (!ts.isPropertyAccessExpression(callee)) return [];
     const method = callee.name.text;
-    return method === 'rpc' || (WRITE_METHODS.has(method) && startsAtFrom(callee.expression)) ? [callee.name] : [];
+    return method === 'rpc' || (WRITE_METHODS.has(method) && startsAtFrom(callee.expression, constants)) ? [callee.name] : [];
   });
+};
 
 /** The values of the `member_role` enum, read from the generated database types. */
 export function memberRoles(root: string): readonly string[] {
@@ -65,25 +79,23 @@ const COMPARISONS = new Set([
   ts.SyntaxKind.ExclamationEqualsEqualsToken,
 ]);
 
-const endsInRole = (expression: ts.Expression) => {
-  const value = unwrap(expression);
-  const name = ts.isIdentifier(value) ? value.text : ts.isPropertyAccessExpression(value) ? value.name.text : undefined;
-  return name !== undefined && /role$/i.test(name);
-};
-
-/** A comparison of a `…role` value with one of the member roles as a string literal. */
+/** A comparison with a member role as a string literal (whatever the other side is called), a `case` of a role literal, or `.includes(…)` on an array literal that holds one. */
 export const literalRoleChecks = (roles: readonly string[]): Finder => {
   const isRole = (expression: ts.Expression) => {
     const value = unwrap(expression);
     return ts.isStringLiteralLike(value) && roles.includes(value.text);
   };
-  return (source) =>
-    nodes(source, ts.SyntaxKind.BinaryExpression)
+  return (source) => [
+    ...nodes(source, ts.SyntaxKind.BinaryExpression)
       .filter(ts.isBinaryExpression)
-      .filter(
-        ({ operatorToken, left, right }) =>
-          COMPARISONS.has(operatorToken.kind) && ((isRole(left) && endsInRole(right)) || (isRole(right) && endsInRole(left))),
-      );
+      .filter(({ operatorToken, left, right }) => COMPARISONS.has(operatorToken.kind) && (isRole(left) || isRole(right))),
+    ...nodes(source, ts.SyntaxKind.CaseClause).filter(ts.isCaseClause).filter(({ expression }) => isRole(expression)),
+    ...calls(source).filter(({ expression, arguments: args }) => {
+      if (!ts.isPropertyAccessExpression(expression) || expression.name.text !== 'includes' || args.length === 0) return false;
+      const receiver = unwrap(expression.expression);
+      return ts.isArrayLiteralExpression(receiver) && receiver.elements.some(isRole);
+    }),
+  ];
 };
 
 const KEBAB = /^[a-z0-9]+(-[a-z0-9]+)*$/;

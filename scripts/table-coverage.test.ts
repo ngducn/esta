@@ -25,4 +25,16 @@ describe('coverageProblems', () => {
     const named = [{ path: 'supabase/tests/a.test.sql', text: "select tests.cannot_write('public.leases'); -- why\nselect 'a -- b', 'leases';" }];
     expect(coverageProblems([{ name: 'leases', rls: true }], named)).toEqual([]);
   });
+
+  it('keeps dashes inside a dollar-quoted body from starting a comment', () => {
+    const dollar = [{ path: 'supabase/tests/a.test.sql', text: 'select $$a -- b$$, leases;' }];
+    expect(coverageProblems([{ name: 'leases', rls: true }], dollar)).toEqual([]);
+  });
+
+  it('does not let an apostrophe in a tagged dollar-quoted body swallow later text', () => {
+    const tagged = [{ path: 'supabase/tests/a.test.sql', text: "select $body$ it's $body$;\n-- leases is only in this comment\nselect 1;" }];
+    expect(coverageProblems([{ name: 'leases', rls: true }], tagged)).toEqual(['public.leases is named in no pgTAP file under supabase/tests']);
+    const named = [{ path: 'supabase/tests/a.test.sql', text: "select $body$ it's $body$;\nselect 'x', leases;" }];
+    expect(coverageProblems([{ name: 'leases', rls: true }], named)).toEqual([]);
+  });
 });

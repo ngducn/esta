@@ -48,10 +48,12 @@ const E2E_SPECS: Scope = { include: /^e2e\//, exclude: /^e2e\/helpers\// };
 const EVERY_FILE: Scope = { include: /./ };
 const NOT_TESTS: Scope = { include: /./, exclude: TEST_FILE };
 
-const WEB_SRC: Scope = { include: /^apps\/web\/src\//, exclude: NOT_PRODUCT };
+/** The four target metrics also skip test helpers: any file under a `test/` or `__tests__/` folder. */
+const NOT_TARGETED = new RegExp(`${NOT_PRODUCT.source}|(^|/)test/`);
+const WEB_SRC: Scope = { include: /^apps\/web\/src\//, exclude: NOT_TARGETED };
 const SOURCE_NAMES: Scope = {
   include: /^(apps\/web\/src|apps\/agent\/src|packages\/[^/]+\/src)\/.*\.tsx?$/,
-  exclude: NOT_PRODUCT,
+  exclude: NOT_TARGETED,
 };
 
 const without = (scope: Scope, home: RegExp): Scope => ({
@@ -316,7 +318,7 @@ export const METRICS: readonly Metric[] = [
     message: `A function, arrow function or method longer than ${MAX_FUNCTION_LINES} lines (a component counts).`,
     home: { use: 'Split by state (a hook or a reducer) or by mode (one component per variant).' },
     section: 'targets',
-    scope: PRODUCT_CODE,
+    scope: { include: PRODUCT_CODE.include, exclude: NOT_TARGETED },
     find: longFunctions,
   }),
   syntax({
