@@ -115,7 +115,7 @@ begin
 end;
 $$;
 
--- A row some members must not read is hidden from them everywhere its content shows up (Q-16). A table that stores a
+-- A row some members must not read is hidden from them everywhere its content shows up. A table that stores a
 -- copy of another table's rows, such as the messages of a conversation, is listed here with the column that points back;
 -- a new copy is added here so every test that proves a hidden row covers it.
 create function tests.content_copies()

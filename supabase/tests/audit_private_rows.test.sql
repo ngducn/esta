@@ -172,8 +172,6 @@ from tests.private_tables() t, tests.audit_privacy(t);
 select is(leaks, '{}'::text[], format('%s: a member who cannot read a row cannot read its history either', t))
 from tests.private_tables() t, tests.audit_privacy(t);
 
--- The same rows through the one helper: each private row, its history and its registered copies are hidden from a member
--- who may not read it. The operator note, the jobs and their runs are the operator's; the question is the member's.
 select * from tests.hidden_everywhere('conversations', (select id from public.conversations where household_id = :'a'), 'admin.a@test.esta.test');
 select * from tests.hidden_everywhere('messages', (select id from public.messages where household_id = :'a' order by created_at, id limit 1), 'admin.a@test.esta.test');
 select * from tests.hidden_everywhere('agent_items', (select id from public.agent_items where household_id = :'a' and audience = 'operator'), 'member.a@test.esta.test');

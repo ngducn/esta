@@ -14,7 +14,7 @@ export function coverageProblems(tables: readonly PublicTable[], files: readonly
   ]);
 }
 
-/** A table some members cannot read must have a test that proves its rows, history and copies are hidden from them (Q-16). */
+/** A table some members cannot read must have a test that proves its rows, history and copies are hidden from them. */
 export function hiddenRowProblems(privateTables: readonly string[], files: readonly TestFile[]): string[] {
   return privateTables
     .filter((name) => !files.some(({ text }) => new RegExp(`hidden_everywhere\\(\\s*'(?:public\\.)?${name}'`).test(text)))

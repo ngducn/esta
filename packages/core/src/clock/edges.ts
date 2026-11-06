@@ -7,7 +7,7 @@ export type ClockEdge = { readonly name: string; readonly now: Instant; readonly
 const edge = (name: string, now: string, businessDate: string): ClockEdge => ({ name, now: parseInstant(now), businessDate: businessDate as IsoDate });
 
 /**
- * The instants a logic keyed by a day, a week or a month must be tried at (Q-16): a minute either side of local
+ * The instants a logic keyed by a day, a week or a month must be tried at: a minute either side of local
  * midnight, Sunday into Monday, the end of a month, and the frozen test clock the integration lane runs at. Every
  * instant is in Asia/Ho_Chi_Minh (+07), where the UTC date is the day before the business date until 07:00.
  */

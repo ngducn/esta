@@ -5,7 +5,7 @@ import { parseSlot, slotWorkdir } from './slot.ts';
 
 export const BASELINE = 'quality/count-then-write.json';
 
-/** Definer functions that count rows and insert without an advisory lock: two calls at once can both pass the count (Q-16). */
+/** Definer functions that count rows and insert without an advisory lock: two calls at once can both pass the count. */
 export function unlockedCountWrites(workdir: string): string[] {
   return query<{ name: string }>(
     workdir,
