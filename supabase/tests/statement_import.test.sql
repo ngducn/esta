@@ -133,8 +133,8 @@ grant select on posted to authenticated;
 -- A row as the server's matchRows stored it, with a fingerprint made from its key.
 create function pg_temp.line(p_index integer, p_on date, p_amount bigint, p_status text, p_invoice uuid, p_reason text default null, p_key text default null)
 returns jsonb language sql as $$
-  select jsonb_build_object('row_index', p_index, 'posted_on', p_on, 'amount_vnd', p_amount, 'description', 'ESTA DEMO ' || p_index,
-    'bank_ref', 'FT' || p_index, 'fingerprint', md5(coalesce(p_key, p_index::text)) || md5('fp' || coalesce(p_key, p_index::text)),
+  select jsonb_build_object('row_index', p_index, 'posted_on', p_on, 'amount_vnd', p_amount, 'description', 'ESTA ' || coalesce((select i.memo_code from public.invoices i where i.id = p_invoice and p_status = 'memo_match'), 'DEMO ' || p_index),
+    'bank_ref', 'FT' || coalesce(p_key, p_index::text), 'fingerprint', md5(coalesce(p_key, p_index::text)) || md5('fp' || coalesce(p_key, p_index::text)),
     'status', p_status, 'reason', p_reason, 'invoice_id', p_invoice, 'candidate_invoice_ids', '[]'::jsonb)
 $$;
 grant execute on function pg_temp.line(integer, date, bigint, text, uuid, text, text) to authenticated;
@@ -166,7 +166,7 @@ select throws_ok(format($$ select public.create_statement_import('00000000-0000-
   jsonb_build_array(pg_temp.line(1, '2026-10-02', 3000000, 'posted', '00000000-0000-4000-8000-0000000f0110'))),
   '23514', null, 'a line cannot arrive already posted: only a payment makes a line posted');
 select throws_ok(format($$ select public.create_statement_import('00000000-0000-4000-8000-00000000c0a9', '00000000-0000-4000-8000-00000000ba0a', 'sao-ke.csv', '{}', '[]', %L) $$,
-  jsonb_build_array(pg_temp.line(1, '2026-10-02', 2500000, 'memo_match', '00000000-0000-4000-8000-0000000f0b10'))),
+  jsonb_build_array(pg_temp.line(1, '2026-10-02', 2500000, 'suggested', '00000000-0000-4000-8000-0000000f0b10'))),
   '23503', null, 'a line cannot name another household''s bill');
 select lives_ok(format($$ select public.create_statement_import('00000000-0000-4000-8000-00000000c0a1', '00000000-0000-4000-8000-00000000ba0a', 'sao-ke.csv',
   '{"headerRow":0,"header":["Ngày","Số tiền","Nội dung"],"mapping":{"date":0,"description":2,"bankRef":null,"amount":{"kind":"signed","amount":1}}}', '[{"index":8,"field":"amount","reason":"fractional"}]', %L) $$, :'rows'),
