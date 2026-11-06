@@ -57,6 +57,19 @@ const BEFORE = ['₫', 'đ', 'VND', 'vnđ', 'VNĐ', 'Đ', 'vnd'];
 const groupings = fc.array(fc.integer({ min: 1, max: 4 }), { minLength: 1, maxLength: 12 });
 const groupSeparators = fc.constantFrom('', ' ', '.', ',', '\u00b7', '\u00a0', '  ');
 
+/** The digits cut into groups of the given sizes, the rest in a last group. */
+function splitDigits(ds: readonly number[], sizes: readonly number[]): string[] {
+  const parts: string[] = [];
+  let at = 0;
+  for (const size of sizes) {
+    if (at >= ds.length) break;
+    parts.push(ds.slice(at, at + size).join(''));
+    at += size;
+  }
+  if (at < ds.length) parts.push(ds.slice(at).join(''));
+  return parts;
+}
+
 describe('the national ID reducer on money', () => {
   it('never cuts a figure of nine to twelve digits that a currency marker follows or leads, in any grouping', () => {
     fc.assert(
@@ -69,14 +82,7 @@ describe('the national ID reducer on money', () => {
         fc.boolean(),
         fc.constantFrom('Giá ', ''),
         (ds, sizes, sep, marker, gap, before, lead) => {
-          const parts: string[] = [];
-          let at = 0;
-          for (const size of sizes) {
-            if (at >= ds.length) break;
-            parts.push(ds.slice(at, at + size).join(''));
-            at += size;
-          }
-          if (at < ds.length) parts.push(ds.slice(at).join(''));
+          const parts = splitDigits(ds, sizes);
           const figure = parts.join(sep);
           const leads = before && BEFORE.includes(marker);
           const text = leads ? `${lead}${marker}${gap}${figure}` : `${lead}${figure}${gap}${marker}`;
@@ -101,14 +107,7 @@ describe('the national ID reducer on a figure right after an ID label', () => {
         fc.constantFrom('', ' '),
         fc.constantFrom('CCCD ', 'CMND ', 'căn cước ', 'cccd: '),
         (ds, sizes, sep, marker, gap, label) => {
-          const parts: string[] = [];
-          let at = 0;
-          for (const size of sizes) {
-            if (at >= ds.length) break;
-            parts.push(ds.slice(at, at + size).join(''));
-            at += size;
-          }
-          if (at < ds.length) parts.push(ds.slice(at).join(''));
+          const parts = splitDigits(ds, sizes);
           const text = `${label}${parts.join(sep)}${gap}${marker}`;
           fc.pre(!new RegExp(DATE.source, 'u').test(text));
           fc.pre(parts.every((part) => part.length >= 3) && !(parts.length > 1 && sep === ''));

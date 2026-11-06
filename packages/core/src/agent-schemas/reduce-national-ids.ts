@@ -167,11 +167,15 @@ function idSpans(original: string, idField: boolean): Span[] {
   }
   const dates = groupsIn(text, groups, DATE);
   const priced = moneyText(original, folded);
-  // A figure of 9 to 12 digits with only separators between it and an ID label is an ID, whatever its grouping or currency mark.
-  const idFigure = ([figure]: RegExpExecArray, at: number) => {
-    const count = [...figure].filter((char) => DIGIT.test(char)).length;
-    return count >= 9 && count <= 12 && labels.some((label) => label.end <= at && !/[\p{L}\p{Nd}]/u.test(text.slice(label.end, at)));
-  };
+  // A figure of 9 to 12 digits with only separators between it and an ID label is an ID, whatever its grouping or currency mark:
+  // no amount or price that starts inside it counts, so `CMND 097 46 1.769 đ` is one ID and not an ID and a price.
+  const idFigures = [...priced.matchAll(new RegExp(MONEY_FIGURE, 'gu'))].filter(
+    (figure) =>
+      figure[0].replace(/\P{Nd}/gu, '').length >= 9 &&
+      figure[0].replace(/\P{Nd}/gu, '').length <= 12 &&
+      labels.some((label) => label.end <= figure.index && !/[\p{L}\p{Nd}]/u.test(text.slice(label.end, figure.index))),
+  );
+  const idFigure = ([figure]: RegExpExecArray, at: number) => idFigures.some((id) => at < id.index + id[0].length && id.index < at + figure.length);
   const startsWithZero = ([figure]: RegExpExecArray) => isZero(figure.charAt(0));
   const notAmount = (match: RegExpExecArray) => startsWithZero(match) || idFigure(match, match.index);
   const notMoney = (match: RegExpExecArray) => {

@@ -2,7 +2,7 @@ import { writeFileSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { CARET_CLASS, TILDE_CLASS } from './national-id-classes.ts';
 
-export const nationalIdMigrationPath = fileURLToPath(new URL('../supabase/migrations/20261007643000_national_id_follows_core.sql', import.meta.url));
+export const nationalIdMigrationPath = fileURLToPath(new URL('../supabase/migrations/20261007650000_national_id_follows_core.sql', import.meta.url));
 
 const hex = (cp: number, w: number) => cp.toString(16).toUpperCase().padStart(w, '0');
 const esc = (cp: number) => (cp <= 0xffff ? '\\u' + hex(cp, 4) : '\\U' + hex(cp, 8));

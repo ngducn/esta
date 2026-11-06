@@ -117,10 +117,33 @@ function fuzzTexts(count: number): string[] {
   });
 }
 
+const FUZZ_SLASHES = ['/', '\u2215', '\u2044', '\u29F8', '\uFF0F', '-', '.', '\u00B7'];
+const DATE_FUZZ_COUNT = 400;
+
+/** An ID label, a date-shaped prefix in one script's digits with slashes of any width, then 5 to 8 more digits: the shape `CCCD 07∕12∕34 567890` has. */
+function dateFuzzTexts(count: number): string[] {
+  const next = stream(20261008);
+  const pick = <T,>(items: readonly T[]): T => items[Math.floor(next() * items.length)] as T;
+  const number = (zero: number, length: number) => Array.from({ length }, () => String.fromCodePoint(zero + Math.floor(next() * 10))).join('');
+  return Array.from({ length: count }, () => {
+    const zero = pick(FUZZ_ZEROS);
+    const slash = pick(FUZZ_SLASHES);
+    const date = [number(zero, 1 + Math.floor(next() * 2)), number(zero, 1 + Math.floor(next() * 2)), number(zero, 2 + 2 * Math.floor(next() * 2))].join(slash);
+    return `${pick(FUZZ_LABELS.slice(1, 5).concat(['CCCD ', 'căn cước ']))}${date}${pick(['', ' ', '  ', '\n'])}${number(zero, 4 + Math.floor(next() * 5))}${pick(FUZZ_TAILS.slice(0, 3))}`;
+  });
+}
+
 function fuzzLine(): string {
-  const texts = fuzzTexts(FUZZ_COUNT);
+  return fuzzCheck(fuzzTexts(FUZZ_COUNT), `the database refuses exactly the ${FUZZ_COUNT} generated texts that the reducer cuts`);
+}
+
+function dateFuzzLine(): string {
+  return fuzzCheck(dateFuzzTexts(DATE_FUZZ_COUNT), `the database refuses exactly the ${DATE_FUZZ_COUNT} date-shaped texts after a label that the reducer cuts`);
+}
+
+function fuzzCheck(texts: string[], title: string): string {
   const expected = texts.map(reducerCuts);
-  return `select is(array(select private.holds_national_id(to_jsonb(t)) from unnest(array[${texts.map(literal).join(', ')}]::text[]) with ordinality as x(t, n) order by n), array[${expected.join(', ')}], ${description(`the database refuses exactly the ${FUZZ_COUNT} generated texts that the reducer cuts`)});`;
+  return `select is(array(select private.holds_national_id(to_jsonb(t)) from unnest(array[${texts.map(literal).join(', ')}]::text[]) with ordinality as x(t, n) order by n), array[${expected.join(', ')}], ${description(title)});`;
 }
 
 export function renderNationalIdTest(): string {
@@ -140,6 +163,7 @@ export function renderNationalIdTest(): string {
     ...refused.map(([name, text]) => `select ok(${holds(text)}, ${description(`refuses ${name}, which the reducer leaves`)});`),
     ...sweepLines(),
     fuzzLine(),
+    dateFuzzLine(),
   ];
   // Last and as a member, through the public judge only: a member calling a private function directly crashes local Postgres (#128).
   const judge = `select is(public.national_id_indexes(${array}), array[${positions.join(', ')}]::integer[], 'a member asking the review save judge gets the position of every value the CHECK refuses');`;
