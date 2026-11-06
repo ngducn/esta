@@ -1,3 +1,4 @@
+import type { IsoDate } from '@esta/core/date';
 import { addDays, addMonths } from '@esta/core/date/calendar';
 import { EXPENSE_CATEGORY_IDS } from '@esta/core/expenses';
 import { formatMonthYear, formatYear, type Locale } from '@esta/core/format';
@@ -19,7 +20,7 @@ const inputSchema = z.strictObject({
 const USAGE = 'ledger takes {"property": a handle from list_properties, or none for the whole household, "year", "month": 1 to 12, or none for the whole year}';
 
 /** `ledger` (AGENT.md §4): income received and expenses paid in a month or a year, at one property or the whole household. Money received or spent at an archived property still counts, as on Lãi lỗ. */
-export function ledgerTool(db: AgentDb, householdId: string, locale: Locale, properties: PropertyHandles, cite: RunSheet['cite']) {
+export function ledgerTool(db: AgentDb, householdId: string, locale: Locale, properties: PropertyHandles, cite: RunSheet['cite'], asOf: IsoDate) {
   const amounts = (sums: LedgerSums) => ({
     ...vndField('income', sums.incomeVnd, locale),
     ...vndField('expenses', sums.expensesVnd, locale),
@@ -29,7 +30,9 @@ export function ledgerTool(db: AgentDb, householdId: string, locale: Locale, pro
     const { property: handle, year, month } = parseToolInput(inputSchema, raw, USAGE);
     const property = handle === undefined ? null : propertyByHandle(properties, handle);
     const from = monthStart(year, month ?? 1);
-    const to = addDays(addMonths(from, month === undefined ? 12 : 1), -1);
+    const periodEnd = addDays(addMonths(from, month === undefined ? 12 : 1), -1);
+    const thisMonthEnd = addDays(addMonths(monthStart(Number(asOf.slice(0, 4)), Number(asOf.slice(5, 7))), 1), -1);
+    const to = month === undefined && from <= thisMonthEnd && periodEnd > thisMonthEnd ? thisMonthEnd : periodEnd;
     const facts = await readLedgerFacts(db, householdId, { ...(property === null ? {} : { propertyId: property.id }), from, to, keepArchived: true });
     const { totals, months } = buildLedger({ ...facts, from, to });
     const ledger = cite({

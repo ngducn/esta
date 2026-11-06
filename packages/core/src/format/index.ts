@@ -57,6 +57,9 @@ export function wholePercent(bps: number): number {
   return Math.floor(bps / 100);
 }
 
+/** The share as the tax card and the watch say it: whole percent, rounded down, with the sign, the same in both languages. */
+export const formatWholeBps = (bps: number): string => `${wholePercent(bps)}%`;
+
 export function formatArea(squareMeters: number, locale: Locale): string {
   return `${formatDecimal(squareMeters, 2, locale)} m²`;
 }

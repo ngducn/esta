@@ -1,4 +1,4 @@
-import { formatVnd, formatYear, wholePercent } from '@esta/core/format';
+import { formatVnd, formatWholeBps, formatYear } from '@esta/core/format';
 import { estaUri } from '@esta/core/links';
 import { computeTaxPosition, toTaxInputs } from '@esta/core/tax';
 import { z } from 'zod';
@@ -26,7 +26,7 @@ export function taxPositionTool({ reads, locale, asOf, cite }: ReadToolContext) 
           other_business_revenue_display: formatVnd(owner.otherBusinessRevenueVnd, locale),
           threshold_display: formatVnd(position.thresholdVnd, locale),
           remaining_to_threshold_display: formatVnd(position.remainingToThresholdVnd, locale),
-          threshold_share_display: `${wholePercent(position.progressBp)}%`,
+          threshold_share_display: formatWholeBps(position.progressBp),
           over_threshold: position.overThreshold,
           vat_estimate_display: formatVnd(position.vatEstimateVnd, locale),
           pit_estimate_display: formatVnd(position.pitEstimateVnd, locale),
