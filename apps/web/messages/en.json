@@ -1256,6 +1256,7 @@
     },
     "sources": "Sources",
     "citationLabel": "Source {index}: {source}. Opens in a new tab",
+    "working": "How it was worked out: {working}",
     "linkNotFoundTitle": "This record was not found",
     "linkNotFoundBody": "The link may be out of date, or the record does not belong to your family.",
     "linkNotFoundAction": "Back to the assistant",

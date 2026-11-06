@@ -19,6 +19,7 @@ import { agentItems } from '../../../../supabase/seed/generator/agent.ts';
 import { householdSeeds } from '../../../../supabase/seed/generator/households.ts';
 import { PROPERTY_SEEDS } from '../../../../supabase/seed/generator/properties.ts';
 import { replayedReads } from './ask-reads';
+import { pruneCaseRecordings } from './prune-cases';
 
 export type AskCase = {
   readonly id: string;
@@ -57,20 +58,9 @@ function seededNote(rule: 'W1' | 'W3'): AskTopic {
 const OVERDUE_NOTE = seededNote('W1');
 const LEASE_ENDING_NOTE = seededNote('W3');
 
-export const RATE_URL = 'https://tin-demo.example/lai-suat-vay-mua-nha';
-const LAND_URL = 'https://tin-demo.example/lai-suat-vay-mua-dat';
-const PROCEDURE_URL = 'https://demo.gov.vn/thu-tuc-sang-ten-so-do';
+import { LAND_URL, PAGE_TEXT, PROCEDURE_URL, quotePage, RATE_URL, webFetch, webSearch } from './ask-pages';
 
-export const webSearch = (query: string, ...urls: string[]) => ({ name: 'WebSearch', input: { query }, result: { results: [{ content: urls.map((url) => ({ url })) }] } });
-export const webFetch = (url: string, text: string) => ({ name: 'WebFetch', input: { url, prompt: 'Publication date line and the figures, copied exactly' }, result: { code: 200, result: text, url } });
-export const quotePage = (url: string, quotes: string[]) => call('quote_page', { url, quotes });
-
-/** What WebFetch returned for each hand-written page; the recordings quote these texts word for word. */
-export const PAGE_TEXT = {
-  [RATE_URL]: 'Publication date: 05/10/2026\nLãi suất cho vay mua nhà từ 7,5% một năm đối với khoản vay có tài sản bảo đảm. Mức thực tế thay đổi theo từng ngân hàng và kỳ hạn vay.',
-  [LAND_URL]: 'Publication date: 06/10/2026\nLãi suất cho vay mua đất nền từ 9% một năm, cao hơn vay mua nhà vì tài sản chưa có công trình.',
-  [PROCEDURE_URL]: 'Publication date: 01/10/2026\nHồ sơ sang tên gồm đơn đăng ký biến động, hợp đồng chuyển nhượng đã được công chứng và bản sao giấy tờ tùy thân của các bên.',
-} as const;
+export { PAGE_TEXT, quotePage, RATE_URL, webFetch, webSearch };
 
 /** A search that holds the Phòng 5 tenant's name, which the hook denies; the answer carries on without it. */
 export const LEAK_CASE: AskCase = {
@@ -94,6 +84,31 @@ export const ASK_CASES: readonly AskCase[] = [
     toolCalls: [webSearch('lãi suất vay mua đất nền', LAND_URL), webFetch(LAND_URL, PAGE_TEXT[LAND_URL]), quotePage(LAND_URL, ['Lãi suất cho vay mua đất nền từ 9% một năm'])],
     reply: 'Theo {{f2.source_name}}, bài đăng ngày {{f2.published_display}}: "{{f2.quote_1_label}}".',
   },
+  {
+    id: 't7-loan-at-quoted-rate',
+    question: 'Với lãi suất đó, vay 2 tỷ trong 15 năm mỗi tháng trả bao nhiêu?',
+    follows: { id: 't7-home-loan-rate', firstHandle: 2 },
+    toolCalls: [
+      webSearch('lãi suất vay mua nhà hiện nay', RATE_URL),
+      webFetch(RATE_URL, PAGE_TEXT[RATE_URL]),
+      quotePage(RATE_URL, ['Lãi suất cho vay mua nhà từ 7,5% một năm']),
+      call('calculate', { op: 'loan_payment', operands: ['f2.value_display', 'f4.quote_1_value_display', 'f3.value_display'] }),
+    ],
+    reply: 'Theo {{f4.source_name}}, bài đăng ngày {{f4.published_display}}: "{{f4.quote_1_label}}".\n\nVới lãi suất {{f4.quote_1_value_display}} mỗi năm, vay {{f2.value_display}} trong {{f3.value_display}} thì mỗi tháng trả {{f5.result_display}}. Đây chỉ là mức tham khảo, mỗi ngân hàng có thể áp dụng khác nhau.',
+  },
+  {
+    id: 't5-raise-room-rent',
+    question: 'Nếu tăng tiền phòng 2 ở Dĩ An lên 4tr thì mỗi năm thu thêm bao nhiêu?',
+    toolCalls: [PROPERTIES, call('list_leases', { property: 'f4' }), call('calculate', { op: 'difference', operands: ['f1.value_display', 'f11.rent_display'] }), call('calculate', { op: 'monthly_to_yearly', operands: ['f16.result_display'] })],
+    reply: 'Nếu tăng tiền thuê {{f11.unit_label}} ở {{f4.property_label}} từ {{f11.rent_display}} lên {{f1.value_display}}, mỗi tháng thu thêm {{f16.result_display}}, tức mỗi năm thu thêm {{f17.result_display}}.\n\nXem [hợp đồng {{f11.unit_label}}](f11).',
+  },
+  {
+    id: 't6-loan-payment',
+    question: 'Vay 2 tỷ trong 15 năm, lãi 9%/năm thì mỗi tháng trả bao nhiêu?',
+    toolCalls: [call('calculate', { op: 'loan_payment', operands: ['f1.value_display', 'f3.value_display', 'f2.value_display'] })],
+    reply: 'Vay {{f1.value_display}} trong {{f2.value_display}}, lãi {{f3.value_display}} mỗi năm, thì mỗi tháng trả {{f4.result_display}}.',
+  },
+  { id: 't6-monthly-rate-loan', question: 'Vay 2 tỷ trong 15 năm, lãi 0,8% một tháng thì mỗi tháng trả bao nhiêu?', toolCalls: [call('calculate', { op: 'monthly_rate_to_yearly', operands: ['f3.value_display'] }), call('calculate', { op: 'loan_payment', operands: ['f1.value_display', 'f4.result_display', 'f2.value_display'] })], reply: 'Vay {{f1.value_display}} trong {{f2.value_display}}, lãi {{f3.value_display}}, tức {{f4.result_display}} mỗi năm, thì mỗi tháng trả {{f5.result_display}}.' },
   {
     id: 'procedure-cited',
     question: 'Thủ tục sang tên sổ đỏ cần những giấy tờ gì?',
@@ -151,7 +166,7 @@ export const ASK_CASES: readonly AskCase[] = [
     id: 'q3-leases-ending',
     question: 'Hợp đồng nào hết hạn trong 60 ngày tới?',
     toolCalls: [PROPERTIES, call('list_leases', { status: 'active', ends_within_days: 60 })],
-    reply: 'Trong thời gian đó có một hợp đồng hết hạn:\n\n| Tài sản | Người thuê | Ngày hết hạn | Còn lại |\n| --- | --- | --- | --- |\n| [{{f8.property_label}}](f8) | {{f8.tenant_name}} | {{f8.end_date_display}} | {{f8.days_until_end_display}} ngày |',
+    reply: 'Trong thời gian đó có một hợp đồng hết hạn:\n\n| Tài sản | Người thuê | Ngày hết hạn | Còn lại |\n| --- | --- | --- | --- |\n| [{{f9.property_label}}](f9) | {{f9.tenant_name}} | {{f9.end_date_display}} | {{f9.days_until_end_display}} ngày |',
   },
   {
     id: 'q4-deposits-held',
@@ -163,7 +178,7 @@ export const ASK_CASES: readonly AskCase[] = [
     id: 'q5-tax-threshold',
     question: 'Doanh thu cho thuê năm nay của mẹ là bao nhiêu, còn cách ngưỡng 500 triệu bao xa?',
     toolCalls: [PROPERTIES, call('tax_position', { year: 2026 })],
-    reply: 'Năm {{f8.tax_year_display}}, doanh thu cho thuê tính cho {{f8.owner_name}} đến nay là {{f8.accrued_display}}, dự kiến cả kỳ là {{f8.projected_display}}.\n\nSo với ngưỡng {{f8.threshold_display}}, doanh thu dự kiến còn cách {{f8.remaining_to_threshold_display}} và đã đạt {{f8.threshold_share_display}} ngưỡng. Xem [thông tin thuế của {{f8.owner_name}}](f8).',
+    reply: 'Năm {{f9.tax_year_display}}, doanh thu cho thuê tính cho {{f9.owner_name}} đến nay là {{f9.accrued_display}}, dự kiến cả kỳ là {{f9.projected_display}}.\n\nSo với ngưỡng {{f9.threshold_display}}, doanh thu dự kiến còn cách {{f9.remaining_to_threshold_display}} và đã đạt {{f9.threshold_share_display}} ngưỡng. Xem [thông tin thuế của {{f9.owner_name}}](f9).',
   },
   {
     id: 'q6-bien-hoa-vacant',
@@ -362,10 +377,12 @@ export async function askRepairRecording(item: AskCase): Promise<Recording> {
 }
 
 if (import.meta.main) {
+  pruneCaseRecordings(DEFAULT_REPLAY_DIR, ASK_CASES.map(({ id }) => id));
   for (const item of ASK_CASES) {
     console.log(writeRecording(DEFAULT_REPLAY_DIR, await askRecording(item)));
     if (item.repairReply !== undefined) console.log(writeRecording(DEFAULT_REPLAY_DIR, await askRepairRecording(item)));
   }
+  pruneCaseRecordings(LEAK_REPLAY_DIR, [LEAK_CASE.id]);
   console.log(writeRecording(LEAK_REPLAY_DIR, await askRecording(LEAK_CASE)));
 }
 
