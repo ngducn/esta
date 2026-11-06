@@ -8,6 +8,7 @@ import { publicTable, type HouseholdSeed, type SeedRow } from './context.ts';
 import { DOCUMENT_SEEDS, documentId } from './documents.ts';
 import { householdId, userId } from './households.ts';
 import { seedId } from './ids.ts';
+import { quote } from './sql.ts';
 import { LEASE_SEEDS, seedInvoiceId, seedLeaseId, SPEC_TODAY, UNPAID } from './leasing.ts';
 import { PROPERTY_SEEDS, type PropertySeedKey } from './properties.ts';
 import { unitId, UNIT_SEEDS } from './units.ts';
@@ -133,3 +134,26 @@ export const agentItems = publicTable('agent_items', ({ household, properties })
   }
   return notes;
 });
+
+const conversationId = (household: HouseholdSeed) => seedId(`seed:conversation:${household.key}`);
+
+/**
+ * One finished question and answer in Mẹ's thread, so the assistant thread screen has an address the screens pass can
+ * open. A member reads only conversations she created and the creator column is stamped from the signed-in user, so
+ * the rows are written as her.
+ */
+export function conversationSql(households: readonly HouseholdSeed[]): string {
+  const asked = addDays(isoDate(SPEC_TODAY), -1);
+  return households
+    .map((household) => {
+      const base = { household: quote(householdId(household)), conversation: quote(conversationId(household)) };
+      return `select set_config('request.jwt.claim.sub', ${quote(userId('me', household))}, true);
+insert into public.conversations (id, household_id, title, last_asked_at, created_at, updated_at) values
+  (${base.conversation}, ${base.household}, 'Tiền thuê tháng này', '${asked}T09:00:00+07:00', '${asked}T09:00:00+07:00', '${asked}T09:00:00+07:00');
+insert into public.messages (id, household_id, conversation_id, role, content_md, status, created_at, updated_at) values
+  (${quote(seedId(`seed:message:${household.key}:question`))}, ${base.household}, ${base.conversation}, 'user', 'Tháng này nhà nào chưa đóng tiền?', 'done', '${asked}T09:00:00+07:00', '${asked}T09:00:00+07:00'),
+  (${quote(seedId(`seed:message:${household.key}:answer`))}, ${base.household}, ${base.conversation}, 'assistant', 'Tháng này chưa có khoản nào quá hạn ngoài hóa đơn đã nhắc ở trang Thu tiền.', 'done', '${asked}T09:00:20+07:00', '${asked}T09:00:20+07:00');
+select set_config('request.jwt.claim.sub', '', true);`;
+    })
+    .join('\n');
+}

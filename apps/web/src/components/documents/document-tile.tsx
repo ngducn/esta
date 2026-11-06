@@ -55,7 +55,7 @@ export function ExtractionPill({
         <Link
           href={`/documents/${documentId}/review`}
           data-testid="review-link"
-          className={cn(statusBadge, 'min-h-touch underline-offset-4 hover:underline', statusMarks[pill.mark].pill)}
+          className={cn(statusBadge, 'relative z-10 min-h-touch underline-offset-4 hover:underline', statusMarks[pill.mark].pill)}
         >
           <StatusShape status={pill.mark} className="size-4" />
           <span>{t(pill.label)}</span>
@@ -95,7 +95,7 @@ export function DocumentTile({
 }) {
   const t = useTranslations('documents');
   return (
-    <li data-testid="document-tile" data-document-id={document.id} className="flex min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-xs">
+    <li data-testid="document-tile" data-document-id={document.id} className="relative flex min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-xs">
       <div className="relative aspect-[4/3] bg-bg-subtle">
         {document.thumbUrl === null ? (
           <div className="flex size-full flex-col items-center justify-center gap-2 text-text-muted">
@@ -121,7 +121,7 @@ export function DocumentTile({
           href={`/documents/${document.id}`}
           prefetch={false}
           data-testid="document-link"
-          className="flex min-h-touch items-center text-body font-medium break-words text-text underline-offset-4 hover:underline"
+          className="text-body font-medium break-words text-text underline-offset-4 after:absolute after:inset-0 hover:underline"
         >
           {document.title}
         </Link>

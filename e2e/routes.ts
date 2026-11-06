@@ -17,10 +17,12 @@ const lease = seedId(`seed:lease:${HOUSEHOLD}:di-an:1`);
 const invoice = seedId(`seed:invoice:${HOUSEHOLD}:di-an:1:2026-10-25`);
 const document = (key: string) => seedId(`seed:document:${HOUSEHOLD}:${key}`);
 const parcel = seedId(`seed:parcel:${HOUSEHOLD}:q7:1`);
+const statementImport = seedId(`seed:statement-import:${HOUSEHOLD}`);
+const conversation = seedId(`seed:conversation:${HOUSEHOLD}`);
 const utilityAccount = seedId(`seed:utility-account:${HOUSEHOLD}:di-an:electricity`);
+const tenant = seedId(`seed:party:tenant-${HOUSEHOLD}:di-an:1`);
 
 const route = (page: string, path: string, viewer: Viewer = 'member'): AppRoute => ({ id: path === '/' ? 'home' : path.slice(1).replace(/[/?=&]/g, '-'), page, path, viewer });
-const unseeded = (page: string, viewer: Viewer, skip: string): AppRoute => ({ id: `skip-${page.replace(/[^a-z0-9]+/gi, '-')}`, page, path: null, viewer, skip });
 
 export const APP_ROUTES: readonly AppRoute[] = [
   route('(app)', '/'),
@@ -41,15 +43,15 @@ export const APP_ROUTES: readonly AppRoute[] = [
   route('(app)/collections', '/collections'),
   route('(app)/collections/import', '/collections/import'),
   route('(app)/collections/invoices/[invoiceId]', `/collections/invoices/${invoice}`),
-  unseeded('(app)/collections/import/[id]', 'member', 'a statement preview exists only after an upload; statement-import.spec.ts opens one'),
+  route('(app)/collections/import/[id]', `/collections/import/${statementImport}`),
   route('(app)/documents/(vault)/(list)', '/documents'),
   route('(app)/documents/(vault)/[documentId]', `/documents/${document('q7:certificate')}`),
   route('(app)/documents/[documentId]/review', `/documents/${document('di-an:lease-phong-8')}/review`),
   route('(app)/assistant', '/assistant'),
   route('(app)/assistant/market', '/assistant/market'),
   route('(app)/assistant/diagnostics', '/assistant/diagnostics', 'operator'),
-  unseeded('(app)/assistant/ask/[conversationId]', 'member', 'a conversation exists only after a question; assistant-thread.spec.ts opens one'),
-  unseeded('(app)/open/[type]/[id]', 'member', 'a redirect to another route in this list'),
+  route('(app)/assistant/ask/[conversationId]', `/assistant/ask/${conversation}`),
+  route('(app)/open/[type]/[id]', `/open/property/${DI_AN}`),
   route('(app)/reports', '/reports'),
   route('(app)/reports', '/reports?report=rent-roll'),
   route('(app)/reports', '/reports?report=collections'),
@@ -59,6 +61,7 @@ export const APP_ROUTES: readonly AppRoute[] = [
   route('(app)/reports/tax', '/reports/tax'),
   route('(app)/settings', '/settings'),
   route('(app)/settings/history', '/settings/history', 'operator'),
+  route('(app)/tenants/[partyId]', `/tenants/${tenant}`),
   route('sign-in', '/sign-in', 'signed-out'),
   route('sign-in/code', '/sign-in/code', 'signed-out'),
   route('sign-up', '/sign-up', 'signed-out'),
