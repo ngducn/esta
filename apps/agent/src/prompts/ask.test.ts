@@ -1,7 +1,7 @@
 import { isoDate } from '@esta/core/date';
 import { describe, expect, it } from 'vitest';
 import { ENGLISH_NAMING_RECORDS, SEED_LABELS, VIETNAMESE_NAMING_RECORDS } from '../../test/reply-language-cases';
-import { askFollowUpPrompt, askPrompt } from './ask';
+import { askFollowUpPrompt, askPrompt, STYLE_SWAPS } from './ask';
 
 const CONTEXT = { locale: 'vi' as const, today: isoDate('2026-10-07'), timezone: 'Asia/Ho_Chi_Minh', labels: SEED_LABELS };
 const ENGLISH = 'write the whole reply in English';
@@ -59,5 +59,12 @@ describe('advice on a general question carries no household figure (T2, P5-10c)'
   it('tells the model to call no tool and write no number for a question of principle', () => {
     const prompt = askPrompt({ ...CONTEXT, question: 'Có nên cho thuê theo năm thay vì theo tháng không?' });
     expect(prompt).toContain('A question of principle, such as renting by the year or by the month, is answered from general knowledge: call no tool, and write no number, date or count');
+  });
+});
+
+describe('rule 4 of the ask prompt (#496)', () => {
+  it('names every swap in the style table', () => {
+    const prompt = askPrompt({ ...CONTEXT, question: 'Phòng nào trễ hạn?' });
+    for (const { never, say } of STYLE_SWAPS) expect(prompt).toContain(`${say.join(' or ')} (never ${never})`);
   });
 });

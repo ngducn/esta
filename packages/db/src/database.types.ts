@@ -3540,6 +3540,19 @@ export type Database = {
       }
     }
     Functions: {
+      accept_extraction: {
+        Args: {
+          p_accepted_fields: Json
+          p_extraction_id: string
+          p_ocr_text?: string
+          p_property_id?: string
+          p_steps: Json
+        }
+        Returns: {
+          document_id: string
+          property_id: string
+        }[]
+      }
       activate_lease: {
         Args: {
           p_expected_bills?: Json
@@ -3880,6 +3893,7 @@ export type Database = {
         Args: { p_as_of: string; p_party_id: string }
         Returns: string[]
       }
+      reject_extraction: { Args: { p_extraction_id: string }; Returns: string }
       renew_lease: {
         Args: {
           p_end_date?: string
