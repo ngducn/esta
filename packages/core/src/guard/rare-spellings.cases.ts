@@ -1,0 +1,40 @@
+/** A rare spelling of a number in a note the guard must refuse; each came from a review of #311 or #399. */
+export const REFUSED_SPELLINGS: readonly (readonly [source: string, note: string])[] = [
+  ['#313', 'Phòng lOO còn trống.'],
+  ['#313', 'Còn batriệu chưa thu.'],
+  ['#313', 'Có haimươi phòng.'],
+  ['#313', 'Có mườilăm phòng.'],
+  ['#313', 'It costs threemillion.'],
+  ['#313', 'Nhà ở quận Một.'],
+  ['#313', 'Phòng số một còn trống.'],
+  ['#313', 'Hết hạn in May.'],
+  ['#314', 'Hết hạn quý iii.'],
+  ['#314', 'Nhà ở Phòng iv.'],
+  ['#314', 'Xem dãy xii.'],
+  ['#314', 'Còn năm phòng trống.'],
+  ['#314', 'Cả năm phòng còn trống.'],
+  ['#314', 'Trong năm phòng đều thuê.'],
+  ['#314', 'Các năm phòng đã thuê.'],
+  ['#407', 'Hết hạn for May.'],
+  ['#407', 'Hết hạn this May.'],
+  ['#407', 'Hết hạn to May.'],
+  ['#407', 'Hết hạn early May.'],
+  ['#407', 'Hết hạn late May.'],
+  ['#407', 'Hết hạn vào May.'],
+  ['#407', 'Hết hạn từ May.'],
+  ['#407', 'Hết hạn đến May.'],
+  ['#407', 'Phòng Iv còn trống.'],
+  ['#407', 'A tenfold rise.'],
+  ['#407', 'The millionth guest.'],
+  ['#407', 'Phòng Ø còn trống.'],
+];
+
+/** A note the guard must pass: `May` is a name when a name follows it, whichever of these words stands before it. */
+export const PASSED_SPELLINGS: readonly (readonly [source: string, note: string])[] = [
+  ['#399', 'Send the reminder to May Demo.'],
+  ['#399', 'Reminder sent by May Demo.'],
+  ['#399', 'The reply came from May Demo.'],
+  ['#399', 'Ask for May Demo at the desk.'],
+  ['#399', 'Nhắc từ May Demo.'],
+  ['#399', 'Gửi đến May Demo.'],
+];

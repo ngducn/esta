@@ -28,12 +28,14 @@ const CODE_PREFIXES: ReadonlySet<string> = new Set(['PA', 'PB', 'PC', 'PD', 'PE'
 const FOLDED = /[\u00AD\u200B-\u200F\u2060-\u2064\uFEFF]|[\u0300-\u036F]|[\u1AB0-\u1AFF]|[\u1DC0-\u1DFF]|[\u20D0-\u20FF]|[\uFE20-\uFE2F]/gu;
 
 /**
- * Between two digit groups of one number: up to three spaces of any kind on one line, one newline, or one or two dots,
- * middle dots, dashes, commas, underscores or bars, with a space on either side.
+ * Between two digit groups of one number, as a class of characters and not a list of the ones seen so far: up to three
+ * spaces of any kind on one line, one newline, or up to four punctuation marks (dashes, brackets, quotes), symbols, bullets or combining
+ * marks of any script (NFKD spells one symbol, such as `⁗`, with up to four), with a space on either side. Unlabelled,
+ * a slash of any width is left out, because `123456/789012` is a document number.
  */
-const JOIN = /^(?:[^\S\n\r]{1,3}|\r?\n|[^\S\n\r]?[.,_\-\u00B7\u2010-\u2015|]{1,2}[^\S\n\r]?)$/u;
-/** After a label the number may also break across lines or use slashes. */
-const JOIN_AFTER_LABEL = /^(?:\s{1,3}|\s?[./,_\-\u00B7\u2010-\u2015|]{1,2}\s?)$/u;
+const JOIN = /^(?:[^\S\n\r]{1,3}|\r?\n|[^\S\n\r]?(?:(?![/\u2044\u2215\u29F8\uFF0F])[\p{P}\p{S}\p{M}]){1,4}[^\S\n\r]?)$/u;
+/** After a label the number may also break across lines, and any mark that is no letter or digit may join the groups. */
+const JOIN_AFTER_LABEL = /^(?:\s{1,3}|\s?[^\p{L}\p{N}\s]{1,4}\s?)$/u;
 /**
  * A date such as 12/03/2021, 12/03/21, 2021-03-12 or 20210312. It never belongs to an ID, so the last four digits of a
  * reduced ID never join one.
@@ -48,6 +50,20 @@ export const DATE =
  */
 const AMOUNT =
   /(?<!\p{Nd}|\p{Nd}[.,\u00B7])(?![0０])(?:\p{Nd}{1,3}(?:(?:[.\u00B7]\p{Nd}{3})+|(?:,\p{Nd}{3})+)|(?<!\p{Nd}[^\S\n\r]{1,3})\p{Nd}{1,3})(?!\p{Nd}|[.,\u00B7]\p{Nd})(?=\s?(?:đ|₫|[dđ]ong|vnd|vnđ)(?![\p{L}\p{N}]))/giu;
+/**
+ * A figure in any grouping that a currency marker follows (`₫`, `đ`, `đồng`, `VND`, `vnđ`, `tỷ`, `triệu`) or leads, with
+ * a space between or none, is money whatever its first digit: `079.123.456.789 ₫` and `123 456 789 012 VND` stay whole.
+ * Only a figure that starts with 0 and has no thousands dot, comma or middle dot is not taken for money, because every
+ * CCCD starts with 0 and prints spaced or whole, as in `CCCD 079 175 001 234 ₫`; `MONEY_IS_ID` tests it. Only `₫`, `đ`,
+ * `VND` and `vnđ` lead a figure; all of them, `tỷ` and `triệu` too, follow it. It is read on the folded text, where
+ * `đồng` is `đong`, `tỷ` is `ty` and `triệu` is `trieu`.
+ */
+const MONEY_FIGURE = String.raw`\p{Nd}+(?:(?:[^\S\n\r]{1,3}|[.,\u00B7][^\S\n\r]?)\p{Nd}+)*`;
+const MONEY = new RegExp(
+  String.raw`(?<!\p{Nd})${MONEY_FIGURE}(?!\p{Nd})(?=[^\S\n\r]?(?:đ|₫|[dđ]ong|vnd|vnđ|ty|trieu)(?![\p{L}\p{N}]))|(?<=(?<!\p{L})(?:₫|đ|vnd|vnđ)[^\S\n\r]?)${MONEY_FIGURE}`,
+  'giu',
+);
+const MONEY_IS_ID = /^0[^.,\u00B7]*$/u;
 /**
  * A number that is no ID but stands just before an ID label is left whole: a plus sign or a label for a phone, a tax
  * code or an account right before it, and a 10-digit number that starts with 0 (a phone). These are cut only after a
@@ -84,9 +100,9 @@ function fold(text: string): Folded {
 const asciiDigits = (text: string) => text.replace(/\p{Nd}/gu, (digit) => digit.normalize('NFKC'));
 
 /** The groups that start inside a match of `pattern`, such as the three groups of one date. */
-function groupsIn(text: string, groups: readonly Group[], pattern: RegExp): ReadonlySet<Group> {
+function groupsIn(text: string, groups: readonly Group[], pattern: RegExp, skip?: (match: string) => boolean): ReadonlySet<Group> {
   const found = new Set<Group>();
-  const matches = text.matchAll(pattern);
+  const matches = [...text.matchAll(pattern)].filter((m) => skip?.(m[0]) !== true).values();
   let next = matches.next();
   for (const group of groups) {
     while (!next.done && next.value.index + next.value[0].length <= group.start) next = matches.next();
@@ -115,7 +131,7 @@ function idSpans(original: string, idField: boolean): Span[] {
     groups.push({ start: m.index, end: m.index + m[0].length, digits: asciiDigits(m[0]), gap });
   }
   const dates = groupsIn(text, groups, DATE);
-  const amounts = groupsIn(text, groups, AMOUNT);
+  const amounts = new Set([...groupsIn(text, groups, AMOUNT), ...groupsIn(text, groups, MONEY, (figure) => MONEY_IS_ID.test(figure))]);
 
   const runOf = (from: number, length: number, join: RegExp): Group[] | undefined => {
     const run: Group[] = [];
@@ -158,7 +174,8 @@ function idSpans(original: string, idField: boolean): Span[] {
       const run = runOf(from, length, join);
       const last = run?.at(-1);
       if (run === undefined || last === undefined) continue;
-      if (groups[from + run.length]?.gap === '.' || run.some((group) => dates.has(group) || amounts.has(group))) continue;
+      const endsInDecimal = length !== 12 && groups[from + run.length]?.gap === '.';
+      if (endsInDecimal || run.some((group) => dates.has(group) || amounts.has(group))) continue;
       if (needsLabel && !labelled && !beforeLabel(last.end)) continue;
       if (needsLabel && !labelled && isOtherNumber(from, run)) break;
       if (needsLabel && startsAnotherField(run)) continue;

@@ -1,3 +1,4 @@
+import { parseStatementDate } from '../parse/statement';
 import type { Result } from '../result';
 import { cellText } from './decode';
 import { foldHeader, headerRole, HEADER_SCAN_ROWS, type ColumnMapping, type ColumnRole, type DetectedHeader, type StatementCell, type StatementGrid } from './layouts';
@@ -44,11 +45,19 @@ export function presetHeader(grid: StatementGrid, preset: ColumnPreset): Detecte
 
 const filled = (row: readonly StatementCell[] | undefined) => (row ?? []).filter((cell) => cellText(cell) !== '').length;
 
-/** The likeliest header row: the first of the first rows with the most filled cells, since a bank's lines above it fill fewer. */
+const holdsDate = (row: readonly StatementCell[] | undefined) => (row ?? []).some((cell) => parseStatementDate(cellText(cell)).ok);
+
+/**
+ * The likeliest header row: the first of the first rows with the most filled cells, since a bank's lines above it fill
+ * fewer. A row with a date in it is a transaction, so it is chosen only when every row is one: a header with an
+ * unnamed column fills fewer cells than the lines under it.
+ */
 export function guessHeaderRow(grid: StatementGrid): number {
-  const rows = grid.slice(0, HEADER_SCAN_ROWS);
-  const most = Math.max(0, ...rows.map(filled));
-  return Math.max(0, rows.findIndex((row) => filled(row) === most));
+  const rows = grid.slice(0, HEADER_SCAN_ROWS).map((row, index) => ({ row, index }));
+  const candidates = rows.filter(({ row }) => !holdsDate(row));
+  const pool = candidates.length === 0 ? rows : candidates;
+  const most = Math.max(0, ...pool.map(({ row }) => filled(row)));
+  return pool.find(({ row }) => filled(row) === most)?.index ?? 0;
 }
 
 /** For each role, the column of a header row whose label names it, or else the column holding the label a preset used for it. */

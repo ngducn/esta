@@ -5,6 +5,7 @@ import { basename, dirname, join } from 'node:path';
 import { bindingWarning, exposedListeners, listListeners } from './bindings.ts';
 import { slotPendingMigrations } from './pending-migrations.ts';
 import { authDrifts, parseSlot, slotPorts, writeSlotWorkdir } from './slot.ts';
+import { reportCallerVerdicts } from './caller-verdict.ts';
 import { reportCountThenWrite } from './count-then-write.ts';
 import { reportFunctionGrants } from './function-grants.ts';
 import { reportTableCoverage } from './table-coverage.ts';
@@ -115,7 +116,7 @@ if (result.status === 0 && command === 'start') {
 if (result.status === 0 && capture) {
   writeFileSync(join(repoRoot, 'packages', 'db', 'src', 'database.types.ts'), result.stdout);
 }
-if (result.status === 0 && command === 'test' && !(reportTableCoverage(repoRoot, slot) && reportCountThenWrite(repoRoot, slot) && reportFunctionGrants(repoRoot, slot))) process.exit(1);
+if (result.status === 0 && command === 'test' && !(reportTableCoverage(repoRoot, slot) && reportCountThenWrite(repoRoot, slot) && reportCallerVerdicts(repoRoot, slot) && reportFunctionGrants(repoRoot, slot))) process.exit(1);
 if (result.status === 0 && command === 'start') {
   const pending = slotPendingMigrations(repoRoot, workdir);
   if (pending.length > 0) {

@@ -9,13 +9,14 @@ export type Measure = keyof typeof UNITS;
 
 /** numeric(12,2), the area columns: at most ten integer digits. A length's range is its schema's. */
 const MAX_HUNDREDTHS = 999_999_999_999;
-const GROUPED = /^(?<integer>\d{1,3}(?<mark>[. \u00A0])\d{3}(?:\k<mark>\d{3})*)(?:,(?<fraction>\d+))?$/u;
+const GROUPED = /^(?<integer>[1-9]\d{0,2}(?<mark>[. \u00A0])\d{3}(?:\k<mark>\d{3})*)(?:,(?<fraction>\d+))?$/u;
 const PLAIN = /^(?<integer>\d+)(?:[.,](?<fraction>\d+))?$/u;
 
 /**
  * Reads an area or a length by the DOMAIN-VN §9 rule, such as `350,5`, `1.250,75 m²` or `1 250`. A dot or a space is
  * grouping only before three-digit groups, so `12 5` is never 125, and more than two decimals is refused because the
- * column keeps hundredths, so `4,500` is never 4500.
+ * column keeps hundredths, so `4,500` is never 4500. A group that starts with 0 is no thousands group, so `0.255` is
+ * too precise, not 255.
  */
 export function parseMeasureInput(text: string, measure: Measure): Result<number, MeasureReason> {
   const trimmed = text.trim().replace(UNITS[measure], '');

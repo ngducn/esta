@@ -55,3 +55,11 @@ export const VIETNAMESE_NAMING_RECORDS = [
   'Hoàng Văn Em Demo có trễ tiền Phòng 4 không?',
   'phong 5 day tro Di An dong tien chua',
 ] as const;
+
+/** Vietnamese requests that paste or quote English text (#359); each is answered in Vietnamese. */
+export const VIETNAMESE_WITH_ENGLISH_WORDS = [
+  'Dịch giúp mẹ: your rent is due tomorrow please pay',
+  'Dịch giúp mẹ: "your rent is due tomorrow please pay"',
+  'Mẹ muốn dịch "your rent is due tomorrow please pay" sang tiếng Việt',
+  'Tóm tắt giúp mẹ đoạn này: the tenant will pay the deposit next month and the lease will renew',
+] as const;

@@ -262,6 +262,15 @@ const CASES: readonly Case[] = [
   smell('file-name-case', 'a look-alike: kebab-case, Next.js special files and a test', 'apps/web/src/app/(app)/notes/page.tsx', 0, 'export default function Page() { return null; }'),
   smell('file-name-case', 'a look-alike: a dotted kebab name', 'apps/web/src/server/notes/note-list.types.ts', 0, 'export type A = 1;'),
   smell('file-name-case', 'a look-alike: a camelCase test file', 'apps/web/src/server/notes/saveNote.test.ts', 0, 'export const a = 1;'),
+  smell('slow-test-setting', 'a suite-wide testTimeout in a vitest config', 'apps/web/vitest.config.ts', 1, 'export default defineConfig({ test: { testTimeout: 30000 } });'),
+  smell('slow-test-setting', 'a retry in a unit test', 'packages/core/src/notes/note.test.ts', 1, "it('saves', { retry: 2 }, () => {});"),
+  smell('slow-test-setting', 'a one-test timeout above 15 s with no reason', 'apps/web/src/server/notes/pdf.test.ts', 1, "it('draws', async () => {}, 30_000);"),
+  smell('slow-test-setting', 'an option-object timeout above 15 s with no reason', 'scripts/notes.test.ts', 1, "it('draws', { timeout: 20_000 }, () => {});"),
+  smell('slow-test-setting', 'a long timeout kept in a named constant with no reason', 'apps/web/src/lib/notes.test.ts', 1, 'const BROWSER_TIMEOUT_MS = 30_000;'),
+  smell('slow-test-setting', 'a look-alike: a long timeout with a reason after --', 'apps/web/src/server/notes/pdf.test.ts', 0, "it('draws', async () => {}, 30_000); // -- a real PDF render, 6 s under load"),
+  smell('slow-test-setting', 'a look-alike: a reason on the line above', 'scripts/notes.test.ts', 0, '// -- a real browser start, 4 s under load', "it('draws', { timeout: 20_000 }, () => {});"),
+  smell('slow-test-setting', 'a look-alike: a timeout of 15 s, retry 0 and a wait option', 'scripts/notes.test.ts', 0, "it('draws', { timeout: 15_000, retry: 0 }, () => {});", "await screen.findByText('x', undefined, { timeout: 5000 });"),
+  smell('slow-test-setting', 'a look-alike: a long timeout in product code', 'apps/web/src/server/notes/pdf.ts', 0, "it('draws', async () => {}, 30_000);"),
 ];
 
 const measure = (metric: string, files: readonly SourceFile[]) => {

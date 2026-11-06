@@ -5,6 +5,8 @@ import ts from 'typescript';
 import { afterAll, beforeAll, expect, test } from 'vitest';
 import { MAX_LONG_SIDE } from './downscale';
 
+const CHROMIUM_MS = 30_000; // -- a real Chromium start and a 12 MP encode: the whole file takes 1.4 s alone, and a cold browser start beside other suites is the slow part
+
 /** downscaleForPdf needs createImageBitmap, canvas and JPEG encoding, which only a real browser has. */
 let browser: Browser;
 let page: Page;
@@ -18,7 +20,7 @@ beforeAll(async () => {
   }).outputText;
   await page.addScriptTag({ type: 'module', content: `${source}\nwindow.downscaleForPdf = downscaleForPdf;` });
   await page.waitForFunction(() => 'downscaleForPdf' in window);
-}, 30_000);
+}, CHROMIUM_MS);
 
 afterAll(() => browser?.close());
 
@@ -56,15 +58,15 @@ test('a photo tagged EXIF orientation 6 comes out upright, red on top and blue a
   expect(topBlue).toBeLessThan(60);
   expect(bottomBlue, 'blue at the bottom').toBeGreaterThan(200);
   expect(bottomRed).toBeLessThan(60);
-}, 30_000);
+}, CHROMIUM_MS);
 
 test('a 12 MP photo comes out with its long side at 2000 px, re-encoded as JPEG', async () => {
   const jpeg = await (await halves(4000, 3000)).jpeg().toBuffer();
   const result = await downscale(jpeg);
   expect(result).toMatchObject({ width: MAX_LONG_SIDE, height: 1500, blobWidth: MAX_LONG_SIDE, blobHeight: 1500, type: 'image/jpeg' });
-}, 30_000);
+}, CHROMIUM_MS);
 
 test('a photo already under the cap keeps its size', async () => {
   const jpeg = await (await halves(1200, 900)).jpeg().toBuffer();
   expect(await downscale(jpeg)).toMatchObject({ width: 1200, height: 900, blobWidth: 1200, blobHeight: 900 });
-}, 30_000);
+}, CHROMIUM_MS);
