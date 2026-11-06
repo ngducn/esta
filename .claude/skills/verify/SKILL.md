@@ -125,14 +125,16 @@ Proof standards:
 
 ## Preview target
 
-Once Ryan has deployed the preview (DEPLOY.md section 11), a lane can drive the preview deploy instead of a local slot. Skip Launch: the preview already runs `esta-preview` with the `full` seed. Point the browser at the preview URL (`$S/b.sh goto https://<preview host>/sign-in`) and sign in without sending email:
+Once Ryan has deployed the preview (DEPLOY.md section 11), a lane can drive the preview deploy instead of a local slot. Skip Launch: the preview already runs `esta-preview` with the `full` seed. Point the browser at the preview URL (`$S/b.sh goto https://<preview host>/sign-in`) and sign in with a code you mint yourself. The sign-in page shows its code box only after a send, and the send mails a code to the `Demo` address, so this does send one real email per sign-in:
 
 ```bash
 export ESTA_ENV=preview ESTA_PREVIEW_PROJECT_REF=<preview ref> SUPABASE_URL=https://<preview ref>.supabase.co SUPABASE_SERVICE_ROLE_KEY=<esta-preview service role key>
+# 1. On /sign-in/code fill input[name="email"], click button[value="send"], wait for input[name="code"].
+# 2. Only then mint (a send cancels any earlier code):
 pnpm lane:otp me.lane1@demo.esta.test      # prints a 6-digit code
 ```
 
-Fill `input[name="email"]` and `input[name="code"]` on `/sign-in/code` as `sign-in.sh` does, with that code. `lane:otp` refuses unless `ESTA_ENV=preview` and the `SUPABASE_URL` project equals `ESTA_PREVIEW_PROJECT_REF`, so it can never mint a code for `esta-prod`. Keep the service role key in the shell only, never in a file in the repo or in evidence. Use seeded `Demo` accounts only.
+Then fill `input[name="code"]` with that code and click `button[value="verify"]`; the order is `sign-in.sh`'s, with the mint in place of the mailbox read. `lane:otp` refuses unless `ESTA_ENV=preview` and `SUPABASE_URL` is exactly `https://<ref>.supabase.co` with `<ref>` equal to `ESTA_PREVIEW_PROJECT_REF`, so it can never mint a code for `esta-prod`. Keep the service role key in the shell only, never in a file in the repo or in evidence. Use seeded `Demo` accounts only.
 
 ## Cleanup
 
@@ -159,7 +161,7 @@ Stop only what you started. Never use `pkill`, `killall` or `kill` by name or pa
 | `worker.sh start replay\|live`, `worker.sh stop` | Start or stop the slot's agent worker; pid in `worker.pid`, log in `worker.log` |
 | `cleanup.sh` | Stop everything Launch started and prove the ports are free |
 | `node scripts/inbucket-code.ts <email> [--clear]` | Print the newest 6-digit code for an address, or clear its mail |
-| `pnpm lane:otp <email>` | Preview target only: print a sign-in code from `esta-preview` without sending email |
+| `pnpm lane:otp <email>` | Preview target only: print a sign-in code from `esta-preview` (after the page's own send) |
 
 Every script sources `scripts/env.sh`, which derives the ports and paths above from `ESTA_SLOT`.
 

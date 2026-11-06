@@ -13,10 +13,21 @@ const PREVIEW = {
 };
 
 describe('projectRef', () => {
-  it('reads the first label of a cloud host and keeps a local host whole', () => {
+  it('reads the reference of an https supabase.co project and keeps a local host whole', () => {
     expect(projectRef('https://abcdefghijklmnopqrst.supabase.co')).toBe('abcdefghijklmnopqrst');
     expect(projectRef('http://127.0.0.1:54321')).toBe('127.0.0.1');
+    expect(projectRef('http://[::1]:54321')).toBe('[::1]');
     expect(projectRef('not a url')).toBeUndefined();
+  });
+
+  it.each([
+    'https://abcdefghijklmnopqrst.evil.com',
+    'http://abcdefghijklmnopqrst.supabase.co',
+    'https://abcdefghijklmnopqrst.supabase.co.evil.com',
+    'https://abcdefghijklmnopqrst.supabase.co@evil.com',
+    'https://evil.com/abcdefghijklmnopqrst.supabase.co',
+  ])('does not read a reference from %s', (url) => {
+    expect(projectRef(url)).toBeUndefined();
   });
 });
 
@@ -36,6 +47,27 @@ describe('checkLaneOtp', () => {
     expect(check).toEqual({
       exitCode: 1,
       message: 'Refusing: SUPABASE_URL points at project zzzzzzzzzzzzzzzzzzzz, not the preview project abcdefghijklmnopqrst',
+    });
+  });
+
+  it.each([
+    'https://abcdefghijklmnopqrst.evil.com',
+    'http://abcdefghijklmnopqrst.supabase.co',
+    'https://abcdefghijklmnopqrst.supabase.co.evil.com',
+  ])('refuses %s even though its first label is the preview reference', (url) => {
+    expect(checkLaneOtp('me@demo.esta.test', { ...PREVIEW, SUPABASE_URL: url })).toMatchObject({ exitCode: 1 });
+  });
+
+  it('refuses a local URL unless the reference is that local host', () => {
+    expect(checkLaneOtp('me@demo.esta.test', { ...PREVIEW, SUPABASE_URL: 'http://127.0.0.1:54321' })).toMatchObject({ exitCode: 1 });
+    expect(
+      checkLaneOtp('me@demo.esta.test', { ...PREVIEW, ESTA_PREVIEW_PROJECT_REF: '127.0.0.1', SUPABASE_URL: 'http://127.0.0.1:54321' }),
+    ).toMatchObject({ target: { url: 'http://127.0.0.1:54321' } });
+  });
+
+  it('drops a trailing slash from the URL it targets', () => {
+    expect(checkLaneOtp('me@demo.esta.test', { ...PREVIEW, SUPABASE_URL: `${PREVIEW.SUPABASE_URL}/` })).toMatchObject({
+      target: { url: PREVIEW.SUPABASE_URL },
     });
   });
 

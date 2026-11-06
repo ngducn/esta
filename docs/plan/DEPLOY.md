@@ -119,9 +119,9 @@ Steps still to add when P5-09, P5-10, P5-14 and P5-15 merge: any new environment
 
 ## 11. Live lanes on the preview deploy (Agent, after Ryan has deployed preview)
 
-Lanes sign in as seeded `Demo` members on `esta-preview` without any email being sent. Only the agent's shell holds these values; they never go into a file in the repo or into Vercel.
+Lanes sign in as seeded `Demo` members on `esta-preview` with a code they mint themselves, so no lane has to read a mailbox. The sign-in page shows its code box only after a send, and the send also mails a code to the lane address, so one real email goes to the seeded `Demo` address per sign-in (check the address is one you control or can lose). Only the agent's shell holds these values; they never go into a file in the repo or into Vercel.
 
 1. In the shell, export `ESTA_ENV=preview`, `ESTA_PREVIEW_PROJECT_REF=<preview ref>`, `SUPABASE_URL=https://<preview ref>.supabase.co` and the `esta-preview` service role key as `SUPABASE_SERVICE_ROLE_KEY`.
-2. `pnpm lane:otp me.lane1@demo.esta.test` prints a 6-digit code through `auth.admin.generateLink`. Type it on the preview's `/sign-in/code` page.
-3. The script refuses, and prints why, unless `ESTA_ENV=preview` and the `SUPABASE_URL` project equals `ESTA_PREVIEW_PROJECT_REF`. A production `SUPABASE_URL` or `ESTA_ENV=production` can never mint a code.
+2. On the preview's `/sign-in/code` page, fill the email and press the send button first, so the code box appears. Then run `pnpm lane:otp me.lane1@demo.esta.test`, which prints a 6-digit code through `auth.admin.generateLink`, and type that code into the box. Mint after the send: the send issues a new code and cancels any code minted before it ("Mã không đúng hoặc đã hết hạn").
+3. The script refuses, and prints why, unless `ESTA_ENV=preview` and `SUPABASE_URL` is exactly `https://<ref>.supabase.co` with `<ref>` equal to `ESTA_PREVIEW_PROJECT_REF` (or a local URL when the ref is that local host). A production `SUPABASE_URL` or `ESTA_ENV=production` can never mint a code.
 4. Record the date and who ran the lanes under this section in the step log.

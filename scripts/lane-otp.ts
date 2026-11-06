@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 const USAGE = 'Usage: pnpm lane:otp <email>';
-const LOCAL_HOSTS = new Set(['127.0.0.1', 'localhost']);
+const LOCAL_HOSTS = new Set(['127.0.0.1', 'localhost', '[::1]']);
 
 type Source = Readonly<Record<string, string | undefined>>;
 
@@ -10,11 +10,17 @@ export type LaneOtpCheck = { readonly target: LaneOtpTarget } | { readonly exitC
 
 const generated = z.object({ email_otp: z.string().regex(/^\d{6}$/) });
 
-/** A cloud project's reference is the first label of its host; a local stack has no reference, so its whole host stands in. */
+/**
+ * A cloud project's reference is the label before `.supabase.co`, and only an `https` URL of exactly that shape has one.
+ * A local stack has no reference, so its whole host stands in.
+ */
 export function projectRef(url: string): string | undefined {
-  const host = URL.parse(url)?.hostname;
-  if (host === undefined || host === '') return undefined;
-  return LOCAL_HOSTS.has(host) ? host : host.split('.')[0];
+  const parsed = URL.parse(url);
+  if (parsed === null || parsed.username !== '' || parsed.password !== '') return undefined;
+  if (LOCAL_HOSTS.has(parsed.hostname)) return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? parsed.hostname : undefined;
+  if (parsed.protocol !== 'https:' || parsed.port !== '') return undefined;
+  const match = /^([a-z0-9-]+)\.supabase\.co$/.exec(parsed.hostname);
+  return match?.[1];
 }
 
 export function checkLaneOtp(email: string | undefined, source: Source): LaneOtpCheck {
@@ -35,7 +41,7 @@ export function checkLaneOtp(email: string | undefined, source: Source): LaneOtp
   if (serviceRoleKey === undefined || serviceRoleKey === '') {
     return { exitCode: 1, message: 'Refusing: SUPABASE_SERVICE_ROLE_KEY is not set' };
   }
-  return { target: { url, serviceRoleKey } };
+  return { target: { url: url.replace(/\/+$/, ''), serviceRoleKey } };
 }
 
 /** generate_link creates the code without sending any email. */
