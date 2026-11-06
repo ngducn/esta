@@ -1,4 +1,4 @@
-import { DEPOSIT_KINDS } from '@esta/core/allocation';
+import { DEPOSIT_KINDS, previewDepositEntry, type DepositEntry as LedgerEntry } from '@esta/core/allocation';
 import { formatDate, formatVnd } from '@esta/core/format';
 import { MAX_AMOUNT_VND, vnd } from '@esta/core/money';
 import { isoDateSchema } from '@esta/core/schemas/legal';
@@ -37,16 +37,23 @@ async function entryWithKey(ctx: OpContext, key: string): Promise<string | null>
   return data?.id ?? null;
 }
 
-async function heldOf(ctx: OpContext, leaseId: string): Promise<number> {
-  const { data, error } = await ctx.db.from('lease_deposits').select('held_vnd').eq('household_id', ctx.householdId).eq('lease_id', leaseId).maybeSingle();
-  if (error) throw new Error(`Reading the held deposit failed: ${error.message}`);
-  return data?.held_vnd ?? 0;
+const ledgerEntry = ({ id, kind, amount_vnd, on_date }: { id: string; kind: LedgerEntry['kind']; amount_vnd: number; on_date: LedgerEntry['onDate'] }): LedgerEntry => ({
+  id,
+  kind,
+  amountVnd: vnd(amount_vnd),
+  onDate: on_date,
+});
+
+/** The ledger once this entry joins the entries stored and the ones earlier items of the batch will write. */
+async function ledgerWith(ctx: OpContext, entry: DepositEntry) {
+  const entries = await viewRows(ctx, 'deposit_entries', { lease_id: entry.lease_id });
+  return previewDepositEntry(entries.map(ledgerEntry), ledgerEntry(entry), null);
 }
 
 /**
  * LSE-9: a deposit received, deducted for a stated reason, or refunded. `id` is the entry's idempotency key, so a key
  * already written plans as unchanged, whatever the rest says, as `record_deposit_entry` treats it. The amount ceiling,
- * the date and the held balance are that function's rules.
+ * the date and the held balance are that function's rules, and planning refuses a held balance it would overdraw too.
  */
 export const depositRecord = defineOp<DepositEntry, DepositEntry, DepositRecorded, DepositRefusal>({
   creates: 'deposit_entries',
@@ -57,7 +64,12 @@ export const depositRecord = defineOp<DepositEntry, DepositEntry, DepositRecorde
     const [lease] = await viewRows(ctx, 'leases', { id: entry.lease_id });
     if (lease === undefined) return refuse({ kind: 'not_found' });
     // An ended or terminated lease still refunds its deposit; only a draft holds none.
-    return lease.status === 'draft' ? refuse({ kind: 'not_active' }) : change(entry);
+    if (lease.status === 'draft') return refuse({ kind: 'not_active' });
+    const [property] = await viewRows(ctx, 'properties', { id: lease.property_id });
+    if (property === undefined) return refuse({ kind: 'not_found' });
+    const ledger = await ledgerWith(ctx, entry);
+    if (ledger.ok) return change(entry);
+    return refuse(ledger.reason === 'exceeds_held' ? { kind: 'exceeds_held' } : { kind: 'invalid', issues: [{ path: 'amount_vnd', code: 'too_big' }] });
   },
   async apply(ctx, { id, lease_id, kind, amount_vnd, on_date, note }) {
     const { data, error } = await ctx.db.rpc('record_deposit_entry', {
@@ -70,12 +82,13 @@ export const depositRecord = defineOp<DepositEntry, DepositEntry, DepositRecorde
     });
     return error ? refuse(dbRefusal(error, SENTINELS)) : { ok: true, value: { entry_id: data } };
   },
-  async preview(ctx, { lease_id, kind, amount_vnd, on_date }) {
-    const held = await heldOf(ctx, lease_id);
+  writes: ({ id, lease_id, kind, amount_vnd, on_date }) => [{ kind: 'create', table: 'deposit_entries', row: { id, lease_id, kind, amount_vnd, on_date } }],
+  async preview(ctx, entry) {
+    const ledger = await ledgerWith(ctx, entry);
     return {
-      amount_display: formatVnd(vnd(amount_vnd), 'vi'),
-      on_date_display: formatDate(on_date, 'vi'),
-      held_after_display: formatVnd(vnd(kind === 'received' ? held + amount_vnd : held - amount_vnd), 'vi'),
+      amount_display: formatVnd(vnd(entry.amount_vnd), 'vi'),
+      on_date_display: formatDate(entry.on_date, 'vi'),
+      held_after_display: formatVnd(ledger.ok ? ledger.heldVnd : vnd(0), 'vi'),
     };
   },
 });

@@ -4,10 +4,11 @@ import { readRequestClock } from '../clock';
 import { requireCronSecret } from './auth';
 import { cronClient, type CronClient } from './supabase';
 
-export function cronHandler(job: (client: CronClient, clock: Clock) => Promise<object>): (request: Request) => Promise<Response> {
+export function cronHandler(job: (client: CronClient, clock: Clock) => Promise<{ readonly ok: boolean }>): (request: Request) => Promise<Response> {
   return async (request) => {
     const denied = requireCronSecret(request);
     if (denied) return denied;
-    return Response.json(await job(cronClient(), await readRequestClock()));
+    const result = await job(cronClient(), await readRequestClock());
+    return Response.json(result, { status: result.ok ? 200 : 500 });
   };
 }

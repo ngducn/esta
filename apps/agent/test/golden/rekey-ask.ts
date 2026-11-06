@@ -2,7 +2,8 @@ import { existsSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { inputHash, type CanonicalInput } from '../../src/replay/canonicalize';
 import { DEFAULT_REPLAY_DIR, recordingPath, recordingSchema, writeRecording, type Recording } from '../../src/replay/store';
-import { askPrompt } from '../../src/prompts/ask';
+import { repairTexts } from '@esta/core/guard';
+import { askPrompt, repairTail } from '../../src/prompts/ask';
 import { ASK_CONTEXT, askCase, caseInput } from './ask-cases';
 
 /** A first-turn prompt opens with the system prompt; follow-up and repair prompts do not. */
@@ -20,6 +21,13 @@ export function headOf(prompt: string): string | null {
   const rules = prompt.indexOf('\n6. ');
   return prompt.startsWith(OPENING) && rules >= 0 ? prompt.slice(0, prompt.indexOf('\n', rules + 1)) : null;
 }
+
+/** The closing line repair turns were recorded with before it named the rejected words (P5-10d). */
+const OLD_REPAIR_TAIL = '\nWrite the whole answer again from the start with these fixed. The handles you already have still hold.';
+
+/** A repair prompt recorded with the old closing line, now with the current one; any other prompt as it is. */
+export const withCurrentRepairTail = (prompt: string): string =>
+  prompt.endsWith(OLD_REPAIR_TAIL) ? `${prompt.slice(0, -OLD_REPAIR_TAIL.length)}\n${repairTail(repairTexts(prompt))}` : prompt;
 
 /** The key of a recording's input as the store writes it. */
 export const hashOf = (input: Recording['input']): string => inputHash(input as CanonicalInput);
@@ -71,7 +79,7 @@ export async function rekeyAsk(dir: string = DEFAULT_REPLAY_DIR): Promise<{ writ
     if (recording === undefined) return;
     const resumes = recording.input.resumesInputHash;
     if (resumes !== undefined && old.has(resumes)) settle(resumes);
-    const prompt = recording.input.prompt;
+    const prompt = withCurrentRepairTail(recording.input.prompt);
     const head = headOf(prompt);
     const day = dayOf(prompt);
     const next = head === null || day === null ? prompt : currentHead(day) + prompt.slice(head.length);
@@ -98,7 +106,13 @@ export async function rekeyAsk(dir: string = DEFAULT_REPLAY_DIR): Promise<{ writ
   return { written, removed };
 }
 
+/** The folders to re-key: the main set and each case folder beside it (`agent-replay-cases/<case>`) that holds ask recordings. */
+export function askRecordingDirs(main: string = DEFAULT_REPLAY_DIR, cases: string = join(main, '..', 'agent-replay-cases')): string[] {
+  return [main, ...readdirSync(cases).map((name) => join(cases, name)).filter((dir) => existsSync(join(dir, 'ask')))];
+}
+
 if (import.meta.main) {
-  const { written, removed } = await rekeyAsk();
-  console.log(`Re-keyed ${written.length} ask recordings, removed ${removed.length} old keys`);
+  const results = [];
+  for (const dir of askRecordingDirs()) results.push(await rekeyAsk(dir));
+  console.log(`Re-keyed ${results.flatMap((r) => r.written).length} ask recordings, removed ${results.flatMap((r) => r.removed).length} old keys`);
 }
