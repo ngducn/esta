@@ -60,6 +60,8 @@ Review checklist for classes no mechanical check catches (a reviewer reads for e
 16. A security definer function derives every row it writes from stored rows, never from a caller-supplied id (`accept_extraction` took the manual entry's id as a parameter and let a member mark another household's read accepted). Its pgTAP file names another household's ids for every id parameter and shows that household's rows unchanged.
 17. A definer PR updates ARCHITECTURE's multi-row paragraph and the SPEC text that names the old writer ("under the member's session").
 18. A test called red on main must fail on main for the defect it names, not because main lacks the new function; a race test holds one writer's last write until the other settles, so it is red on main's split shape.
+19. A merge needs `ci` to have succeeded, not merely not failed. A skipped `ci` (a draft run) or a cancelled one (the draft run that marking a PR ready cancels) is not a pass. `merge.sh` and `wait-ci.sh` read the newest `ci` at the head that was not cancelled; a reviewer who reads checks by hand does the same.
+20. An integration test that reads a shared table (`cron_runs`, `audit_log`, an inbox) counts only the rows it wrote: filter by the jobs it calls, the ids it created or a marker it sets, never by the frozen time alone. Other test files write the same tables at the same frozen time, so the count depends on file order (#515).
 
 ## Planned tiers for the remaining PRs
 
