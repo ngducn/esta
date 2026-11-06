@@ -24,14 +24,16 @@ export type AgentWorker = { readonly pid: number; running(): boolean; stop(): Pr
  * A replay worker on this slot, run in-process by `scripts/agent-dev.ts` so stopping its pid stops the worker.
  * `crashOn` kills it with SIGKILL from the output handler the moment its log matches, as a crash mid-job would.
  * The daily scheduler stays off unless `schedule` is set, so a spec counting its own job rows sees no watch run.
+ * `notify` lets the worker email notices to the slot's Inbucket; off, no spec's mailbox gets a notice beside its sign-in code.
  */
-export async function startAgentWorker({ replayDir, home, crashOn, schedule = false }: { replayDir?: string; home?: string; crashOn?: RegExp; schedule?: boolean } = {}): Promise<AgentWorker> {
+export async function startAgentWorker({ replayDir, home, crashOn, schedule = false, notify = false }: { replayDir?: string; home?: string; crashOn?: RegExp; schedule?: boolean; notify?: boolean } = {}): Promise<AgentWorker> {
   const child: ChildProcess = spawn(process.execPath, ['--import', 'tsx', 'scripts/agent-dev.ts'], {
     cwd: repoRoot,
     env: {
       ...process.env,
       ESTA_AGENT_MODE: 'replay',
       ESTA_AGENT_SCHEDULE: schedule ? 'on' : 'off',
+      ESTA_NOTIFY: notify ? 'on' : 'off',
       ...(replayDir === undefined ? {} : { ESTA_REPLAY_DIR: replayDir }),
       ...(home === undefined ? {} : { ESTA_AGENT_HOME: home }),
     },

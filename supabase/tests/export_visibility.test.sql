@@ -16,7 +16,7 @@ select set_eq(
     and regexp_replace(p.qual, '\s+', ' ', 'g') !~
       '^\(?(\( SELECT )?private\.is_member\((\w+\.)?(household_id|id), ''(viewer|admin)''::member_role\)( AS is_member\))?\)?$'
   $$,
-  $$ values ('agent_items'), ('agent_jobs'), ('agent_runs'), ('audit_log'), ('conversations'), ('messages') $$,
+  $$ values ('agent_items'), ('agent_jobs'), ('agent_runs'), ('audit_log'), ('conversations'), ('messages'), ('notifications') $$,
   'the tables whose SELECT policy is narrower than the household');
 
 select * from finish();

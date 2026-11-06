@@ -8,13 +8,15 @@ import { readClock } from '@esta/ops';
 import { assertStartAllowed, backupDirFor, parseAgentEnv } from './env';
 import { startHeartbeat } from './heartbeat';
 import { DEFAULT_REPLAY_DIR } from './replay/store';
+import { deliveryConfig } from './notify/smtp';
+import { startDelivery, type Delivery } from './notify/start';
 import { pollOnce, type Worker } from './runner';
 import { startScheduler } from './scheduler';
 import { serviceClient } from './supabase';
 
 const IDLE_POLL_MS = 1_000;
 
-function start(): { worker: Worker; stop: () => void } {
+function start(): { worker: Worker; delivery: Delivery | null; stop: () => void } {
   const env = parseAgentEnv(process.env);
   const mode = assertStartAllowed(env);
   const host = hostname();
@@ -48,11 +50,16 @@ function start(): { worker: Worker; stop: () => void } {
     env.ESTA_AGENT_SCHEDULE === 'on'
       ? startScheduler(db, env.ESTA_TIMEZONE, clock, (error) => console.error(`[agent] scheduler: ${error instanceof Error ? error.message : String(error)}`))
       : () => undefined;
+  const config = deliveryConfig(env);
+  const delivery = config === null ? null : startDelivery(db, config, clock, (error) => console.error(`[agent] delivery: ${error instanceof Error ? error.message : String(error)}`));
+  if (config === null) console.log('[agent] no SMTP_URL, so no notices are sent');
   console.log(`[agent] worker ${workerId} started: agent mode ${mode.agentMode}, auth mode ${mode.authMode}`);
   return {
     worker,
+    delivery,
     stop: () => {
       heartbeat.stop();
+      delivery?.stop();
       stopScheduler();
     },
   };
@@ -79,6 +86,7 @@ while (!stopping) {
     console.error(`[agent] ${error instanceof Error ? error.message : String(error)}`);
     return false;
   });
+  if (ran) started.delivery?.nudge();
   if (!ran && !stopping) await sleep(IDLE_POLL_MS);
 }
 rmSync(started.worker.configDir, { recursive: true, force: true });

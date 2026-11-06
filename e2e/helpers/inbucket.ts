@@ -19,6 +19,10 @@ export function latestMail(email: string): Promise<mail.Mail> {
   return mail.latestMail(email, mailbox);
 }
 
+export function listMail(email: string): Promise<mail.Mail[]> {
+  return mail.listMail(email, mailbox);
+}
+
 export function latestCode(email: string): Promise<string> {
   return mail.latestCode(email, mailbox);
 }

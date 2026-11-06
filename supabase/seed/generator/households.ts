@@ -99,12 +99,22 @@ const householdMembers = publicTable('household_members', ({ household }) =>
 );
 
 const notificationPreferences = publicTable('notification_preferences', ({ household }) =>
-  PEOPLE.map(({ person }) => ({
-    id: seedId(`seed:notification-preference:${personKey(person, household)}:inapp`),
-    household_id: householdId(household),
-    member_id: memberId(person, household),
-    channel: 'inapp',
-  })),
+  PEOPLE.flatMap(({ person }) => [
+    {
+      id: seedId(`seed:notification-preference:${personKey(person, household)}:inapp`),
+      household_id: householdId(household),
+      member_id: memberId(person, household),
+      channel: 'inapp',
+    },
+    {
+      id: seedId(`seed:notification-preference:${personKey(person, household)}:email`),
+      household_id: householdId(household),
+      member_id: memberId(person, household),
+      channel: 'email',
+      kinds: ['brief', 'action'],
+      daily_cap: 10,
+    },
+  ]),
 );
 
 export const HOUSEHOLD_EMITTERS: readonly Emitter[] = [

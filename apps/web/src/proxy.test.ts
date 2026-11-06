@@ -25,3 +25,27 @@ describe('proxy signed Storage rewrite', () => {
     expect(response.headers.get('x-middleware-request-authorization')).toBeNull();
   });
 });
+
+describe('proxy signed-out redirect', () => {
+  it('sends a signed-out visit to sign-in and remembers the page, so a notice link opens its note after sign-in', async () => {
+    const url = 'http://localhost:3500/assistant?note=0b0a1c2e-1111-4222-8333-444455556666';
+    const response = await proxy(new NextRequest(url, { headers: { 'sec-fetch-mode': 'navigate', 'sec-fetch-dest': 'document' } }));
+
+    expect(new URL(response.headers.get('location') ?? '').pathname).toBe('/sign-in');
+    expect(response.cookies.get('esta_return')?.value).toBe('/assistant?note=0b0a1c2e-1111-4222-8333-444455556666');
+  });
+
+  it('remembers nothing for a background fetch of a page', async () => {
+    const response = await proxy(new NextRequest('http://localhost:3500/collections', { headers: { 'sec-fetch-mode': 'cors', 'sec-fetch-dest': 'empty', rsc: '1' } }));
+
+    expect(new URL(response.headers.get('location') ?? '').pathname).toBe('/sign-in');
+    expect(response.cookies.get('esta_return')).toBeUndefined();
+  });
+
+  it('remembers nothing for Home', async () => {
+    const response = await proxy(new NextRequest('http://localhost:3500/'));
+
+    expect(new URL(response.headers.get('location') ?? '').pathname).toBe('/sign-in');
+    expect(response.cookies.get('esta_return')).toBeUndefined();
+  });
+});

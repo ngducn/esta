@@ -105,7 +105,8 @@ as $$
     ('member.a@test.esta.test', 'messages'),
     ('admin.a@test.esta.test', 'agent_jobs'),
     ('admin.a@test.esta.test', 'agent_runs'),
-    ('admin.a@test.esta.test', 'agent_items');
+    ('admin.a@test.esta.test', 'agent_items'),
+    ('member.a@test.esta.test', 'notifications');
 $$;
 
 select plan((select count(*)::int * 2 + 2 from tests.private_tables()) + (select count(*)::int from tests.readers_of_history()));
@@ -128,6 +129,11 @@ insert into public.agent_runs (household_id, job_id, auth_mode, agent_mode, star
 select :'a', j.id, 'none', 'replay', '2026-10-07T02:00:00Z' from public.agent_jobs j where j.household_id = :'a';
 insert into public.agent_items (household_id, kind, severity, audience, title, dedupe_key)
 values (:'a', 'system', 'info', 'operator', 'Đăng nhập Claude hết hạn', 'audit-private:operator');
+insert into public.agent_items (id, household_id, kind, severity, title, dedupe_key)
+values ('00000000-0000-4000-8000-00000000a5d1', :'a', 'brief', 'info', 'Hôm nay có hai việc cần làm', 'audit-private:brief');
+insert into public.notifications (household_id, user_id, agent_item_id, channel)
+select :'a', tests.user_id(email), '00000000-0000-4000-8000-00000000a5d1', 'email'
+from (values ('member.a@test.esta.test'), ('admin.a@test.esta.test')) as people (email);
 reset role;
 select tests.clear_request();
 insert into public.bank_accounts (id, household_id, bank_bin, account_no, account_name, is_default)
@@ -157,7 +163,7 @@ select cmp_ok(tests.history_visible(email, table_name), '>', 0, format('%s still
 from tests.readers_of_history();
 
 select ok(
-  (select array_agg(t) from tests.private_tables() t) @> array['agent_items', 'agent_jobs', 'agent_runs', 'conversations', 'messages', 'statement_imports', 'statement_rows'],
+  (select array_agg(t) from tests.private_tables() t) @> array['agent_items', 'agent_jobs', 'agent_runs', 'conversations', 'messages', 'notifications', 'statement_imports', 'statement_rows'],
   'the catalog names every table with a narrower select policy');
 
 select ok(checked > 0, format('%s: some member cannot read a row that has history', t))
