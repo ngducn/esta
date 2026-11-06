@@ -40,11 +40,19 @@ const partyNamed = (name: string) => {
 const nameOf = (id: string) => query<{ full_name: string }>(workdir, `select full_name from public.parties where id = '${id}'`)[0]?.full_name;
 const downloads = () => query<{ n: number }>(workdir, `select count(*)::int as n from public.document_access_log where household_id = '${HOUSEHOLD}' and action = 'download'`)[0]?.n ?? 0;
 
-/** A new room beside an existing one, because a room holds one lease on any day and each test files its own ended lease. */
+/** A new room beside an existing one, because a room holds one lease on any day and each test files its own ended lease. The afterEach below removes it, so no seeded property another spec reads (the Dĩ An card in property-units) keeps a room that reads vacant. */
+const ownRooms: string[] = [];
+test.afterEach(() => {
+  for (const id of ownRooms.splice(0)) {
+    query(workdir, `with gone as (delete from public.leases where unit_id = '${id}' returning 1) select count(*) from gone`);
+    query(workdir, `with gone as (delete from public.units where id = '${id}' returning 1) select count(*) from gone`);
+  }
+});
 async function ownRoom(page: Page) {
   const [room] = query<{ property_id: string }>(workdir, `select property_id::text as property_id from public.units where household_id = '${HOUSEHOLD}' and kind = 'room' order by id limit 1`);
   const id = randomUUID();
   await serviceUpsert(page, 'units', { id, household_id: HOUSEHOLD, property_id: room?.property_id, label: `Demo Phòng ${id.slice(0, 4)}`, kind: 'room' });
+  ownRooms.push(id);
   return { property_id: room?.property_id, id };
 }
 
