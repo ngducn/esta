@@ -31,7 +31,7 @@ const objectSchema = z.object({
 const PRODUCTION_MAIL = ['SMTP_URL', 'ESTA_EMAIL_FROM', 'ESTA_APP_URL'] as const;
 
 /** Without these a production worker starts, logs "no SMTP_URL" and sends no notice to anyone, so it refuses to start instead. */
-export const envSchema = objectSchema.superRefine((env, context) => {
+const envSchema = objectSchema.superRefine((env, context) => {
   if (env.ESTA_ENV !== 'production' || env.ESTA_AGENT_MODE !== 'live') return;
   for (const name of PRODUCTION_MAIL) {
     if (env[name] === undefined) context.addIssue({ code: 'custom', path: [name], message: `${name} is required by a live production worker: without it no notice email is sent` });
