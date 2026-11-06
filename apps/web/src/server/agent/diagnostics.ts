@@ -11,6 +11,10 @@ const DAY_MS = 86_400_000;
 /** A run's outcome: its job's status for the job's newest run, `retried` for an attempt the job ran again after. */
 export type RunStatus = (typeof jobStatuses)[number] | 'retried';
 
+export const denialCodes = ['number', 'family_data', 'cap', 'not_fetchable', 'policy'] as const;
+
+export type Denial = { readonly tool: string; readonly code: (typeof denialCodes)[number] };
+
 export type DiagnosticRun = {
   readonly id: string;
   readonly kind: string;
@@ -21,6 +25,8 @@ export type DiagnosticRun = {
   readonly numTurns: number | null;
   readonly costUsd: number | null;
   readonly toolCalls: Readonly<Record<string, number>>;
+  /** Calls the policy refused: the tool and why, never what the call held. */
+  readonly denials: readonly Denial[];
 };
 
 export type HeldNote = { readonly id: string; readonly kind: string | null; readonly createdAt: Instant };
@@ -35,6 +41,10 @@ export type Diagnostics = {
 const job = z.object({ kind: z.string(), status: z.enum(jobStatuses) });
 const jobKind = z.object({ kind: z.string() });
 const toolCalls = z.record(z.string(), z.number().int().nonnegative()).catch({});
+const denials = z
+  .object({ permission_denials: z.array(z.object({ tool_name: z.string(), code: z.enum(denialCodes).catch('policy') })) })
+  .transform(({ permission_denials }) => permission_denials.map(({ tool_name, code }): Denial => ({ tool: tool_name, code })))
+  .catch([]);
 const tokens = z.object({ usage: z.object({ input_tokens: z.number().catch(0), output_tokens: z.number().catch(0) }) }).catch({ usage: { input_tokens: 0, output_tokens: 0 } });
 
 export async function loadDiagnostics(householdId: string, now: Instant): Promise<Diagnostics> {
@@ -63,6 +73,7 @@ export async function loadDiagnostics(householdId: string, now: Instant): Promis
       numTurns: row.num_turns,
       costUsd: row.cost_estimate_usd,
       toolCalls: toolCalls.parse(row.tool_calls),
+      denials: denials.parse(row.usage),
     };
   });
   const [worker] = modes.data ?? [];

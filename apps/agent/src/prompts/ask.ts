@@ -1,7 +1,9 @@
+import { officialSourcesText } from '@esta/core/research';
 import { repairMessage, type NoteViolation } from '@esta/core/guard';
 import type { IsoDate } from '@esta/core/date';
 import type { Locale } from '@esta/core/format';
 import type { LoadedTopic } from '../tools/topic-reads';
+import { PUBLISHED_LABEL } from '@esta/core/parse/page-dates';
 import { replyLanguage } from './language';
 import { systemPrompt } from './system';
 
@@ -56,7 +58,7 @@ export function askPrompt(
     '- For writing, such as a Zalo message to a tenant or a short letter: write the draft ready to send, in a polite tone. Every name, amount and date in it is a placeholder of a tool field, like any answer, so call the tools first.',
     '- For advice or an explanation, such as renting by the year or how a procedure works: answer in plain words. Use no number unless a tool field holds it.',
     '- When you recommend something about their records, such as renewing a lease: give as the reason only what the tool fields show, and never a reason that a field you cite contradicts. A tenant who paid most bills late does not pay regularly, even with nothing overdue now.',
-    '- When they need a figure that no tool returns, such as a market price or a rate: say plainly that the app has no such figure and that you cannot look things up on the web yet. Never estimate.',
+    `- When they need a figure no tool returns, such as a market price or a rate, or ask about law, tax or procedure: look it up. Search with WebSearch in general words, never a name, nickname, street, phone or amount of the family and no number but a year; this turn may make 4 searches and 4 fetches. Fetch one page a search returned with WebFetch; in its prompt ask for the article's own date line copied exactly on one line that starts "${PUBLISHED_LABEL}:", and for every figure copied word for word. Then call quote_page with the page's url and each figure with the words around it, at least three words, copied exactly. Write a figure from a page only as {{fN.quote_n_label}} of that record, and name the page as {{fN.source_name}}. For law, tax or procedure use an official page (${officialSourcesText()}). Esta lists each page you quote as a numbered source under the reply. If you find no page, say plainly that you found no source; never estimate.`,
     '',
     'Rules for the reply:',
     '1. Write Markdown: one to four short sentences, a short list, or a table when the reply lists several records with the same fields. Use paragraphs, lists, tables, bold and links only.',
@@ -78,7 +80,7 @@ export function askPrompt(
 export function askFollowUpPrompt({ locale, today, timezone, question, labels, firstHandle }: { readonly locale: Locale; readonly today: IsoDate; readonly timezone: string; readonly question: string; readonly labels: readonly string[]; readonly firstHandle: number }): string {
   return [
     `Today is ${today} in ${timezone}. The family member writes again in the conversation so far. Reply with the rules of your first task.`,
-    `The handles and placeholders of your earlier replies no longer hold. Call the tools again for every record and figure this reply writes; this turn's handles start at f${firstHandle}.`,
+    `The handles and placeholders of your earlier replies no longer hold. Call the tools again for every record and figure this reply writes, and fetch a web page again and quote it again with quote_page, since no page from an earlier turn holds; this turn's handles start at f${firstHandle}.`,
     '',
     ...replyLanguageLine(question, locale, labels),
     'Message:',
@@ -89,3 +91,7 @@ export function askFollowUpPrompt({ locale, today, timezone, question, labels, f
 export function askRepairPrompt(violations: readonly NoteViolation[]): string {
   return `${repairMessage(violations)}\nWrite the whole answer again from the start with these fixed. The handles you already have still hold.`;
 }
+
+/** Asks for the official page a legal answer lacks (AGENT.md §5.6 step 9). */
+export const askSourceRepairPrompt = (): string =>
+  `The question is about law, tax or procedure, so the reply needs an official page (${officialSourcesText()}). Search for one, fetch it with WebFetch, quote it with quote_page and name it as {{fN.source_name}}. Write the whole answer again from the start. The handles you already have still hold.`;

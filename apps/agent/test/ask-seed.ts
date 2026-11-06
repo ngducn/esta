@@ -54,10 +54,12 @@ export function askWorker(tables: Record<string, Row[]>, jobsDir: string, replay
 
 export const answerRow = (tables: Record<string, Row[]>) => tables.messages?.find((row) => row.id === ANSWER) as { content_md: string; status: string; refs: string[] };
 
+const ORGANIZATION = /^(?:Ngân hàng|Công ty|Ban quản lý|Hộ kinh doanh)\b/u;
+
 /** The ask tables plus the seeded household's unit labels and party names, which the ask fixture does not hold. */
 export function withSeedNames(tables: Record<string, Row[]>): Record<string, Row[]> {
   tables.units = [...labels.units].map(([id, { label, whole }]) => ({ id, household_id: HOUSEHOLD, label, kind: whole ? 'whole' : 'room' }));
-  tables.parties = [...labels.parties].map(([id, full_name]) => ({ id, household_id: HOUSEHOLD, full_name }));
+  tables.parties = [...labels.parties].map(([id, full_name]) => ({ id, household_id: HOUSEHOLD, full_name, kind: ORGANIZATION.test(full_name) ? 'organization' : 'individual' }));
   return tables;
 }
 

@@ -1,12 +1,10 @@
 import { businessDate, parseInstant } from '@esta/core';
 import type { IsoDate } from '@esta/core/date';
 import type { Locale } from '@esta/core/format';
-import { normalizeUrl, sourceLink } from '@esta/core/research';
 import { z } from 'zod';
 import { researchScanPrompt, type ScanCaps } from '../prompts/research-scan';
-import type { BuiltInResult } from '../sdk/session';
 import type { AgentDb } from '../supabase';
-import { researchItemWriter, type FetchedPage, type ResearchBinding } from '../tools/add-research-item';
+import { researchItemWriter, type ResearchBinding } from '../tools/add-research-item';
 import { guardedWriter } from '../tools/create-item';
 import { runSheet } from '../tools/fact-sheet';
 import { householdLocale } from '../tools/household-info';
@@ -14,6 +12,7 @@ import { listPropertiesTool } from '../tools/list-properties';
 import { recentItemsTool } from '../tools/recent-items';
 import { researchTopicsTool, syncResearchTopics } from '../tools/research-topics';
 import { estaTool } from '../tools/server';
+import { fetchedPage, type FetchedPage } from '../tools/web-quotes';
 import type { JobContext, PreparedJob } from './registry';
 
 const EMPTY_NOTE: Readonly<Record<Locale, string>> = {
@@ -23,24 +22,6 @@ const EMPTY_NOTE: Readonly<Record<Locale, string>> = {
 
 /** AGENT.md §5.2 maximums, which `household_settings.agent` may lower; maxTurns 40 is sized for them. */
 const capsSchema = z.object({ research_searches: z.int().min(0).max(12).catch(12), research_fetches: z.int().min(0).max(8).catch(8) });
-
-const fetchResult = z.object({ code: z.number(), result: z.string(), url: z.string().optional() });
-
-/**
- * A WebFetch call that read its page: the page text, under its link as asked and as it ended after any redirect,
- * normalized, and the link it ended on as `research_items.source_url` stores it.
- */
-export function fetchedPage({ name, input, result }: BuiltInResult): FetchedPage | null {
-  const page = fetchResult.safeParse(result);
-  if (name !== 'WebFetch' || !page.success || page.data.code < 200 || page.data.code > 299) return null;
-  const links = [page.data.url, input.url].flatMap((link) => (typeof link === 'string' ? [link] : []));
-  const urls = links.flatMap((link) => {
-    const url = normalizeUrl(link);
-    return url.ok ? [url.value] : [];
-  });
-  const read = links.map(sourceLink).find((link) => link.ok);
-  return read?.ok === true ? { urls, text: page.data.result, link: read.value } : null;
-}
 
 export type ScanRequestInput = Omit<ResearchBinding, 'sheet' | 'topics' | 'properties' | 'fetched'> & { readonly timezone: string; readonly caps: ScanCaps };
 

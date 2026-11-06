@@ -26,7 +26,7 @@ describe('decideToolUse', () => {
   });
 
   it('denies /etc/hosts', () => {
-    expect(decideToolUse(policy, 'Read', { file_path: '/etc/hosts' })).toEqual({ allow: false, reason: '/etc/hosts is outside the job directory' });
+    expect(decideToolUse(policy, 'Read', { file_path: '/etc/hosts' })).toEqual({ allow: false, code: expect.any(String), reason: '/etc/hosts is outside the job directory' });
   });
 
   it('denies a sibling job directory, by dot-dot path and through a symlink', () => {
@@ -50,13 +50,13 @@ describe('decideToolUse', () => {
     mkdirSync(join(jobDir, '~'));
     writeFileSync(join(jobDir, '~', 'page-2.png'), 'png');
     for (const file_path of ['~/.ssh/id_ed25519', '~', '~root/.profile', '~/page-2.png']) {
-      expect(decideToolUse(policy, 'Read', { file_path })).toEqual({ allow: false, reason: `${file_path} is outside the job directory` });
+      expect(decideToolUse(policy, 'Read', { file_path })).toEqual({ allow: false, code: expect.any(String), reason: `${file_path} is outside the job directory` });
     }
   });
 
   it('denies a path that differs from its trimmed form before any other check (#54)', () => {
     for (const file_path of [' ~/.ssh/id_rsa', '~/.ssh/id_rsa\n', '\t~/.ssh/id_rsa', ' page-1.png', 'page-1.png ', '\npage-1.png', `${join(jobDir, 'page-1.png')}\t`]) {
-      expect(decideToolUse(policy, 'Read', { file_path })).toEqual({ allow: false, reason: `${JSON.stringify(file_path)} has leading or trailing whitespace` });
+      expect(decideToolUse(policy, 'Read', { file_path })).toEqual({ allow: false, code: expect.any(String), reason: `${JSON.stringify(file_path)} has leading or trailing whitespace` });
     }
   });
 
@@ -66,7 +66,7 @@ describe('decideToolUse', () => {
 
   it('denies every tool outside the kind list', () => {
     for (const tool of ['Bash', 'Write', 'Glob', 'WebFetch', 'mcp__esta__household_info']) {
-      expect(decideToolUse(policy, tool, {})).toEqual({ allow: false, reason: `${tool} is not a tool of this job` });
+      expect(decideToolUse(policy, tool, {})).toEqual({ allow: false, code: expect.any(String), reason: `${tool} is not a tool of this job` });
     }
   });
 
@@ -76,8 +76,8 @@ describe('decideToolUse', () => {
 
   it('denies a listed built-in tool that has no input rule', () => {
     const withGlob: ToolPolicy = { ...policy, allowed: new Set([...policy.allowed, 'Glob', 'mcp__other__read']) };
-    expect(decideToolUse(withGlob, 'Glob', { pattern: '/etc/*' })).toEqual({ allow: false, reason: 'Glob has no input rule' });
-    expect(decideToolUse(withGlob, 'mcp__other__read', {})).toEqual({ allow: false, reason: 'mcp__other__read has no input rule' });
+    expect(decideToolUse(withGlob, 'Glob', { pattern: '/etc/*' })).toEqual({ allow: false, code: expect.any(String), reason: 'Glob has no input rule' });
+    expect(decideToolUse(withGlob, 'mcp__other__read', {})).toEqual({ allow: false, code: expect.any(String), reason: 'mcp__other__read has no input rule' });
   });
 });
 

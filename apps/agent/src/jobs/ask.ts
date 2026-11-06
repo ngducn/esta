@@ -1,10 +1,10 @@
 import type { Clock } from '@esta/core';
-import { noteRelated } from '@esta/core/assistant';
+import { checkSources, noteRelated, NO_SOURCE_SENTENCE } from '@esta/core/assistant';
 import type { IsoDate } from '@esta/core/date';
 import type { Locale } from '@esta/core/format';
 import type { Json, TablesUpdate } from '@esta/db';
 import { z } from 'zod';
-import { askFollowUpPrompt, askPrompt, askRepairPrompt, type AskedTurn } from '../prompts/ask';
+import { askFollowUpPrompt, askPrompt, askRepairPrompt, askSourceRepairPrompt, type AskedTurn } from '../prompts/ask';
 import { replyLanguage } from '../prompts/language';
 import type { AgentDb } from '../supabase';
 import { askReads, type AskReads } from '../tools/ask-reads';
@@ -12,7 +12,10 @@ import { NumberGuardError, writeGuardItem } from '../tools/create-item';
 import { proposalWriter } from '../tools/create-proposal';
 import { runSheet } from '../tools/fact-sheet';
 import { householdLocale } from '../tools/household-info';
-import { householdLabels } from '../tools/household-labels';
+import { familySearchTerms, householdLabels } from '../tools/household-labels';
+import { quotePageTool } from '../tools/quote-page';
+import { toolCaps } from '../sdk/path-policy';
+import { fetchedPage, type FetchedPage } from '../tools/web-quotes';
 import { readTools } from '../tools/read-tools';
 import { estaTool } from '../tools/server';
 import { loadTopic, type AskTopic } from '../tools/topic-reads';
@@ -45,7 +48,16 @@ export type AskInput = {
   clock(): Promise<Clock>;
 };
 
-type AnswerUpdate = Pick<TablesUpdate<'messages'>, 'content_md' | 'refs' | 'deferred_until'>;
+type AnswerUpdate = Pick<TablesUpdate<'messages'>, 'content_md' | 'refs' | 'deferred_until' | 'activity'>;
+
+/** A turn runs the answer, a number repair and a source repair at most, each its own session of `JOBS.ask.timeoutMs`. */
+export const ASK_SESSIONS_PER_TURN = 3;
+
+/** AGENT.md §5.6: at most this many searches and fetches in one turn [app rule]. */
+const WEB_CAPS = { WebSearch: 4, WebFetch: 4 } as const;
+
+/** Whether the answer cites a field of `tax_position`, which her own tax comes from instead of a page. */
+const citesTaxPosition = (template: string, sheet: ReturnType<typeof runSheet>['sheet']): boolean => [...template.matchAll(/\{\{(f\d+)\./g)].some(([, handle = '']) => sheet.get(handle)?.vat_estimate_display !== undefined);
 
 async function writeAnswer({ db, householdId, answerId }: Pick<AskInput, 'db' | 'householdId' | 'answerId'>, update: AnswerUpdate): Promise<void> {
   const { data, error } = await db.from('messages').update(update).eq('household_id', householdId).eq('id', answerId).eq('status', 'streaming').select('id');
@@ -88,15 +100,26 @@ export async function askRequest(input: AskInput): Promise<PreparedJob> {
   const { db, householdId, locale, reads, asOf, earlier } = input;
   const firstHandle = (earlier?.handles ?? 0) + 1;
   const { sheet, cite } = runSheet(firstHandle);
-  const stream = answerStream({ sheet, write: ({ content, refs }) => writeAnswer(input, { content_md: content, refs: [...refs] }) });
+  let started = false;
+  const stream = answerStream({
+    sheet,
+    write: ({ content, refs }) => {
+      started = true;
+      return writeAnswer(input, { content_md: content, refs: [...refs] as Json, activity: null });
+    },
+  });
+  const fetched = new Map<string, FetchedPage>();
   let repaired = false;
+  let sourceRepaired = false;
   let answer: Answer | null = null;
   const labels = await householdLabels(db, householdId);
   const answerLocale = replyLanguage(input.question, locale, labels);
   const tools = new Map([
     ...readTools(db, householdId, { reads, locale: answerLocale, asOf, cite }),
     estaTool('create_proposal', proposalWriter({ db, householdId, jobId: input.jobId, locale, sheet, clock: input.clock }).write),
+    estaTool('quote_page', quotePageTool({ fetched, cite, locale: answerLocale })),
   ]);
+  const searchTerms = await familySearchTerms(db, householdId);
   const topic = earlier === null && input.topic !== null ? await loadTopic(tools, input.topic, { reads, asOf }) : null;
   return {
     prompt:
@@ -106,12 +129,29 @@ export async function askRequest(input: AskInput): Promise<PreparedJob> {
     ...(earlier === null ? {} : { resume: { sessionId: earlier.sessionId, afterInputHash: earlier.turnHash }, rebuild: () => rebuildOrForgetSession(input, earlier, labels) }),
     ...(input.deep ? { modelRole: 'deep' as const } : {}),
     tools,
+    caps: toolCaps(WEB_CAPS),
+    fetchable: new Set<string>(),
+    searchTerms,
+    observe(call) {
+      const page = fetchedPage(call);
+      if (page !== null) for (const url of page.urls) fetched.set(url, page);
+    },
+    async onWebTool() {
+      if (!started) await writeAnswer(input, { activity: 'web' });
+    },
     onText: stream.push,
     async nextTurn() {
       const ended = await stream.end();
       if (ended.ok) {
         answer = ended.value;
-        return null;
+        if (checkSources(input.question, answer.refs, citesTaxPosition(answer.template, sheet)).ok) return null;
+        if (sourceRepaired) {
+          answer = { text: NO_SOURCE_SENTENCE[answerLocale], template: NO_SOURCE_SENTENCE[answerLocale], cited: [], refs: [] };
+          return null;
+        }
+        sourceRepaired = true;
+        stream.restart();
+        return askSourceRepairPrompt();
       }
       if (!repaired) {
         repaired = true;
@@ -127,13 +167,13 @@ export async function askRequest(input: AskInput): Promise<PreparedJob> {
         p_household_id: householdId,
         p_answer_id: input.answerId,
         p_content: answer.text,
-        p_refs: [...answer.refs],
+        p_refs: [...answer.refs] as Json,
         p_handles: firstHandle - 1 + sheet.size,
         ...(sessionId == null ? {} : { p_session_id: sessionId }),
         ...(turnHash === undefined ? {} : { p_turn_hash: turnHash }),
       });
       if (error) throw new Error(`Finishing the answer failed: ${error.message}`);
-      return { template: answer.template, cited: answer.cited.map(({ placeholder, value }) => ({ placeholder, value })), refs: [...answer.refs] };
+      return { template: answer.template, cited: answer.cited.map(({ placeholder, value }) => ({ placeholder, value })), refs: [...answer.refs] as Json };
     },
   };
 }
@@ -165,7 +205,7 @@ async function startTurn(db: AgentDb, job: AgentJob): Promise<Turn> {
   if (conversation.error) throw new Error(`Reading the conversation failed: ${conversation.error.message}`);
   const question = data.find((row) => row.id === question_id && row.role === 'user');
   if (question === undefined || !data.some((row) => row.id === answer_id && row.role === 'assistant')) throw new InvalidJobError(`ask ${job.id}: the question or its answer is not in conversation ${conversation_id}`);
-  await writeAnswer({ db, householdId: job.household_id, answerId: answer_id }, { content_md: '', refs: [], deferred_until: null });
+  await writeAnswer({ db, householdId: job.household_id, answerId: answer_id }, { content_md: '', refs: [], deferred_until: null, activity: null });
   const { sdk_session_id, sdk_turn_hash, sdk_handles, created_by } = conversation.data;
   const earlier = sdk_turn_hash === null ? null : { sessionId: sdk_session_id, turnHash: sdk_turn_hash, handles: sdk_handles };
   const topic = await visibleTopic(db, job, question, created_by ?? null);
@@ -183,6 +223,6 @@ export async function prepareAsk({ db, job, clock, timezone }: JobContext): Prom
 export async function failAsk({ db, job }: Pick<JobContext, 'db' | 'job'>): Promise<void> {
   const payload = payloadSchema.pick({ answer_id: true }).safeParse(job.payload);
   if (!payload.success) return;
-  const { error } = await db.from('messages').update({ content_md: '', status: 'error', refs: [] }).eq('household_id', job.household_id).eq('id', payload.data.answer_id).eq('status', 'streaming');
+  const { error } = await db.from('messages').update({ content_md: '', status: 'error', refs: [], activity: null }).eq('household_id', job.household_id).eq('id', payload.data.answer_id).eq('status', 'streaming');
   if (error) throw new Error(`Marking the answer failed: ${error.message}`);
 }

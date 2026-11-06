@@ -33,9 +33,9 @@ export type SdkOptionsInputs = {
   readonly streaming?: { readonly resume: string | null };
 };
 
-/** `persistSession: false` keeps the SDK from writing a transcript, which would hold the page text the model read, to disk. */
+/** `persistSession: false` keeps the SDK from writing a transcript, which would hold the page text the model read, to disk. A thread turn keeps one, so it may read the public web but no file. */
 export function buildSdkOptions({ spec, jobDir, model, env, server, preToolUse, postToolUse, abortController, streaming }: SdkOptionsInputs): Options {
-  if (streaming !== undefined && spec.builtInTools.length > 0) throw new Error(`${spec.kind} keeps its transcript, so it may not read pages or files with built-in tools`);
+  if (streaming !== undefined && spec.builtInTools.some((tool) => tool !== 'WebSearch' && tool !== 'WebFetch')) throw new Error(`${spec.kind} keeps its transcript, so it may read the web but no file with a built-in tool`);
   return {
     model,
     cwd: jobDir,

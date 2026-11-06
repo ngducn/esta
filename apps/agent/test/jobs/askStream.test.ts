@@ -10,7 +10,7 @@ const sheet = new Map<string, Record<string, unknown>>([
 
 function stream() {
   const writes: string[] = [];
-  const refs: Array<readonly string[]> = [];
+  const refs: Array<readonly unknown[]> = [];
   const answer = answerStream({
     sheet,
     write: async (written) => {

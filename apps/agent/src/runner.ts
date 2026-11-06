@@ -8,10 +8,10 @@ import type { RunMode } from './env';
 import { writeFailureItems } from './failure-items';
 import type { WorkerState } from './heartbeat';
 import { InvalidJobError } from './jobs/extract-document';
-import { jobSpec, plainJobSpec, type AgentJob, type JobSpec, type PlainJobSpec, type PreparedJob } from './jobs/registry';
+import { jobSpec, plainJobSpec, sessionInputs, type AgentJob, type JobSpec, type PlainJobSpec, type PreparedJob } from './jobs/registry';
 import { canonicalizer, inputHash } from './replay/canonicalize';
 import { MissingRecordingError } from './replay/store';
-import { countToolCalls, judgeResult, type Failure, type FailureKind, type Outcome } from './sdk/result';
+import { countToolCalls, judgeResult, storedDenial, type Failure, type FailureKind, type Outcome } from './sdk/result';
 import { canonicalInput, liveSession, pruneTranscripts, replaySession, SessionGoneError, type SessionRequest, type SessionRun } from './sdk/session';
 import type { AgentDb } from './supabase';
 import { NumberGuardError } from './tools/create-item';
@@ -110,6 +110,7 @@ function followedBy(first: SessionRun, next: SessionRun): SessionRun {
     result: { ...next.result, numTurns: first.result.numTurns + next.result.numTurns, costUsd: first.result.costUsd + next.result.costUsd },
     model: next.model,
     toolCalls: [...first.toolCalls, ...next.toolCalls],
+    denials: [...first.denials, ...next.denials],
   };
 }
 
@@ -150,9 +151,7 @@ async function runSession(worker: Worker, job: AgentJob, { waiting, failed }: In
       configDir: work.configDir,
       tools: prepared.tools,
       canon: canonicalizer({ householdName: await householdName(worker.db, job.household_id), jobDir: work.dir }),
-      ...(prepared.caps === undefined ? {} : { caps: prepared.caps }),
-      ...(prepared.observe === undefined ? {} : { observe: prepared.observe }),
-      ...(prepared.onText === undefined ? {} : { onText: prepared.onText }),
+      ...sessionInputs(prepared),
       ...(prepared.modelRole === undefined ? {} : { modelRole: prepared.modelRole }),
     };
     const first = await firstTurnOrRebuilt(worker, job, prepared, request);
@@ -190,8 +189,8 @@ async function finishJob(worker: Worker, job: AgentJob, startedAt: Instant, inpu
     num_turns: session?.result.numTurns ?? null,
     session_id: session?.result.sessionId ?? null,
     cost_estimate_usd: session?.result.costUsd ?? 0,
-    usage: session ? { usage: session.result.usage, model_usage: session.result.modelUsage, permission_denials: session.result.permissionDenials } : {},
-    tool_calls: countToolCalls(session?.toolCalls.map((call) => call.name) ?? []),
+    usage: session ? { usage: session.result.usage, model_usage: session.result.modelUsage, permission_denials: session.denials.map((denial) => storedDenial(denial, finishedAt)) } : {},
+    tool_calls: countToolCalls(session?.toolCalls.map((call) => call.name) ?? [], session?.denials ?? []),
     started_at: startedAt,
     finished_at: finishedAt,
   });
