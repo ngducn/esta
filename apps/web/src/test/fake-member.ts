@@ -1,4 +1,4 @@
-import { can, type Role } from '@/server/access';
+import { can, type Role } from '../server/access';
 
 const CAPABILITY_ROLES: readonly Role[] = ['viewer', 'member', 'admin'];
 
