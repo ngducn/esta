@@ -3494,7 +3494,11 @@ export type Database = {
     }
     Functions: {
       activate_lease: {
-        Args: { p_lease_id: string; p_paid_through?: string }
+        Args: {
+          p_expected_bills?: Json
+          p_lease_id: string
+          p_paid_through?: string
+        }
         Returns: {
           due_date: string
           id: string
