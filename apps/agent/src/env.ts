@@ -16,6 +16,11 @@ export const envSchema = z.object({
   ESTA_REPLAY_DIR: text,
   /** Where `backup_export` writes `{household_id}/{date}/`; unset, a worker outside production falls back to a folder under the worker home and production refuses the job. */
   ESTA_BACKUP_DIR: text,
+  EMAIL_TRANSPORT: z.enum(['smtp']).default('smtp'),
+  SMTP_URL: z.url().optional(),
+  ESTA_EMAIL_FROM: text,
+  /** The origin a notice links to; sending needs it. */
+  ESTA_APP_URL: z.url().optional(),
   ESTA_ENV: z.enum(['development', 'test', 'preview', 'production']).optional(),
   ESTA_FROZEN_NOW: text,
   ESTA_TIMEZONE: z.string().default('Asia/Ho_Chi_Minh'),

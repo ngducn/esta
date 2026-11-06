@@ -18,8 +18,8 @@ describe('export visibility', () => {
   });
 
   it('withholds the assistant records from an admin who is not the operator, and only the chats and their audit rows from the operator', () => {
-    expect(withheldKinds(false)).toEqual(new Set(['operator', 'operatorItems', 'chats', 'audit']));
-    expect(withheldKinds(true)).toEqual(new Set(['chats', 'audit']));
-    expect(withheldTables(true).map((entry) => entry.table)).toEqual(['audit_log', 'conversations', 'messages']);
+    expect(withheldKinds(false)).toEqual(new Set(['operator', 'operatorItems', 'chats', 'own', 'audit']));
+    expect(withheldKinds(true)).toEqual(new Set(['chats', 'own', 'audit']));
+    expect(withheldTables(true).map((entry) => entry.table)).toEqual(['audit_log', 'conversations', 'notifications', 'messages']);
   });
 });

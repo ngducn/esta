@@ -3,13 +3,14 @@
  * table is exported only in part. `supabase/tests/export_visibility.test.sql` reads `pg_policies` and fails when a
  * narrowed table is not marked here.
  */
-export type Narrowing = 'operator' | 'operatorItems' | 'chats' | 'audit';
+export type Narrowing = 'operator' | 'operatorItems' | 'chats' | 'own' | 'audit';
 export type Visibility = 'household' | Narrowing;
 
 export const NARROWINGS: Readonly<Record<Narrowing, { readonly forOperator: boolean; readonly rule: string }>> = {
   operator: { forOperator: false, rule: "The assistant's job and run records are read by the operator only, so an admin who is not the operator gets none." },
   operatorItems: { forOperator: false, rule: 'Assistant items meant for the operator are read by the operator only, so an admin who is not the operator gets the items for everyone.' },
   chats: { forOperator: true, rule: 'A conversation with the assistant is read by the member who started it only, so this file holds the exporter\'s own and no one else\'s.' },
+  own: { forOperator: true, rule: 'A notice that an email went out is read by the member it went to only, so this file holds the exporter\'s own and no one else\'s.' },
   audit: { forOperator: true, rule: 'The change history of the rows above follows their rules, so the history of a chat the exporter does not own, or of an operator-only record they cannot read, is left out.' },
 };
 
@@ -48,6 +49,7 @@ export const EXPORT_TABLES: readonly HouseholdTable[] = [
   table('notification_preferences', ['household_members'], 'channel created_at created_by daily_cap household_id id kinds member_id updated_at'),
   table('parties', ['household_members'], 'address_text created_at created_by email full_name household_id id id_last4 kind member_id notes phone short_name tags tax_code updated_at zalo_phone'),
   table('bank_accounts', ['parties'], 'account_name account_no bank_bin created_at created_by household_id id is_default owner_party_id updated_at'),
+  table('notifications', ['agent_items'], 'agent_item_id attempts channel created_at created_by error household_id id last_attempt_at sent_at status updated_at user_id', 'own'),
   table('owner_tax_inputs', ['parties'], 'created_at created_by household_id id notes other_business_revenue_vnd party_id updated_at year'),
   table('properties', [], 'acquired_on acquisition_kind acquisition_price_vnd boundary certificate_address_text code cover_photo_path created_at created_by current_address deleted_at household_id id kind kind_details legal_status location nickname notes updated_at use_mode'),
   table('messages', ['agent_items', 'agent_jobs', 'conversations', 'properties'], 'content_md conversation_id created_at created_by deferred_until household_id id job_id refs role status topic_item_id topic_property_id updated_at', 'chats'),

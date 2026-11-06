@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { openLinkTarget } from '@/server/agent/open-link';
 import { parseEnv } from '@/server/env-schema';
 import { isAuthPage, isPublicPath } from '@/server/public-paths';
+import { RETURN_COOKIE, RETURN_MAX_AGE_SECONDS, safeReturnPath } from '@/server/return-path';
 import { buildCsp } from '@/server/security/csp';
 import { sessionCookie } from '@/server/supabase/session';
 
@@ -24,6 +25,18 @@ function redirectKeepingCookies(request: NextRequest, from: NextResponse, pathna
   url.search = '';
   const redirect = NextResponse.redirect(url);
   for (const cookie of from.cookies.getAll()) redirect.cookies.set(cookie);
+  return redirect;
+}
+
+/** A signed-out visit to a page remembers where it was going for 30 minutes, so a notice's link opens its note after sign-in. A background fetch of a page leaves no trace. */
+function redirectToSignIn(request: NextRequest, from: NextResponse): NextResponse {
+  const redirect = redirectKeepingCookies(request, from, '/sign-in');
+  const { pathname, search } = request.nextUrl;
+  const target = safeReturnPath(`${pathname}${search}`);
+  const opensPage = request.headers.get('sec-fetch-mode') === 'navigate' && request.headers.get('sec-fetch-dest') === 'document';
+  if (request.method === 'GET' && opensPage && target !== null && target !== '/') {
+    redirect.cookies.set(RETURN_COOKIE, target, { httpOnly: true, sameSite: 'lax', path: '/', maxAge: RETURN_MAX_AGE_SECONDS, secure: request.nextUrl.protocol === 'https:' });
+  }
   return redirect;
 }
 
@@ -120,7 +133,7 @@ async function handle(request: NextRequest, pathname: string): Promise<NextRespo
   });
 
   const { data } = await supabase.auth.getClaims();
-  if (data === null && !isPublicPath(pathname)) return redirectKeepingCookies(request, response, '/sign-in');
+  if (data === null && !isPublicPath(pathname)) return redirectToSignIn(request, response);
   if (data !== null && isAuthPage(pathname)) return redirectKeepingCookies(request, response, '/');
   if (data !== null && (await isHiddenPage(request, { supabase, userId: data.claims.sub }))) return new NextResponse(null, { status: 404, headers: response.headers });
   if (data !== null && ASK_PAGES.test(pathname)) return redirectKeepingCookies(request, response, '/assistant');
