@@ -12,6 +12,8 @@ import { collectionsTool, portfolioOverviewTool } from '../../src/tools/collecti
 import { runSheet } from '../../src/tools/fact-sheet';
 import { listLeasesTool } from '../../src/tools/leases';
 import { listPropertiesTool } from '../../src/tools/list-properties';
+import { ledgerTool } from '../../src/tools/ledger';
+import { estaTool } from '../../src/tools/server';
 import { getPropertyTool, propertyMetricsTool } from '../../src/tools/property-facts';
 import { askTables, withDraftAndArchivedLeases } from '../ask-seed';
 import { HOUSEHOLD } from '../full-seed';
@@ -78,5 +80,26 @@ describe('the household reads count what the screens count (AGENT.md §4)', () =
     const { context, handle } = await tools();
     const { certificates } = await getPropertyTool(context)({ property: handle('Đất Bảo Lộc') });
     expect(certificates.map((certificate) => certificate.link)).toEqual([expect.stringMatching(/^esta:\/\/legal\/62d33252-02ba-5610-bd9a-12474774014c$/)]);
+  });
+});
+
+describe('what was collected and what was received are two figures (q1, P5-10c)', () => {
+  it('tells the model that the board counts payments on the bills due in a month, and sends "received this month" to the ledger', async () => {
+    const { context, handle } = await tools();
+    const diAn = handle('Dãy trọ Dĩ An');
+    const board = await collectionsTool(context)({ year: 2026, month: 10, property: diAn });
+    expect(board.month_collected.collected_display).toBe(formatVnd(vnd(0), 'vi'));
+    expect(board.month_collected.basis).toContain('not the money received in the month');
+    expect(board.month_collected.basis).toContain('ledger');
+    const ledger = await ledgerTool(fakeDb(askTables('')), HOUSEHOLD, 'vi', context.properties, context.cite)({ property: diAn, year: 2026, month: 10 });
+    expect(ledger.ledger.income_display).toBe(formatVnd(vnd(Number(fact('q1', 'di-an income received in October 2026'))), 'vi'));
+  });
+
+  it('describes the two tools so that each answers its own question', () => {
+    const [, collections] = estaTool('collections', async () => ({}));
+    const [, ledger] = estaTool('ledger', async () => ({}));
+    expect(collections.description).not.toContain('the only figure for what was collected');
+    expect(collections.description).toContain('use ledger');
+    expect(ledger.description).toContain('how much was received in a month');
   });
 });
