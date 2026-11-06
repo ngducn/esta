@@ -167,13 +167,19 @@ function idSpans(original: string, idField: boolean): Span[] {
   }
   const dates = groupsIn(text, groups, DATE);
   const priced = moneyText(original, folded);
+  // A figure of 9 to 12 digits with only separators between it and an ID label is an ID, whatever its grouping or currency mark.
+  const idFigure = ([figure]: RegExpExecArray, at: number) => {
+    const count = [...figure].filter((char) => DIGIT.test(char)).length;
+    return count >= 9 && count <= 12 && labels.some((label) => label.end <= at && !/[\p{L}\p{Nd}]/u.test(text.slice(label.end, at)));
+  };
   const startsWithZero = ([figure]: RegExpExecArray) => isZero(figure.charAt(0));
+  const notAmount = (match: RegExpExecArray) => startsWithZero(match) || idFigure(match, match.index);
   const notMoney = (match: RegExpExecArray) => {
     const [figure] = match;
     const grouped = GROUPING.test(figure);
-    return (startsWithZero(match) && (DIGIT.test(figure.charAt(1)) || !grouped)) || (!grouped && (afterLabel(match.index) || beforeLabel(match.index + figure.length)));
+    return idFigure(match, match.index) || (startsWithZero(match) && (DIGIT.test(figure.charAt(1)) || !grouped)) || (!grouped && (afterLabel(match.index) || beforeLabel(match.index + figure.length)));
   };
-  const amounts = new Set([...groupsIn(priced, groups, AMOUNT, startsWithZero), ...groupsIn(priced, groups, MONEY, notMoney)]);
+  const amounts = new Set([...groupsIn(priced, groups, AMOUNT, notAmount), ...groupsIn(priced, groups, MONEY, notMoney)]);
 
   const runOf = (from: number, length: number, join: RegExp): Group[] | undefined => {
     const run: Group[] = [];

@@ -67,7 +67,7 @@ describe('the national ID reducer on money', () => {
         fc.constantFrom(...AFTER, ...BEFORE),
         fc.constantFrom('', ' '),
         fc.boolean(),
-        fc.constantFrom('Giá ', 'cccd ', ''),
+        fc.constantFrom('Giá ', ''),
         (ds, sizes, sep, marker, gap, before, lead) => {
           const parts: string[] = [];
           let at = 0;
@@ -81,9 +81,38 @@ describe('the national ID reducer on money', () => {
           const leads = before && BEFORE.includes(marker);
           const text = leads ? `${lead}${marker}${gap}${figure}` : `${lead}${figure}${gap}${marker}`;
           fc.pre(!/^0[^.,\u00b7]*$/u.test(figure) && !/^0\d/u.test(figure));
-          fc.pre(lead !== 'cccd ' || /[.,\u00b7]/u.test(figure));
           fc.pre(!new RegExp(DATE.source, 'u').test(text));
           expect(reduce(text)).toBe(text);
+        },
+      ),
+      { seed: 20261007, numRuns: 1500 },
+    );
+  });
+});
+
+describe('the national ID reducer on a figure right after an ID label', () => {
+  it('cuts a figure of nine to twelve digits whatever its grouping or currency marker', () => {
+    fc.assert(
+      fc.property(
+        fc.array(fc.integer({ min: 0, max: 9 }), { minLength: 9, maxLength: 12 }),
+        fc.array(fc.integer({ min: 3, max: 4 }), { minLength: 1, maxLength: 4 }),
+        groupSeparators,
+        fc.constantFrom(...AFTER),
+        fc.constantFrom('', ' '),
+        fc.constantFrom('CCCD ', 'CMND ', 'căn cước ', 'cccd: '),
+        (ds, sizes, sep, marker, gap, label) => {
+          const parts: string[] = [];
+          let at = 0;
+          for (const size of sizes) {
+            if (at >= ds.length) break;
+            parts.push(ds.slice(at, at + size).join(''));
+            at += size;
+          }
+          if (at < ds.length) parts.push(ds.slice(at).join(''));
+          const text = `${label}${parts.join(sep)}${gap}${marker}`;
+          fc.pre(!new RegExp(DATE.source, 'u').test(text));
+          fc.pre(parts.every((part) => part.length >= 3) && !(parts.length > 1 && sep === ''));
+          expect(digitsOf(reduce(text)).length).toBeLessThanOrEqual(4);
         },
       ),
       { seed: 20261007, numRuns: 1500 },
