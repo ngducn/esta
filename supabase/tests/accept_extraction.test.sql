@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(33);
+select plan(38);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 
@@ -23,6 +23,11 @@ insert into public.documents (id, household_id, property_id, category, title, st
   ('00000000-0000-4000-8000-00000000d0a5', :'a', '00000000-0000-4000-8000-0000000000a1', 'utility_bill', 'Hóa đơn nước Demo',
    :'a' || '/00000000-0000-4000-8000-00000000d0a5/hd.pdf', 'application/pdf', 1000, repeat('f', 64), 'normal');
 
+insert into public.parties (id, household_id, kind, full_name) values ('00000000-0000-4000-8000-00000000b0a1', :'b', 'individual', 'Chủ B Demo');
+insert into public.certificates (id, household_id, property_id, form, serial_no, book_entry_no, issued_on, document_id) values
+  ('00000000-0000-4000-8000-00000000b0c1', :'b', '00000000-0000-4000-8000-0000000000b1', 'gcn_2024', 'B DEMO', 'CS B', '2024-01-02', '00000000-0000-4000-8000-00000000d0b1');
+insert into public.parcels (id, household_id, property_id, certificate_id, parcel_no, map_sheet_no, area_m2, use_form, purposes) values
+  ('00000000-0000-4000-8000-00000000b0d1', :'b', '00000000-0000-4000-8000-0000000000b1', '00000000-0000-4000-8000-00000000b0c1', '99', '1', 10, 'private', '[]');
 select tests.act_as('member.b@test.esta.test');
 select public.enqueue_extract_document('00000000-0000-4000-8000-00000000d0b1', '2026-10-07T02:00:00Z') as other_id \gset
 select tests.act_as('member.a@test.esta.test');
@@ -72,7 +77,7 @@ select tests.act_as('member.a@test.esta.test');
 -- The last write fails (a parcel under a certificate that does not exist), and the party, the certificate, the filing and
 -- the extraction's state written before it all roll back.
 select throws_ok(
-  format($$ select * from public.accept_extraction(%L, %L, '{"form": {"decision": "accepted", "value": "gcn_2024"}}', null, %L) $$,
+  format($$ select * from public.accept_extraction(%L, %L, '{"form": {"decision": "accepted", "value": "gcn_2024"}}', %L) $$,
     :'unfiled_id', :'bad_steps', '00000000-0000-4000-8000-0000000000a1'),
   '23503', null, 'a step that fails refuses the whole accept');
 select is((select count(*) from public.parties where id = '00000000-0000-4000-8000-00000000a001'), 0::bigint, 'no party stays behind');
@@ -87,10 +92,10 @@ select throws_ok(
   format($$ select * from public.accept_extraction(%L, '[]', '{}') $$, :'unfiled_id'),
   '23514', 'ESTA_NO_PROPERTY', 'an unfiled document with no property chosen is refused');
 select throws_ok(
-  format($$ select * from public.accept_extraction(%L, '[]', '{}', null, %L) $$, :'unfiled_id', '00000000-0000-4000-8000-0000000000b1'),
+  format($$ select * from public.accept_extraction(%L, '[]', '{}', %L) $$, :'unfiled_id', '00000000-0000-4000-8000-0000000000b1'),
   'P0002', 'ESTA_PROPERTY_NOT_FOUND', 'and so is a property of another household');
 select results_eq(
-  format($$ select property_id, document_id from public.accept_extraction(%L, %L, '{"form": {"decision": "accepted", "value": "gcn_2024"}}', null, %L) $$,
+  format($$ select property_id, document_id from public.accept_extraction(%L, %L, '{"form": {"decision": "accepted", "value": "gcn_2024"}}', %L) $$,
     :'unfiled_id', :'steps', '00000000-0000-4000-8000-0000000000a1'),
   $$ values ('00000000-0000-4000-8000-0000000000a1'::uuid, '00000000-0000-4000-8000-00000000d0a2'::uuid) $$,
   'accepting files the document on the chosen property and answers it');
@@ -126,11 +131,13 @@ select results_eq(
 select is(extensions.uuid_generate_v5(extensions.uuid_ns_url(), 'manual:00000000-0000-4000-8000-00000000f0f1'), '73dd4027-1a24-597c-acc1-918b6f2d1220'::uuid,
   'and that id is the one uuid-v5.ts gives');
 select throws_ok(
-  format($$ select * from public.accept_extraction(%L, '[]', '{}', %L) $$, :'failed_id', :'other_id'),
+  format($$ select * from public.accept_extraction(%L, '[]', '{}', p_manual_id => %L) $$, :'failed_id', :'other_id'),
   '42883', null, 'no argument names the manual entry, so another household''s extraction cannot be named as one');
+select tests.act_as('member.b@test.esta.test');
 select results_eq(
   format($$ select status, accepted_fields, reviewed_by from public.document_extractions where id = %L $$, :'other_id'),
   $$ values ('needs_review', null::jsonb, null::uuid) $$, 'and the other household''s read is untouched');
+select tests.act_as('member.a@test.esta.test');
 
 -- Reject and accept take turns on one read.
 select is((select public.reject_extraction(:'water_id')), '00000000-0000-4000-8000-00000000d0a5'::uuid, 'a waiting read is rejected');
@@ -139,6 +146,41 @@ select throws_ok(
   '23514', 'ESTA_EXTRACTION_NOT_REVIEWABLE', 'a rejected read cannot be accepted');
 select is((select public.reject_extraction(:'unfiled_id')), null::uuid, 'an accepted read cannot be rejected');
 select is((select status from public.document_extractions where id = :'unfiled_id'), 'accepted', 'and stays accepted');
+
+-- Ids inside the steps never reach another household: a step row that is another household's row is refused, a
+-- foreign key to its certificate fails, and its rows stay as they were.
+select throws_ok(
+  format($$ select * from public.accept_extraction(%L, %L, '{}') $$, :'read_id',
+    '[{"table": "parties", "row": {"id": "00000000-0000-4000-8000-00000000b0a1", "kind": "individual", "full_name": "Kẻ lạ Demo", "tags": []}}]'),
+  '22023', 'ESTA_EXTRACTION_STEP', 'a party step with another household''s party id is refused');
+select throws_ok(
+  format($$ select * from public.accept_extraction(%L, %L, '{}') $$, :'read_id',
+    '[{"table": "certificates", "row": {"id": "00000000-0000-4000-8000-00000000b0c1", "form": "gcn_2024", "serial_no": "KE LA", "book_entry_no": "X", "issued_on": "2024-01-02", "holder_party_ids": [], "annotations": []}}]'),
+  '22023', 'ESTA_EXTRACTION_STEP', 'a certificate step with another household''s certificate id is refused');
+select throws_ok(
+  format($$ select * from public.accept_extraction(%L, %L, '{}') $$, :'read_id',
+    '[{"table": "parcels", "row": {"id": "00000000-0000-4000-8000-00000000b0d1", "certificate_id": "00000000-0000-4000-8000-00000000b0c1", "parcel_no": "1", "area_m2": 1, "use_form": "private", "purposes": []}}]'),
+  '22023', 'ESTA_EXTRACTION_STEP', 'a parcel step with another household''s parcel id, under their certificate, is refused');
+select throws_ok(
+  format($$ select * from public.accept_extraction(%L, %L, '{}') $$, :'read_id',
+    '[{"table": "parcels", "row": {"id": "00000000-0000-4000-8000-00000000b0d9", "certificate_id": "00000000-0000-4000-8000-00000000b0c1", "parcel_no": "1", "area_m2": 1, "use_form": "private", "purposes": []}}]'),
+  '23503', null, 'a new parcel under another household''s certificate is refused');
+select throws_ok(
+  format($$ select * from public.accept_extraction(%L, %L, '{}') $$, :'read_id',
+    '[{"table": "certificates", "row": {"id": "00000000-0000-4000-8000-00000000c0f1", "form": "gcn_2024", "serial_no": "A", "book_entry_no": "B", "issued_on": "2024-01-02", "holder_party_ids": ["00000000-0000-4000-8000-00000000b0a1"], "annotations": []}}]'),
+  null, null, 'a certificate whose holder is another household''s party is refused');
+select throws_ok(
+  format($$ select * from public.accept_extraction(%L, %L, '{}') $$, :'read_id',
+    '[{"table": "utility_accounts", "row": {"id": "00000000-0000-4000-8000-00000000c0f2", "unit_id": "00000000-0000-4000-8000-00000000c0f3", "kind": "water"}}]'),
+  '23503', null, 'a utility account step naming a room that is not on the property is refused');
+select tests.act_as('member.b@test.esta.test');
+select results_eq(
+  $$ select (select full_name from public.parties where id = '00000000-0000-4000-8000-00000000b0a1'),
+            (select serial_no from public.certificates where id = '00000000-0000-4000-8000-00000000b0c1'),
+            (select parcel_no from public.parcels where id = '00000000-0000-4000-8000-00000000b0d1'),
+            (select status from public.document_extractions where id = (select id from public.document_extractions where document_id = '00000000-0000-4000-8000-00000000d0b1')) $$,
+  $$ values ('Chủ B Demo', 'B DEMO', '99', 'needs_review') $$, 'and the other household''s party, certificate, parcel and read are as they were');
+select tests.act_as('member.a@test.esta.test');
 
 -- Rejecting.
 select is((select public.reject_extraction(:'bill_id')), '00000000-0000-4000-8000-00000000d0a4'::uuid, 'rejecting answers the document');

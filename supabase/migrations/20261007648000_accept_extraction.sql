@@ -23,6 +23,7 @@ declare
   v_document public.documents;
   v_property uuid;
   v_step jsonb;
+  v_rows bigint;
 begin
   -- The lock makes two accepts of one extraction take turns, so the second rewrites what the first wrote or is refused.
   select x.* into v_x from public.document_extractions x where x.id = p_extraction_id for update;
@@ -116,6 +117,11 @@ begin
       else
         raise exception 'ESTA_EXTRACTION_STEP' using errcode = '22023';
     end case;
+    -- An upsert whose id belongs to another household writes nothing; the step is refused, not skipped.
+    get diagnostics v_rows = row_count;
+    if v_rows <> 1 then
+      raise exception 'ESTA_EXTRACTION_STEP' using errcode = '22023';
+    end if;
   end loop;
 
   if p_ocr_text is not null then
