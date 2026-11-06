@@ -4,6 +4,23 @@ import { assertStartAllowed, backupDirFor, parseAgentEnv } from './env';
 
 const base = { SUPABASE_URL: 'http://127.0.0.1:54321', SUPABASE_SERVICE_ROLE_KEY: 'service-key', ESTA_ENV: 'development' };
 
+describe('a live production worker', () => {
+  const live = { ...base, ESTA_ENV: 'production', ESTA_AGENT_MODE: 'live', CLAUDE_CODE_OAUTH_TOKEN: 't', ESTA_MODEL_ROUTINE: 'm' };
+
+  it('refuses to start without an SMTP host and says so', () => {
+    expect(() => parseAgentEnv(live)).toThrow(/SMTP_URL is required by a live production worker/);
+  });
+
+  it('starts once the mail settings are set', () => {
+    const env = parseAgentEnv({ ...live, SMTP_URL: 'smtp://relay.demo.test:587', ESTA_EMAIL_FROM: 'a@demo.test', ESTA_APP_URL: 'https://esta.demo.test' });
+    expect(assertStartAllowed(env).agentMode).toBe('live');
+  });
+
+  it('is not asked for mail settings in development', () => {
+    expect(() => parseAgentEnv({ ...live, ESTA_ENV: 'development' })).not.toThrow();
+  });
+});
+
 describe('assertStartAllowed', () => {
   it('starts replay with no credential and records auth mode none', () => {
     const env = parseAgentEnv({ ...base, ESTA_AGENT_MODE: 'replay', CLAUDE_CODE_OAUTH_TOKEN: '', ANTHROPIC_API_KEY: '' });
@@ -64,7 +81,7 @@ describe('assertStartAllowed', () => {
 
 describe('backupDirFor', () => {
   it('uses ESTA_BACKUP_DIR when set, in any environment', () => {
-    expect(backupDirFor(parseAgentEnv({ ...base, ESTA_BACKUP_DIR: '/Volumes/family/backups', ESTA_ENV: 'production' }), '/home')).toBe('/Volumes/family/backups');
+    expect(backupDirFor(parseAgentEnv({ ...base, ESTA_BACKUP_DIR: '/Volumes/family/backups', ESTA_ENV: 'production', ESTA_AGENT_MODE: 'replay' }), '/home')).toBe('/Volumes/family/backups');
   });
 
   it('falls back to a folder under the worker home outside production', () => {
@@ -72,6 +89,6 @@ describe('backupDirFor', () => {
   });
 
   it('gives production no guess, so the job refuses', () => {
-    expect(backupDirFor(parseAgentEnv({ ...base, ESTA_ENV: 'production' }), '/home')).toBeNull();
+    expect(backupDirFor(parseAgentEnv({ ...base, ESTA_ENV: 'production', ESTA_AGENT_MODE: 'replay' }), '/home')).toBeNull();
   });
 });

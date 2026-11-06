@@ -692,6 +692,42 @@ export type Database = {
           },
         ]
       }
+      cron_runs: {
+        Row: {
+          created_at: string
+          failure: string | null
+          finished_at: string
+          households_failed: number
+          households_processed: number
+          id: string
+          job: string
+          ok: boolean
+          started_at: string
+        }
+        Insert: {
+          created_at?: string
+          failure?: string | null
+          finished_at: string
+          households_failed?: number
+          households_processed?: number
+          id?: string
+          job: string
+          ok: boolean
+          started_at: string
+        }
+        Update: {
+          created_at?: string
+          failure?: string | null
+          finished_at?: string
+          households_failed?: number
+          households_processed?: number
+          id?: string
+          job?: string
+          ok?: boolean
+          started_at?: string
+        }
+        Relationships: []
+      }
       deposit_entries: {
         Row: {
           amount_vnd: number
@@ -3700,6 +3736,15 @@ export type Database = {
           p_rows: Json
         }
         Returns: string
+      }
+      cron_job_status: {
+        Args: { p_household_id: string }
+        Returns: {
+          finished_at: string
+          job: string
+          ok: boolean
+          started_at: string
+        }[]
       }
       end_expired_leases: { Args: { p_as_of: string }; Returns: number }
       enqueue_extract_document: {

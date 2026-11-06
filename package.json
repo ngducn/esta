@@ -72,6 +72,8 @@
     "gate:vietqr": "tsx scripts/gate-vietqr.ts",
     "reference:build": "node scripts/reference/build-csvs.ts && node scripts/reference/build-migration.ts",
     "cron:run": "node scripts/cron-run.ts",
+    "worker:update": "node scripts/worker-update.ts",
+    "backup:offsite": "node scripts/backup-offsite.ts",
     "lane:otp": "node scripts/lane-otp.ts",
     "fixtures:certificates": "tsx fixtures/certificates/generator/generate.ts",
     "fixtures:connector-demo": "tsx fixtures/connector-demo/generate.ts",
