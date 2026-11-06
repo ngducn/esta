@@ -79,6 +79,7 @@ describe('the integration lane registry', () => {
  */
 const OUTSIDE_THE_REGISTRY: Readonly<Record<string, readonly number[]>> = {
   'apps/connector/src/connector.integration.test.ts': [8, 9],
+  'apps/connector/src/logout.integration.test.ts': [2],
   'apps/connector/src/rental.integration.test.ts': [8],
 };
 const REPO_ROOT = join(WEB_ROOT, '..', '..');
