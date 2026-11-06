@@ -7,7 +7,7 @@ import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 import { morningBriefRequest } from '../../src/jobs/morning-brief';
 import { JOBS } from '../../src/jobs/registry';
 import { pollOnce } from '../../src/runner';
-import { fakeDb } from '../../src/test/fake-db';
+import { memoryDb } from '@esta/ops/test/memory-db';
 import { NumberGuardError } from '../../src/tools/create-item';
 import { clockOn, HOUSEHOLD, labels, seedRecords, snapshot } from '../full-seed';
 import { replayWorker, toolCaller } from '../replay-worker';
@@ -29,7 +29,7 @@ const tablesWith = (agentJobs: Row[] = []): Record<string, Row[]> => ({
 });
 
 function request(tables: Record<string, Row[]>, waiting: readonly string[] = [], clock = clockOn(`${TODAY}T07:00:00+07:00`)) {
-  return morningBriefRequest({ db: fakeDb(tables), householdId: HOUSEHOLD, jobId: 'job-brief', locale: 'vi', asOf: isoDate(TODAY), timezone: 'Asia/Ho_Chi_Minh', clock, waiting, failed: [], read: async () => ({ snapshot, labels }) });
+  return morningBriefRequest({ db: memoryDb(tables), householdId: HOUSEHOLD, jobId: 'job-brief', locale: 'vi', asOf: isoDate(TODAY), timezone: 'Asia/Ho_Chi_Minh', clock, waiting, failed: [], read: async () => ({ snapshot, labels }) });
 }
 
 const daily = (kind: string, patch: Row = {}): Row => ({
@@ -50,7 +50,7 @@ function stack(inputs: Row[]) {
   const clock = () => clockOn(now)();
   const brief = daily('morning_brief');
   const tables = tablesWith([brief, ...inputs]);
-  const worker = replayWorker(fakeDb(tables), tables.agent_jobs ?? [], jobsDir, clock);
+  const worker = replayWorker(memoryDb(tables), tables.agent_jobs ?? [], jobsDir, clock);
   vi.spyOn(JOBS.morning_brief.handler, 'prepare').mockImplementation(async ({ db, job, waiting, failed }) =>
     morningBriefRequest({ db, householdId: HOUSEHOLD, jobId: job.id, locale: 'vi', asOf: isoDate(TODAY), timezone: 'Asia/Ho_Chi_Minh', clock, waiting, failed, read: async () => ({ snapshot, labels }) }),
   );

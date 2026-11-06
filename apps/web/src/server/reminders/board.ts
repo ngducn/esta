@@ -1,7 +1,7 @@
 import 'server-only';
 import { collectionState } from '@esta/core/collections';
 import type { IsoDate } from '@esta/core/date';
-import { firstPhone, formatPhone, zaloChatUrl } from '@esta/core/phone';
+import { firstMobile, formatPhone, zaloChatUrl } from '@esta/core/phone';
 import { defaultFormOfAddress, FORM_OF_ADDRESS_KEYS, reminderTiming, type FormOfAddress, type ReminderInput } from '@esta/core/reminder';
 import { getTranslations } from 'next-intl/server';
 import type { CollectionRow } from '@esta/ops';
@@ -32,7 +32,7 @@ export type ReminderLabels = {
 };
 
 function zaloContact(tenant: NonNullable<OwedBill['tenant']>): ReminderTarget['zalo'] {
-  const phone = firstPhone([tenant.zaloPhone, tenant.phone]);
+  const phone = firstMobile([tenant.zaloPhone, tenant.phone]);
   return phone === null ? null : { url: zaloChatUrl(phone), phone: formatPhone(phone) };
 }
 

@@ -12,7 +12,7 @@ import type { AgentDb } from '../../src/supabase';
 import type { AskReads } from '../../src/tools/ask-reads';
 import { mcpToolName } from '../../src/tools/server';
 import type { AskTopic } from '../../src/tools/topic-reads';
-import { fakeDb } from '../../src/test/fake-db';
+import { memoryDb } from '@esta/ops/test/memory-db';
 import { ANSWER, askRpcs, askTables, CONVERSATION, QUESTION } from '../ask-seed';
 import { clockOn, HOUSEHOLD } from '../full-seed';
 import { agentItems } from '../../../../supabase/seed/generator/agent.ts';
@@ -338,7 +338,7 @@ export async function caseRequest(item: AskCase, { db, householdId, reads }: Cas
 export async function casePrompt(item: AskCase): Promise<string> {
   if (item.rebuiltFrom !== undefined) return askPrompt({ ...ASK_CONTEXT, question: item.question, earlier: item.rebuiltFrom });
   const tables = askTables(item.question);
-  return (await caseRequest(item, { db: fakeDb(tables, [], {}, {}, askRpcs(tables)), householdId: HOUSEHOLD, reads: replayedReads() })).prompt;
+  return (await caseRequest(item, { db: memoryDb(tables, [], {}, {}, askRpcs(tables)), householdId: HOUSEHOLD, reads: replayedReads() })).prompt;
 }
 
 /** The turn a follow-up resumes, as the conversation row holds it after the case it follows finished in replay. */

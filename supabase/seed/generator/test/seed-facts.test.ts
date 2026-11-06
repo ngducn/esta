@@ -4,9 +4,11 @@ import { join } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { query } from '../../../../scripts/db-checksum.ts';
 import { parseSlot, slotWorkdir } from '../../../../scripts/slot.ts';
+import { householdSeeds } from '../households.ts';
+import { DEFAULT_OPTIONS } from '../index.ts';
 
 const workdir = slotWorkdir(join(import.meta.dirname, '../../../..'), parseSlot(process.env.ESTA_SLOT));
-const HOUSEHOLDS = 11;
+const HOUSEHOLDS = householdSeeds(DEFAULT_OPTIONS.lanes).length;
 const SIX_MONTHS_ON = '2027-04-07';
 
 type Row = Readonly<Record<string, string | number | null>>;

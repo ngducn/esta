@@ -9,7 +9,7 @@ Resume with `skills/poteto-mode/playbooks/session-pickup.md`, then Autopilot-ful
 
 Briefs are in `~/.claude/orchestrate/esta/briefs/`. The root's todo is `~/.claude/orchestrate/esta/todo.md`. Media is in `~/.claude/orchestrate/esta/media/<PR code>/`. The redesign's design system copy is in `~/.claude/orchestrate/esta/design/2026-11/`.
 
-## Where the run is (written 2026-11-01 21:45 +07; open items refreshed 2026-11-06 15:45)
+## Where the run is (written 2026-11-01 21:45 +07; open items refreshed 2026-11-06 16:45)
 
 Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/8USdYGBumJc9AuaMsQfZKg --> i redesigned Esta, please implement the UI revamp" and "also check current progress, please help continue the work".
 
@@ -18,22 +18,20 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 - The redesign is planned in `docs/plan/redesign-2026-11.md` (b2def8a7): six slices, RD-1 to RD-6, with its defaults listed under "Decisions taken as defaults".
 - #365's fix round 1 had never pushed. The previous owner stopped after merging main locally (840b881e in `/tmp/owner-data-trust-a/wt`). A fresh owner took it over.
 
-## Open items (state at 17:20 2026-11-06 +07)
+## Open items (state at 17:35 2026-11-06 +07; week 87%)
 
 - **Ryan 2026-11-06:** "merge them and finish the project"; "push it through the last bit"; "i want the code quality so high and pristine that follow up AI agents can pickup the practice"; "everything you find as issue, be sure to codify it in some way"; "yeah" to finishing the quality pass before the first production deploy; "Yes, convert it" (monthly rate to yearly); "we need to at least x3 the throughput to go through the usage before tmr reset, so spawn parallel agents and really rigorously complete the job". Guard: stop spawns at 96% of the week, pause owners at 98%; week resets 2026-11-07 11:00 +07.
 - **Codify rule live:** CLAUDE.md "Codify every finding", owner-brief steps 3a, 6 and 7, verification-tiers checklist, standing orders 2026-11-06. Merge only with `~/.claude/orchestrate/esta/bin/merge.sh <pr> <full sha>`. Agents wait for CI with `~/.claude/orchestrate/esta/bin/wait-ci.sh [--after-rerun] <pr> <sha>` in the foreground (exit 3 = run again). On every hand-back whose notification says "waiting on its own background work", TaskStop the agent, then `pgrep -fl /tmp/owner-<id>` (or the review path) and kill any leftover by PID: TaskStop does not reach a heavy.sh job queued for the lock.
-- **Merged today:** #438, #434, #444 Q-01, #446 Q-16, #439 P5-15b (low #457), #448 deps (low #463). Lows also filed: #459, #461, #462.
-- **State at 17:20** (week 84%). Main was merged into 449, 453, 455, 456, 460 by root's merge agent (ci green each). Tiny reader running on the 449 and 456 merges (briefs/merge-reader-449-456.md); on CLEAN: `merge.sh 456 <head>` then `merge.sh 449 <head>`, then switch briefs from ~/.claude/orchestrate/esta/bin/heavy.sh to tools/heavy.sh, and file lows for 456 (darwin arch digest, helper scripts doing project work, strip-key-traces rule, lock.sh shebang) and 449 (ESTA_FROZEN_NOW TS-only fallback, get_property ended cert, sticky nav vs Kho radio, household_id scoping test).
-- **#450 Q-17:** fix round 2 running (briefs/q-17-ff2.md: term end only after an "until" word, currency marker keeps money whole, all punctuation classes, independent generators). Then tiny reader, lane on a free slot (PDF preview, bank CSV), merge; then Q-17b (SQL id parity, #204, #364, #151, #425).
-- **#451 Q-20a:** fix round 1 on slot 14 (briefs/q-20a-ff1.md: logout keeps session until server confirms, token-window docs, connector tests in CI, #461 timebox). Ryan item 11 (copied-token window).
-- **#453 Q-19a:** fix round 1 on slot 7 (briefs/q-19a-ff1.md: unit lock back in guard_lease, renew sentinel, ended leases in constraint, readLeaseSchedule paging, void + quarterly amendment, deposit order, coverage match, renumber after #449).
-- **#455 Q-19b:** fix round 1 on slot 9 (briefs/q-19b-ff1.md: duplicate decision under the lock for no-reference lines, undo error outside the hidden block, undo lease lock test, memo-code parity, renumber after #449).
-- **#460 Q-09a:** review no blocker. After #456 merges, fix round: mutation job to tools/ci/jobs/mutation.sh without a ref pin, stryker-setup cleanup, memoryDb throws on embedded select, break 91. Then reader, merge.
-- **#465 Q-16b:** strict Sonnet review running (briefs/pr465-review.md). unit-list first-render flake not fixed; goes to Q-12.
-- **Q-20b:** owner on slot 3 (briefs/q-20b.md): #82 denied-function segfault (deploy blocker), #128, #131, probe for the preview project.
-- **P5-10b:** live run owner on slot 8 (briefs/p5-10b.md). Pre-deploy: one live smoke on merged main (agent SDK 0.3.317).
-- **Queue when slots free:** #450 lane; #453 lane (back-to-back leases, void and re-bill, approve a lease plan); Q-17b; Q-12 flaky clock tests (#208, retries 0); Q-09b allocation CSV vectors in pgTAP + C19 golden cases; C12 (#82, #128, #131). Later waves: Q-03/04/05, Q-06 (after #449 and #455 merge; they touch actions), Q-07, Q-08, Q-10, Q-13, Q-14 squash, Q-18, rest of Q-20, Q-15 docs, Q-02 formatter last.
-- **Slots:** usable 3, 7, 8, 9, 14; never 1, 2, 4, 5, 6. pid 56207 is Ryan's slot 5 worker; leave it. Tripwire cleared for throughput; set `/tmp/ci-local/one-at-a-time` again on a beside-only failure.
+- **Merged today:** #438, #434, #444, #446, #439, #448, #456, #449, #465, #458, #470, #450, #469 (P5-10c, all 18 live ask rows pass), #455, #460, #451. Lows filed through #477 (#473 also covers slow-test-setting missing apps/connector, apps/agent and integration tests).
+- **Phase 5:** q1 and T2 fixed (#469). Open: q5 and the guard probe (#471), q1 time 14.3 s vs 10 s (no cheap fix; 3 sequential model turns). `vi-transfer-procedure` ID skip unexplained until #471's live capture.
+- **#471 P5-10d** (round 1 code f2df103c): its agent runs the live step on slot 14 (probe, q5, ID capture), merges main, waits for ci (briefs/p5-10d-ff1.md). Then an adversarial Opus reader of false accepts, merge.sh.
+- **#467 Q-20b** (round 1 code 9f1abafd): agent on slot 7 runs db:test, the probe on SQL and REST paths, renumbers its migration to 20261007642500, merges main (briefs/q-20b-ff1.md). Then tiny reader, merge.sh.
+- **#453 Q-19a**: round 1 agent fixing red e2e viewports shards, renumbering its migration to 20261007642700, merging main; slot 9 offered (briefs/q-19a-ff1.md). Then scoped reader, #453 lane, merge.sh.
+- **Owners running:** Q-09b (#475, no slot, briefs/q-09b.md), Q-17b (slot 3, migration 643000, briefs/q-17b.md), Q-12b (slot 8, migration 644000, briefs/q-12b.md). Review each when it reports.
+- **#464**: Dependabot npm-weekly bump, unreviewed.
+- **Queue:** #453 lane; C19 golden cases and #364 after #471; #477 label; later waves Q-03/04/05, Q-06, Q-07, Q-08, Q-10, Q-13, Q-14 squash, Q-18, rest of Q-20, Q-15 docs, Q-02 formatter last. Pre-deploy: one live smoke on merged main (re-measure T7 50.2 s).
+- **Ryan deploy gate (new):** run `pnpm probe:denied-functions` against the preview project (DEPLOY.md section 12, after #467 merges). #82 and #128 stay open until then.
+- **Slots:** usable 3, 7, 8, 9, 14 (Docker has 8 GB and holds about five stacks); never 1, 2, 4, 5, 6. pid 56207 is Ryan's. Owners without a slot ask root through SendMessage at their db or live step, end their turn, and root replies with a slot.
 
 ## Waiting for Ryan (defaults apply)
 
@@ -62,7 +60,7 @@ Ruled 2026-11-02: Thu tiền "Đã thu" counts payments toward this month's rent
 - Prototype first, live checks for each assistant slice, and Mẹ's session before more assistant features. Repeat findings become checks (owner-brief "Known defect classes"). The redesign's prototype is Ryan's artifact.
 - Fix rounds are capped at 2. A language-rule change needs live English and Vietnamese probes that name real seed records.
 - No force-push. Restack with commit-tree merge commits plus a patch-id check. When a 3-way merge conflicts on adjacent edits, apply the PR's own diff (`git diff prev head | git apply --cached` on a temp index) instead.
-- The number rule beats a false reject: compounds such as `hai bên` and `ba mẹ` stay number words, and Trợ lý rewords.
+- The number rule beats a false reject. Revised 2026-11-06 (#471, pending its reader): an idiom such as `hai bên` (both parties) or `ba mẹ` (parents) passes only through one table of allowed followers (contract acts after `hai bên`; a few verbs and particles after `ba mẹ`), never after `có` or `còn`; every other use stays a number word and Trợ lý rewords. Twice (P5-12 and #471 round 0) a looser pass let real counts through, so the reader of any change here is adversarial and Opus.
 - Each member reads only her own conversations and their audit rows. The operator does not either.
 
 ## Budget

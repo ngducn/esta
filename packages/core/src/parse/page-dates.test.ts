@@ -46,4 +46,19 @@ describe('publishedDates (#329)', () => {
   it('reads every date the answer writes when it has no date line, but never one inside a link', () => {
     expect([...publishedDates('Bài ngày 05/10/2026, xem [tin cũ](https://example.vn/2026-10-01-x) hoặc https://example.vn/02/10/2026/y.')]).toEqual(['2026-10-05']);
   });
+
+  it('does not let a quoted line that says công bố date an answer whose real date line has no word (#366)', () => {
+    const answer = ['Bài Demo.', '- "UBND tỉnh công bố ngày 02/03/2026 bảng giá mới"', 'Thứ Năm, 29/10/2026 14:35'].join('\n');
+    expect([...publishedDates(answer)]).toEqual(['2026-10-29']);
+  });
+
+  it('confirms nothing when the labelled date line shows no date, whatever other dates the answer writes (#366)', () => {
+    const answer = [`${PUBLISHED_LABEL}: not shown`, 'Thứ Năm, 29/10/2026 14:35 | Báo Demo', 'Bài đăng ngày 05/10/2026'].join('\n');
+    expect([...publishedDates(answer)]).toEqual([]);
+    expect([...publishedDates(['Ngày đăng: không rõ', 'Hôm nay 07/10/2026'].join('\n'))]).toEqual([]);
+  });
+
+  it('still reads a labelled date when another labelled line shows none', () => {
+    expect([...publishedDates([`${PUBLISHED_LABEL}: 05/10/2026`, 'Ngày cập nhật: chưa có'].join('\n'))]).toEqual(['2026-10-05']);
+  });
 });

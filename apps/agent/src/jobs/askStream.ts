@@ -7,21 +7,22 @@ import { CALC_OPERANDS } from '../tools/fact-sheet';
 export const FLUSH_MS = 300;
 
 // The live probe saw the handle written as a placeholder too, `]({{f8}})` or `]({{f3.handle}})` (P5-12).
-const HANDLE_LINK = /\]\((?:(f\d+)|\{\{(f\d+)(?:\.handle)?\}\})\)/g;
+const HANDLE_LINK = /(\[[^\]]*)\]\((?:(f\d+)|\{\{(f\d+)(?:\.handle)?\}\})\)/g;
 
 export type Answer = FilledNote & { readonly refs: readonly AnswerRef[] };
 
 /**
  * Swaps each `](fN)` the model wrote for that record's link, in the template before any value is filled, so a cited
- * name that holds `](f2)` stays text. `refs` lists what was swapped in, the only links an answer shows live.
+ * name that holds `](f2)` stays text. `refs` lists what was swapped in, the only links an answer shows live. A placeholder
+ * handle with no page behind it loses its link and keeps its text, so no braces reach the stored answer (#357).
  */
 export function resolveLinks(text: string, sheet: FactSheet): { readonly text: string; readonly refs: string[] } {
   const refs = new Set<string>();
-  const resolved = text.replace(HANDLE_LINK, (whole, bare: string | undefined, braced: string | undefined) => {
+  const resolved = text.replace(HANDLE_LINK, (whole, open: string, bare: string | undefined, braced: string | undefined) => {
     const link = sheet.get(bare ?? braced ?? '')?.link;
-    if (typeof link !== 'string') return whole;
+    if (typeof link !== 'string') return braced === undefined ? whole : open.slice(1);
     refs.add(link);
-    return `](${link})`;
+    return `${open}](${link})`;
   });
   return { text: resolved, refs: [...refs] };
 }
