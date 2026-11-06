@@ -63,7 +63,11 @@ ending_tenant as (
 yield as (
   select round(s.monthly_rent_vnd * 12 * 10000.0 / (select v.value_vnd from public.valuations v where v.property_id = l.property_id and v.as_of <= '2026-10-07' order by v.as_of desc limit 1)) as bp
   from public.leases l cross join lateral private.lease_periods(l, '2026-10-07') s
-  where l.property_id = (select id from prop where code = 'Q1') and l.status = 'active' and '2026-10-07' between s.period_start and s.period_end)
+  where l.property_id = (select id from prop where code = 'Q1') and l.status = 'active' and '2026-10-07' between s.period_start and s.period_end),
+room2 as (
+  select (select s.rent_vnd from private.lease_periods(l, '2026-10-07') s where '2026-10-07' between s.period_start and s.period_end) as rent
+  from public.leases l join public.units u on u.id = l.unit_id
+  where l.property_id = (select id from prop where code = 'DIAN') and u.label = 'Phòng 2' and l.status = 'active')
 select question, figure, value from (
   select 'q1' as question, 'di-an income received in October 2026' as figure,
     (select coalesce(sum(a.amount_vnd), 0) from public.allocation_facts a where a.property_id = (select id from prop where code = 'DIAN') and a.received_on between '2026-10-01' and '2026-10-31')::text as value
@@ -87,6 +91,10 @@ select question, figure, value from (
   union all select 'q8', 'bao-loc mortgage bank', (select t.full_name from public.certificates c join public.parties t on t.id = (c.mortgage ->> 'bank_party_id')::uuid where c.property_id = (select id from prop where code = 'BAOLOC') and c.status = 'mortgaged')
   union all select 'q8', 'bao-loc mortgage amount', (select c.mortgage ->> 'amount_vnd' from public.certificates c where c.property_id = (select id from prop where code = 'BAOLOC') and c.status = 'mortgaged')
   union all select 'q9', 'q1 gross yield bp', (select bp::text from yield)
+  union all select 't5', 'di-an room 2 monthly rent', (select rent::text from room2)
+  union all select 't5', 'di-an room 2 yearly gain at 4tr', (select ((4000000 - rent) * 12)::text from room2)
+  union all select 't6', 'monthly payment of 2 tỷ over 15 năm at 9%', (select round(2000000000 * (0.09 / 12) / (1 - power(1 + 0.09 / 12, -180)))::text)
+  union all select 't7', 'monthly payment of 2 tỷ over 15 năm at 7,5%', (select round(2000000000 * (0.075 / 12) / (1 - power(1 + 0.075 / 12, -180)))::text)
   union all select 'q10', 'tenant who paid late most often', (select full_name from lateness)
   union all select 'q10', 'their bills paid late', (select late::text from lateness)
   union all select 'q10', 'their bills', (select bills::text from lateness)

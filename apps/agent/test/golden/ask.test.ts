@@ -1,3 +1,4 @@
+import { isCalcRef } from '@esta/core/assistant';
 import { isoDate } from '@esta/core/date';
 import { formatBps, formatDate, formatVnd, type Locale } from '@esta/core/format';
 import { vnd } from '@esta/core/money';
@@ -12,7 +13,7 @@ import { fakeDb } from '../../src/test/fake-db';
 import { answerRow, askRpcs, askTables, CONVERSATION, withDraftAndArchivedLeases, withSeedNames } from '../ask-seed';
 import { HOUSEHOLD, seedRecords } from '../full-seed';
 import { tempJobDir } from '../job-dir';
-import { askCase as findCase, caseSession, askRecording, askRepairRecording, ASK_CASES, caseInput, caseRequest, LEAK_CASE, LEAK_REPLAY_DIR, PAGE_TEXT } from './ask-cases';
+import { askCase as findCase, caseSession, askRecording, askRepairRecording, ASK_CASES, caseInput, caseRequest, LEAK_CASE, LEAK_REPLAY_DIR, PAGE_TEXT, RATE_URL } from './ask-cases';
 import { ASK_READS_FIXTURE, replayedReads } from './ask-reads';
 import { fact } from './ask-truth';
 
@@ -50,7 +51,7 @@ async function askAfterItsChain(id: string, reads = replayedReads()): Promise<As
     DEFAULT_REPLAY_DIR,
   );
   const repair = await prepared.nextTurn?.();
-  const result = (await prepared.finish({ reply: run.result.text, model: run.model, sessionId: run.result.sessionId, turnHash: 'a'.repeat(64) })) as { cited: Array<{ placeholder: string; value: string }> };
+  const result = (await prepared.finish({ reply: run.result.text, model: run.model, sessionId: run.result.sessionId, turnHash: 'a'.repeat(64) })) as { cited: Array<{ placeholder: string; value: string }>; calculations: unknown[] };
   const answer = answerRow(tables);
   const present = await existingLinks(fakeDb(seedRecords()), HOUSEHOLD, links(answer.content_md));
   return { answer, repair, result, run, conversation: tables.conversations?.[0], missing: links(answer.content_md).filter((link) => !present.has(link)) };
@@ -59,7 +60,7 @@ async function askAfterItsChain(id: string, reads = replayedReads()): Promise<As
 type Asked = {
   readonly answer: ReturnType<typeof answerRow>;
   readonly repair: string | null | undefined;
-  readonly result: { cited: Array<{ placeholder: string; value: string }> };
+  readonly result: { cited: Array<{ placeholder: string; value: string }>; calculations: unknown[] };
   readonly run: Awaited<ReturnType<typeof replaySession>>;
   readonly conversation: Record<string, unknown> | undefined;
   readonly missing: string[];
@@ -170,6 +171,52 @@ describe('ask in replay on the full seed at 2026-10-07 07:00 (AGENT.md §7.4, AG
     const { answer } = await askAfterItsChain('t8-bao-loc-land-price');
     expect(answer.content_md).toContain('Ứng dụng chưa có giá đất hiện nay của Đất Bảo Lộc');
     expect(answer.content_md).toContain('chưa tìm được trang nào đáng tin để dẫn');
+  });
+
+  it('thread case T5 states the yearly gain of the ground truth with the working of both steps under it, each from its operands', async () => {
+    const rent = money('t5', 'di-an room 2 monthly rent');
+    const gain = money('t5', 'di-an room 2 yearly gain at 4tr');
+    const monthly = formatVnd(vnd(4_000_000 - Number(fact('t5', 'di-an room 2 monthly rent'))), 'vi');
+    const { answer, repair, result, run, missing } = await askAfterItsChain('t5-raise-room-rent');
+    expect(repair).toBeNull();
+    expect(shown(answer.content_md)).toBe(`Nếu tăng tiền thuê Phòng 2 ở Dãy trọ Dĩ An từ ${rent} lên ${formatVnd(vnd(4_000_000), 'vi')}, mỗi tháng thu thêm ${monthly}, tức mỗi năm thu thêm ${gain}.\n\nXem [hợp đồng Phòng 2](esta://lease/…).`);
+    expect(answer.refs).toEqual([...new Set(links(answer.content_md)), { kind: 'calc', working: `${formatVnd(vnd(4_000_000), 'vi')} − ${rent} = ${monthly}` }, { kind: 'calc', working: `${monthly} × 12 = ${gain}` }]);
+    expect(run.toolCalls.map(({ name }) => name.replace(/^mcp__esta__/, ''))).toEqual(['list_properties', 'list_leases', 'calculate', 'calculate']);
+    expect(result.calculations).toEqual([
+      { handle: 'f16', op: 'difference', operands: ['f1.value_display', 'f11.rent_display'], result_display: monthly, working_display: `${formatVnd(vnd(4_000_000), 'vi')} − ${rent} = ${monthly}` },
+      { handle: 'f17', op: 'monthly_to_yearly', operands: ['f16.result_display'], result_display: gain, working_display: `${monthly} × 12 = ${gain}` },
+    ]);
+    expect(missing).toEqual([]);
+  });
+
+  it('thread case T6 states the monthly payment of the reference formula within 1 đồng, with the working naming all three inputs', async () => {
+    const { answer, repair } = await askAfterItsChain('t6-loan-payment');
+    expect(repair).toBeNull();
+    const paid = Number(/trả ([\d.]+)/.exec(answer.content_md)?.[1]?.replaceAll('.', ''));
+    expect(Math.abs(paid - Number(fact('t6', 'monthly payment of 2 tỷ over 15 năm at 9%')))).toBeLessThanOrEqual(1);
+    const working = (answer.refs as unknown[]).find(isCalcRef);
+    expect(working).toMatchObject({ working: expect.stringContaining('2.000.000.000') });
+    expect(JSON.stringify(working)).toMatch(/9%.*180 tháng|180 tháng.*9%/u);
+  });
+
+  it('thread case T6 with a monthly rate shows the conversion line, then a payment of 21.005.345 ₫', async () => {
+    const { answer, repair, result } = await askAfterItsChain('t6-monthly-rate-loan');
+    expect(repair).toBeNull();
+    expect(answer.content_md).toContain('mỗi tháng trả 21.005.345');
+    expect(answer.refs).toEqual([
+      { kind: 'calc', working: '0,8%/tháng × 12 = 9,6%/năm' },
+      { kind: 'calc', working: '2.000.000.000\u00a0₫, 9,6%/năm, 180 tháng → 21.005.345\u00a0₫/tháng' },
+    ]);
+    expect(result.calculations).toMatchObject([{ op: 'monthly_rate_to_yearly' }, { op: 'loan_payment' }]);
+  });
+
+  it('the follow-up to T7 fetches the page again in its own turn and applies the quoted rate to the loan she typed', async () => {
+    const { answer, repair, run } = await askAfterItsChain('t7-loan-at-quoted-rate');
+    expect(repair).toBeNull();
+    expect(run.toolCalls.map(({ name }) => name.replace(/^mcp__esta__/, ''))).toEqual(['WebSearch', 'WebFetch', 'quote_page', 'calculate']);
+    const paid = Number(/trả ([\d.]+)/.exec(answer.content_md)?.[1]?.replaceAll('.', ''));
+    expect(Math.abs(paid - Number(fact('t7', 'monthly payment of 2 tỷ over 15 năm at 7,5%')))).toBeLessThanOrEqual(1);
+    expect(answer.refs).toEqual(expect.arrayContaining([expect.objectContaining({ kind: 'source', url: RATE_URL }), expect.objectContaining({ kind: 'calc', working: expect.stringContaining('7,5%') })]));
   });
 
   it('a new segment\'s first question starts from her previous segment\'s answers, without their links, and reads August from the ledger', async () => {

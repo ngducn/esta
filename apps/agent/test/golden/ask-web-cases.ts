@@ -1,5 +1,6 @@
 import { join } from 'node:path';
 import { DEFAULT_REPLAY_DIR, writeRecording } from '../../src/replay/store';
+import { pruneCaseRecordings } from './prune-cases';
 import { askRecording, askRepairRecording, PAGE_TEXT, quotePage, RATE_URL, webFetch, webSearch, type AskCase } from './ask-cases';
 
 const MORE_SEARCHES = ['lãi suất vay mua nhà ngân hàng nhà nước', 'lãi suất vay mua nhà thả nổi', 'lãi suất vay mua nhà ưu đãi', 'lãi suất vay mua nhà cố định'];
@@ -28,6 +29,7 @@ export const OVER_CAP_REPLAY_DIR = join(DEFAULT_REPLAY_DIR, '..', 'agent-replay-
 
 
 if (import.meta.main) {
+  pruneCaseRecordings(OVER_CAP_REPLAY_DIR, [OVER_CAP_CASE.id, OVER_CAP_REPAIR_CASE.id]);
   for (const item of [OVER_CAP_CASE, OVER_CAP_REPAIR_CASE]) {
     console.log(writeRecording(OVER_CAP_REPLAY_DIR, await askRecording(item)));
     if (item.repairReply !== undefined) console.log(writeRecording(OVER_CAP_REPLAY_DIR, await askRepairRecording(item)));

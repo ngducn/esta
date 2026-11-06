@@ -6,6 +6,7 @@ import { calculate, divRoundHalfAway, loanPaymentExact, type TypedValue } from '
 const nb = (s: string) => s.replaceAll(' ₫', '\u00a0₫');
 const v = (n: number): TypedValue => ({ kind: 'vnd', value: vnd(n) });
 const bp = (n: number): TypedValue => ({ kind: 'bp', value: n });
+const monthlyBp = (n: number): TypedValue => ({ kind: 'bp', value: n, per: 'month' });
 const count = (n: number): TypedValue => ({ kind: 'count', value: n, unit: 'tháng' });
 const months = (n: number): TypedValue => ({ kind: 'months', value: n });
 
@@ -155,5 +156,24 @@ describe('fix round 1', () => {
     expect(two.ok && two.value.result_display).toBe('2 days');
     const loan = calculate('loan_payment', [v(1_000_000), bp(900), months(1)], 'en');
     expect(loan.ok && loan.value.working_display).toContain('1 month →');
+  });
+});
+
+describe('monthly_rate_to_yearly: a monthly rate times twelve, as its own step before the loan', () => {
+  it('turns 0,8%/tháng into 9,6%/năm and shows the step', () => {
+    const out = run('monthly_rate_to_yearly', [monthlyBp(80)]);
+    expect(out.value).toEqual(bp(960));
+    expect(out.working_display).toBe('0,8%/tháng × 12 = 9,6%/năm');
+  });
+  it('feeds loan_payment to 21.005.345 ₫ for 2 tỷ over 180 tháng, the exact annuity at 0,8% a month', () => {
+    expect(run('loan_payment', [v(2_000_000_000), bp(960), months(180)]).value).toEqual(v(21_005_345));
+  });
+  it('refuses a rate that is not monthly, and a monthly rate as a loan rate', () => {
+    expect(calculate('monthly_rate_to_yearly', [bp(80)]).ok).toBe(false);
+    expect(calculate('loan_payment', [v(2_000_000_000), monthlyBp(80), months(180)]).ok).toBe(false);
+  });
+  it('refuses a monthly rate whose yearly value passes a safe integer, and a negative monthly rate', () => {
+    expect(calculate('monthly_rate_to_yearly', [monthlyBp(Math.floor(Number.MAX_SAFE_INTEGER / 12) + 1)])).toEqual({ ok: false, reason: { kind: 'overflow' } });
+    expect(calculate('monthly_rate_to_yearly', [monthlyBp(-80)])).toEqual({ ok: false, reason: { kind: 'invalid', why: 'rate must not be negative' } });
   });
 });
