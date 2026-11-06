@@ -10,7 +10,7 @@ import { JOBS } from '../../src/jobs/registry';
 import { canonicalizer } from '../../src/replay/canonicalize';
 import { DEFAULT_REPLAY_DIR } from '../../src/replay/store';
 import { replaySession, type SessionRun } from '../../src/sdk/session';
-import { fakeDb } from '../../src/test/fake-db';
+import { memoryDb } from '@esta/ops/test/memory-db';
 import { mcpToolName } from '../../src/tools/server';
 import { clockOn, HOUSEHOLD, labels, seedRecords, snapshot } from '../full-seed';
 import { storedResearch } from '../research-seed';
@@ -19,7 +19,7 @@ const jobDir = mkdtempSync(join(tmpdir(), 'esta-brief-golden-'));
 afterAll(() => rmSync(jobDir, { recursive: true, force: true }));
 
 const tables: Record<string, Array<Record<string, unknown>>> = { agent_items: [], ...seedRecords(), research_items: storedResearch(HOUSEHOLD) };
-const db = fakeDb(tables);
+const db = memoryDb(tables);
 const prepared = morningBriefRequest({
   db,
   householdId: HOUSEHOLD,

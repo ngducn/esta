@@ -15,6 +15,9 @@ import { parseToolInput } from './server';
 const inputSchema = z.strictObject({ year: z.number().int().min(2000).max(2100), month: z.number().int().min(1).max(12), property: z.string().optional() });
 const USAGE = 'collections takes {"year", "month": 1 to 12, "property": a handle from list_properties, optional}';
 
+/** Read by the model beside the board's figure: 0 collected on a month's bills was once told as 0 received that month (q1 of the Phase 5 live run). */
+const BOARD_BASIS = 'payments on the bills due in this month, whichever day they arrived; not the money received in the month, which ledger gives';
+
 /** `collections` (AGENT.md §4): the collections board for a month (SPEC LSE-10), one record per bill and one per status, and the board's `Đã thu X / Y`. */
 export function collectionsTool({ reads, locale, asOf, cite, properties }: ReadToolContext) {
   return sameAnswer(async (raw: Record<string, unknown>) => {
@@ -45,7 +48,7 @@ export function collectionsTool({ reads, locale, asOf, cite, properties }: ReadT
     // The month's figure counts every bill due in it, archived property or not, as Báo cáo does; a live property's own rows hold all of its bills.
     const own = groups.flatMap((group) => group.items).filter((item) => item.carriedFrom === null).map((item) => item.row);
     const { collectedVnd, billedVnd } = monthCollected(scope === null ? billsDueIn((await reads.report(year)).invoices, start) : own);
-    const month_collected = cite({ month_date_display: formatMonthYear(start, locale), ...vndField('collected', collectedVnd, locale), ...vndField('billed', billedVnd, locale) });
+    const month_collected = cite({ month_date_display: formatMonthYear(start, locale), basis: BOARD_BASIS, ...vndField('collected', collectedVnd, locale), ...vndField('billed', billedVnd, locale) });
     return { bills, totals, month_collected };
   });
 }

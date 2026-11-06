@@ -2,7 +2,7 @@ import { isoDate } from '@esta/core/date';
 import type { Locale } from '@esta/core/format';
 import { describe, expect, it } from 'vitest';
 import { askRequest } from '../src/jobs/ask';
-import { fakeDb } from '../src/test/fake-db';
+import { memoryDb } from '@esta/ops/test/memory-db';
 import { mcpToolName } from '../src/tools/server';
 import { askRpcs, askTables } from './ask-seed';
 import { askCase, caseRequest } from './golden/ask-cases';
@@ -12,7 +12,7 @@ import { ANSWER, CONVERSATION, QUESTION } from './ask-seed';
 
 async function depositsAsked(question: string) {
   const tables = askTables(question);
-  const prepared = await caseRequest({ ...askCase('q4-deposits-held'), question }, { db: fakeDb(tables, [], {}, {}, askRpcs(tables)), householdId: HOUSEHOLD, reads: replayedReads() });
+  const prepared = await caseRequest({ ...askCase('q4-deposits-held'), question }, { db: memoryDb(tables, [], {}, {}, askRpcs(tables)), householdId: HOUSEHOLD, reads: replayedReads() });
   const overview = prepared.tools.get(mcpToolName('portfolio_overview'));
   if (overview === undefined) throw new Error('portfolio_overview is not bound');
   return JSON.stringify(await overview.run({}));
@@ -32,7 +32,7 @@ async function leasesAsked(question: string, household: Locale) {
   const tables = askTables(question);
   const asOf = isoDate('2026-10-07');
   const prepared = await askRequest({
-    db: fakeDb(tables, [], {}, {}, askRpcs(tables)),
+    db: memoryDb(tables, [], {}, {}, askRpcs(tables)),
     householdId: HOUSEHOLD,
     jobId: 'amount-language',
     conversationId: CONVERSATION,

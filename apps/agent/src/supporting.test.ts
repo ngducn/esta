@@ -2,7 +2,7 @@ import { isoDate, parseInstant, type Clock } from '@esta/core';
 import { describe, expect, it } from 'vitest';
 import { beat } from './heartbeat';
 import { SCHEDULED_JOBS, jobSpec, JOBS } from './jobs/registry';
-import { fakeDb, type Recorded } from './test/fake-db';
+import { memoryDb, type Recorded } from '@esta/ops/test/memory-db';
 import { pingTools } from './jobs/ping';
 import { isEstaToolName } from './tools/server';
 
@@ -12,7 +12,7 @@ describe('beat', () => {
 
   it('upserts the worker row with the clock time, then deletes the rows of workers unseen for a day', async () => {
     const writes: Recorded[] = [];
-    await beat(fakeDb({}, writes), info, 'usage_limited', clock);
+    await beat(memoryDb({}, writes), info, 'usage_limited', clock);
     expect(writes).toEqual([
       { table: 'worker_heartbeats', op: 'upsert', row: { ...info, state: 'usage_limited', last_seen_at: '2026-10-07T02:06:00.000Z' } },
       { table: 'worker_heartbeats', op: 'delete', row: { last_seen_at: { lt: '2026-10-06T02:06:00.000Z' } } },
@@ -82,6 +82,6 @@ describe('job registry', () => {
   });
 
   it('names MCP tools as mcp__esta__<name>', () => {
-    expect([...pingTools(fakeDb({}), 'h').keys()]).toEqual(['mcp__esta__household_info']);
+    expect([...pingTools(memoryDb({}), 'h').keys()]).toEqual(['mcp__esta__household_info']);
   });
 });

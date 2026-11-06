@@ -24,6 +24,15 @@ describe.each(['expenses.test.sql', 'valuations.test.sql'])('%s', (file) => {
   });
 });
 
+describe('statement_import_invariants.test.sql', () => {
+  it('holds exactly the rows of fixtures/statement_text.csv', () => {
+    const [, ...csv] = readFileSync(join(tests, 'fixtures', 'statement_text.csv'), 'utf8').trimEnd().split('\n');
+    const sql = readFileSync(join(tests, 'statement_import_invariants.test.sql'), 'utf8');
+    const rows = [...sql.matchAll(/^ {4}\('([^']*)', '([^']*)', '([^']*)'\)[,;]$/gm)].map((match) => match.slice(1).join(','));
+    expect(rows).toEqual(csv);
+  });
+});
+
 describe('deposit_ledger_parity.test.sql', () => {
   it('holds exactly the rows of fixtures/deposit_ledgers.csv', () => {
     const [, ...csv] = readFileSync(join(tests, 'fixtures', 'deposit_ledgers.csv'), 'utf8').trim().split('\n');

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Route } from '@playwright/test';
 import { join } from 'node:path';
 import { bigStatementXlsx, golden, statementCsv, statementXlsx } from '../fixtures/statements/household.ts';
 import { renderCsv } from '../packages/core/src/matching/render.ts';
@@ -45,8 +45,15 @@ test('rule 1: Ryan imports the October statement, three memo matches post on Ghi
   await shot(page, 'p3-15-preview-390-light');
   await holdForRecording(page);
 
+  const second = await page.context().newPage();
+  await second.goto(page.url());
+  await expect(second.getByTestId('statement-commit')).toHaveText('Ghi sổ 3 khoản');
+
   await commitLines(page, 3);
   await expect(page.getByTestId('statement-filter-posted')).toHaveText('Đã ghi sổ (3)');
+  await second.getByTestId('statement-commit').click();
+  await expect(second.getByTestId('statement-result')).toHaveText('Không có khoản mới nào để ghi sổ. Các dòng đã được ghi sổ trước đó.');
+  await second.close();
   await expect(page.getByTestId('statement-commit')).toHaveText('Ghi sổ 0 khoản');
   await expect(page.getByTestId('statement-commit')).toBeDisabled();
   await holdForRecording(page);
@@ -83,6 +90,22 @@ test('rule 1: Ryan imports the October statement, three memo matches post on Ghi
   await page.getByTestId('statement-earlier').click();
   await expect(page.getByTestId('statement-filter-posted')).toHaveText('Đã ghi sổ (4)');
   expect(await statementPayments(page, household.householdId)).toHaveLength(4);
+
+  const refuseActions = (route: Route) => (route.request().method() === 'POST' && route.request().headers()['next-action'] !== undefined ? route.fulfill({ status: 500, body: 'error' }) : route.continue());
+  await page.route('**/collections/import**', refuseActions);
+  await page.getByTestId('statement-undo').click();
+  await expect(page.locator('#statement-commit-error'), 'a failed Hoàn tác says so although Ghi sổ is gone').toHaveText('Chưa gửi được. Kiểm tra kết nối mạng rồi thử lại.');
+  await page.unroute('**/collections/import**', refuseActions);
+
+  await line(page, 1).getByTestId('statement-undo-line').click();
+  await expect(page.getByTestId('statement-result')).toHaveText('Đã hoàn tác 1 khoản. Các dòng trở lại chờ ghi sổ.');
+  await expect(page.getByTestId('statement-filter-posted')).toHaveText('Đã ghi sổ (3)');
+  expect(await statementPayments(page, household.householdId)).toHaveLength(3);
+  await shot(page, 'q-19b-undo-line-390-light');
+  await page.getByTestId('statement-undo').click();
+  await expect(page.getByTestId('statement-result')).toHaveText('Đã hoàn tác 3 khoản. Các dòng trở lại chờ ghi sổ.');
+  expect(await statementPayments(page, household.householdId)).toHaveLength(0);
+  await expect(page.getByTestId('statement-commit')).toHaveText('Ghi sổ 3 khoản');
 });
 
 test('rule 2: at 1440 in dark, a layout B workbook into a second account previews with debits under Bỏ qua and posts into that account', async ({ page }) => {

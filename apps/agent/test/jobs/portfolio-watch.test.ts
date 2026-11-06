@@ -7,7 +7,7 @@ import { portfolioWatchRequest } from '../../src/jobs/portfolio-watch';
 import { canonicalizer, inputHash } from '../../src/replay/canonicalize';
 import { DEFAULT_REPLAY_DIR, recordingSchema } from '../../src/replay/store';
 import { canonicalInput } from '../../src/sdk/session';
-import { fakeDb } from '../../src/test/fake-db';
+import { memoryDb } from '@esta/ops/test/memory-db';
 import { NumberGuardError } from '../../src/tools/create-item';
 import { mcpToolName } from '../../src/tools/server';
 import { CASES, HOUSEHOLD, labels, snapshot } from '../full-seed';
@@ -185,7 +185,7 @@ describe('create_item for portfolio_watch', () => {
   it('gives a filled title over 300 characters a repair turn instead of a database error (#318)', async () => {
     const tables: Record<string, Row[]> = { agent_items: [] };
     const long = new Map([...labels.properties].map(([id, name]) => [id, `${name} ${'rất dài '.repeat(20)}`]));
-    const prepared = portfolioWatchRequest({ db: fakeDb(tables), householdId: HOUSEHOLD, jobId: 'job-1', locale: 'vi', asOf: isoDate('2026-10-07'), timezone: 'Asia/Ho_Chi_Minh', clock, read: async () => ({ snapshot, labels: { ...labels, properties: long } }) });
+    const prepared = portfolioWatchRequest({ db: memoryDb(tables), householdId: HOUSEHOLD, jobId: 'job-1', locale: 'vi', asOf: isoDate('2026-10-07'), timezone: 'Asia/Ho_Chi_Minh', clock, read: async () => ({ snapshot, labels: { ...labels, properties: long } }) });
     const call = toolCaller(prepared);
     await call('watch_facts');
     const told = { title: '{{f1.place_label}} {{f1.place_label}}', body_md: 'Quá hạn.', related: ['f1'] };

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { fakeDb, type FakeRpcs, type Recorded } from '../src/test/fake-db';
+import { memoryDb, type FakeRpcs, type Recorded } from '@esta/ops/test/memory-db';
 import { HOUSEHOLD, labels } from './full-seed';
 import { replayWorker } from './replay-worker';
 import { clockOn } from './full-seed';
@@ -48,7 +48,7 @@ export function askRpcs(tables: Record<string, Row[]>, writes: Recorded[] = []):
 
 export function askWorker(tables: Record<string, Row[]>, jobsDir: string, replayDir = DEFAULT_REPLAY_DIR) {
   const writes: Recorded[] = [];
-  const worker = replayWorker(fakeDb(tables, writes, {}, {}, askRpcs(tables, writes)), tables.agent_jobs ?? [], jobsDir, clockOn('2026-10-07T07:00:00+07:00'), replayDir);
+  const worker = replayWorker(memoryDb(tables, writes, {}, {}, askRpcs(tables, writes)), tables.agent_jobs ?? [], jobsDir, clockOn('2026-10-07T07:00:00+07:00'), replayDir);
   return { worker, writes };
 }
 

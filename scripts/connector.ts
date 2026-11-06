@@ -1,4 +1,4 @@
-// Usage: ESTA_SLOT=<n> node --import tsx scripts/connector.ts [login]. Points the connector at that slot's local
+// Usage: ESTA_SLOT=<n> node --import tsx scripts/connector.ts [login|logout]. Points the connector at that slot's local
 // Supabase with the anon key alone; the service role key in the status output is never passed on.
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
@@ -15,4 +15,5 @@ if (anonKey === undefined) {
 }
 process.env.ESTA_SUPABASE_URL = `http://127.0.0.1:${slotPorts(slot).api}`;
 process.env.ESTA_SUPABASE_ANON_KEY = anonKey;
-await import(process.argv[2] === 'login' ? '../apps/connector/src/cli-login.ts' : '../apps/connector/src/main.ts');
+const entry = { login: 'cli-login.ts', logout: 'cli-logout.ts' }[process.argv[2] ?? ''] ?? 'main.ts';
+await import(`../apps/connector/src/${entry}`);

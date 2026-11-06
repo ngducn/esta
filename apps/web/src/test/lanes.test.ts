@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { seedId } from '../../../../supabase/seed/generator/ids.ts';
 import { DEFAULT_OPTIONS } from '../../../../supabase/seed/generator/index.ts';
 import { householdId, householdSeeds } from '../../../../supabase/seed/generator/households.ts';
-import { INTEGRATION_LANES, integrationLane, runsAlone } from './lanes';
+import { INTEGRATION_LANES, integrationLane, lanesOf, outsiderEmail, runsAlone, runsSerially } from './lanes';
 
 const WEB_ROOT = join(import.meta.dirname, '..', '..');
 const onDisk = readdirSync(join(WEB_ROOT, 'src'), { recursive: true, encoding: 'utf8' })
@@ -13,6 +13,9 @@ const onDisk = readdirSync(join(WEB_ROOT, 'src'), { recursive: true, encoding: '
   .map((path) => `src/${path.split('\\').join('/')}`)
   .toSorted();
 const claims = Object.entries(INTEGRATION_LANES);
+const sourceFiles = readdirSync(join(WEB_ROOT, 'src'), { recursive: true, encoding: 'utf8' })
+  .filter((path) => /\.(?:ts|tsx)$/.test(path))
+  .map((path) => `src/${path.split('\\').join('/')}`);
 const SEEDED_HOUSEHOLDS = householdSeeds(DEFAULT_OPTIONS.lanes).map(householdId);
 const fileUrl = (file: string) => pathToFileURL(join(WEB_ROOT, file)).href;
 
@@ -29,10 +32,21 @@ describe('the integration lane registry', () => {
   });
 
   it('gives each lane to one file, inside the default seed', () => {
-    const owned = claims.flatMap(([, claim]) => (claim === 'every-household' ? [] : claim));
+    const owned = claims.flatMap(([, claim]) => (Array.isArray(claim) ? claim : []));
     expect(owned.length, 'no lane is owned twice').toBe(new Set(owned).size);
-    for (const lane of owned) expect(Number.isInteger(lane) && lane >= 1 && lane <= DEFAULT_OPTIONS.lanes, `lane ${lane}`).toBe(true);
-    for (const [file, claim] of claims) expect(claim === 'every-household' || claim.length > 0, file).toBe(true);
+    for (const lane of claims.flatMap(([, claim]) => lanesOf(claim))) expect(Number.isInteger(lane) && lane >= 1 && lane <= DEFAULT_OPTIONS.lanes, `lane ${lane}`).toBe(true);
+    for (const [file, claim] of claims) expect(claim === 'every-household' || lanesOf(claim).length > 0, file).toBe(true);
+  });
+
+  it('runs the files that share a lane in a pass of their own, and signs the outsider in from a lane no parallel file owns a member of at that time', () => {
+    expect(runsSerially.toSorted()).toEqual(claims.filter(([, claim]) => typeof claim === 'object' && 'serial' in claim).map(([file]) => file).toSorted());
+    expect(outsiderEmail('me')).toBe('me.lane8@demo.esta.test');
+  });
+
+  it('names a file integration whenever it reaches for the local stack, so the database job runs it (#122)', () => {
+    const usesStack = sourceFiles.filter((file) => file !== 'src/test/stack.ts' && /from '@\/test\/stack'/.test(readFileSync(join(WEB_ROOT, file), 'utf8')));
+    expect(usesStack.length).toBeGreaterThan(0);
+    expect(usesStack.filter((file) => !file.endsWith('.integration.test.ts'))).toEqual([]);
   });
 
   it('runs alone only the files that touch every household', () => {
@@ -55,6 +69,39 @@ describe('the integration lane registry', () => {
     ];
     for (const text of lookAlikes) expect(hardCodedLaneRefs(text), text).not.toEqual([]);
     expect(hardCodedLaneRefs("const { household, ryan } = integrationLane(import.meta.url); // see 'lane 4'")).toEqual([]);
+  });
+});
+
+/**
+ * The connector's integration files sign in as lane households of their own, and its suite runs on its own through
+ * `pnpm --filter connector test:integration`, one file at a time. They name lanes the web registry also owns, so a third
+ * suite that named a lane must be listed here with the reason it cannot share a stack with the others (#293).
+ */
+const OUTSIDE_THE_REGISTRY: Readonly<Record<string, readonly number[]>> = {
+  'apps/connector/src/connector.integration.test.ts': [8, 9],
+  'apps/connector/src/rental.integration.test.ts': [8],
+};
+const REPO_ROOT = join(WEB_ROOT, '..', '..');
+const LANE_REF = /lane[.-]?(\d+)/g;
+
+describe('lanes named outside the web registry', () => {
+  const files = readdirSync(join(REPO_ROOT, 'apps', 'connector', 'src'), { recursive: true, encoding: 'utf8' })
+    .filter((path) => path.endsWith('.ts'))
+    .map((path) => `apps/connector/src/${path.split('\\').join('/')}`)
+    .toSorted();
+  const named = Object.fromEntries(
+    files.flatMap((file) => {
+      const lanes = [...new Set([...readFileSync(join(REPO_ROOT, file), 'utf8').matchAll(LANE_REF)].map((match) => Number(match[1])))].toSorted((a, b) => a - b);
+      return lanes.length === 0 ? [] : [[file, lanes]];
+    }),
+  );
+
+  it('lists every connector file that names a lane, with the lanes it names', () => {
+    expect(named).toEqual(OUTSIDE_THE_REGISTRY);
+  });
+
+  it('stays inside the default seed', () => {
+    for (const lanes of Object.values(OUTSIDE_THE_REGISTRY)) for (const lane of lanes) expect(lane <= DEFAULT_OPTIONS.lanes, `lane ${lane}`).toBe(true);
   });
 });
 
