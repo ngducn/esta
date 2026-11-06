@@ -2027,6 +2027,7 @@
     "networkError": "Chưa lưu được. Kiểm tra kết nối mạng rồi thử lại.",
     "forbidden": "Tài khoản này chỉ được xem, nên chưa lưu được.",
     "receiptGone": "Ảnh hoá đơn không còn trên máy chủ. Chọn lại ảnh rồi lưu.",
+    "receiptOtherProperty": "Ảnh hoá đơn này đã chuyển sang tài sản khác. Bỏ ảnh rồi lưu lại, hoặc chọn lại ảnh.",
     "receiptBlocking": "Ảnh hoá đơn chưa tải lên được. Tải lại ảnh hoặc bỏ ảnh rồi lưu.",
     "saved": "Đã ghi nhận chi phí {amount}.",
     "updated": "Đã lưu chi phí {amount}.",

@@ -14,7 +14,7 @@ import { StructureList } from '@/components/legal/structure-list';
 import { PropertyIntl } from '@/components/properties/property-intl';
 import { SummaryStrip, type Figure } from '@/components/summary-strip';
 import { buttonVariants } from '@/components/ui/button-variants';
-import { readRequestClock } from '@/server/clock';
+import { getClock } from '@/server/clock';
 import { requireMember } from '@/server/member';
 import { loadPropertyDetail } from '@/server/properties/detail';
 import type { LegalKind } from '@esta/ops';
@@ -67,7 +67,7 @@ export default async function PropertyLegalPage({ params }: { params: Promise<{ 
   if (property === null) notFound();
   const [member, clock, legal, shares, parties, codes, t, owners, locale, messages] = await Promise.all([
     requireMember(),
-    readRequestClock(),
+    getClock(),
     loadPropertyLegal(id),
     loadOwnership(id),
     loadParties(),

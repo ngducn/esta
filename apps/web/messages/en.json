@@ -2027,6 +2027,7 @@
     "networkError": "Not saved. Check the connection and try again.",
     "forbidden": "You can only view, so this was not saved.",
     "receiptGone": "The receipt photo is no longer on the server. Pick the photo again, then save.",
+    "receiptOtherProperty": "This receipt photo now belongs to another property. Remove the photo and save again, or pick the photo again.",
     "receiptBlocking": "The receipt photo has not uploaded. Upload it again or remove it, then save.",
     "saved": "Expense of {amount} recorded.",
     "updated": "Expense of {amount} saved.",
