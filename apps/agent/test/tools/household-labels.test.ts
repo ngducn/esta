@@ -33,6 +33,14 @@ describe('the household labels (#348)', () => {
   });
 });
 
+describe('the terms of the seeded household', () => {
+  it('let the market questions of thread case T8 search the web', async () => {
+    const terms = await familySearchTerms(fakeDb(withSeedNames(askTables(''))), HOUSEHOLD);
+    for (const query of ['giá đất Bảo Lộc 2026', 'giá căn hộ Thủ Đức hiện nay', 'giá nhà phố hiện nay']) expect(searchDenial(query, terms)).toBeNull();
+    expect(searchDenial('Hoàng Văn Em Demo Dĩ An', terms)).not.toBeNull();
+  });
+});
+
 describe('the terms no web search may hold', () => {
   const HH = '00000000-0000-4000-8000-00000000a0c0';
   const db = () =>

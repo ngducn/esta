@@ -27,11 +27,24 @@
   },
   "label": "Hand-written for t8-bao-loc-land-price on the full seed at 2026-10-07 07:00; the live recording waits for the P5-10 live run.",
   "model": "hand-written",
-  "numTurns": 2,
+  "numTurns": 3,
   "toolCalls": [
     {
       "name": "mcp__esta__list_properties",
       "input": {}
+    },
+    {
+      "name": "WebSearch",
+      "input": {
+        "query": "giá đất Bảo Lộc 2026"
+      },
+      "result": {
+        "results": [
+          {
+            "content": []
+          }
+        ]
+      }
     }
   ],
   "reply": "Ứng dụng chưa có giá đất hiện nay của {{f1.property_label}}, và Trợ lý chưa tìm được trang nào đáng tin để dẫn, nên không ước tính con số nào.\n\nNếu bạn có giá từ người môi giới hoặc tin rao gần đây, hãy gửi cho Trợ lý để cùng xem tiếp."

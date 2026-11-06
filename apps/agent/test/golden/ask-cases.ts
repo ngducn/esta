@@ -218,7 +218,7 @@ export const ASK_CASES: readonly AskCase[] = [
   {
     id: 't8-bao-loc-land-price',
     question: 'Giá đất Bảo Lộc bây giờ khoảng bao nhiêu?',
-    toolCalls: [PROPERTIES],
+    toolCalls: [PROPERTIES, webSearch('giá đất Bảo Lộc 2026')],
     reply:
       'Ứng dụng chưa có giá đất hiện nay của {{f1.property_label}}, và Trợ lý chưa tìm được trang nào đáng tin để dẫn, nên không ước tính con số nào.\n\nNếu bạn có giá từ người môi giới hoặc tin rao gần đây, hãy gửi cho Trợ lý để cùng xem tiếp.',
   },
