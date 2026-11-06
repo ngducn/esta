@@ -21,8 +21,8 @@ type PdfPage = {
 
 /** pdf.js loads only here, by dynamic import, so it never reaches the route's initial chunk. */
 async function openPdf(url: string): Promise<PdfTask> {
-  const pdfjs = await import('pdfjs-dist');
-  pdfjs.GlobalWorkerOptions.workerPort ??= new Worker(new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url), { type: 'module' });
+  const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+  pdfjs.GlobalWorkerOptions.workerPort ??= new Worker(new URL('pdfjs-dist/legacy/build/pdf.worker.min.mjs', import.meta.url), { type: 'module' });
   return pdfjs.getDocument({ url }) as unknown as PdfTask;
 }
 

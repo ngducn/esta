@@ -39,27 +39,45 @@ const choice = <T extends string>(options: readonly T[]) => ({
   },
 });
 
-const TERM_DATE = /(\d{1,2}[./-]\d{1,2}[./-]\d{4}|\d{4}-\d{2}-\d{2})/u;
-const TERM_END = /(?<!\p{L})đến(?!\p{L})/iu;
-const TERM_START = /(?<!\p{L})từ(?!\p{L})/iu;
-
+const TERM_TOKEN = /(\d{1,2}[./-]\d{1,2}[./-]\d{4}|\d{4}-\d{2}-\d{2})|(?<![\d./])(\d{1,2})[./-](\d{4})(?!\d)/gu;
 /**
- * The part of a term that names its end. A range such as `Từ tháng 10/1993 đến tháng 10/2043` ends after `đến`; a term
- * that names only its start, such as `50 năm kể từ ngày 15/10/1993`, has no end to read.
+ * What may stand right before a date for it to end a term: a word that means "until" or "expires", with `ngày` or
+ * `tháng` between it and the date at most, or nothing at all when the date is the whole text. Any other phrase before a
+ * date, such as `cấp ngày`, `ký ngày` or `vào sổ ngày`, says what the date is, and it is not the end.
  */
-function termEnd(text: string): string | null {
-  const end = TERM_END.exec(text);
-  if (end !== null) return text.slice(end.index + end[0].length);
-  return TERM_START.test(text) ? null : text;
-}
-const TERM_MONTH = /(?<![\d./-])(\d{1,2})[./-](\d{4})(?!\d)/u;
+const TERM_END_LEAD =
+  /(?:^|(?<!\p{L})(?:(?:đến|den|tới|toi)(?:\s+(?:hết|het))?|(?:hết|het)\s+(?:hạn|han)|hạn|han)(?:\s+(?:sử|su)\s+(?:dụng|dung))?(?!\p{L}))[\s:.,-]*(?:(?:ngày|ngay|tháng|thang)(?!\p{L})[\s:.,-]*)?$/iu;
+/** Between the two dates of a range: no letters or digits, or only a word for "until", as `15/10/1993 đến ngày 15/10/2043`. */
+const TERM_RANGE_JOINER = /^[^\p{L}\p{N}]*(?:(?:đến|den|tới|toi|to|until|and)(?:\s+(?:hết|het))?(?:\s+(?:ngày|ngay))?[^\p{L}\p{N}]*)?$/iu;
 
 /** [app rule] A term printed to the month, as pre-2009 certificates print `Đến tháng 10/2043`, runs to its last day. */
-function readMonthEnd(text: string): IsoDate | null {
-  const [, month, year] = TERM_MONTH.exec(text) ?? [];
-  if (month === undefined || year === undefined) return null;
+function readMonthEnd(month: string, year: string): IsoDate | null {
   const parsed = isoFromParts(year, month, String(daysInMonth(Number(year), Number(month))));
   return parsed.ok ? parsed.value : null;
+}
+
+/**
+ * The end of a land use term, by what leads each date and not by what is wrong with the others. A date ends the term
+ * when it is the second of a range (only punctuation, symbols, spaces or a word for "until" between it and the date
+ * before it) or when an end word leads it directly (`TERM_END_LEAD`); the term ends at the last such date. Every other
+ * dated phrase is never the end, so a duration followed by an issue, decision or registry date has none, and a text that
+ * names only a start has none. Dates must not run backwards, and a date that cannot be read refuses the whole text.
+ */
+function readTermEnd(text: string): IsoDate | null {
+  const dates: IsoDate[] = [];
+  let end: IsoDate | null = null;
+  let previousTo = 0;
+  for (const m of text.matchAll(TERM_TOKEN)) {
+    const [, full, month, year] = m;
+    const date = full !== undefined ? readDate(full) : month !== undefined && year !== undefined ? readMonthEnd(month, year) : null;
+    if (date === null) return null;
+    const rangeEnd = dates.length > 0 && TERM_RANGE_JOINER.test(text.slice(previousTo, m.index));
+    if (rangeEnd && date < (dates.at(-1) ?? date)) return null;
+    if (rangeEnd || TERM_END_LEAD.test(text.slice(0, m.index))) end = date;
+    dates.push(date);
+    previousTo = m.index + m[0].length;
+  }
+  return end;
 }
 
 function readDate(text: string): IsoDate | null {
@@ -156,11 +174,8 @@ export const INPUT_KINDS = {
       const text = asText(raw);
       if (text === null) return nothing;
       if (text === LONG_TERM || text.toLocaleLowerCase('vi').includes('lâu dài')) return accept(LONG_TERM);
-      const end = termEnd(text);
-      if (end === null) return refused;
-      const found = TERM_DATE.exec(end)?.[1];
-      const date = found === undefined ? readMonthEnd(end) : readDate(found);
-      return date === null ? refused : accept(date);
+      const end = readTermEnd(text);
+      return end === null ? refused : accept(end);
     },
   },
   /** SPEC D11: whatever is typed keeps only its last four digits. */

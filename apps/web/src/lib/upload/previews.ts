@@ -39,8 +39,8 @@ async function imageSource(file: Blob): Promise<Source> {
 
 /** Page 1 of a PDF at review size. pdf.js loads only here, by dynamic import, so it never reaches a route's initial chunk. */
 async function pdfSource(file: Blob): Promise<Source> {
-  const pdfjs = await import('pdfjs-dist');
-  pdfjs.GlobalWorkerOptions.workerPort ??= new Worker(new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url), { type: 'module' });
+  const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+  pdfjs.GlobalWorkerOptions.workerPort ??= new Worker(new URL('pdfjs-dist/legacy/build/pdf.worker.min.mjs', import.meta.url), { type: 'module' });
   const task = pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) });
   const pdf = await task.promise;
   try {

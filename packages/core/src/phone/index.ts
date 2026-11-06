@@ -1,9 +1,13 @@
 import type { Result } from '../result';
 
 declare const phoneBrand: unique symbol;
+declare const mobileBrand: unique symbol;
 
 /** A Vietnamese number in E.164 form, such as `+84903123456`. */
 export type Phone = string & { readonly [phoneBrand]: true };
+
+/** A `Phone` whose subscriber number is a mobile; only `isMobile` and `firstMobile` make one, and a Zalo chat link takes nothing else. */
+export type MobilePhone = Phone & { readonly [mobileBrand]: true };
 
 export type PhoneReason = 'empty' | 'invalid';
 
@@ -35,11 +39,25 @@ export function formatPhone(phone: Phone): string {
     : `${digits.slice(0, 3)} ${digits.slice(3, 7)} ${digits.slice(7)}`;
 }
 
+/** Zalo accounts belong to mobile numbers: a mobile subscriber starts 3, 5, 7, 8 or 9, a landline's area code starts 2. */
+export function isMobile(phone: Phone): phone is MobilePhone {
+  return MOBILE.test(phone.slice(3));
+}
+
 /** The first stored number that reads as a Vietnamese phone, such as a tenant's Zalo number before their phone. */
 export function firstPhone(stored: readonly (string | null)[]): Phone | null {
   for (const text of stored) {
     const phone = text === null ? null : normalizePhone(text);
     if (phone?.ok) return phone.value;
+  }
+  return null;
+}
+
+/** The first stored number that is a mobile, which is the only kind a Zalo chat opens on. */
+export function firstMobile(stored: readonly (string | null)[]): MobilePhone | null {
+  for (const text of stored) {
+    const phone = text === null ? null : normalizePhone(text);
+    if (phone?.ok && isMobile(phone.value)) return phone.value;
   }
   return null;
 }
@@ -57,6 +75,6 @@ export function phoneForZaloLink(phone: Phone): string {
 }
 
 /** LSE-11: the link that opens Zalo on the chat with this number. */
-export function zaloChatUrl(phone: Phone): string {
+export function zaloChatUrl(phone: MobilePhone): string {
   return `https://zalo.me/${phoneForZaloLink(phone)}`;
 }
