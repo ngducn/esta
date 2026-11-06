@@ -28,8 +28,8 @@ insert into public.invoices (id, household_id, lease_id, period_start, period_en
 insert into public.invoice_lines (household_id, invoice_id, kind, unit_price_vnd, amount_vnd)
 select :'a', id, 'rent', 3000000, 3000000 from public.invoices where household_id = :'a';
 insert into private.local_stack default values on conflict do nothing;
-insert into public.test_clock (id, frozen_now) values (true, '2026-10-20T09:00:00+07:00')
-  on conflict (id) do update set frozen_now = excluded.frozen_now;
+delete from public.test_clock where for_household is null;
+insert into public.test_clock (frozen_now) values ('2026-10-20T09:00:00+07:00');
 
 select tests.act_as('member.a@test.esta.test');
 select public.issue_invoice_now('00000000-0000-4000-8000-0000000f0053');

@@ -10,7 +10,7 @@ function fakeClient(existing: boolean) {
   const calls: string[] = [];
   const table = {
     update: () => ({ is: () => ({ select: () => Promise.resolve({ data: existing ? [{ for_household: null }] : [], error: null }) }) }),
-    insert: () => {
+    upsert: () => {
       calls.push('insert');
       return Promise.resolve({ error: null });
     },
@@ -18,7 +18,6 @@ function fakeClient(existing: boolean) {
       calls.push('delete');
       return { is: () => Promise.resolve({ error: null }) };
     },
-    upsert: vi.fn(),
   };
   return { client: { from: () => table } as unknown as CronClient, calls };
 }

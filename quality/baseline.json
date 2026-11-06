@@ -51,7 +51,7 @@
       }
     },
     "duplicated-lines": {
-      "value": 1072,
+      "value": 1071,
       "files": {
         "apps/web/src/app/(app)/documents/[documentId]/review/page.tsx": 15,
         "apps/web/src/app/(app)/properties/[id]/documents/page.tsx": 6,
@@ -74,7 +74,7 @@
         "apps/web/src/server/properties/wizard.ts": 8,
         "e2e/assistant-status.spec.ts": 33,
         "e2e/auth-password.spec.ts": 31,
-        "e2e/collections.spec.ts": 138,
+        "e2e/collections.spec.ts": 137,
         "e2e/documents-extract.spec.ts": 167,
         "e2e/documents-multipage.spec.ts": 13,
         "e2e/documents-upload.spec.ts": 35,
@@ -493,7 +493,7 @@
       }
     },
     "direct-write": {
-      "value": 68,
+      "value": 69,
       "files": {
         "apps/web/src/app/(app)/assistant/actions.ts": 1,
         "apps/web/src/app/(app)/properties/[id]/legal/actions.ts": 4,
@@ -511,7 +511,7 @@
         "apps/web/src/server/cron/document-sweep.ts": 3,
         "apps/web/src/server/cron/invoices.ts": 1,
         "apps/web/src/server/cron/leaseStatus.ts": 1,
-        "apps/web/src/server/cron/test-clock.ts": 2,
+        "apps/web/src/server/cron/test-clock.ts": 3,
         "apps/web/src/server/documents/actions.ts": 2,
         "apps/web/src/server/documents/search.ts": 1,
         "apps/web/src/server/expenses/actions.ts": 1,
@@ -747,6 +747,12 @@
       "from": 0,
       "to": 2124,
       "reason": "new metrics test-db-fake and testid-query record their first counts (Q-09a)"
+    },
+    {
+      "metric": "direct-write",
+      "from": 68,
+      "to": 69,
+      "reason": "the global test clock row is updated in place: a delete then insert left a gap the agent worker read as no row"
     }
   ]
 }
