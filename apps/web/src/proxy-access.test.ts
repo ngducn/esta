@@ -60,4 +60,30 @@ describe('proxy answers 404 for a page the member has no capability for', () => 
     asRole('viewer');
     expect((await proxy(new NextRequest('http://localhost:3500/properties'))).status).not.toBe(404);
   });
+
+  it.each([
+    ['/settings/histor%79', 'one encoded letter'],
+    ['/settings/%68%69%73%74%6f%72%79', 'a fully encoded segment'],
+    ['/assistant/diagnostic%73', 'one encoded letter'],
+    ['/properties/%4eew', 'upper-case hex'],
+    ['/assistant/%64iagnostics', 'encoded first letter'],
+    ['/settings%2Fhistory', 'an encoded slash'],
+    ['/assistant%2fdiagnostics', 'an encoded slash in lower hex'],
+    ['/properties/%6eew', 'a page that needs edit'],
+  ])('hides %s (%s) in its encoded form from a member who lacks the capability', async (path) => {
+    asRole('viewer');
+    expect((await proxy(new NextRequest(`http://localhost:3500${path}`))).status).toBe(404);
+  });
+
+  it('hides an encoded operator page from an admin without the flag and not from the operator', async () => {
+    asRole('admin');
+    expect((await proxy(new NextRequest('http://localhost:3500/settings/histor%79'))).status).toBe(404);
+    asRole('admin', true);
+    expect((await proxy(new NextRequest('http://localhost:3500/settings/histor%79'))).status).not.toBe(404);
+  });
+
+  it('does not fail on a path that does not decode', async () => {
+    asRole('admin');
+    expect((await proxy(new NextRequest('http://localhost:3500/settings/%E0%A4%A'))).status).not.toBe(500);
+  });
 });

@@ -41,15 +41,17 @@ describe('the route access table', () => {
 
   it('hides each not-found route from the proxy without its capability and no other route', () => {
     for (const [route, access] of Object.entries(ROUTE_ACCESS)) {
-      const expected = typeof access === 'object' && access.denied === 'not-found' ? access.needs : null;
-      expect(hiddenWithout(example(route)), route).toBe(expected);
+      const expected = typeof access === 'object' && access.denied === 'not-found' ? [access.needs] : [];
+      expect(hiddenWithout(example(route)), route).toEqual(expected);
     }
   });
 
   it('matches a route pattern against one segment per parameter only', () => {
     expect(routePattern('/tenants/[partyId]').test('/tenants/a/b')).toBe(false);
-    expect(hiddenWithout('/tenants/abc')).toBe('tenants');
-    expect(hiddenWithout('/properties/abc/edit')).toBe('edit');
-    expect(hiddenWithout('/properties/abc')).toBeNull();
+    expect(hiddenWithout('/tenants/abc')).toEqual(['tenants']);
+    expect(hiddenWithout('/properties/abc/edit')).toEqual(['edit']);
+    expect(hiddenWithout('/properties/abc')).toEqual([]);
+    expect(hiddenWithout('/settings/histor%79')).toEqual(['operate']);
+    expect(hiddenWithout('/settings/%E0%A4%A')).toEqual([]);
   });
 });

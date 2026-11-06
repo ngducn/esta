@@ -104,9 +104,9 @@ const GUARDED_PAGES: readonly GuardedPage[] = [
 async function isHiddenPage(request: NextRequest, session: Session): Promise<boolean> {
   if (request.headers.has('rsc')) return false;
   const needs = hiddenWithout(request.nextUrl.pathname);
-  if (needs !== null) {
+  if (needs.length > 0) {
     const membership = await readMembership(session.supabase, session.userId);
-    if (membership === null || !can({ role: membership.role, isOperator: membership.is_operator }, needs)) return true;
+    if (membership === null || !needs.every((need) => can({ role: membership.role, isOperator: membership.is_operator }, need))) return true;
   }
   for (const page of GUARDED_PAGES) {
     const match = page.path.exec(request.nextUrl.pathname);

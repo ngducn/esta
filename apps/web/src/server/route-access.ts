@@ -88,9 +88,18 @@ const NOT_FOUND_ROUTES = Object.entries(ROUTE_ACCESS).flatMap(([route, access]) 
   typeof access === 'object' && access.denied === 'not-found' ? [{ route, needs: access.needs, pattern: patternOf(route) }] : [],
 );
 
-/** The capability a visit to `pathname` needs for the proxy to let it through, or null when the table asks for none. */
-export function hiddenWithout(pathname: string): Capability | null {
-  return NOT_FOUND_ROUTES.find(({ pattern }) => pattern.test(pathname))?.needs ?? null;
+/** The path as `next start` matches a static page: percent-decoded. A path that does not decode stays as it is, and Next answers it. */
+function decodedPath(pathname: string): string {
+  try {
+    return decodeURIComponent(pathname);
+  } catch {
+    return pathname;
+  }
+}
+
+/** The capabilities a visit to `pathname` needs for the proxy to let it through: one for the raw path and one for its decoded form, because Next serves a page for either. */
+export function hiddenWithout(pathname: string): readonly Capability[] {
+  return [...new Set([pathname, decodedPath(pathname)])].flatMap((path) => NOT_FOUND_ROUTES.find(({ pattern }) => pattern.test(path))?.needs ?? []);
 }
 
 export function routePattern(route: string): RegExp {
