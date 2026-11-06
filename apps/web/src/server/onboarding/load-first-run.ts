@@ -1,6 +1,7 @@
 import 'server-only';
 import { firstRunState, type FirstRunRole, type FirstRunState } from '@esta/core/onboarding';
 import { z } from 'zod';
+import { can } from '@/server/access';
 import { createSessionClient } from '@/server/supabase/server';
 
 const settingsSchema = z.object({ onboarding: z.object({ dismissed_at: z.string().nullable().optional() }) });
@@ -10,7 +11,7 @@ const settingsSchema = z.object({ onboarding: z.object({ dismissed_at: z.string(
  * household that may have all of them is worse than showing nothing.
  */
 export async function loadFirstRun(householdId: string, role: FirstRunRole): Promise<FirstRunState | null> {
-  if (role !== 'admin') return null;
+  if (!can({ role }, 'household')) return null;
   const db = await createSessionClient();
   try {
     const [properties, accounts, members, settings] = await Promise.all([

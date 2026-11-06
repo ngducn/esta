@@ -382,8 +382,12 @@ export const METRICS: readonly Metric[] = [
     id: 'literal-role-check',
     message: 'A role is compared with a string literal such as `\'admin\'` or `\'viewer\'`.',
     home: {
-      use: 'One access table (Q-08). No role helper exists yet; until the table lands, read the role from `requireMember` in apps/web/src/server/member.ts and add no new comparison.',
-      helpers: [{ name: 'requireMember', file: 'apps/web/src/server/member.ts' }],
+      use: 'Ask the member (the can method of `getCurrentMember`, which calls `can`); a new capability goes in the one table in apps/web/src/server/access.ts, and a new page or route in `ROUTE_ACCESS`.',
+      helpers: [
+        { name: 'getCurrentMember', file: 'apps/web/src/server/member.ts' },
+        { name: 'can', file: 'apps/web/src/server/access.ts' },
+        { name: 'ROUTE_ACCESS', file: 'apps/web/src/server/route-access.ts' },
+      ],
     },
     section: 'targets',
     scope: WEB_SRC,

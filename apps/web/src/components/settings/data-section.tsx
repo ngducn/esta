@@ -7,7 +7,7 @@ import { DataExport } from './data-export';
 import { SettingsSection } from './settings-section';
 
 export async function DataSection({ member }: { member: Member }) {
-  if (member.role !== 'admin') return null;
+  if (!member.can('export')) return null;
   const t = await getTranslations('dataExport');
   const minutes = Math.max(1, Math.round(env.ESTA_SIGNED_URL_TTL_SECONDS / 60));
   const labels = {

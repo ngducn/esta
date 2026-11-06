@@ -41,7 +41,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         settings={{ locale, textScale: member.textScale, density: member.density, theme }}
         status={parseStatus(status)}
       />
-      {member.isOperator ? (
+      {member.can('operate') ? (
         <IntentLink
           href="/settings/history"
           data-testid="history-link"

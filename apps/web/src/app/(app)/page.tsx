@@ -36,7 +36,7 @@ async function Home() {
     getTranslations('components.toast'),
   ]);
   const asOf = clock.today();
-  const canRecord = member.role !== 'viewer';
+  const canRecord = member.can('edit');
   const [home, portfolio, paymentIntl, mapIntl, theme, brief, propertyIds, firstRun, firstRunT] = await Promise.all([
     loadHome(member.household.id, asOf, canRecord),
     loadPortfolio(member.household.id, asOf),

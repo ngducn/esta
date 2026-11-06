@@ -41,7 +41,7 @@ export default async function TaxCardPage({ searchParams }: { searchParams: Prom
       <ReportPicker current="tax" />
       {owner === undefined ? (
         <div data-testid="tax-no-owners">
-          <RegistryEmptyState surface="taxNoOwners" ctx={{ canWrite: member.role !== 'viewer' }} className="max-w-3xl" />
+          <RegistryEmptyState surface="taxNoOwners" ctx={{ canWrite: member.can('edit') }} className="max-w-3xl" />
         </div>
       ) : (
         <div className="flex flex-col gap-3">
@@ -80,7 +80,7 @@ export default async function TaxCardPage({ searchParams }: { searchParams: Prom
           </div>
           <div className="flex flex-col gap-5">
             <PropertyIntl {...await taxIslandIntl()}>
-              <OtherRevenueForm key={`${owner.id}:${year}`} partyId={owner.id} year={year} savedVnd={card.otherBusinessRevenueVnd} canEdit={member.role !== 'viewer'} />
+              <OtherRevenueForm key={`${owner.id}:${year}`} partyId={owner.id} year={year} savedVnd={card.otherBusinessRevenueVnd} canEdit={member.can('edit')} />
             </PropertyIntl>
             <TaxNotesCard position={card.position} rule={card.rule} />
           </div>

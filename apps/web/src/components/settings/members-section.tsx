@@ -8,7 +8,7 @@ import { memberRefusals } from './member-refusals';
 import { SettingsSection } from './settings-section';
 
 export async function MembersSection({ member }: { member: Member }) {
-  const admin = member.role === 'admin';
+  const admin = member.can('household');
   const [t, members, refusals] = await Promise.all([getTranslations('settings'), loadMembers(member.household.id), admin ? memberRefusals() : null]);
   const roles = { admin: t('roles.admin'), member: t('roles.member'), viewer: t('roles.viewer') };
   return (

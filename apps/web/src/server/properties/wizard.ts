@@ -44,7 +44,7 @@ export async function startPropertyWizard(raw: unknown): Promise<WizardStart> {
   const parsed = startSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, reason: 'invalid' };
   const member = await requireMember();
-  if (member.role === 'viewer') return { ok: false, reason: 'forbidden' };
+  if (!member.can('edit')) return { ok: false, reason: 'forbidden' };
   const { propertyId, nickname, code, kind, document } = parsed.data;
   const household = member.household.id;
   const supabase = await createSessionClient();
@@ -84,7 +84,7 @@ export async function confirmCurrentAddress(propertyId: unknown, raw: unknown): 
   const address = addressSchema.safeParse(raw);
   if (!id.success || !address.success || !(await isCommuneOf(address.data.communeCode, address.data.provinceCode))) return false;
   const member = await requireMember();
-  if (member.role === 'viewer') return false;
+  if (!member.can('edit')) return false;
   const supabase = await createSessionClient();
   const { data: row } = await supabase
     .from('properties')
@@ -117,7 +117,7 @@ export async function saveWizardUse(propertyId: unknown, raw: unknown): Promise<
   const value = useSchema.safeParse(raw);
   if (!id.success || !value.success) return { ok: false, reason: 'invalid' };
   const member = await requireMember();
-  if (member.role === 'viewer') return { ok: false, reason: 'invalid' };
+  if (!member.can('edit')) return { ok: false, reason: 'invalid' };
   const supabase = await createSessionClient();
   const { data, error } = await supabase
     .from('properties')

@@ -38,7 +38,7 @@ export async function createDocumentUpload(input: unknown): Promise<UploadTicket
   const parsed = uploadSchema.safeParse(input);
   if (!parsed.success || !acceptsMime(parsed.data.category, parsed.data.mime)) return { ok: false };
   const member = await requireMember();
-  if (member.role === 'viewer') return { ok: false };
+  if (!member.can('edit')) return { ok: false };
   const household = member.household.id;
   const documentId = randomUUID();
   const supabase = await createSessionClient();
@@ -111,7 +111,7 @@ export async function updateDocument(input: unknown): Promise<DocumentUpdate> {
   const parsed = editSchema.safeParse(input);
   if (!parsed.success) return { ok: false, reason: 'invalid' };
   const member = await requireMember();
-  if (member.role === 'viewer') return { ok: false, reason: 'forbidden' };
+  if (!member.can('edit')) return { ok: false, reason: 'forbidden' };
   const { documentId, title, category, propertyId, expiresOn, tags } = parsed.data;
   const household = member.household.id;
   const supabase = await createSessionClient();

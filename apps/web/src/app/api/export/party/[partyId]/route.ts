@@ -11,7 +11,7 @@ export const maxDuration = 60;
 export async function POST(_request: Request, { params }: { params: Promise<{ partyId: string }> }) {
   const member = await getCurrentMember();
   if (member === null) return refuseExport(401);
-  if (member.role !== 'admin') return refuseExport(403);
+  if (!member.can('export')) return refuseExport(403);
   const partyId = idSchema.safeParse((await params).partyId);
   if (!partyId.success) return refuseExport(404);
 

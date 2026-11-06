@@ -26,7 +26,7 @@ export default async function UtilityAccountPage({ params }: { params: Params })
   if (!parsed.success) notFound();
   const { id, accountId } = parsed.data;
   const [member, property] = await Promise.all([requireMember(), loadPropertyDetail(id)]);
-  if (member.role === 'viewer' || property === null) notFound();
+  if (!member.can('edit') || property === null) notFound();
   const editing = accountId === 'new' ? null : accountId;
   const [account, rental, t, locale, messages] = await Promise.all([
     editing === null ? null : loadUtilityAccount(id, editing),
