@@ -19,7 +19,7 @@ describe('the text each repair turn names (P5-10d)', () => {
 
 describe('the replacements the style rule suggests (P5-10d)', () => {
   it('hold no number word the guard rejects', () => {
-    for (const note of ['Bố mẹ vẫn giữ nhà.', 'Bên thuê và bên cho thuê ký hợp đồng.', 'Người thuê và chủ nhà ký hợp đồng.', 'Cả người thuê lẫn chủ nhà đều đồng ý.', 'The tenant and the landlord sign.', 'An toàn là ưu tiên hàng đầu.', 'Phòng của khách là phòng quan trọng nhất.', 'Bảo hiểm cho người ngoài hợp đồng.', 'Bảo hiểm cho bên không ký hợp đồng.']) {
+    for (const note of ['Bố mẹ vẫn giữ nhà.', 'Bên thuê và bên cho thuê ký hợp đồng.', 'Người thuê và chủ nhà ký hợp đồng.', 'Cả người thuê lẫn chủ nhà đều đồng ý.', 'The tenant and the landlord sign.', 'An toàn là ưu tiên hàng đầu.', 'Phòng của khách là phòng quan trọng nhất.', 'Bảo hiểm cho người ngoài hợp đồng.', 'Bảo hiểm cho bên không ký hợp đồng.', 'Nên tăng giá cùng lúc cho các phòng.', 'Phí tính theo tỷ lệ tiền thuê.']) {
       expect(checkNote(note, new Map()).ok, note).toBe(true);
     }
   });

@@ -1,0 +1,99 @@
+{
+  "version": 1,
+  "kind": "ask",
+  "inputHash": "0b071244dfc467fee6bcb239eababc538b0c7b4ffe68d7bf2769665cf87f137e",
+  "input": {
+    "version": 1,
+    "kind": "ask",
+    "prompt": "The question is about law, tax or procedure, so the reply needs an official page (*.gov.vn, chinhphu.vn, baochinhphu.vn, provincial portals, thuvienphapluat.vn, luatvietnam.vn). Search for one, fetch it with WebFetch, quote it with quote_page and name it as {{fN.source_name}}. Write the whole answer again from the start. The handles you already have still hold.",
+    "builtInTools": [
+      "WebSearch",
+      "WebFetch"
+    ],
+    "mcpTools": [
+      "list_properties",
+      "portfolio_overview",
+      "get_property",
+      "property_metrics",
+      "list_leases",
+      "collections",
+      "ledger",
+      "tax_position",
+      "payment_behavior",
+      "create_proposal",
+      "quote_page",
+      "calculate"
+    ],
+    "maxTurns": 20,
+    "resumesInputHash": "269cc3ed67ae55fff25f501c0fba61b7d1e46c361f8f1b8e2efc5967ccb7f55c"
+  },
+  "label": "Live guard probe vi-transfer-procedure, repair turn on the full seed at 2026-10-07 07:00 (P5-12).",
+  "model": "claude-sonnet-5-5",
+  "numTurns": 8,
+  "wallMs": 66958,
+  "toolCalls": [
+    {
+      "name": "WebSearch",
+      "input": {
+        "query": "thủ tục sang tên sổ đỏ các bước hồ sơ đăng ký biến động",
+        "mode": "standard",
+        "allowed_domains": [
+          "thuvienphapluat.vn",
+          "luatvietnam.vn",
+          "chinhphu.vn",
+          "baochinhphu.vn"
+        ]
+      }
+    },
+    {
+      "name": "WebFetch",
+      "input": {
+        "url": "https://thuvienphapluat.vn/chinh-sach-phap-luat-moi/vn/ho-tro-phap-luat/bat-dong-san/72380/huong-dan-thu-tuc-sang-ten-so-do-tu-01-8-2024",
+        "prompt": "Give the article's own date line copied exactly on one line starting \"Publication date:\". Summarize the procedure steps, and copy word for word every figure (days, deadlines) with the words around it."
+      }
+    },
+    {
+      "name": "WebFetch",
+      "input": {
+        "url": "https://luatvietnam.vn/dat-dai-nha-o/sang-ten-so-do-567-23920-article.html",
+        "prompt": "Give the article's own date line copied exactly on one line starting \"Publication date:\". Summarize the procedure steps, and copy word for word every figure (days, deadlines) with the words around it."
+      }
+    },
+    {
+      "name": "mcp__esta__quote_page",
+      "input": {
+        "url": "https://luatvietnam.vn/dat-dai-nha-o/sang-ten-so-do-567-23920-article.html",
+        "quotes": [
+          "trong thời hạn 30 ngày kể từ ngày có biến động, người sử dụng đất phải đăng ký biến động",
+          "trong thời hạn 15 ngày kể từ ngày niêm yết"
+        ]
+      }
+    },
+    {
+      "name": "mcp__esta__quote_page",
+      "input": {
+        "url": "https://luatvietnam.vn/dat-dai-nha-o/sang-ten-so-do-567-23920-article.html",
+        "quotes": [
+          "trong 30 ngày kể từ khi công chứng"
+        ]
+      }
+    },
+    {
+      "name": "WebFetch",
+      "input": {
+        "url": "https://luatvietnam.vn/dat-dai-nha-o/sang-ten-so-do-567-23920-article.html",
+        "prompt": "Give the article's own date line copied exactly on one line starting \"Publication date:\". Copy word for word the sentence about the deadline to register after the change (30 days), with surrounding words."
+      }
+    },
+    {
+      "name": "mcp__esta__quote_page",
+      "input": {
+        "url": "https://luatvietnam.vn/dat-dai-nha-o/sang-ten-so-do-567-23920-article.html",
+        "quotes": [
+          "trong thời hạn 30 ngày kể từ ngày có biến động"
+        ]
+      }
+    }
+  ],
+  "reply": "Tôi đang thử trích dẫn lại trang đã đọc. Công cụ trích dẫn vẫn báo chưa ghi nhận lần đọc, nên tôi đọc lại trang một lần nữa rồi trích ngay.\n\nTôi đã tìm và đọc một bài trên luatvietnam.vn về sang tên sổ đỏ, nhưng công cụ trích dẫn không ghi nhận được trang này. Vì vậy tôi không có nguồn đã trích để gắn vào câu trả lời, và tôi không nêu con số hay thời hạn nào. Phần dưới đây chỉ là các bước chung.\n\nVới chuyển nhượng hoặc tặng cho:\n\n- **Công chứng hoặc chứng thực hợp đồng.** Người chuyển và người nhận mang bản gốc sổ, giấy tờ tùy thân và giấy tờ về hôn nhân. Nếu có người đại diện thì cần thêm giấy ủy quyền.\n- **Kê khai thuế và lệ phí.** Gồm thuế thu nhập cá nhân và lệ phí trước bạ. Ai nộp khoản nào là do các bên thỏa thuận trong hợp đồng.\n- **Nộp hồ sơ đăng ký biến động.** Nộp tại văn phòng đăng ký đất đai, chi nhánh của văn phòng, hoặc nơi tiếp nhận hồ sơ của địa phương. Hồ sơ gồm đơn đăng ký, hợp đồng đã công chứng, bản gốc sổ và tờ khai thuế, lệ phí.\n- **Nộp tiền theo thông báo.** Văn phòng đăng ký chuyển thông tin sang cơ quan thuế, rồi bạn nộp theo thông báo thuế.\n- **Nhận kết quả.** Văn phòng ghi biến động vào sổ hoặc cấp sổ mới cho người nhận.\n\nVới thừa kế, trước hết cần khai nhận hoặc phân chia di sản tại văn phòng công chứng. Việc này có bước niêm yết thông báo tại ủy ban nhân dân cấp xã. Sau đó nộp hồ sơ đăng ký như trên.\n\nPháp luật có quy định thời hạn phải đăng ký biến động và mức xử phạt nếu quá hạn. Tôi không có nguồn đã trích để nêu chính xác, nên bạn nên hỏi văn phòng đăng ký đất đai nơi có thửa đất. Nếu bạn cho biết đây là chuyển nhượng, tặng cho hay thừa kế, tôi sẽ tìm lại nguồn phù hợp hơn."
+}

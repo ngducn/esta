@@ -21,19 +21,21 @@ import { replayedReads } from './ask-reads';
  * (docs/plan/trail/phase-5-guard.md, P5-10d). Any other reject is a false one.
  */
 const FIRST_PASS_REJECTS: Readonly<Record<string, readonly string[]>> = {
-  'vi-zalo-reminder': ['5'],
+  'vi-zalo-price-change': ['hai'],
   'vi-choose-tenant': ['hai'],
-  'vi-zalo-welcome': ['2'],
-  'vi-zalo-thanks': ['Hai'],
-  'vi-rent-tax': ['hai'],
+  'vi-late-tenant': ['5'],
+  'vi-inheritance': ['hai'],
+  // Not re-recorded live: the probe refuses to write a recording that holds a full national ID number, so this one is the earlier run.
   'vi-red-pink-book': ['hai'],
-  'vi-raise-rent': ['Q7:', 'hai'],
+  // `đồng loạt` and `phần trăm` are number words to the guard; the style rule now steers the model to `cùng lúc` and `theo tỷ lệ` (#496).
+  'vi-raise-rent': ['đồng'],
+  'vi-property-manager': ['trăm'],
   // A legal answer with no official page is sent back for one, which names no text (P5-10d).
   'vi-bank-letter': [SOURCE_REJECT],
-  'vi-transfer-procedure': ['hai'],
-  'vi-insurance': ['ba'],
+  'vi-transfer-procedure': [SOURCE_REJECT],
   'vi-notarize-lease': [SOURCE_REJECT],
-  'vi-repair-first': ['hai'],
+  // A link whose text repeats its target: the whole sentence is the rejected text.
+  'vi-electrician': ['Chào anh/chú, nhờ anh/chú đến sửa giúp ổ cắm ở Phòng 2, [Dãy trọ Dĩ An](Dãy trọ Dĩ An). Người thuê là Trần Thị Bình Demo. Anh/chú báo giúp tôi thời gian có thể đến để tôi báo lại người thuê sắp xếp. Cảm ơn anh/chú.'],
 };
 
 const reads = replayedReads();
