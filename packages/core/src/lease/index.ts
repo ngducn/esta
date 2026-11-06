@@ -15,6 +15,6 @@ export {
   type UtilitiesMode,
 } from './types';
 export { unitLeaseMark, type LeaseMark } from './marks';
-export { RENEWAL_INCREASE_BPS, RENEWAL_ROUNDING_VND, amendmentStarts, renewalRent, renewalStart } from './changes';
+export { RENEWAL_INCREASE_BPS, RENEWAL_ROUNDING_VND, amendmentStarts, billedThrough, renewalRent, renewalStart } from './changes';
 export { leaseTimeline, type PeriodMark, type TimelineInvoice, type TimelineRow } from './timeline';
 export { contractTenant, leaseFieldsFromExtraction, type LeaseFromContract, type LeaseTermsFromContract } from './fromExtraction';
