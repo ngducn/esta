@@ -9,29 +9,30 @@ Resume with `skills/poteto-mode/playbooks/session-pickup.md`, then Autopilot-ful
 
 Briefs are in `~/.claude/orchestrate/esta/briefs/`. The root's todo is `~/.claude/orchestrate/esta/todo.md`. Media is in `~/.claude/orchestrate/esta/media/<PR code>/`. The redesign's design system copy is in `~/.claude/orchestrate/esta/design/2026-11/`.
 
-## Where the run is (written 2026-11-01 21:45 +07; open items refreshed 2026-11-06 20:30)
+## Where the run is (written 2026-11-06 22:10 +07)
 
-Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/8USdYGBumJc9AuaMsQfZKg --> i redesigned Esta, please implement the UI revamp" and "also check current progress, please help continue the work".
+The quality pass before the first production deploy, run by root with owners, fix rounds, Opus audits, Sonnet lanes and scoped readers. Every PR merges through merge.sh on an independent verdict plus green ci. Spawns stopped at 96% of the week (Ryan: "we are at 96 now"); running agents finish, merges continue, new agents start after the 2026-11-07 11:00 +07 reset.
 
-**Since the last handoff:**
-- #358 (P5-16a) and #360 (P5-16c) merged on 2026-10-30.
-- The redesign is planned in `docs/plan/redesign-2026-11.md` (b2def8a7): six slices, RD-1 to RD-6, with its defaults listed under "Decisions taken as defaults".
-- #365's fix round 1 had never pushed. The previous owner stopped after merging main locally (840b881e in `/tmp/owner-data-trust-a/wt`). A fresh owner took it over.
+**Since the 21:35 handoff:** #506 (CI: a draft PR runs check and design only; main runs check, design, db, prod-build; nightly and dispatch run everything) and #502 (Trợ lý's retries spend only what is left of the web budget; the paused line clears when no job waits; a failed run keeps its record; `WEB_CAPS` is the one home for caps) merged. Lows filed: #515 (cron_runs test counts another test's row), #516 (two #500 checks can miss a copy). Root tooling: `bin/ci-state.jq` (newest ci at a head that was not cancelled), `bin/next-migration.sh`.
 
-## Open items (state at 20:30 2026-11-06 +07; week 93%, resets 2026-11-07 11:00 +07)
+## Open items (state at 22:10 2026-11-06 +07; week 96%, resets 2026-11-07 11:00 +07)
 
-- **Ryan 2026-11-06:** "merge them and finish the project"; "push it through the last bit"; "i want the code quality so high and pristine that follow up AI agents can pickup the practice"; "everything you find as issue, be sure to codify it in some way"; "yeah" to finishing the quality pass before the first production deploy; "Yes, convert it" (monthly rate to yearly); "we need to at least x3 the throughput to go through the usage before tmr reset, so spawn parallel agents and really rigorously complete the job". Guard: stop spawns at 96% of the week, pause owners at 98%.
-- **Merge path:** `~/.claude/orchestrate/esta/bin/merge.sh <pr> <full sha> "<squash subject for the final head>"`. It refuses a wrong head, ci not SUCCESS, no `## Codified`, a migration not sorting after main's newest, and a PR whose ci started before main gained code (then `gh pr update-branch <pr>` only when no agent writes the branch). The subject argument exists because #471's squash (946a793d) kept its round 1 title, the opposite of the merged strict guard.
-- **Merged today:** #438, #434, #444, #446, #439, #448, #456, #449, #465, #458, #470, #450, #469, #455, #460, #451, #479, #467, #475, #453, #487 (export round-trip flake), #471 (P5-10d number guard, strict, 2 false rejects recorded as a STATUS deviation). Lows filed through #496 (#488 to #491 from the #484 audit, #492 to #495 from the #486 audit, #496 the `là số` guard leak, being fixed in #501).
-- **CI is the bottleneck:** one PR run is about 13 jobs against the account's concurrent-job cap, so about 3 runs move at once and a push waits 30 to 60 minutes. Owners may not add CI jobs (common owner brief). Bigger runners would be a paid service (Ryan only).
-- **Fix rounds waiting on ci, then a scoped reader, then merge.sh:** #484 Q-08 access table (round 1 a88282c6251168790, briefs/q-08-ff1.md: encoded-path bypass; lane CLEAN), #486 Q-13 operations (round 1 a178a7e1bf27e3336, briefs/q-13-ff1.md: vercel git deploys, worker:update fetch order, backup:offsite refusals, non-operator pgTAP), #481 Q-17b (round 1 a825a78695648e081, briefs/q-17b-ff1.md).
-- **#482 Q-12b** (round 2 a69bd7387c4aed5e6, slot 14, briefs/q-12b-ff2.md): the +430 s was the two extra shards' setup (about 190 s each before tests); dated specs folded back into 4 clock shards (6 e2e jobs, as main). Now reproducing assistant-limits on branch and main. Then Opus audit + lane.
-- **New owners, each to Opus audit + lane (rigorous) or review:** #498 #468 void-then-quarterly (a074d13aa0d6575be, briefs/q-468.md, waiting ci), #497 Q-05 extraction accept (a2db1d214f7a5a6a9, slot 3, briefs/q-05.md; db job red at 5d059c74, forwarded), #499 Q-03 rental soft delete (a7033caec1e77917d, slot 8, briefs/q-03.md; builds the undo home Q-04 reuses), #500 Q-10a rules once (a3fc96eee42fc4ee0, no slot, briefs/q-10a.md), #501 guard #496 + #364 (aedc163f4208d963e, slot 9, briefs/q-guard-496.md; English function-word rule keeps Ryan's English sentences English; live probe run), #502 C19 assistant gaps (a46d92623e9dc7681, no slot, briefs/q-c19.md).
+- **Ryan 2026-11-06:** "merge them and finish the project"; "push it through the last bit"; "i want the code quality so high and pristine that follow up AI agents can pickup the practice"; "everything you find as issue, be sure to codify it in some way"; "yeah" to finishing the quality pass before the first production deploy; "we need to at least x3 the throughput to go through the usage before tmr reset"; "option 1 and 2 to maximize CI savings pls" (#506, merged). Guard: stop spawns at 96% (reached), pause owners at 98%. ryan-mode (/pstack:automate-me) was discussed in chat only; nothing written.
+- **Merge path:** `~/.claude/orchestrate/esta/bin/merge.sh <pr> <full sha> "<squash subject for the final head>"`. It refuses a wrong head, a draft, ci not SUCCESS (through `bin/ci-state.jq`), no `## Codified`, a migration not sorting after main's newest, and a PR whose ci started before main gained code. Then `gh pr update-branch <pr>` when no agent writes the branch, or root merges main itself in a scratch worktree when it conflicts.
+- **Merge order now:** #501, then #497, then #500. Each merge invalidates the next PR's ci, so each is updated once, after the one before it merges.
+- **#501 guard:** reader CLEAN at 08919273. Root resolved a docs-only conflict (verification-tiers.md: main's item 14, #501's item 15) at 5840e8a6; wait-ci running, then `merge.sh 501 5840e8a6f4997b57b62176871a5e5a090bd25e74 "The number guard lets no number word through a phrase table"`. After it merges, a root docs commit: phase-5-guard.md line 75 is missing `cả hai loại`, and the false-reject count reads "at least 4 (5 with red-pink-book)".
+- **#497 Q-05:** scoped reader CLEAN at cc3ee6ca (exploit shown on ffda08d6: a member of one household marked another household's read accepted; refused at cc3ee6ca on every id parameter). Low: the PR body's Tradeoffs cites CI at stale 86524502. After #501 merges, root merges main (verification-tiers.md: main 14, #501 15, #497's three items become 16 to 18), wait-ci, then merge.sh with subject "Accepting an extraction saves everything or nothing, and only for your own household".
+- **#500 Q-10a:** review and live check CLEAN at 3946cb72 (lows in #516). Root merged main at 52850ee1 (both quality metrics kept; one-line smells import keeps metrics.ts under 400 lines) and set the PR to draft so it runs light CI. After #497 merges: `gh pr update-branch 500`, `gh pr ready 500`, wait-ci, merge.sh.
+- **#499 Q-03:** round 1 a9b801a1c3540d532 running with slot 8 (briefs/q-03-ff1.md: completeness view, utility bill acceptance and the wizard must skip trashed rows; `soft-delete-read` metric; label-taken undo message; utility read at `packages/ops/src/extraction-ops.ts:130` on #497's branch). Then a scoped reader (after the reset), then merge.sh. #202 and #398 go to Q-04.
+- **#481 Q-17b:** round 2 a825a78695648e081 at 292f14a9, rerunning the db job that failed on #515 and waiting in wait-ci. Then a scoped reader after the reset, then merge.sh.
+- **#482 Q-12b:** round 2 a69bd7387c4aed5e6 on slot 3 (morning-brief in CI's shard order, rebalance under 675 s, migration 20261007649000, Codified); ci red at 79bf87df while it works. Then Opus audit + lane after the reset, then merge.sh.
+- **Migration numbers in flight:** #499 647000, #497 648000, #482 649000, #481 650000/650100/650200. New ones come from `bin/next-migration.sh`.
+- **Review-checklist line to add** once no open PR touches verification-tiers.md: a merge needs ci=success, not "not failed" (#506 reader low).
 - **#464**: Dependabot npm-weekly bump, unreviewed.
-- **Queue:** Q-04 legal tab after Q-03 (reuses its undo home, flips `direct-write` to a hard rule at 0); Q-10b rule-copy issues and the low backlog; Q-06, Q-07, Q-18, rest of Q-20, Q-14 squash (last before the first db push), Q-15 docs, Q-02 formatter last; #477 label. Pre-deploy: one live smoke on merged main (re-measure T7 50.2 s).
-- **Ryan deploy gate:** #467 merged, so run `pnpm probe:denied-functions` against the preview project (DEPLOY.md section 12). #82 and #128 stay open until then.
-- **Slots:** usable 3, 7, 8, 9, 14; never 1, 2, 4, 5, 6. Docker 7.8 GB holds about six stacks. Owners without a slot ask root through SendMessage and end their turn. A slot whose holder stopped its stack and sits in wait-ci goes to the next owner in line (tell the holder to ask again if ci fails). pid 56207 is Ryan's.
-- **Waiting agents:** "waiting on its own background work" is fine when the work is wait-ci.sh, heavy.sh, a stack start, a build or the guard probe (check with `ps`); stop only a polling loop (pgrep, sleep, tail -f), by PID.
+- **Queue after the reset:** Q-04 legal tab after Q-03 (reuses its undo home, takes #202 and #398, flips `direct-write` to a hard rule at 0); Q-10b rule-copy issues and the low backlog (#488 to #516); Q-06, Q-07, Q-18, rest of Q-20, Q-14 squash (last before the first db push), Q-15 docs, Q-02 formatter last; #477 label. Pre-deploy: one live smoke on merged main (re-measure T7 50.2 s). Then the deploy plan with options for Ryan.
+- **Ryan deploy gate:** run `pnpm probe:denied-functions` against the preview project (DEPLOY.md section 12). #82 and #128 stay open until then.
+- **Slots:** usable 3, 7, 8, 9, 14; never 1, 2, 4, 5, 6. Now 3 #482 r2, 8 #499 r1; 7, 9 and 14 free. Docker 7.8 GB holds about six stacks. pid 56207 is Ryan's. Machine load reaches about 45 with four stacks; tests with tight timeouts fail under it and pass alone.
+- **Waiting agents:** "waiting on its own background work" is fine when the work is wait-ci.sh, heavy.sh, a stack start, a build or the guard probe; stop only a polling loop, by PID.
 
 ## Waiting for Ryan (defaults apply)
 
@@ -50,6 +51,7 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 
 12. #471 number guard: stay strict (default) with 2 false rejects left in the live probe (the model still writes "Hai bên mang theo" and "cả hai" despite the style rule; each costs Mẹ a repair turn), or accept a looser guard. Three adversarial readers found real counts passing every loosening tried.
 13. Offsite backup copy (Q-13): which destination; no service is added until Ryan names one.
+14. #364 reply language: answer in each member's app language and switch only when a whole message is clearly the other language (recommended), or keep guessing from each message (today). Asked 2026-11-06 21:00; no answer yet, so today's behaviour stays.
 
 Ruled 2026-11-02: Thu tiền "Đã thu" counts payments toward this month's rent, as Tổng quan does (Ryan: "Yes, match Tổng quan").
 
@@ -66,12 +68,16 @@ Ruled 2026-11-02: Thu tiền "Đã thu" counts payments toward this month's rent
 - The number rule beats a false reject. Revised 2026-11-06 after #471: the guard never passes a number word through an idiom or phrase table, because three adversarial readers in a row found real counts passing each allowlist tried. False rejects are fixed on the model side (prompt style rule, a repair turn that names the rejected words), never by loosening the guard. Any guard change that rejects less gets an adversarial Opus reader.
 - Each member reads only her own conversations and their audit rows. The operator does not either.
 
+- 2026-11-06 evening: a new check is proven by putting back main's exact replaced lines and watching it fail (#500, #503). A closing test enters where the app enters, never through a helper fed an input the real caller cannot produce (#502 #326). A security definer function derives every row it writes from stored rows; its pgTAP names another household's id for every id parameter (#497). Owners never pick a migration number; root assigns one from `bin/next-migration.sh`. Owners may not add CI jobs or shards (main's job count is the ceiling).
+- Root never pushes to a branch an agent writes. An Auto-fix conflict or CI event on such a PR goes to that agent by SendMessage.
+
 ## Budget
 
-Week at 93% at 20:30 on 2026-11-06, resets 2026-11-07 11:00 +07. Guard (raised by Ryan's x3 request): stop spawns at 96%, pause owners at 98%. Read the plan limits with the session usage tool, which matches /usage; `usage-pct.sh` under-reads. On a 429, resume the owner with SendMessage after the reset.
+Week at 96% at 22:10 on 2026-11-06, resets 2026-11-07 11:00 +07. Guard (raised by Ryan's x3 request): stop spawns at 96% (reached), pause owners at 98%. Read the plan limits with the session usage tool, which matches /usage; `usage-pct.sh` reads the 5-hour window. On a 429, resume the owner with SendMessage after the reset.
 
 ## Gotchas
 
+- Every PR that appends an item to the review checklist in verification-tiers.md conflicts with the next one that does (three times on 2026-11-06). Root resolves it docs-only by renumbering; whether GitHub honours `merge=union` in .gitattributes is unchecked.
 - zsh reads `$var:r` in a refspec as a modifier. Use `${var}:` or literal SHAs.
 - A PR with a merge conflict gets no `pull_request` CI run. When "no checks" appears, look at `mergeStateStatus`.
 - Owners in git-excluded worktrees keep their `decisions.tsv` rows locally. The root merges those rows into main.

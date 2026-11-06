@@ -159,6 +159,10 @@
         "apps/web/src/server/properties/wizard.ts": 1
       }
     },
+    "web-cap-literal": {
+      "value": 0,
+      "files": {}
+    },
     "toast-provider-mount": {
       "value": 5,
       "files": {
