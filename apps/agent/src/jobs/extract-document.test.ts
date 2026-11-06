@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Recorded } from '../test/fake-db';
+import type { Recorded } from '@esta/ops/test/memory-db';
 import { A, attempt, clock, DOCUMENT_A, DOCUMENT_B, EXTRACTION_A, EXTRACTION_B, extractJob, NOW, twoHouseholds } from '../../test/extract-job';
 import { failExtractDocument, InvalidJobError } from './extract-document';
 

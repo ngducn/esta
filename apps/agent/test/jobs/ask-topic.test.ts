@@ -6,7 +6,7 @@ import { canonicalizer, inputHash } from '../../src/replay/canonicalize';
 import { writeRecording } from '../../src/replay/store';
 import { pollOnce } from '../../src/runner';
 import { canonicalInput } from '../../src/sdk/session';
-import { fakeDb } from '../../src/test/fake-db';
+import { memoryDb } from '@esta/ops/test/memory-db';
 import type { AskTopic } from '../../src/tools/topic-reads';
 import { answerRow, askRpcs, askTables, askWorker, QUESTION } from '../ask-seed';
 import { HOUSEHOLD } from '../full-seed';
@@ -23,7 +23,7 @@ const REPLY = 'Khách này trễ mấy lần rồi?';
 
 async function promptFor(topic: AskTopic, question = REPLY) {
   const tables = askTables(question);
-  return (await caseRequest({ id: 'topic', question, toolCalls: [], reply: '', topic }, { db: fakeDb(tables, [], {}, {}, askRpcs(tables)), householdId: HOUSEHOLD, reads: replayedReads() })).prompt;
+  return (await caseRequest({ id: 'topic', question, toolCalls: [], reply: '', topic }, { db: memoryDb(tables, [], {}, {}, askRpcs(tables)), householdId: HOUSEHOLD, reads: replayedReads() })).prompt;
 }
 
 function replyTables(audience: 'all' | 'operator') {

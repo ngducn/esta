@@ -131,6 +131,16 @@ Parse external data with zod at the boundary and trust internal types after it. 
 
 Fix the code instead of disabling a rule inline. When an exception is right, put it in `eslint.config.mjs` with a reason, where review sees it (CLAUDE.md, Translations). The count of inline `eslint-disable` comments (`inline-eslint-disable`) only goes down.
 
+## Tests
+
+**One database fake.** A test that needs the database answers the real supabase-js client at the fetch level, so it runs the exact request the code sends. `packages/ops/src/test/memory-db.ts` is the home when the test needs state: `memoryDb(tables, writes, files, refuse, rpcs)` keeps `tables` in memory and reads PostgREST's filters, `or=(…)`, ordering with Postgres' null rules, `limit` and `range`, counts, `single`, upserts with `on_conflict`, `rpc` and Storage downloads, and fails loudly on a filter it does not read (add it there, with a test in `memory-db.test.ts`). `packages/ops/src/test/fake-db.ts` is the home when the test only needs the requests that were sent: `fakeDb(rows, fails)` logs each request and answers it from a callback. Import the agent-side one as `@esta/ops/test/memory-db`. An object with three or more query-builder methods (`eq`, `in`, `order`, `single` and the like) outside `packages/ops/src/test/` is a second fake (`test-db-fake`); a test that cannot use the home adds a case to it instead. A fake proves nothing when it behaves unlike Postgres, so a behaviour only SQL can answer (a cap, a timestamp to the microsecond, RLS) is proved in pgTAP, not in a fake.
+
+**What a cross-check proves.** A report's total compared with the same data view the report reads catches a bug in the report's code, not a change in the data. Compare it with an independent figure (another screen, or the database) when the test is meant to guard the number itself (#293).
+
+**Role and label queries.** A test finds a control the way Mẹ does, by role or label (`getByRole`, `getByLabel`). `getByTestId` and a `[data-testid=…]` selector (`testid-query`) stay only where no role or label names the element, and a test file that you change converts the queries it holds.
+
+**Mutation testing.** `pnpm test:mutation` runs Stryker over the money, allocation and tax sources of `packages/core` and fails below the floor in `stryker.config.json`. A surviving mutant that a real defect would look like gets the test that kills it; the floor is the measured score rounded down and only goes up. The `mutation` job in CI runs `tools/ci/mutation.sh`.
+
 ## Targets
 
 Each metric below only goes down, and the path-to-10 plan (`docs/plan/quality-2026-11.md`) takes it to its target.

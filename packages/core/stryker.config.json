@@ -1,0 +1,35 @@
+{
+  "$schema": "https://raw.githubusercontent.com/stryker-mutator/stryker/master/packages/core/schema/stryker-core.schema.json",
+  "testRunner": "vitest",
+  "plugins": [
+    "@stryker-mutator/vitest-runner"
+  ],
+  "mutate": [
+    "src/money/vnd.ts",
+    "src/money/round.ts",
+    "src/allocation/allocate.ts",
+    "src/allocation/deposits.ts",
+    "src/allocation/status.ts",
+    "src/tax/attribute.ts",
+    "src/tax/inputs.ts",
+    "src/tax/position.ts",
+    "src/tax/rules.ts"
+  ],
+  "coverageAnalysis": "perTest",
+  "reporters": [
+    "clear-text",
+    "json"
+  ],
+  "jsonReporter": {
+    "fileName": "reports/mutation/mutation.json"
+  },
+  "thresholds": {
+    "high": 95,
+    "low": 92,
+    "break": 92
+  },
+  "vitest": {
+    "configFile": "vitest.mutation.config.ts"
+  },
+  "inPlace": true
+}

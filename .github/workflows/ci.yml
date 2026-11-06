@@ -209,8 +209,19 @@ jobs:
       - run: test "$(.claude/skills/impeccable/scripts/impeccable engine-probe)" = "impeccable-engine $(cat .claude/skills/impeccable/scripts/VERSION)"
       - run: pnpm design:detect
 
+  mutation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - run: tools/ci/mutation.sh
+
   ci:
-    needs: [check, db, e2e, e2e-report, prod-build, design]
+    needs: [check, db, e2e, e2e-report, prod-build, design, mutation]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5

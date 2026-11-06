@@ -8,7 +8,7 @@ import { DEFAULT_REPLAY_DIR, readRecording } from '../../src/replay/store';
 import { askSourceRepairPrompt } from '../../src/prompts/ask';
 import { inputHash } from '../../src/replay/canonicalize';
 import { canonicalInput, replaySession } from '../../src/sdk/session';
-import { fakeDb } from '../../src/test/fake-db';
+import { memoryDb } from '@esta/ops/test/memory-db';
 import { answerRow, askRpcs, askTables, CONVERSATION, withDraftAndArchivedLeases, withSeedNames } from '../ask-seed';
 import { HOUSEHOLD, seedRecords } from '../full-seed';
 import { tempJobDir } from '../job-dir';
@@ -37,7 +37,7 @@ async function askAfterItsChain(id: string, reads = replayedReads()): Promise<As
     const earlier = { household_id: HOUSEHOLD, conversation_id: CONVERSATION, status: 'done' };
     tables.messages?.unshift({ ...earlier, id: EARLIER.question, role: 'user', content_md: findCase(askCase.follows.id).question }, { ...earlier, id: EARLIER.answer, role: 'assistant', content_md: before.answer.content_md, refs: before.answer.refs });
   }
-  const prepared = await caseRequest(askCase, { db: fakeDb(tables, [], {}, {}, askRpcs(tables)), householdId: HOUSEHOLD, reads });
+  const prepared = await caseRequest(askCase, { db: memoryDb(tables, [], {}, {}, askRpcs(tables)), householdId: HOUSEHOLD, reads });
   const rebuilt = askCase.rebuiltFrom === undefined ? null : await prepared.rebuild?.();
   if (rebuilt === undefined) throw new Error(`${id} has no session to rebuild`);
   const run = await replaySession(
@@ -52,7 +52,7 @@ async function askAfterItsChain(id: string, reads = replayedReads()): Promise<As
   const repair = await prepared.nextTurn?.();
   const result = (await prepared.finish({ reply: run.result.text, model: run.model, sessionId: run.result.sessionId, turnHash: 'a'.repeat(64) })) as { cited: Array<{ placeholder: string; value: string }> };
   const answer = answerRow(tables);
-  const present = await existingLinks(fakeDb(seedRecords()), HOUSEHOLD, links(answer.content_md));
+  const present = await existingLinks(memoryDb(seedRecords()), HOUSEHOLD, links(answer.content_md));
   return { answer, repair, result, run, conversation: tables.conversations?.[0], missing: links(answer.content_md).filter((link) => !present.has(link)) };
 }
 
@@ -239,7 +239,7 @@ describe('ask in replay on the full seed at 2026-10-07 07:00 (AGENT.md §7.4, AG
   it('a procedure question with no official page is repaired once, then answers the no-source sentence and ends done', async () => {
     const askCase = findCase('procedure-no-source');
     const tables = askTables(askCase.question);
-    const prepared = await caseRequest(askCase, { db: fakeDb(tables, [], {}, {}, askRpcs(tables)), householdId: HOUSEHOLD, reads: replayedReads() });
+    const prepared = await caseRequest(askCase, { db: memoryDb(tables, [], {}, {}, askRpcs(tables)), householdId: HOUSEHOLD, reads: replayedReads() });
     const request = caseSession(prepared, jobDir);
     const first = await replaySession(request, DEFAULT_REPLAY_DIR);
     const repair = await prepared.nextTurn?.();
@@ -255,7 +255,7 @@ describe('ask in replay on the full seed at 2026-10-07 07:00 (AGENT.md §7.4, AG
 
   it('the leak case denies a search holding the tenant\'s name, and no tool input that ran or the answer holds it', async () => {
     const tables = withSeedNames(askTables(LEAK_CASE.question));
-    const prepared = await caseRequest(LEAK_CASE, { db: fakeDb(tables, [], {}, {}, askRpcs(tables)), householdId: HOUSEHOLD, reads: replayedReads() });
+    const prepared = await caseRequest(LEAK_CASE, { db: memoryDb(tables, [], {}, {}, askRpcs(tables)), householdId: HOUSEHOLD, reads: replayedReads() });
     const run = await replaySession(caseSession(prepared, jobDir), LEAK_REPLAY_DIR);
     await prepared.nextTurn?.();
     await prepared.finish({ reply: run.result.text, model: run.model, sessionId: run.result.sessionId, turnHash: 'c'.repeat(64) });

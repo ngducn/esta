@@ -58,6 +58,39 @@ describe('the integration lane registry', () => {
   });
 });
 
+/**
+ * The connector's integration files sign in as lane households of their own, and its suite runs on its own through
+ * `pnpm --filter connector test:integration`, one file at a time. They name lanes the web registry also owns, so a third
+ * suite that named a lane must be listed here with the reason it cannot share a stack with the others (#293).
+ */
+const OUTSIDE_THE_REGISTRY: Readonly<Record<string, readonly number[]>> = {
+  'apps/connector/src/connector.integration.test.ts': [8, 9],
+  'apps/connector/src/rental.integration.test.ts': [8],
+};
+const REPO_ROOT = join(WEB_ROOT, '..', '..');
+const LANE_REF = /lane[.-]?(\d+)/g;
+
+describe('lanes named outside the web registry', () => {
+  const files = readdirSync(join(REPO_ROOT, 'apps', 'connector', 'src'), { recursive: true, encoding: 'utf8' })
+    .filter((path) => path.endsWith('.ts'))
+    .map((path) => `apps/connector/src/${path.split('\\').join('/')}`)
+    .toSorted();
+  const named = Object.fromEntries(
+    files.flatMap((file) => {
+      const lanes = [...new Set([...readFileSync(join(REPO_ROOT, file), 'utf8').matchAll(LANE_REF)].map((match) => Number(match[1])))].toSorted((a, b) => a - b);
+      return lanes.length === 0 ? [] : [[file, lanes]];
+    }),
+  );
+
+  it('lists every connector file that names a lane, with the lanes it names', () => {
+    expect(named).toEqual(OUTSIDE_THE_REGISTRY);
+  });
+
+  it('stays inside the default seed', () => {
+    for (const lanes of Object.values(OUTSIDE_THE_REGISTRY)) for (const lane of lanes) expect(lane <= DEFAULT_OPTIONS.lanes, `lane ${lane}`).toBe(true);
+  });
+});
+
 describe('integrationLane', () => {
   it("returns the calling file's lane, its household and its two members", () => {
     expect(integrationLane(fileUrl('src/server/tax/load.integration.test.ts'))).toEqual({
