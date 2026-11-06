@@ -295,7 +295,7 @@ async function runAsks() {
     record(ask.id, '§7.4 answer states the ground truth', problems.length === 0, problems.join('; ') || seconds);
     answers[ask.id] = { question: ask.question, answer: text, refs: answer.refs, seconds, firstContentS: first.seconds };
   }
-  save('ask', answers);
+  if (Object.keys(answers).length > 0) save('ask', answers);
 }
 
 async function recordUsage() {
@@ -305,7 +305,7 @@ async function recordUsage() {
   );
   const jobs = await must(db.from('agent_jobs').select('id, kind').eq('household_id', HOUSEHOLD), 'Reading the job kinds');
   const kindOf = new Map(jobs.map((job) => [job.id, job.kind]));
-  const usage = runs.map((run) => ({ ...run, kind: kindOf.get(run.job_id), wall_s: (Date.parse(run.finished_at ?? run.started_at) - Date.parse(run.started_at)) / 1000 }));
+  const usage = runs.filter((run) => kindOf.get(run.job_id) !== 'ping').map((run) => ({ ...run, kind: kindOf.get(run.job_id), wall_s: (Date.parse(run.finished_at ?? run.started_at) - Date.parse(run.started_at)) / 1000 }));
   save('runs', usage);
   const cost = usage.reduce((total, run) => total + Number(run.cost_estimate_usd ?? 0), 0);
   record('usage', `every run is ${mode}`, usage.length > 0 && usage.every((run) => run.agent_mode === mode), `${usage.length} runs, total_cost_usd ${cost.toFixed(4)}`);
@@ -313,6 +313,8 @@ async function recordUsage() {
   record('usage', 'no job past its AGENT.md §3 timeout', slow.length === 0, slow.map((run) => run.kind).join(', '));
   if (live) record('usage', 'subscription auth mode', usage.every((run) => run.auth_mode === 'subscription'), [...new Set(usage.map((run) => run.auth_mode))].join(', '));
 }
+
+const NOT_LIVE = 'live only; replay is covered by `ESTA_AGENT_MODE=replay pnpm --filter agent test`';
 
 function runScript(script: string, args: readonly string[]): Promise<{ code: number | null; stdout: string }> {
   return new Promise((resolve) => {
@@ -325,6 +327,7 @@ function runScript(script: string, args: readonly string[]): Promise<{ code: num
 
 /** AGENT.md §7.2 targets: every extraction schema-valid, required fields exact at 90%, high-confidence fields correct at 97%. */
 async function checkExtraction() {
+  if (!live) return record('extraction', '§7.2 meets its targets', null, NOT_LIVE);
   const { code, stdout } = await runScript('scripts/extraction-eval.ts', ['--mode', 'live', '--set', 'synthetic']);
   save('extraction', { code, report: stdout });
   const [, valid, required, confident] = /schema-valid ([\d.]+)%, required exact ([\d.]+)%, high-confidence precision ([\d.]+)%/.exec(stdout) ?? [];
@@ -333,6 +336,7 @@ async function checkExtraction() {
 }
 
 async function checkGuardProbe() {
+  if (!live) return record('guard-probe', 'no row in error, no repair rejected', null, NOT_LIVE);
   const out = join(outDir, 'guard-probe.json');
   const { code } = await runScript('scripts/guard-probe.ts', ['--out', out]);
   const { summary } = JSON.parse(readFileSync(out, 'utf8')) as { summary: { prompts: number; firstPassRejected: number; repairRejected: number; error: number } };
@@ -348,27 +352,23 @@ async function main() {
   await db.from('test_clock').upsert({ id: true, frozen_now: AS_OF });
   const worker = await startWorker();
   try {
-    const jobs = await runDailyJobs();
-    await checkJobs(jobs);
-    await checkWatch();
-    await checkBrief();
-    await checkResearch();
-    await runAsks();
-    await runWeekly();
-    await recordUsage();
-    if (live) {
-      await checkExtraction();
-      await checkGuardProbe();
-    } else {
-      record('extraction', '§7.2 meets its targets', null, 'live only; replay is covered by `ESTA_AGENT_MODE=replay pnpm --filter agent test`');
-      record('guard-probe', 'no row in error, no repair rejected', null, 'live only; replay is covered by `ESTA_AGENT_MODE=replay pnpm --filter agent test`');
+    if (wanted('daily')) {
+      await checkJobs(await runDailyJobs());
+      await checkWatch();
+      await checkBrief();
+      await checkResearch();
     }
+    await runAsks();
+    if (wanted('weekly_review')) await runWeekly();
+    await recordUsage();
+    if (wanted('extraction')) await checkExtraction();
+    if (wanted('guard-probe')) await checkGuardProbe();
   } finally {
     worker.kill('SIGTERM');
     await db.from('test_clock').delete().eq('id', true);
   }
   mkdirSync(outDir, { recursive: true });
-  writeFileSync(join(outDir, 'table.md'), `${table()}\n`);
+  writeFileSync(join(outDir, only === undefined ? 'table.md' : 'table-rerun.md'), `${table()}\n`);
   console.log(`\n${table()}\n\nOutputs in ${outDir} (${mode})`);
   process.exitCode = exitCodeFor(rows, mode);
 }
