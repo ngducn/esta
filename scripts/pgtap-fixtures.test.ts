@@ -42,6 +42,15 @@ describe('deposit_ledger_parity.test.sql', () => {
   });
 });
 
+describe('allocation_vectors_parity.test.sql', () => {
+  it('holds exactly the rows of fixtures/allocation_vectors.csv', () => {
+    const [, ...csv] = readFileSync(join(tests, 'fixtures', 'allocation_vectors.csv'), 'utf8').trim().split('\n');
+    const sql = readFileSync(join(tests, 'allocation_vectors_parity.test.sql'), 'utf8');
+    const rows = [...sql.matchAll(/^ {4}\('([^']+)', (\d+)::bigint, '(\w+)', '(\w+)', '(\w+)', '([\d-]+)', '([\d-]+)', (\d+)::bigint, (\d+)::bigint, '(\w+)', (\d+)::bigint, '(\w+)'\)[,;]$/gm)].map((match) => match.slice(1).join(','));
+    expect(rows).toEqual(csv);
+  });
+});
+
 describe('extraction_schema_parity.test.sql', () => {
   it('holds exactly the rows of fixtures/extraction_schemas.csv', () => {
     const [, ...csv] = readFileSync(join(tests, 'fixtures', 'extraction_schemas.csv'), 'utf8').trim().split('\n');
