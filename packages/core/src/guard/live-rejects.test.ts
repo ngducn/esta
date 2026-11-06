@@ -21,86 +21,119 @@ const params = { seed: 20261107, numRuns: 400 };
 const FILLER = ['Mẹ', 'nên', 'hỏi', 'văn phòng', 'trước khi', 'giấy tờ', 'nhà', 'luật sư', 'vẫn', 'giữ', 'quyền', 'đất'];
 /** Written here, not read from the guard: the nouns and classifiers that make a number word before them a count. */
 const COUNTED = ['người', 'căn', 'phòng', 'con', 'chủ', 'thuê', 'cái', 'chiếc', 'mảnh', 'lô', 'tên', 'loại', 'trang', 'chỗ', 'khách', 'hộ', 'đứa', 'cô', 'anh'];
-/** The word before a context: none, or one that turns `hai bên` into "there are two sides" (`Có hai bên thuê`). */
-const LEADS = ['', 'Có', 'Còn'];
-/** Contexts that state a count when a counted noun comes right after the whole of them, and the number words in them. */
-const HEADS: ReadonlyArray<{ readonly text: string; readonly numbers: readonly string[] }> = [
-  { text: 'hai bên', numbers: ['hai'] },
-  { text: 'giữa hai bên', numbers: ['hai'] },
-  { text: 'của hai bên', numbers: ['hai'] },
-  { text: 'cả hai bên', numbers: ['hai'] },
-  { text: 'cả hai', numbers: ['hai'] },
-  { text: 'ba mẹ', numbers: ['ba'] },
-  { text: 'ba và mẹ', numbers: ['ba'] },
-  { text: 'ba hoặc mẹ', numbers: ['ba'] },
-  { text: 'mẹ và ba', numbers: ['ba'] },
-  { text: 'mẹ hoặc ba', numbers: ['ba'] },
+/** Written here: the words that put a quantity in front of a context (`Đã có tổng cộng hai bên ký`, `Mẹ cho hai bên cùng thuê`). */
+const QUANTIFIERS = ['thêm', 'tới', 'đến', 'được', 'chỉ', 'tổng cộng', 'là', 'với', 'cho', 'từ', 'có', 'còn', 'Có', 'Còn'];
+/**
+ * Contexts with the act or particle that may follow them, and the number word each holds. `lead` is set for a context that
+ * a clause may end after once giữa or của stands in front (`tài sản của cả hai.`), which is an idiom and no count.
+ */
+const HEADS: ReadonlyArray<{ readonly text: string; readonly act: string; readonly numbers: readonly string[]; readonly idiomEnd?: true }> = [
+  { text: 'hai bên', act: 'ký', numbers: ['hai'] },
+  { text: 'giữa hai bên', act: 'ký', numbers: ['hai'], idiomEnd: true },
+  { text: 'của hai bên', act: 'ký', numbers: ['hai'], idiomEnd: true },
+  { text: 'cả hai bên', act: 'ký', numbers: ['hai'] },
+  { text: 'cả hai', act: 'đều', numbers: ['hai'] },
+  { text: 'ba mẹ', act: 'vẫn', numbers: ['ba'] },
+  { text: 'ba và mẹ', act: 'vẫn', numbers: ['ba'] },
+  { text: 'ba hoặc mẹ', act: 'vẫn', numbers: ['ba'] },
+  { text: 'mẹ và ba', act: 'vẫn', numbers: ['ba'] },
+  { text: 'mẹ hoặc ba', act: 'vẫn', numbers: ['ba'] },
 ];
-/** Contexts that state no figure when nothing but an act or the end of the clause follows. */
+/** Whole sentences in which a context states no figure. */
 const PASSING = [
-  'hai bên ký',
-  'hai bên thỏa thuận',
-  'hai bên thống nhất',
-  'hai bên đồng ý',
-  'hai bên cam kết',
-  'hai bên xác nhận',
-  'hai bên thương lượng',
-  'hai bên cùng',
-  'giữa hai bên,',
-  'của hai bên,',
-  'cả hai bên,',
-  'ba mẹ vẫn',
-  'ba mẹ không',
-  'ba mẹ muốn',
-  'ba mẹ,',
-  'ba và mẹ đều',
-  'ba hoặc mẹ,',
-  'mẹ và ba đều',
-  'mẹ hoặc ba,',
-  'cả hai đều',
-  'cả hai cùng',
-  'cả hai,',
+  'Hai bên ký',
+  'Hai bên thỏa thuận',
+  'Hai bên thống nhất',
+  'Hai bên đồng ý',
+  'Hai bên cam kết',
+  'Hai bên xác nhận',
+  'Hai bên thương lượng',
+  'Hai bên cùng',
+  'Nên để hai bên ký',
+  'Chỉ đổi giá khi hai bên cùng đồng ý',
+  'Nếu hai bên đồng ý',
+  'Giữa hai bên,',
+  'Hợp đồng của hai bên,',
+  'Ý kiến của cả hai bên,',
+  'Ba mẹ vẫn',
+  'Ba mẹ không',
+  'Ba mẹ muốn',
+  'Nhưng ba mẹ không',
+  'Tài sản của ba mẹ,',
+  'Ba và mẹ đều',
+  'Ba hoặc mẹ đứng',
+  'Mẹ và ba đều',
+  'Tài sản của ba hoặc mẹ,',
+  'Cả hai đều',
+  'Cả hai cùng',
+  'Tài sản chung của cả hai,',
+  'Nếu cả hai đều',
 ];
 const NUMBER_WORDS = ['hai', 'sáu', 'mười', 'twelve', 'seven', 'bảy'] as const;
-/** `một` is also an article, so it is rejected before phần trăm and nowhere else. */
-const BEFORE_PERCENT = [...NUMBER_WORDS, 'một', 'ba'] as const;
+/** `một` is also an article, so it is rejected before phần trăm and nowhere else, and `không` is zero percent. */
+const BEFORE_PERCENT = [...NUMBER_WORDS, 'một', 'ba', 'không'] as const;
 
 const sentence = (words: readonly string[]) => `${words.filter((word) => word !== '').join(' ')}.`;
 const filler = fc.array(fc.constantFrom(...FILLER), { minLength: 0, maxLength: 4 });
-const passing = fc.constantFrom(...PASSING);
+/** Whole sentences of filler, so a context that follows them starts one. */
+const sentences = fc.array(filler.map((words) => sentence(['Mẹ', ...words])), { minLength: 0, maxLength: 2 }).map((all) => all.join(' '));
+const head = fc.constantFrom(...HEADS);
+const quantifier = fc.constantFrom(...QUANTIFIERS);
+const counted = fc.constantFrom(...COUNTED);
+
+/** The context of `shape` is rejected when the guard names the number word in it. */
+const namesNumber = (note: string, { numbers }: { readonly numbers: readonly string[] }) => named(note).some((text) => numbers.includes(text.toLowerCase()));
 
 describe('the non-quantity contexts of the number guard (P5-10d)', () => {
   it('passes every context among ordinary words', () => {
     fc.assert(
-      fc.property(filler, passing, filler, (before, text, after) => {
-        const note = sentence([...before, text, ...after]);
+      fc.property(sentences, fc.constantFrom(...PASSING), filler, (before, text, after) => {
+        const note = `${before} ${text} ${after.join(' ')}.`.trim();
         expect(named(note), note).toEqual([]);
       }),
       params,
     );
   });
 
-  it('rejects a counted noun after the whole context, with no word, Có or Còn in front', () => {
+  it('rejects a counted noun after the whole context, with or without a word in front', () => {
     fc.assert(
-      fc.property(filler, fc.constantFrom(...LEADS), fc.constantFrom(...HEADS), fc.constantFrom(...COUNTED), filler, (before, lead, head, counted, after) => {
-        const note = sentence([...before, lead, head.text, counted, ...after]);
-        expect(named(note).some((text) => head.numbers.includes(text.toLowerCase())), note).toBe(true);
+      fc.property(sentences, fc.constantFrom('', ...QUANTIFIERS), head, counted, filler, (before, lead, context, noun, after) => {
+        const note = `${before} ${sentence([lead, context.text, noun, ...after])}`;
+        expect(namesNumber(note, context), note).toBe(true);
       }),
       params,
     );
   });
 
-  it('rejects a context that Có or Còn comes before, whatever follows it', () => {
+  it('rejects a quantifier before a context, then the act that would pass it, a clause end or a counted noun', () => {
     fc.assert(
-      fc.property(filler, fc.constantFrom('Có', 'Còn'), passing, filler, (before, lead, text, after) => {
-        const note = sentence([...before, lead, text, ...after]);
-        expect(named(note), note).not.toEqual([]);
+      fc.property(sentences, quantifier, head, counted, filler, (before, lead, context, noun, after) => {
+        for (const note of [
+          `${before} ${sentence([lead, context.text, context.act, ...after])}`,
+          `${before} ${sentence([lead + ',', context.text, context.act, ...after])}`,
+          `${before} ${sentence([lead, context.text + ',', noun, ...after])}`,
+          `${before} ${sentence([lead, `“${context.text}”`, noun, ...after])}`,
+        ]) {
+          expect(namesNumber(note, context), note).toBe(true);
+        }
       }),
       params,
     );
   });
 
-  it('rejects a number word before phần trăm, one included', () => {
+  it('rejects a clause end or a quote after a context that no giữa or của leads', () => {
+    fc.assert(
+      fc.property(sentences, head, counted, filler, (before, context, noun, after) => {
+        fc.pre(context.idiomEnd !== true);
+        for (const note of [`${before} ${sentence([context.text + ',', noun, ...after])}`, `${before} ${sentence([`“${context.text}”`, noun, ...after])}`, `${before} ${context.text}.`]) {
+          expect(namesNumber(note, context), note).toBe(true);
+        }
+      }),
+      params,
+    );
+  });
+
+  it('rejects a number word before phần trăm, one and zero included', () => {
     fc.assert(
       fc.property(filler, fc.constantFrom(...BEFORE_PERCENT), filler, (before, number, after) => {
         const note = sentence([...before, number, 'phần trăm', ...after]);
@@ -122,7 +155,7 @@ describe('the non-quantity contexts of the number guard (P5-10d)', () => {
 
   it('still rejects a real number word placed beside a context', () => {
     fc.assert(
-      fc.property(passing, fc.constantFrom(...NUMBER_WORDS), fc.boolean(), (text, number, before) => {
+      fc.property(fc.constantFrom(...PASSING), fc.constantFrom(...NUMBER_WORDS), fc.boolean(), (text, number, before) => {
         const note = sentence(before ? [number, text] : [text, number]);
         expect(named(note), note).toContain(number);
       }),

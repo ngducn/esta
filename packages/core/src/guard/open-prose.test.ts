@@ -50,13 +50,26 @@ describe('the compounds the open-prose probe added (P5-12)', () => {
       'Có hai bên đã đặt cọc giữ phòng.',
       'Có hai bên không trả tiền đúng hạn.',
       'Phí quản lý thường là một phần trăm tiền thu.',
+      'Thuế GTGT với nhà ở cho thuê là không phần trăm.',
+      'Tháng này đã có thêm hai bên ký hợp đồng thuê.',
+      'Có tới hai bên cùng muốn thuê căn này.',
+      'Đã tìm được hai bên ký hợp đồng thuê.',
+      'Đã có tổng cộng hai bên ký hợp đồng.',
+      'Chỉ hai bên ký hợp đồng, các phòng còn lại trống.',
+      'Tổng số bên thuê là hai bên.',
+      'Số bên đã ký hợp đồng: hai bên.',
+      'Nhà đã cho thuê hai bên, mỗi bên một tầng.',
+      'Mẹ cho hai bên cùng thuê.',
+      'Mẹ cho “hai bên” thuê nhà.',
+      'Có, hai bên ký hợp đồng thuê.',
+      'Hiện cả hai đều chưa vượt ngưỡng.',
     ]) {
       expect(rules(note), note).toContain('word');
     }
   });
 
   it('passes hai bên as both parties, ba mẹ as parents and cả hai as both, where they state no figure', () => {
-    for (const note of ['Hai bên ký hợp đồng.', 'Hai bên đồng ý tăng giá.', 'Giữa hai bên có thỏa thuận.', 'Ba mẹ muốn để lại nhà cho các con.', 'Ba hoặc mẹ đứng tên.', 'Tài sản chung của cả hai.', 'Cả hai đều đồng ý.', 'Tính theo phần trăm tiền thu được.']) {
+    for (const note of ['Hai bên ký hợp đồng.', 'Hai bên đồng ý tăng giá.', 'Hai bên thống nhất giá thuê.', 'Giữa hai bên có thỏa thuận.', 'Ba mẹ muốn để lại nhà cho các con.', 'Ba hoặc mẹ đứng tên.', 'Tài sản chung của cả hai.', 'Cả hai đều đồng ý.', 'Tính theo phần trăm tiền thu được.']) {
       expect(rules(note), note).toEqual([]);
     }
   });

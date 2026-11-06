@@ -44,17 +44,22 @@ const findVariable = (scope, name) => {
   return null;
 };
 
-/** @type {import('eslint').Rule.RuleModule} */
+/**
+ * One file at a time: the test that pins a cases table to its production list has to be in the file whose property draws
+ * from the table, since a lint rule here sees no other file. A table pinned from another file is not caught.
+ *
+ * @type {import('eslint').Rule.RuleModule}
+ */
 export default {
   meta: {
     type: 'problem',
     docs: {
       description:
-        'A fast-check property that draws its inputs from a list imported from production code, or from a *.cases.ts table a test asserts equal to one, cannot find a spelling that list misses.',
+        'A fast-check property that draws its inputs from a list imported from production code, or from a *.cases.ts table that a test in the same file asserts equal to one, or checks a subset of one, cannot find a spelling that list misses.',
     },
     messages: {
       mirroredCases:
-        '`{{name}}` is a hand copy of a production list: this file asserts it equal to one, so a property drawing from it is self-sourced. Write the inputs in the test, independent of the list.',
+        '`{{name}}` is a hand copy of a production list: this file asserts it equal to one or checks a subset of one, so a property drawing from it is self-sourced. Write the inputs in the test, independent of the list.',
       selfSourced:
         '`{{name}}` comes from {{source}}, so this property can only draw what that list already holds. Generate the inputs independently (arbitrary strings, Unicode classes, the full range), or draw from a list in this file or a *.cases.ts table.',
     },
@@ -109,6 +114,13 @@ export default {
       });
     };
 
+    /** One asserted expression that holds both a *.cases import and production code puts them on the same side (`expect(PROD.filter((t) => !listed.has(t))).toEqual([])`): a subset check, the same mirror. */
+    const noteSubset = (expression, scope) => {
+      const roots = [...referencedNames(expression)].map((name) => rootImport(name, scope, new Set())).filter(Boolean);
+      if (!roots.some(({ source }) => !TEST_MODULE.test(source))) return;
+      for (const { local, source } of roots) if (CASES_MODULE.test(source)) mirrored.add(local);
+    };
+
     const fastCheckRoot = (node) => {
       let current = node;
       while (current) {
@@ -152,6 +164,8 @@ export default {
         const name = calleeName(node.callee);
         if (!name) return;
         const scope = context.sourceCode.getScope(node);
+        const assertion = name === 'expect' || (node.callee.type === 'MemberExpression' && node.callee.object.type === 'Identifier' && node.callee.object.name === 'assert');
+        if (assertion && node.arguments[0]) noteSubset(node.arguments[0], scope);
         if (EQUALITY_MATCHERS.has(name)) {
           const subject = node.callee.object;
           if (subject?.type === 'CallExpression' && calleeName(subject.callee) === 'expect') noteEquality([...subject.arguments, ...node.arguments], scope);

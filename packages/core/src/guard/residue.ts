@@ -95,6 +95,7 @@ function wordViolations(shown: string, isDate: (mask: string) => boolean): NoteV
   // A hyphen joins a compound as a space does (`double-check`), so a rule that reads the next word reads it there too.
   const spaced = (left: Token | undefined, right: Token | undefined) =>
     left !== undefined && right !== undefined && /^(?:\s*|-)$/u.test(text.slice(left.end, right.start));
+  const gap = (index: number) => (index === 0 ? '\n' : '') + text.slice(tokens[index - 1]?.end ?? 0, tokens[index]?.start ?? text.length);
   const lineBreak = (from: number, to: number) => text.slice(from, to).includes('\n');
   return tokens.flatMap((token, i): NoteViolation[] => {
     if (IS_MASK.test(token.word)) return [];
@@ -110,7 +111,7 @@ function wordViolations(shown: string, isDate: (mask: string) => boolean): NoteV
     ].filter((neighbor) => neighbor !== undefined);
     const neighbors = [left, right].filter((neighbor) => neighbor !== undefined);
     const capitalized = token.word !== token.lower;
-    const inPhrase = (phrases: readonly string[]) => phrases.some((phrase) => phraseAround(phrase, tokens, i, spaced, isQuantityWord));
+    const inPhrase = (phrases: readonly string[]) => phrases.some((phrase) => phraseAround(phrase, { tokens, at: i, gap, spaced, isNumber: isQuantityWord }));
     const banned = isDigitLetters(token.word) || (row === undefined && isGluedNumber(token.lower)) || isRoman(token, spacedBefore, spacedAfter) || (row !== undefined && !passes(row, { neighbors, spacedBefore, spacedBeforeThat, spacedAfter, sameLine, capitalized, inPhrase, isDate }));
     return banned ? [{ rule: 'word', text: token.word }] : [];
   });

@@ -3,7 +3,16 @@
     "prompts": 25,
     "firstPassRejected": 11,
     "repairRejected": 0,
-    "error": 0
+    "error": 0,
+    "rescoredOffline": {
+      "guard": "P5-10d fix round 2 (a lead allowlist before each context)",
+      "replaySet": "apps/agent/test/golden/open-prose.test.ts",
+      "prompts": 27,
+      "firstPassRejected": 10,
+      "repairRejected": 0,
+      "changedFromFixRound1": 0,
+      "note": "The live rows above are the round-1 run and carry only rejected texts, no answers, so they cannot be scored again; the 27 replayed first-pass replies can, and every one is rejected for the same texts as before."
+    }
   },
   "rows": [
     {
