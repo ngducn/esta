@@ -63,6 +63,7 @@
     "seed:facts": "vitest run supabase/seed/generator/test --exclude 'supabase/.slots/**'",
     "db:types": "node scripts/db.ts types",
     "db:test": "node scripts/db.ts test",
+    "probe:denied-functions": "node scripts/probe-denied-functions.ts",
     "clock:set": "tsx scripts/clock-set.ts",
     "qr:decode": "tsx scripts/decode-qr.ts",
     "gate:vietqr": "tsx scripts/gate-vietqr.ts",
