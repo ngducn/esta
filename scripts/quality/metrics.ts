@@ -1,22 +1,6 @@
 import { join } from 'node:path';
 import { cloneOccurrences, DEV_ROUTES, duplicateExports, filesOver, matchPositions, TEST_FILE, type Clone, type Corpus, type Occurrence, type Scope } from './measure.ts';
-import {
-  alwaysOpenPopups,
-  asyncTransitions,
-  catchToFailure,
-  doubleCasts,
-  failureArms,
-  handBuiltQueryBuilders,
-  isoDateRefines,
-  localIdSchemas,
-  pageScrollWidths,
-  putFetches,
-  slowTestSettings,
-  sqlstateReads,
-  webCapLiterals,
-  testIdQueries,
-  viewports,
-} from './smells.ts';
+import { alwaysOpenPopups, asyncTransitions, catchToFailure, doubleCasts, failureArms, handBuiltQueryBuilders, isoDateRefines, localIdSchemas, pageScrollWidths, putFetches, slowTestSettings, sqlstateReads, webCapLiterals, testIdQueries, viewports } from './smells.ts';
 import { directWrites, literalRoleChecks, longFunctions, MAX_FUNCTION_LINES, memberRoles, notKebabCase } from './structure.ts';
 import { classLists, comments, elements, imported, importsModule, uses, type Finder } from './syntax.ts';
 
@@ -158,7 +142,7 @@ export const METRICS: readonly Metric[] = [
     message: 'A job states how many searches or fetches it may make as a number, so the prompt, the policy and a retry can disagree.',
     home: { use: '`WEB_CAPS` and `remainingWebCaps` in packages/core/src/agent-limits/web-caps.ts.', helpers: ['WEB_CAPS', 'remainingWebCaps'].map((name) => ({ name, file: 'packages/core/src/agent-limits/web-caps.ts' })) },
     section: 'assistant-limits',
-    scope: without(PRODUCT_CODE, /^packages\/core\/src\/agent-limits\/web-caps\.ts$/),
+    scope: { include: /^(apps\/agent|packages\/core)\/src\//, exclude: new RegExp(`${NOT_TARGETED.source}|^packages/core/src/agent-limits/web-caps\\.ts$`) },
     find: webCapLiterals,
   }),
   syntax({
