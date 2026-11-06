@@ -76,6 +76,9 @@ describe('checkEnv', () => {
     ESTA_MODEL_ROUTINE: 'demo-model',
     ESTA_MODEL_DEEP: 'demo-model',
     ESTA_BACKUP_DIR: '/Users/demo/backups',
+    SMTP_URL: 'smtp://relay.demo.test:587',
+    ESTA_EMAIL_FROM: 'Esta <esta@demo.test>',
+    ESTA_APP_URL: 'https://esta.demo.test',
   };
 
   it('accepts the worker file DEPLOY.md section 6 step 1 describes', () => {
@@ -95,6 +98,16 @@ describe('checkEnv', () => {
   it('names a production worker file with no backup folder', () => {
     const { ESTA_BACKUP_DIR: _omitted, ...rest } = worker;
     expect(checkEnv('production', rest, 'agent').join('\n')).toContain('ESTA_BACKUP_DIR');
+  });
+
+  it.each(['SMTP_URL', 'ESTA_EMAIL_FROM', 'ESTA_APP_URL'] as const)('names a production worker file with no %s, with the zod message', (name) => {
+    const { [name]: _omitted, ...rest } = worker;
+    expect(checkEnv('production', rest, 'agent').join('\n')).toContain(`${name}: ${name} is required by a live production worker`);
+  });
+
+  it('does not ask a preview worker for mail settings', () => {
+    const { SMTP_URL: _smtp, ESTA_EMAIL_FROM: _from, ESTA_APP_URL: _app, ...rest } = worker;
+    expect(checkEnv('preview', { ...rest, ESTA_ENV: 'preview' }, 'agent')).toEqual([]);
   });
 
   it('does not ask a preview worker for a backup folder', () => {

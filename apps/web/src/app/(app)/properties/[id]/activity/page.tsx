@@ -16,7 +16,7 @@ export default async function PropertyActivityPage({ params }: { params: Promise
   const [t, rows, member] = await Promise.all([getTranslations('propertyDetail'), loadPropertyActivity(id), requireMember()]);
 
   const actorLabel = (actor: ActivityActor) =>
-    actor.kind === 'member' ? (actor.name ?? t('actor', { actor: 'member' })) : t('actor', { actor: actor.kind });
+    'name' in actor ? (actor.name ?? t('actor', { actor: actor.kind })) : t('actor', { actor: actor.kind });
 
   const entries: ActivityListEntry[] = rows.map((row) => {
     const { actor, event, params: eventParams } = describeActivity(row);
@@ -42,7 +42,7 @@ export default async function PropertyActivityPage({ params }: { params: Promise
   return (
     <PropertyDetailFrame property={property} tab="activity">
       {entries.length === 0 ? (
-        <RegistryEmptyState surface="propertyActivity" ctx={{ canWrite: member.role !== 'viewer', propertyId: id }} icon={History} />
+        <RegistryEmptyState surface="propertyActivity" ctx={{ canWrite: member.can('edit'), propertyId: id }} icon={History} />
       ) : (
         <ActivityList entries={entries} title={t('activityTitle')} />
       )}

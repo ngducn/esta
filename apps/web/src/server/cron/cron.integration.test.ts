@@ -128,4 +128,14 @@ describe('the nightly cron routes against local Supabase (SPEC §5.4, §7.4, LSE
     const added = after.filter((invoice) => !before.has(invoice.id)).map(({ id: _id, ...invoice }) => invoice);
     expect(added).toEqual(Array.from({ length: HOUSEHOLDS }, () => ({ period_start: '2027-01-01', period_end: '2027-03-31', status: 'draft' })));
   });
+  it('leaves one cron_runs row per route call, stamped by the injected clock', async () => {
+    const runs = await rows(db.from('cron_runs').select('job, started_at, finished_at, ok, failure, households_processed, households_failed').order('started_at').order('job'));
+    const first = '2026-10-07T02:00:00+00:00';
+    expect(runs.filter((run) => run.started_at === first).map((run) => ({ ...run, started_at: undefined, finished_at: undefined }))).toEqual([
+      { job: 'invoices', started_at: undefined, finished_at: undefined, ok: true, failure: null, households_processed: HOUSEHOLDS, households_failed: 0 },
+      { job: 'lease_status', started_at: undefined, finished_at: undefined, ok: true, failure: null, households_processed: 0, households_failed: 0 },
+    ]);
+    expect(runs.every((run) => run.finished_at === run.started_at)).toBe(true);
+    expect(runs.length).toBe(8);
+  });
 });

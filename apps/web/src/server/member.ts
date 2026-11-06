@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { cache } from 'react';
 import { isDensity, textScales, type Density, type TextScale } from '@/design/tokens';
 import { isLocale, type Locale } from '@/i18n/locale';
+import { can, type Capability } from '@/server/access';
 import { createSessionClient } from '@/server/supabase/server';
 
 export type Member = {
@@ -16,6 +17,8 @@ export type Member = {
   textScale: TextScale;
   density: Density;
   household: { id: string; name: string };
+  /** Whether this member may see or do `capability`, from the one table in `@/server/access`. */
+  can(capability: Capability): boolean;
 };
 
 export type SessionUser = { id: string; email: string | null };
@@ -40,6 +43,7 @@ export const getCurrentMember = cache(async (): Promise<Member | null> => {
     textScale: textScales.find((scale) => scale === data.text_scale) ?? 100,
     density: isDensity(data.density) ? data.density : 'comfortable',
     household: { id: data.household.id, name: data.household.name },
+    can: (capability) => can({ role: data.role, isOperator: data.is_operator }, capability),
   };
 });
 

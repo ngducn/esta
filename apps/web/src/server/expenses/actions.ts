@@ -33,7 +33,7 @@ export async function saveExpense(input: unknown): Promise<ExpenseSaved> {
   const [clock, member] = await Promise.all([readRequestClock(), requireMember()]);
   const read = readExpense(input, clock.today());
   if (!read.ok) return { ok: false, reason: 'invalid', problems: read.problems };
-  if (member.role === 'viewer') return { ok: false, reason: 'forbidden' };
+  if (!member.can('edit')) return { ok: false, reason: 'forbidden' };
   const { id, propertyId, category, amount, paidOn, note, vendor, receipt } = read.value;
   const supabase = await createSessionClient();
   const document =

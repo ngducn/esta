@@ -77,7 +77,7 @@ export default async function PropertyLegalPage({ params }: { params: Promise<{ 
     getLocale(),
     getMessages(),
   ]);
-  const canEdit = member.role !== 'viewer';
+  const canEdit = member.can('edit');
   const partyById = new Map(parties.map((party) => [party.id, party]));
   const codeByCode = new Map(codes.map((code) => [code.code, code]));
   const add = (kind: LegalKind, label: string) => (canEdit ? { href: `/properties/${id}/legal/${kind}/new`, label } : null);
