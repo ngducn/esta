@@ -60,7 +60,7 @@ select is((select count(*)::int from public.claim_agent_job('w1', '2026-10-08 00
 update public.agent_jobs set status = 'running', locked_at = '2026-10-08 00:00+07', started_at = '2026-10-08 00:00+07' where kind = 'ask' and payload ->> 'conversation_id' = '00000000-0000-4000-8000-00000000ca03';
 update public.household_settings set agent = '{"daily_caps": {"ask": 1}}' where household_id = :'a';
 select is(
-  (select attempts::int from public.claim_agent_job('w2', '2026-10-08 00:07+07')),
+  (select attempts::int from public.claim_agent_job('w2', '2026-10-08 00:09+07')),
   2, 'a stuck ask is reclaimed though its own first attempt already used the day''s one slot');
 
 update public.agent_jobs set status = 'done' where status = 'running';
