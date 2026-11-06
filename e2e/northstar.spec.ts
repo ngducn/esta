@@ -11,10 +11,12 @@ import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/age
 import { memberRest } from './helpers/auth-api';
 import { boardRow } from './helpers/board';
 import { signIn } from './helpers/inbucket';
+import { expectCollected, expectMorningBrief, expectMorningHome, NORTHSTAR_REPLAY, waitForMorningJobs } from './helpers/morning';
 import { chooseFromBoard, commitLines, confirmSuggestion, expectFilters, line, openPreview } from './helpers/statements';
 import { cardVnd, expectedTaxPosition } from './helpers/tax';
 import { setClock } from './helpers/test-clock';
-import { acceptEvery, editField, fixture, followReadyNotice, open, PHONE, recordForPr, serviceGet, shot, START, startWizard, step, toast, vnd } from './helpers/wizard';
+import { answer, sendInThread } from './helpers/thread';
+import { acceptEvery, DESKTOP, editField, fixture, followReadyNotice, open, PHONE, recordForPr, seriousAxeViolations, serviceGet, shot, START, startWizard, step, toast, vnd } from './helpers/wizard';
 
 // SPEC §1.2 on the `northstar` seed, which has no Dãy trọ Dĩ An; `pnpm e2e:northstar` resets to it and runs this file.
 test.describe.configure({ mode: 'serial', timeout: 180_000 });
@@ -26,6 +28,7 @@ const RYAN = 'ryan.lane1@demo.esta.test';
 const STEPS_1_AND_2_BUDGET_MS = 90_000;
 const REVIEW_READY_BUDGET_MS = 10_000;
 const PROPERTY = 'Dãy trọ Dĩ An';
+const MORNING = '2026-10-08T07:05:00+07:00';
 
 /** Step 3's six tenants, one a room, each moved in months ago; rents and deposits as Mẹ types them. */
 const ROOMS = [
@@ -344,7 +347,23 @@ test('step 6: the October board shows Phòng 6 overdue 6 days and Mẹ copies it
   await holdForRecording(page);
 });
 
-test.fixme('step 7: the 2026-10-08 morning brief lists the overdue room, the ending lease and a market item (Phase 5, P5-10)', () => {});
+test('step 7: the 2026-10-08 morning brief lists the unpaid room overdue 7 days, the lease ending in 30 days and one market item with its source (AGT-3, AGT-4, AGT-5)', async ({ page, request }) => {
+  await stopAndForget(worker);
+  await setClock(request, MORNING);
+  worker = await startAgentWorker({ replayDir: NORTHSTAR_REPLAY, schedule: true });
+  const started = Date.now();
+  await waitForMorningJobs(page);
+  console.log(`[perf] north-star step 7 jobs in ${Date.now() - started} ms`);
+  await open(page, ME, 'light', PHONE);
+  await page.goto('/');
+  await expectMorningHome(page);
+  await page.goto('/assistant');
+  await expectMorningBrief(page);
+  expect(await seriousAxeViolations(page)).toEqual([]);
+  await shot(page, 'p5-10a-northstar-step7-brief-390-light');
+  await holdForRecording(page);
+});
+
 test('step 8: the next morning Mẹ opens her tax card and reads her 2026 rent, with the six new leases, against 500 million VND (FIN-3)', async ({ page, request }) => {
   await setClock(request, '2026-10-08T07:05:00+07:00');
   await open(page, ME, 'light', PHONE);
@@ -363,4 +382,19 @@ test('step 8: the next morning Mẹ opens her tax card and reads her 2026 rent, 
   await shot(page, 'p4-04-northstar-step8-390-light');
   await holdForRecording(page);
 });
-test.fixme('step 9: Ryan asks how much Dĩ An collected this month and gets the exact amount (Phase 5, P5-10)', () => {});
+test('step 9: Ryan asks how much Dĩ An collected this month and gets the exact amount with a link to its ledger (AGT-7)', async ({ page, request }) => {
+  await setClock(request, MORNING);
+  if (worker?.running() !== true) worker = await startAgentWorker({ replayDir: NORTHSTAR_REPLAY });
+  const started = Date.now();
+  await open(page, RYAN, 'light', DESKTOP);
+  await page.goto('/assistant');
+  await sendInThread(page, 'Tháng này thu được bao nhiêu từ Dĩ An?');
+  const reply = answer(page);
+  await expect(reply).toHaveAttribute('data-status', 'done', { timeout: 30_000 });
+  const propertyId = await expectCollected(page, reply, PROPERTY);
+  console.log(`[perf] north-star step 9 in ${Date.now() - started} ms`);
+  await shot(page, 'p5-10a-northstar-step9-ask-1440-light');
+  await reply.getByRole('link', { name: `sổ thu chi của ${PROPERTY}` }).click();
+  await expect(page).toHaveURL(new RegExp(`/properties/${propertyId}/finance`));
+  await holdForRecording(page);
+});

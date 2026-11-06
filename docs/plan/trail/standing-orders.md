@@ -354,3 +354,12 @@ Ryan: "i feel like own CI now is too strict and too long, can you examine what t
 4. Pushes to `main` that touch only the root's notes (`RESUME.md`, `decisions.tsv`, the briefs, the standing orders, the tier rules) do not run CI. The PR gate is unchanged. The one-at-a-time tripwire is cleared; set it again only when a test fails beside another run and passes alone.
 5. The root posts status only at verdicts, merges and blocks, and names in every brief the existing home for each figure or rule the PR shows, so owners reuse it instead of writing a second one.
 
+## Update 2026-11-06 (Ryan: pristine code, codify every finding)
+
+Ryan, after the rated codebase review: "i want the code quality so high and pristine that follow up AI agents can pickup the practice and basically effortlessly maintain high quality", then "everything you find as issue, be sure to codify it in some way, and make sure every subsequent implementation efforts carry this quality forward", and "yeah" to finishing the quality pass before the first production deploy.
+
+1. The quality pass in `docs/plan/quality-2026-11.md` (Q-01 to Q-16) runs before the first production deploy.
+2. Every finding, from any review, test, lane or owner, closes with a check that would catch it next time, or a written reason no mechanical check can (CLAUDE.md "Codify every finding"; `verification-tiers.md`).
+3. Every PR body has a `## Codified` section. Root merges through `~/.claude/orchestrate/esta/bin/merge.sh <pr> <sha>`, which refuses a PR whose head is not `<sha>`, whose `ci` is not green there, or whose body lacks that section.
+4. Every review brief starts from `~/.claude/orchestrate/esta/briefs/_template-review.md`, which asks for the check behind each finding. Every `[low]` issue names its check.
+

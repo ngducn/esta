@@ -128,11 +128,11 @@ describe('checkPhase', () => {
     if (northStar === undefined || !('playwrightReport' in northStar)) throw new Error('phase 4 has a north-star row that reads the Playwright report');
     const spec = (title: string, status: string, type = 'serial') => ({ title, tests: [{ status, annotations: [{ type }] }] });
     const report = (step8: string) => ({
-      suites: [{ specs: [...['steps 1 and 2', 'step 3', 'step 4', 'step 5', 'step 6'].map((title) => spec(`${title}: x`, 'expected')), spec('step 7: x', 'skipped', 'fixme'), spec('step 8: x', step8, step8 === 'skipped' ? 'skip' : 'serial'), spec('step 9: x', 'skipped', 'fixme')] }],
+      suites: [{ specs: [...['steps 1 and 2', 'step 3', 'step 4', 'step 5', 'step 6'].map((title) => spec(`${title}: x`, 'expected')), spec('step 7: x', 'expected'), spec('step 8: x', step8, step8 === 'skipped' ? 'skip' : 'serial'), spec('step 9: x', 'expected')] }],
     });
     const run = (commands: readonly (readonly string[])[]) => runPhase('9', { '9': [{ ...northStar, commands }] }).lines;
     const write = (step8: string) => node(`require('node:fs').writeFileSync(process.env.PLAYWRIGHT_JSON_OUTPUT_FILE, ${JSON.stringify(JSON.stringify(report(step8)))})`);
-    expect(run([write('expected')])).toEqual([expect.stringMatching(/^PASS {2}North-star .*steps 1, 2, 3, 4, 5, 6, 8 passed; 7, 9 fixme/)]);
+    expect(run([write('expected')])).toEqual([expect.stringMatching(/^PASS {2}North-star .*steps 1, 2, 3, 4, 5, 6, 7, 8, 9 passed/)]);
     expect(run([node('process.exit(0)')])).toEqual([expect.stringMatching(/^FAIL {2}North-star .*Playwright wrote no JSON report/)]);
     expect(run([write('skipped')])).toEqual([expect.stringMatching(/^FAIL {2}North-star .*step 8 skipped/)]);
   });

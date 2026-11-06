@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { z } from 'zod';
 import { isIsoDate } from '../packages/core/src/date/iso-date.ts';
-import { NORTH_STAR_PHASE_4, verifyNorthStar } from './northstar-report.ts';
+import { NORTH_STAR, verifyNorthStar } from './northstar-report.ts';
 
 export type Outcome = { readonly pass: boolean; readonly detail: string };
 
@@ -276,7 +276,7 @@ export const PHASE_CHECKS: Readonly<Record<string, readonly PhaseCheck[]>> = {
     cited('FIN-4', { core: ['reports/reports.test.ts', 'reports/summaries.test.ts'], integration: ['server/reports/snapshot.integration.test.ts'] }),
     { id: 'RLS', commands: [['pnpm', 'db:test']] },
     { id: 'IT', commands: [['pnpm', 'db:reset'], ['node', 'scripts/web-integration.ts']] },
-    { ...northStarOnBuild(0, 'list,json'), playwrightReport: (json) => verifyNorthStar(json, NORTH_STAR_PHASE_4) },
+    { ...northStarOnBuild(0, 'list,json'), playwrightReport: (json) => verifyNorthStar(json, NORTH_STAR) },
   ],
 };
 

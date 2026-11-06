@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "kind": "portfolio_watch",
+  "inputHash": "fe42f6ca05761aa756498214bcfa1aead45010bd7dbb735d4862e5928ccc8be0",
+  "input": {
+    "version": 1,
+    "kind": "portfolio_watch",
+    "prompt": "Bạn là Trợ lý của ứng dụng Esta, giúp một gia đình quản lý bất động sản ở Việt Nam.\nYou may only use the tools provided. Never type a digit, an amount or currency word, or a number word.\nFor every number, date, amount, percent and numbered label (Phòng 5), write the placeholder of the tool field that holds it, such as {{f3.outstanding_display}}.\nWrite every person's name or nickname and every place name through its _name or _label placeholder, such as {{f2.tenant_name}}, because names like chú Ba or Hai Bà Trưng hold number words.\nDo not calculate totals, differences or ratios yourself; call the tool that returns them.\nNever invent amounts, dates, names or sources. If information is missing, say so plainly.\nYou cannot change business records.\nWrite in Vietnamese. Use the household's terms: sổ, thửa đất, hợp đồng thuê, tiền cọc, kỳ thanh toán.\nTone: calm, polite, concise, like a careful family accountant. No exclamation marks, no emoji.\nToday is 2026-10-08 in Asia/Ho_Chi_Minh.\n\nTask: the morning watch.\n1. Call watch_facts once. Each fact has a handle (f1, f2, …), a rule_id, a severity and text fields. groups lists the handles of the action facts that one note tells together.\n2. For each group, call create_item once: related is exactly the handles of that group. The title says what is due in a few words and may cite group_count_display from any fact of the group. The body says what happened and what to do. When the group has one fact, it names the tenant or place, the amount owed, the due date and the days overdue, whichever that fact has. When the group has several facts, it gives one list item for each fact that names its place and carries that fact's own figures (tenant, amount owed, due date, days). Write calmly and plainly, as in a note to a relative, with no alarm words.\n3. Then call create_item once for all watch and info facts together: a title, a body with one list item per fact (you may merge facts about the same place), and related set to all their handles.\n4. Make all the create_item calls in the same turn, one after another in a single message, so the run stays short.\n5. A title is one line of plain text. A body is Markdown with paragraphs, lists and bold only, no links.\n6. If create_item answers with an error, fix exactly what it names and call create_item again for that note.\n7. If watch_facts returns no facts, write no note.\nWhen every note is saved, reply with the single word: xong.",
+    "builtInTools": [],
+    "mcpTools": [
+      "watch_facts",
+      "create_item"
+    ],
+    "maxTurns": 8
+  },
+  "label": "Hand-written for the northstar seed at 2026-10-08 07:05 after steps 1 to 6 (P5-10a): a note for the two leases that end soon, one for the rest; the live recording waits for the P5-10b live run.",
+  "model": "hand-written",
+  "numTurns": 5,
+  "toolCalls": [
+    {
+      "name": "mcp__esta__watch_facts",
+      "input": {}
+    },
+    {
+      "name": "mcp__esta__create_item",
+      "input": {
+        "title": "{{f2.group_count_display}} hợp đồng sắp hết hạn",
+        "body_md": "- Hợp đồng {{f2.place_label}} với {{f2.tenant_name}} kết thúc ngày {{f2.end_date_display}}, còn {{f2.days_until_end_display}}.\n- Hợp đồng {{f3.place_label}} với {{f3.tenant_name}} kết thúc ngày {{f3.end_date_display}}, còn {{f3.days_until_end_display}}.\n\nNên hỏi khách có muốn thuê tiếp không.",
+        "related": [
+          "f2",
+          "f3"
+        ]
+      }
+    },
+    {
+      "name": "mcp__esta__create_item",
+      "input": {
+        "title": "Các việc cần để ý hôm nay",
+        "body_md": "- {{f1.place_label}} của {{f1.tenant_name}} đến hạn ngày {{f1.due_date_display}}, đã quá hạn {{f1.days_overdue_display}}, còn nợ {{f1.outstanding_display}}.\n- {{f4.place_label}} để trống {{f4.days_vacant_display}}, từ ngày {{f4.vacant_since_display}}.\n- {{f5.document_label}} hết hạn ngày {{f5.expires_on_display}}, còn {{f5.days_until_expiry_display}}.\n- Doanh thu cho thuê dự kiến năm {{f6.year_display}} của {{f6.owner_name}} là {{f6.projected_compact}}, bằng {{f6.progress_display}} ngưỡng {{f6.threshold_compact}}.\n- Hồ sơ {{f7.place_label}} mới đầy đủ {{f7.completeness_display}}, nên bổ sung giấy tờ.",
+        "related": [
+          "f1",
+          "f4",
+          "f5",
+          "f6",
+          "f7"
+        ]
+      }
+    }
+  ],
+  "reply": "xong"
+}

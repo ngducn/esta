@@ -38,6 +38,13 @@ Since 2026-11-02 (Ryan: "i think for now we can loosen a bit to prioritise dev s
 
 Each reviewer also covers codebase health: a second way to do something that has a home, a duplicated rule, logic in the wrong layer, several rows written outside one transaction, a file over the size limit. There is no separate codebase-health lane.
 
+Every finding is codified (Ryan, 2026-11-06; CLAUDE.md "Codify every finding"). Each blocking finding and each low names the check that would have caught it: a type, an `esta/*` lint rule, a `pnpm quality` metric, a test or helper, or a CI step, or says why no mechanical check can. The fix round adds that check with the fix. The scoped reader confirms the check fails with the fix reverted and passes with it. Root merges only when the PR body's `## Codified` section lists every fixed finding with its check.
+
+Review checklist for classes no mechanical check catches (a reviewer reads for each one the diff touches):
+1. A figure with two definitions: a screen's total and the same total elsewhere come from one home, and a test compares it with an independent figure.
+2. Clock edges, until `clockEdges()` (Q-16) is used by every period-keyed test.
+3. Count, then write, until `twoAtOnce` (Q-16) covers the write.
+
 ## Planned tiers for the remaining PRs
 
 Phase 1 closes with P1-03, which is rigorous because it is a phase exit. Phase 2 to Phase 6:
