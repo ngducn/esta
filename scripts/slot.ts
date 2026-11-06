@@ -116,8 +116,12 @@ export function writeSlotWorkdir(repoRoot: string, slot: number, lan?: string): 
   // Kong bind-mounts each email template file and keeps the inode it started with, so a template is rewritten in
   // place: a deleted and recopied file leaves Kong answering 404 and auth sending its default email.
   mkdirSync(join(target, 'templates'), { recursive: true });
-  for (const name of readdirSync(join(source, 'templates'))) {
+  const names = readdirSync(join(source, 'templates'));
+  for (const name of names) {
     writeFileSync(join(target, 'templates', name), readFileSync(join(source, 'templates', name)));
+  }
+  for (const name of readdirSync(join(target, 'templates'))) {
+    if (!names.includes(name)) rmSync(join(target, 'templates', name), { recursive: true, force: true });
   }
   return workdir;
 }

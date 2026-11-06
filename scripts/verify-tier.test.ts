@@ -77,7 +77,17 @@ const CASES: readonly { readonly change: Change; readonly tier: Tier }[] = [
   { change: manifest(BASE_MANIFEST, withScripts({ precheck: 'node scripts/x.ts' })), tier: 'rigorous' },
   { change: manifest(BASE_MANIFEST, withScripts({ lint: 'eslint . && node scripts/x.ts' })), tier: 'standard' },
   { change: manifest(BASE_MANIFEST, { ...withScripts({ postinstall: 'node scripts/x.ts' }), dependencies: {} }, 'apps/web/package.json'), tier: 'rigorous' },
-  { change: config('[api]\nport = 54322\n\n[auth]\nenable_signup = false\n\n[auth.email]\nenable_confirmations = true\n'), tier: 'standard' },
+  { change: config(`${CONFIG_BEFORE}\n[db]\nport = 54322\n`), tier: 'standard' },
+  { change: config('[api]\nport = 54322\n\n[auth]\nenable_signup = false\n\n[auth.email]\nenable_confirmations = true\n'), tier: 'rigorous' },
+  { change: config(`${CONFIG_BEFORE}\n[ storage ]\nfile_size_limit = "500MiB"\n`), tier: 'rigorous' },
+  { change: config(`${CONFIG_BEFORE}\n[ "auth" . "external" ]\nenabled = true\n`), tier: 'rigorous' },
+  { change: config(`${CONFIG_BEFORE}\n[storage.buckets.docs]\npublic = true\n`), tier: 'rigorous' },
+  { change: { path: 'eslint.config.mjs', before: "'esta/no-guard-disable': 'error',", after: "'esta/no-guard-disable': 'off'," }, tier: 'rigorous' },
+  { change: { path: 'eslint.config.mjs', before: "'esta/no-guard-disable': 'error',", after: '' }, tier: 'rigorous' },
+  { change: { path: 'eslint.config.mjs', before: 'a', after: "a\nglobalIgnores(['apps/web/src/server/**']),\n" }, tier: 'rigorous' },
+  { change: { path: 'eslint.config.mjs', before: 'a', after: 'a\nb' }, tier: 'standard' },
+  { change: { path: 'eslint.config.mjs' }, tier: 'rigorous' },
+  { change: change('apps/web/src/app/(app)/team/actions.ts', "await supabase.rpc('set_member_role', { p_role: role });"), tier: 'rigorous' },
   { change: change('apps/web/src/app/(app)/properties/page.tsx'), tier: 'standard' },
   { change: change('apps/web/src/components/button.tsx'), tier: 'standard' },
   { change: manifest(BASE_MANIFEST, withScripts({ 'verify:tier': 'node scripts/verify-tier.ts' })), tier: 'lean' },
@@ -101,7 +111,6 @@ const CASES: readonly { readonly change: Change; readonly tier: Tier }[] = [
     'supabase/seed/README.md',
     'apps/web/next.config.ts',
     'apps/web/src/middleware.ts',
-    'eslint.config.mjs',
     'eslint-rules/no-jsx-literals.mjs',
     'eslint-rules/lint-text.ts',
     'scripts/backup.ts',
@@ -329,6 +338,7 @@ describe('verify:tier command', () => {
     branchFrom('binary-manifest', { 'package.json': Buffer.from([0x7b, 0, 0x7d]) });
     branchFrom('auth-config', { 'supabase/config.toml': '[api]\nport = 54321\n\n[auth]\nenable_signup = true\n' });
     branchFrom('api-config', { 'supabase/config.toml': '[api]\nport = 54322\n\n[auth]\nenable_signup = false\n' });
+    branchFrom('db-config', { 'supabase/config.toml': '[api]\nport = 54321\n\n[auth]\nenable_signup = false\n\n[db]\nport = 54322\n' });
     git('checkout', 'main');
     write('packages/core/src/tax/position.ts', 'export const a = 3;\n');
     commit('main moves on');
@@ -385,7 +395,8 @@ describe('verify:tier command', () => {
 
   it('calls a changed auth setting rigorous and another setting standard', () => {
     expect(tierOf('auth-config')).toMatch(/^Verification tier: rigorous/);
-    expect(tierOf('api-config')).toMatch(/^Verification tier: standard/);
+    expect(tierOf('api-config')).toMatch(/^Verification tier: rigorous/);
+    expect(tierOf('db-config')).toMatch(/^Verification tier: standard/);
   });
 
   it('reads the whole text of a file moved into the migrations folder', () => {
