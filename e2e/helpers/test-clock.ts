@@ -35,4 +35,10 @@ export function frozenAtStart(scope: ClockScope) {
   test.beforeEach(async ({ request }) => {
     await setClock(request, scope, START);
   });
+  // The next spec in the serial clock project must not meet lanes this one left frozen on SPEC §9.3's day.
+  if (scope.kind === 'lanes') {
+    test.afterEach(async ({ request }) => {
+      await setClock(request, scope, null);
+    });
+  }
 }

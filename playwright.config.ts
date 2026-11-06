@@ -20,7 +20,7 @@ process.env.ESTA_FROZEN_NOW ||= '2026-11-01T10:00:00+07:00';
 process.env.ESTA_EXPORT_PART_MB ||= '1';
 
 // Specs that freeze only the lane households' test clock rows at SPEC §9.3's day (e2e/helpers/test-clock.ts), so they
-// never touch the global row or the worker the `clock` specs use, so they run in parallel in their own project. On
+// never touch the global row or the worker the `clock` specs use, so they could run in parallel, but a CI shard's stack is paid for per job (about 190 s of setup each), so they share the serial clock project and its shards instead of getting jobs of their own. On
 // 2026-11-06 a parallel run of the first 17 failed 13 tests on lane data, not the date (each of the 8 specs below
 // reads a bill, an overdue count, a document or a lane's totals that a neighbour pays, uploads or amends), so those 8 stay serial.
 const dated = [
@@ -97,10 +97,8 @@ export default defineConfig({
   projects: [
     { name: 'mobile', testIgnore: ['prod/**', ...dated, ...sharedClock], use: { ...devices['Desktop Chrome'], viewport: { width: 390, height: 844 } } },
     { name: 'desktop', testIgnore: ['prod/**', ...dated, ...sharedClock], use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } },
-    { name: 'dated', testMatch: dated, teardown: 'unfreeze', use: { ...devices['Desktop Chrome'], viewport: { width: 390, height: 844 } } },
-    { name: 'unfreeze', testMatch: 'unfreeze.teardown.ts' },
     // The slot has one global test clock and one worker, so the specs that move them run one at a time.
-    { name: 'clock', testMatch: sharedClock, workers: 1, use: { ...devices['Desktop Chrome'], viewport: { width: 390, height: 844 } } },
+    { name: 'clock', testMatch: [...dated, ...sharedClock], workers: 1, use: { ...devices['Desktop Chrome'], viewport: { width: 390, height: 844 } } },
   ],
   webServer:
     server === 'dev'

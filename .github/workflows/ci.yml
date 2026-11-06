@@ -79,17 +79,15 @@ jobs:
     timeout-minutes: 30
     strategy:
       fail-fast: false
-      # The clock project runs one test at a time because the global test clock row and the agent worker serve every
-      # household, and Playwright shards by test count in project order, so plain --shard would pile its specs onto the
-      # last shards. Each shard has its own stack. The dated project freezes only lane households, so its specs get two
-      # stacks of their own and the clock project four more (two shards ran 883 s and 696 s, past main's slowest, 600 s). tools/ci/e2e-summary.mjs fails when a
-      # project runs nowhere.
+      # The clock project (the specs that move the global test clock row, start the agent worker or freeze lane households)
+      # runs one test at a time, and Playwright shards by test count in project order, so plain --shard would pile its
+      # specs onto the last shards; it has four shards, each with its own stack. Every job costs about 190 s of setup
+      # (image load, database start) before its tests, so there are no more jobs than main had. tools/ci/e2e-summary.mjs
+      # fails when a project runs nowhere.
       matrix:
         include:
           - { id: viewports-1, projects: --project=mobile --project=desktop, shard: 1/2 }
           - { id: viewports-2, projects: --project=mobile --project=desktop, shard: 2/2 }
-          - { id: dated-1, projects: --project=dated, shard: 1/2 }
-          - { id: dated-2, projects: --project=dated, shard: 2/2 }
           - { id: clock-1, projects: --project=clock, shard: 1/4 }
           - { id: clock-2, projects: --project=clock, shard: 2/4 }
           - { id: clock-3, projects: --project=clock, shard: 3/4 }
