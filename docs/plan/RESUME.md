@@ -18,19 +18,19 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 - The redesign is planned in `docs/plan/redesign-2026-11.md` (b2def8a7): six slices, RD-1 to RD-6, with its defaults listed under "Decisions taken as defaults".
 - #365's fix round 1 had never pushed. The previous owner stopped after merging main locally (840b881e in `/tmp/owner-data-trust-a/wt`). A fresh owner took it over.
 
-## Open items (state at 11:25 2026-11-06 +07)
+## Open items (state at 12:50 2026-11-06 +07)
 
-- **Ryan 2026-11-06:** "merge them and finish the project"; "when done have a deploy plan for me"; "can we paralellize? push it through the last bit"; "can you do a thermo review and audit and rate the codebase in infrastructure, code quality and overall quality". P6-07 cloud steps, the Mom test, turning on Dependabot alerts and #428 are his.
-- **Merged today:** #415, #416, #421, #424, #419, #422, #427 (562c1938), #430 (2dc9a4ee), #433 P6-07a lane-otp (aad968d7), #432 P5-15a calc core (81babe0d, low #436), #429 P5-14 web quotes (30e653c5, low #437).
-- **Published:** deploy options https://claude.ai/artifact/LPwsLJvYWMRqa2xtjDT3DW; rated codebase review https://claude.ai/artifact/4V3kWhP76ha26WqyMGzHso (overall 7, code 7, infra 6.5; reports in /tmp/review-codebase/).
-- **#438 security bump** (next 16.4.2, zod 4.6.7, overrides for body-parser, fast-uri, fflate; `pnpm audit --prod --audit-level high` in CI; .github/dependabot.yml) at 9be12192, ci green, audit clean. Sonnet reviewer running (briefs/pr438-review.md, slot 14), standard tier by root deviation. Next: on CLEAN merge with `--match-head-commit 9be12192fb10ba428acee63b846b1e1a108368c8`, comment a plain summary, tell Ryan Dependabot alerts are his click.
-- **#434 P5-10a** north-star steps 7 and 9 in replay plus `pnpm agent:live-run` at 27f92be6, ci green, northstar 9/9 on the production build. Sonnet reviewer running (briefs/pr434-review.md, slot 7), standard tier by root deviation (no product code). Next: on CLEAN merge.
-- **P5-15b what-if wiring:** owner running (briefs/p5-15b.md, slot 8, wt /tmp/owner-p5-15b/wt). Then rigorous review (Opus audit plus lane), one fix round, reader, merge. It re-keys the step 9 ask recording again; expected.
-- **P5-10b live run, last:** after #434 and P5-15b. Live calls on Ryan's subscription (check the week first): `pnpm agent:live-run` live, `pnpm agent:guard-probe`, replace hand-written northstar recordings with live ones, the #430 brief-notice Inbucket check, T5/T6/T7 rows, docs/plan/trail/phase-5-live-run.md, STATUS.md and AGENT.md edits.
-- **Rulings today (Ryan may overrule):** preview gets its own Supabase project; restore drill local, cloud restore #428; ESTA_E2E_SERVER=build replaces ESTA_E2E_BUILD; denied WebSearch never stores its input; search-guard terms (person names 2+ tokens any order, streets with or without type word, labels except type+place and one-word, no orgs, NFKC then diacritic fold); a negative half rounds away from zero (`divRoundHalfAway`); "ngày 7 tháng 10 năm 2026" is one date.
+- **Ryan 2026-11-06:** "merge them and finish the project"; "push it through the last bit"; rated codebase review (https://claude.ai/artifact/4V3kWhP76ha26WqyMGzHso); "i want the code quality so high and pristine that follow up AI agents can pickup the practice"; "everything you find as issue, be sure to codify it in some way, and make sure every subsequent implementation efforts carry this quality forward"; "yeah" to the quality pass finishing before the first production deploy.
+- **Codify rule live:** CLAUDE.md "Codify every finding", owner-brief step 3a and 7, verification-tiers review checklist, standing orders 2026-11-06. Every PR body has `## Codified`. Root merges only with `~/.claude/orchestrate/esta/bin/merge.sh <pr> <full sha>` (refuses wrong head, ci not green at that head, or no Codified section). Review briefs start from briefs/_template-review.md. Lows go in one `[low]` issue per PR naming each check.
+- **Quality plan:** docs/plan/quality-2026-11.md: targets, finding ledger (review findings, the 8 defect classes, all 167 open issues by class), Q-01 to Q-20 in waves. Wave 0b: 28 open issues the ledger found are real money, legal, data or security defects; retitling them `[pre-deploy]` was blocked by permissions and waits on Ryan.
+- **Merged today (this stretch):** #438 security bump (714aa773), #434 P5-10a (55d15b9c), #444 Q-01 quality gates (low #445).
+- **#446 Q-16 defect-class checks:** review CLEAN at 67aaa82b; conflicted after #444; root merged main as 56e40942 (check script keeps migration-order and classes:check). Tiny reader running (briefs/pr446-merge-reader.md). Next: on CLEAN plus green ci, `merge.sh 446 <head>`; then add to owner-brief one sentence each for why classes 4 (waits for Q-08) and 8 (no mechanical check) stay prose. Lows #447.
+- **#439 P5-15b what-if:** fix round 1 at 926f9f63, ci green. B1 now refuses a monthly rate instead of converting. Sonnet lane plus reader running (briefs/pr439-lane.md, slot 14), reverting each fix to prove its test. Next: on CLEAN merge via merge.sh; file one `[low]` issue for L2 (English units), L3 (seed numbers in follow-ups), L4 (typed values for portfolio, collections, tax), L11 (prose label) with the audit's checks; root default is a follow-up that converts a monthly rate to yearly (x12, exact for monthly payments) because refusing makes Mẹ retype; Ryan may overrule.
+- **P5-10b live run, last:** brief ready (briefs/p5-10b.md, slot 3). Spawn after #439 merges; check the week first. It must default `--mode` to replay, exit 1 on required FAIL or not-run rows, wire T5 to T7, measure first-sentence times.
+- **Next quality PRs:** Q-02 formatter when no PR is open; Wave 0b correctness (Q-17 parser corpus, Q-19 database invariants first, money), then waves 1 to 6. Most after the weekly reset.
+- **Rulings today (Ryan may overrule):** preview gets its own Supabase project; restore drill local, cloud restore #428; ESTA_E2E_SERVER=build; denied WebSearch never stores input; search-guard terms; negative half rounds away from zero; "ngày 7 tháng 10 năm 2026" is one date; standard review for #438, #434, #446 (no product code).
 - **Not ours:** pid 56207 is Ryan's slot 5 worker in /private/tmp/ryan-test; leave it.
-- **Lows open from today:** #420, #423, #425, #426, #431, #435, #436, #437.
-- **Go-live list (infra audit, Ryan's):** main protection, release order (db push then promote), worker in its own clone, cron failure visibility, SMTP required in production, offsite backup, #428.
+- **Go-live list (Ryan's):** Dependabot alerts on, main protection, release order, worker clone, cron visibility, SMTP required, offsite backup, #428.
 - **Tripwire set** 2026-11-05 22:57; clear with `rm /tmp/ci-local/one-at-a-time` when the flake is understood.
 
 ## Waiting for Ryan (defaults apply)
@@ -60,7 +60,7 @@ Ruled 2026-11-02: Thu tiền "Đã thu" counts payments toward this month's rent
 
 ## Budget
 
-Week at 78% at 11:20 on 2026-11-06, resets 2026-11-07 11:00 +07. Guard for "finish the project": stop spawns at 90%, pause owners at 95%. Read the plan limits with the session usage tool, which matches /usage; `usage-pct.sh` under-reads. On a 429, resume the owner with SendMessage after the reset.
+Week at 78% at 12:50 on 2026-11-06, resets 2026-11-07 11:00 +07. Guard for "finish the project": stop spawns at 90%, pause owners at 95%. Read the plan limits with the session usage tool, which matches /usage; `usage-pct.sh` under-reads. On a 429, resume the owner with SendMessage after the reset.
 
 ## Gotchas
 
