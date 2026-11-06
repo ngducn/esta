@@ -83,7 +83,7 @@ select e.*,
   row_number() over (order by e.name, e.bill) as rn
 from expected e
 join (select name, row_number() over (order by name) as n from (select distinct name from expected) named) c using (name);
-grant select on rows_in to authenticated;
+grant select on rows_in, expected to authenticated;
 
 insert into public.units (id, household_id, property_id, label, kind)
 select distinct unit_id, :'a'::uuid, '00000000-0000-4000-8000-0000000000a1'::uuid, 'Phòng ' || right(unit_id::text, 3), 'room' from rows_in;
