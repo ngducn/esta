@@ -3497,7 +3497,6 @@ export type Database = {
         Args: {
           p_accepted_fields: Json
           p_extraction_id: string
-          p_manual_id?: string
           p_ocr_text?: string
           p_property_id?: string
           p_steps: Json
