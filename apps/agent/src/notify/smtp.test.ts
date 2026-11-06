@@ -20,4 +20,13 @@ describe('deliveryConfig', () => {
   it('needs a from address in production', () => {
     expect(() => deliveryConfig({ ...base, ESTA_ENV: 'production', SMTP_URL: 'smtp://smtp.example.com:587' })).toThrow(/ESTA_EMAIL_FROM/);
   });
+
+  it('reads SMTP_URL the way nodemailer does, so no query option sends mail elsewhere', () => {
+    for (const url of ['smtp://127.0.0.1:2500/?service=gmail', 'smtp://127.0.0.1:2500/?host=smtp.evil.com', 'smtp://localhost:2500#@evil.com', 'smtp://localhost.evil.com:25', 'smtp://127.0.0.1.nip.io:25', 'smtp://127.0.0.1@evil.com:25']) {
+      expect(() => deliveryConfig({ ...base, SMTP_URL: url }), url).toThrow(/only a local mailbox/);
+    }
+    for (const url of ['smtp://[::1]:2500', 'smtp://127.0.0.1:2500', 'smtp://localhost:2500']) {
+      expect(deliveryConfig({ ...base, SMTP_URL: url })?.smtpUrl, url).toBe(url);
+    }
+  });
 });

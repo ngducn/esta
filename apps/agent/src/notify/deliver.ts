@@ -7,8 +7,17 @@ import { noticeKind, recipientsFor, type NoticeKind, type NoticeMember, type Not
 import type { AgentDb } from '../supabase';
 import type { DeliveryConfig, Mailer } from './smtp';
 
-/** A notice that keeps failing stops after this many tries, so a dead address cannot loop forever. */
-export const MAX_SEND_ATTEMPTS = 30;
+const MINUTE_MS = 60_000;
+/** A failed notice is tried again after 1, 2, 4 ... minutes, never more than this apart. */
+const MAX_BACKOFF_MS = 30 * MINUTE_MS;
+/** A notice still unsent this long after it was queued is dropped, so an outage of hours still delivers once and a dead address cannot loop forever. */
+export const GIVE_UP_AFTER_MS = 24 * 60 * MINUTE_MS;
+/** A notice claimed this long ago and never finished was cut off by a crash; it is marked failed, not resent (at most once). */
+export const INTERRUPTED_AFTER_MS = 10 * MINUTE_MS;
+export const INTERRUPTED_ERROR = 'interrupted: the worker stopped while sending, so this notice may not have gone out and is not resent';
+
+/** Delay after try number `attempts` before the next one. */
+export const backoffMs = (attempts: number): number => Math.min(MINUTE_MS * 2 ** Math.max(attempts - 1, 0), MAX_BACKOFF_MS);
 /** A note older than this when the worker first sees it is not announced, so turning notices on never mails last week. */
 const NEW_NOTE_WINDOW_MS = 6 * 60 * 60 * 1000;
 const ERROR_LIMIT = 300;
@@ -92,16 +101,50 @@ function briefDay(item: ItemRow, fallback: IsoDate): IsoDate {
   return isIsoDate(day) ? day : fallback;
 }
 
-/** Sends the queued and failed email notices, each claimed first so two workers never send one twice. Returns how many went out. */
+const pendingRow = z.object({
+  id: z.string(),
+  user_id: z.string(),
+  agent_item_id: z.string(),
+  household_id: z.string(),
+  status: z.enum(['queued', 'sending', 'failed']),
+  attempts: z.number(),
+  error: z.string().nullish(),
+  created_at: z.string(),
+  last_attempt_at: z.string().nullish(),
+});
+
+/** Marks every notice a crash left in `sending` as failed with the interrupted reason, so the loss is visible and nothing is resent. */
+async function surfaceInterrupted(db: AgentDb, clock: Clock): Promise<void> {
+  const cutoff = Date.parse(clock.now()) - INTERRUPTED_AFTER_MS;
+  const sending = await read('the sending notices', db.from('notifications').select('id, created_at, last_attempt_at').eq('channel', 'email').eq('status', 'sending'), z.object({ id: z.string(), created_at: z.string(), last_attempt_at: z.string().nullish() }));
+  for (const row of sending) {
+    if (Date.parse(row.last_attempt_at ?? row.created_at) > cutoff) continue;
+    const marked = await db.from('notifications').update({ status: 'failed', error: INTERRUPTED_ERROR }).eq('id', row.id).eq('status', 'sending');
+    if (marked.error) throw new Error(`Marking an interrupted notice failed: ${marked.error.message}`);
+    console.error(`[agent] notice ${row.id} was interrupted while sending and is not resent`);
+  }
+}
+
+/** Sends the queued notices and the failed ones whose backoff has passed, each claimed first so two workers never send one twice. Returns how many went out. */
 async function sendQueued(db: AgentDb, mailer: Mailer, config: DeliveryConfig, clock: Clock): Promise<number> {
-  const pending = await read(
+  await surfaceInterrupted(db, clock);
+  const now = Date.parse(clock.now());
+  const rows = await read(
     'the pending notices',
-    db.from('notifications').select('id, user_id, agent_item_id, household_id, status, attempts').eq('channel', 'email').in('status', ['queued', 'failed']).lt('attempts', MAX_SEND_ATTEMPTS).order('created_at'),
-    z.object({ id: z.string(), user_id: z.string(), agent_item_id: z.string(), household_id: z.string(), status: z.enum(['queued', 'failed']), attempts: z.number() }),
+    db
+      .from('notifications')
+      .select('id, user_id, agent_item_id, household_id, status, attempts, error, created_at, last_attempt_at')
+      .eq('channel', 'email')
+      .in('status', ['queued', 'failed'])
+      .gte('created_at', new Date(now - GIVE_UP_AFTER_MS).toISOString())
+      .order('created_at'),
+    pendingRow,
   );
+  const due = (row: z.infer<typeof pendingRow>) =>
+    row.error?.startsWith('interrupted') !== true && (row.status === 'queued' || row.last_attempt_at == null || Date.parse(row.last_attempt_at) + backoffMs(row.attempts) <= now);
   let sent = 0;
-  for (const notice of pending) {
-    const claim = await db.from('notifications').update({ status: 'sending', attempts: notice.attempts + 1 }).eq('id', notice.id).eq('status', notice.status).select('id');
+  for (const notice of rows.filter(due)) {
+    const claim = await db.from('notifications').update({ status: 'sending', attempts: notice.attempts + 1, last_attempt_at: clock.now() }).eq('id', notice.id).eq('status', notice.status).select('id');
     if (claim.error) throw new Error(`Claiming a notice failed: ${claim.error.message}`);
     if (claim.data.length === 0) continue;
     try {

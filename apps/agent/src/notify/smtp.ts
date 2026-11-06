@@ -15,7 +15,19 @@ export function smtpMailer(smtpUrl: string, timeoutMs: number = SMTP_TIMEOUT_MS)
   };
 }
 
-const LOCAL_HOSTS: ReadonlySet<string> = new Set(['127.0.0.1', 'localhost', '[::1]']);
+const LOCAL_HOSTS: ReadonlySet<string> = new Set(['127.0.0.1', 'localhost', '[::1]', '::1']);
+
+/**
+ * Where nodemailer would really connect. It parses SMTP_URL with its own legacy parser and honours query options such as
+ * `service` and `host`, so the check reads nodemailer's reading too and refuses a URL with any query or fragment.
+ */
+function mailTarget(smtpUrl: string): string | null {
+  const url = new URL(smtpUrl);
+  if (url.search !== '' || url.hash !== '' || !LOCAL_HOSTS.has(url.hostname)) return url.hostname;
+  const { options } = createTransport(smtpUrl).transporter as unknown as { options: { host?: string; service?: string; direct?: boolean } };
+  if (options.service !== undefined || options.direct === true || !LOCAL_HOSTS.has(options.host ?? '')) return options.service ?? options.host ?? url.hostname;
+  return null;
+}
 
 export type DeliveryConfig = { readonly smtpUrl: string; readonly appUrl: string; readonly from: string };
 
@@ -34,8 +46,9 @@ type DeliveryEnv = {
 export function deliveryConfig(env: DeliveryEnv): DeliveryConfig | null {
   if (env.SMTP_URL === undefined) return null;
   const production = env.ESTA_ENV === 'production';
-  if (!production && !LOCAL_HOSTS.has(new URL(env.SMTP_URL).hostname)) {
-    throw new Error(`Refusing to start delivery: SMTP_URL points at ${new URL(env.SMTP_URL).hostname}, and outside production only a local mailbox is allowed`);
+  const elsewhere = production ? null : mailTarget(env.SMTP_URL);
+  if (elsewhere !== null) {
+    throw new Error(`Refusing to start delivery: SMTP_URL points at ${elsewhere}, and outside production only a local mailbox is allowed`);
   }
   if (env.ESTA_APP_URL === undefined) throw new Error('Refusing to start delivery: SMTP_URL is set but ESTA_APP_URL is not, so a notice would have no link');
   if (production && env.ESTA_EMAIL_FROM === undefined) throw new Error('Refusing to start delivery: production needs ESTA_EMAIL_FROM');

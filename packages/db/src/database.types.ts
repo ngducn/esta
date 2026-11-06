@@ -1929,6 +1929,7 @@ export type Database = {
           error: string | null
           household_id: string
           id: string
+          last_attempt_at: string | null
           sent_at: string | null
           status: string
           updated_at: string
@@ -1943,6 +1944,7 @@ export type Database = {
           error?: string | null
           household_id: string
           id?: string
+          last_attempt_at?: string | null
           sent_at?: string | null
           status?: string
           updated_at?: string
@@ -1957,6 +1959,7 @@ export type Database = {
           error?: string | null
           household_id?: string
           id?: string
+          last_attempt_at?: string | null
           sent_at?: string | null
           status?: string
           updated_at?: string

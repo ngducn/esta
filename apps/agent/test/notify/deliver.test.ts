@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { deliverPending, MAX_SEND_ATTEMPTS } from '../../src/notify/deliver';
+import { deliverPending, INTERRUPTED_ERROR } from '../../src/notify/deliver';
 import type { DeliveryConfig, Mailer, OutgoingMail } from '../../src/notify/smtp';
 import { fakeDb } from '../../src/test/fake-db';
 import { clockOn } from '../full-seed';
@@ -57,21 +57,66 @@ describe('deliverPending', () => {
     expect(tables.notifications).toHaveLength(1);
   });
 
-  it('marks a refused send failed with its error, and sends it on the next run', async () => {
+  const at = (iso: string) => clockOn(iso)();
+
+  it('marks a refused send failed with its error, and sends it once the backoff has passed', async () => {
     const tables = world([brief]);
     const box = inbox(1);
     await deliverPending(fakeDb(tables), box.mailer, CONFIG, await clock());
     expect(tables.notifications[0]).toMatchObject({ status: 'failed', error: 'connect ECONNREFUSED 127.0.0.1:2500', attempts: 1 });
-    await deliverPending(fakeDb(tables), box.mailer, CONFIG, await clock());
+    await deliverPending(fakeDb(tables), box.mailer, CONFIG, await at('2026-10-07T07:05:30+07:00'));
+    expect(tables.notifications[0]).toMatchObject({ status: 'failed', attempts: 1 });
+    await deliverPending(fakeDb(tables), box.mailer, CONFIG, await at('2026-10-07T07:06:10+07:00'));
     expect(tables.notifications[0]).toMatchObject({ status: 'sent', error: null, attempts: 2 });
     expect(box.sent).toHaveLength(1);
   });
 
-  it('stops retrying a notice after the attempt limit', async () => {
+  it('backs off 1, 2, 4 minutes up to 30, so a 40 minute outage still delivers exactly one copy', async () => {
     const tables = world([brief]);
     const box = inbox(1000);
-    for (let run = 0; run < MAX_SEND_ATTEMPTS + 3; run += 1) await deliverPending(fakeDb(tables), box.mailer, CONFIG, await clock());
-    expect(box.attempts()).toBe(MAX_SEND_ATTEMPTS);
+    const tried: number[] = [];
+    for (let minute = 0; minute <= 40; minute += 1) {
+      const before = box.attempts();
+      await deliverPending(fakeDb(tables), box.mailer, CONFIG, await at(new Date(Date.parse('2026-10-07T07:05:00+07:00') + minute * 60_000).toISOString()));
+      if (box.attempts() > before) tried.push(minute);
+    }
+    expect(tried).toEqual([0, 1, 3, 7, 15, 31]);
+    const recovered = inbox();
+    await deliverPending(fakeDb(tables), recovered.mailer, CONFIG, await at('2026-10-07T07:45:00+07:00'));
+    expect(recovered.sent).toHaveLength(0);
+    await deliverPending(fakeDb(tables), recovered.mailer, CONFIG, await at('2026-10-07T08:10:00+07:00'));
+    expect(recovered.sent).toHaveLength(1);
+    await deliverPending(fakeDb(tables), recovered.mailer, CONFIG, await at('2026-10-07T09:00:00+07:00'));
+    expect(recovered.sent).toHaveLength(1);
+    expect(tables.notifications[0]?.status).toBe('sent');
+  });
+
+  it('gives up on a notice once it is 24 hours old', async () => {
+    const tables = world([brief]);
+    const box = inbox(1000);
+    await deliverPending(fakeDb(tables), box.mailer, CONFIG, await clock());
+    const queuedAt = Date.parse(String(tables.notifications[0]?.created_at));
+    const attempts = box.attempts();
+    await deliverPending(fakeDb(tables), box.mailer, CONFIG, await at(new Date(queuedAt + 24 * 3_600_000 + 60_000).toISOString()));
+    expect(box.attempts()).toBe(attempts);
+    expect(tables.notifications[0]?.status).toBe('failed');
+  });
+
+  it('marks a notice a crash left in sending as interrupted and does not resend it', async () => {
+    const tables = world([brief]);
+    tables.notifications.push({ id: 'n1', household_id: H, user_id: 'u1', agent_item_id: 'brief', channel: 'email', status: 'sending', attempts: 1, created_at: '2026-10-07T00:00:20.000Z', last_attempt_at: '2026-10-07T00:00:30.000Z' });
+    const box = inbox();
+    await deliverPending(fakeDb(tables), box.mailer, CONFIG, await clock());
+    await deliverPending(fakeDb(tables), box.mailer, CONFIG, await at('2026-10-07T09:00:00+07:00'));
+    expect(tables.notifications[0]).toMatchObject({ status: 'failed', error: INTERRUPTED_ERROR });
+    expect(box.sent).toHaveLength(0);
+  });
+
+  it('leaves a notice claimed a moment ago alone', async () => {
+    const tables = world([brief]);
+    tables.notifications.push({ id: 'n1', household_id: H, user_id: 'u1', agent_item_id: 'brief', channel: 'email', status: 'sending', attempts: 1, created_at: '2026-10-07T00:00:20.000Z', last_attempt_at: '2026-10-07T00:04:30.000Z' });
+    await deliverPending(fakeDb(tables), inbox().mailer, CONFIG, await clock());
+    expect(tables.notifications[0]?.status).toBe('sending');
   });
 
   it('queues past the daily cap as skipped and sends only the first notices', async () => {
