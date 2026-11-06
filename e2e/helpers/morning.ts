@@ -7,9 +7,9 @@ import { serviceGet, vnd } from './wizard';
 /** Hand-written recordings of the three morning jobs, whose prompts name 2026-10-08 and whose handles follow this household's facts. */
 export const NORTHSTAR_REPLAY = join(import.meta.dirname, '..', '..', 'fixtures', 'agent-replay', 'northstar');
 
-/** Waits until the worker, woken at 2026-10-08 07:05, has backfilled the day's three jobs and finished them in schedule order. */
+/** Waits until the worker, woken at 2026-10-08 07:05, has backfilled the day's three jobs: queued in schedule order, since the frozen clock gives every finish the same time. */
 export async function waitForMorningJobs(page: Page) {
-  const jobs = `agent_jobs?household_id=eq.${laneHousehold(1)}&kind=in.(research_scan,portfolio_watch,morning_brief)&idempotency_key=like.*:2026-10-08&select=kind,status&order=finished_at`;
+  const jobs = `agent_jobs?household_id=eq.${laneHousehold(1)}&kind=in.(research_scan,portfolio_watch,morning_brief)&idempotency_key=like.*:2026-10-08&select=kind,status&order=run_after`;
   await expect
     .poll(async () => (await serviceGet<{ kind: string; status: string }[]>(page, jobs)).filter((job) => job.status === 'done').map((job) => job.kind), { timeout: 90_000, intervals: [500] })
     .toEqual(['research_scan', 'portfolio_watch', 'morning_brief']);
