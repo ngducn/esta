@@ -1,21 +1,13 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { globSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const SRC = join(__dirname, '..', '..');
-const ANY_PDFJS = /pdfjs-dist(?!\/legacy\/)[^'"]*['"]/u;
-
-function sources(dir: string): string[] {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(dir, entry.name);
-    if (entry.isDirectory()) return sources(path);
-    return /\.(?:tsx?|mjs)$/u.test(entry.name) && !entry.name.endsWith('.test.ts') ? [path] : [];
-  });
-}
+const NON_LEGACY = /pdfjs-dist(?!\/legacy\/)[^'"]*['"]/u;
 
 describe('pdf.js loads its legacy build (#262)', () => {
   it('imports pdfjs-dist only from legacy/build, which polyfills what an older browser lacks', () => {
-    const offenders = sources(SRC).filter((path) => ANY_PDFJS.test(readFileSync(path, 'utf8')));
+    const offenders = globSync('**/*.{ts,tsx,mjs}', { cwd: SRC, exclude: (name) => name.endsWith('.test.ts') }).filter((path) => NON_LEGACY.test(readFileSync(join(SRC, path), 'utf8')));
     expect(offenders).toEqual([]);
   });
 });

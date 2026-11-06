@@ -4,7 +4,7 @@ import { NATIONAL_ID_CASES, NATIONAL_ID_JOINERS, NATIONAL_ID_LABELLED_JOINERS, N
 import { DATE, reduceNationalIds } from './reduce-national-ids';
 
 const leaf = (value: unknown) => ({ value, confidence: 0.95, page: 1 });
-const reduce = (text: string) => reduceNationalIds({ notes_text: leaf(text) }).notes_text.value;
+const reduce = (text: string): string => String(reduceNationalIds({ notes_text: leaf(text) }).notes_text.value);
 
 describe('the national ID reducer on its case table', () => {
   it.each(NATIONAL_ID_CASES)('%s', (_name, text, reduced) => {
