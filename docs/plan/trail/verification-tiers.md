@@ -57,6 +57,9 @@ Review checklist for classes no mechanical check catches (a reviewer reads for e
 13. A release step that acts on the whole working tree (`supabase db push` applies every pending migration on one yes): the runbook says to run it from a clean checkout of the release tag, because no check can see which migrations the operator answers yes to.
 14. Where a closing test enters: a test that closes an issue enters where the app enters (the action, op, tool, job or sync function) and never feeds an inner helper an input the real caller does not produce. #326 was closed on a province-only address that `readHeldProperties` rejects, so the new branch never ran under the real caller and reverting it passed every test.
 15. A removed field takes its doc comment with it: after deleting a type member or an option, read the lines around the cut for a comment that now sits on its neighbour (`spacedBeforeThat` left its comment on `spacedAfter`, #501). No lint rule can tell a stale comment from a true one.
+16. A security definer function derives every row it writes from stored rows, never from a caller-supplied id (`accept_extraction` took the manual entry's id as a parameter and let a member mark another household's read accepted). Its pgTAP file names another household's ids for every id parameter and shows that household's rows unchanged.
+17. A definer PR updates ARCHITECTURE's multi-row paragraph and the SPEC text that names the old writer ("under the member's session").
+18. A test called red on main must fail on main for the defect it names, not because main lacks the new function; a race test holds one writer's last write until the other settles, so it is red on main's split shape.
 
 ## Planned tiers for the remaining PRs
 
