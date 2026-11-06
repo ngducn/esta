@@ -4,6 +4,7 @@ import { decodeStatement, decodeStatementCsv } from './decode';
 import { identifyRows } from './fingerprint';
 import { STATEMENT_LAYOUTS, type DetectedHeader, type StatementGrid } from './layouts';
 import { renderCsv } from './render';
+import { HEADER_GUESS_CASES } from './statement.cases';
 import { scenarioGrid, UNRECOGNIZED_COLUMNS, UNRECOGNIZED_LAYOUT, UNRECOGNIZED_PREAMBLE, unrecognizedGrid } from './statement-scenario';
 
 const grid = unrecognizedGrid();
@@ -107,6 +108,10 @@ describe('presetHeader', () => {
 });
 
 describe('guessHeaderRow and guessColumns', () => {
+  it.each(HEADER_GUESS_CASES)('guesses the header of $name', ({ grid: cases, headerRow }) => {
+    expect(guessHeaderRow(cases)).toBe(headerRow);
+  });
+
   it('guesses the first row with the most filled cells, under the account lines', () => {
     expect(guessHeaderRow(grid)).toBe(4);
     expect(guessHeaderRow(scenarioGrid(STATEMENT_LAYOUTS.a))).toBe(0);

@@ -6,18 +6,30 @@ export type CsvRecord = Result<string[], CsvReason>;
 
 const DELIMITERS = [',', ';', '\t'] as const;
 
-/** Excel on a Vietnamese system writes `;`, since `,` is its decimal mark. */
-function detectDelimiter(firstLine: string): string {
+const isLineEnd = (char: string | undefined): boolean => char === '\n' || char === '\r';
+
+/** The header's own text: up to the first line break outside quotes, or with `spanLines` false the first line break. */
+function firstRecord(body: string, spanLines: boolean): string {
+  let quoted = false;
+  for (let at = 0; at < body.length; at++) {
+    const char = body[at];
+    if (char === '"') quoted = !quoted;
+    else if (isLineEnd(char) && !(quoted && spanLines)) return body.slice(0, at);
+  }
+  return body;
+}
+
+/** Excel on a Vietnamese system writes `;`, since `,` is its decimal mark. A separator inside quotes is part of a name. */
+function detectDelimiter(header: string): string {
+  const outsideQuotes = header.split('"').filter((_, index) => index % 2 === 0).join('');
   let best: string = DELIMITERS[0];
   let bestCount = -1;
   for (const delimiter of DELIMITERS) {
-    const count = firstLine.split(delimiter).length - 1;
+    const count = outsideQuotes.split(delimiter).length - 1;
     if (count > bestCount) [best, bestCount] = [delimiter, count];
   }
   return best;
 }
-
-const isLineEnd = (char: string | undefined): boolean => char === '\n' || char === '\r';
 
 function afterLineEnd(body: string, at: number): number {
   return body[at] === '\r' && body[at + 1] === '\n' ? at + 2 : at + 1;
@@ -72,7 +84,7 @@ function readRecord(body: string, start: number, delimiter: string, spanLines: b
  */
 export function parseCsv(text: string, { spanLines }: { spanLines: boolean }): CsvRecord[] {
   const body = text.startsWith('\uFEFF') ? text.slice(1) : text;
-  const delimiter = detectDelimiter(body.slice(0, body.search(/\r?\n|$/)));
+  const delimiter = detectDelimiter(firstRecord(body, spanLines));
   const records: CsvRecord[] = [];
   for (let at = 0; at < body.length; ) {
     const { record, next } = readRecord(body, at, delimiter, spanLines);
