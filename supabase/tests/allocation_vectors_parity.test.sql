@@ -86,22 +86,22 @@ join (select name, row_number() over (order by name) as n from (select distinct 
 grant select on rows_in to authenticated;
 
 insert into public.units (id, household_id, property_id, label, kind)
-select distinct unit_id, :'a', '00000000-0000-4000-8000-0000000000a1', 'Phòng ' || right(unit_id::text, 3), 'room' from rows_in;
+select distinct unit_id, :'a'::uuid, '00000000-0000-4000-8000-0000000000a1'::uuid, 'Phòng ' || right(unit_id::text, 3), 'room' from rows_in;
 insert into public.leases (id, household_id, property_id, unit_id, tenant_party_id, start_date, rent_vnd, status)
-select distinct lease_id, :'a', '00000000-0000-4000-8000-0000000000a1', unit_id, '00000000-0000-4000-8000-00000000a0a5', '2026-01-01', 3500000, 'active'
+select distinct lease_id, :'a'::uuid, '00000000-0000-4000-8000-0000000000a1'::uuid, unit_id, '00000000-0000-4000-8000-00000000a0a5'::uuid, '2026-01-01'::date, 3500000, 'active'
 from rows_in;
 insert into public.invoices (id, household_id, lease_id, period_start, period_end, due_date, issue_on, number, status, issued_at, voided_reason)
-select invoice_id, :'a', lease_id, period_start, (period_start + interval '1 month' - interval '1 day')::date, due_date, period_start,
+select invoice_id, :'a'::uuid, lease_id, period_start, (period_start + interval '1 month' - interval '1 day')::date, due_date, period_start,
   'Q09-' || to_char(period_start, 'YYYYMM') || '-' || lpad(rn::text, 3, '0'), status,
   case when status = 'draft' then null else period_start::timestamptz end,
   case when status = 'void' then 'Demo' end
 from rows_in;
 insert into public.invoice_lines (household_id, invoice_id, kind, unit_price_vnd, amount_vnd)
-select :'a', invoice_id, kind, total_vnd, total_vnd from rows_in;
+select :'a'::uuid, invoice_id, kind, total_vnd, total_vnd from rows_in;
 insert into public.payments (id, household_id, payer_party_id, amount_vnd, received_on, method)
-select prior_id, :'a', '00000000-0000-4000-8000-00000000a0a5', paid_vnd, '2026-09-01', 'cash' from rows_in where paid_vnd > 0;
+select prior_id, :'a'::uuid, '00000000-0000-4000-8000-00000000a0a5'::uuid, paid_vnd, '2026-09-01'::date, 'cash' from rows_in where paid_vnd > 0;
 insert into public.payment_allocations (household_id, payment_id, invoice_id, amount_vnd)
-select :'a', prior_id, invoice_id, paid_vnd from rows_in where paid_vnd > 0;
+select :'a'::uuid, prior_id, invoice_id, paid_vnd from rows_in where paid_vnd > 0;
 
 -- Records the case's payment the way the sheet does: the payer's choice if any bill is chosen, else the oldest open bill
 -- as the row, owing what the open bills owe, and returns what each bill took and what was left.
