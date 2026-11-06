@@ -131,7 +131,7 @@ function filtersOf(url: URL): Predicate[] {
 let schema: Map<string, Set<string>> | undefined;
 
 /** The columns of each table and view, read from the generated database types, so a fixture row that leaves a nullable column out still has it. */
-function columnsByTable(): Map<string, Set<string>> {
+export function columnsByTable(): Map<string, Set<string>> {
   if (schema !== undefined) return schema;
   const text = readFileSync(new URL('../../../db/src/database.types.ts', import.meta.url), 'utf8');
   schema = new Map();

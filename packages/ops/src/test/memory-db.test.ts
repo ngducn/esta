@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { describe, expect, it } from 'vitest';
-import { memoryDb, type Recorded } from './memory-db';
+import { columnsByTable, memoryDb, type Recorded } from './memory-db';
 
 const looseDb = (...args: Parameters<typeof memoryDb>): SupabaseClient => memoryDb(...args);
 
@@ -111,5 +111,11 @@ describe('memoryDb answers the real client like PostgREST', () => {
     expect((await db.from('parties').select('id').is('short_name', null)).data).toEqual([{ id: 'p1' }]);
     expect((await db.from('parties').select('id').eq('shortname', 'x')).error?.message).toBe('column parties.shortname does not exist');
     expect((await db.from('notifications').select('id').eq('last_attemp_at', 'x')).error?.message).toBe('column notifications.last_attemp_at does not exist');
+  });
+
+  it('parses the generated types: at least the 55 public tables, each with columns, or every table would fall back to row keys', () => {
+    const tables = columnsByTable();
+    expect(tables.size).toBeGreaterThanOrEqual(55);
+    expect(tables.get('parties')?.has('short_name')).toBe(true);
   });
 });

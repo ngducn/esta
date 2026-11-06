@@ -782,20 +782,8 @@
     {
       "metric": "testid-query",
       "from": 0,
-      "to": 2109,
-      "reason": "new metrics test-db-fake and testid-query record their first counts (Q-09a)"
-    },
-    {
-      "metric": "testid-query",
-      "from": 2109,
-      "to": 2116,
-      "reason": "new metrics test-db-fake and testid-query record their first counts, merged with main's new specs (Q-09a)"
-    },
-    {
-      "metric": "testid-query",
-      "from": 2116,
       "to": 2124,
-      "reason": "testid-query: main's property form spec added 8 test-id queries since the metric's first count (Q-09a)"
+      "reason": "new metrics test-db-fake and testid-query record their first counts (Q-09a)"
     }
   ]
 }
