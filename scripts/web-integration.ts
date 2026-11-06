@@ -41,6 +41,7 @@ function vitest(filters: readonly string[], extra: readonly string[] = []) {
 
 /** A busy local gateway answers one request with an invalid upstream response (#310); the failed files run once more, and only for that error. */
 function runChecked(filters: readonly string[], extra: readonly string[] = []): number {
+  if (filters.length === 0) return 0;
   let result = vitest(filters, extra);
   if (result.status !== 0 && result.report !== undefined) {
     const retry = gatewayRetryFiles(result.report, webRoot);

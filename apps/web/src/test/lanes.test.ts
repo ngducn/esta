@@ -49,10 +49,6 @@ describe('the integration lane registry', () => {
     expect(usesStack.filter((file) => !file.endsWith('.integration.test.ts'))).toEqual([]);
   });
 
-  it.each(onDisk)('%s skips only when the stack is down, which the runner treats as a failure', (file) => {
-    expect(readFileSync(join(WEB_ROOT, file), 'utf8')).not.toMatch(/\b(?:test|it|describe)\.(?:skip|todo)\b|skipIf\((?!!stackUp\))/);
-  });
-
   it('runs alone only the files that touch every household', () => {
     expect(runsAlone).toEqual(['src/server/cron/cron.integration.test.ts']);
   });

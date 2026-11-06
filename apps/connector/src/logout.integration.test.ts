@@ -30,7 +30,7 @@ const authApiAccepts = async (token: string) =>
 const dataApiReads = async (token: string) =>
   (await fetch(`${env.ESTA_IT_SUPABASE_URL}/rest/v1/properties?select=id&limit=1`, { headers: headers(token) })).ok;
 
-describe('signing out of the connector (#220)', () => {
+describe('signing out of the connector (#220)', { timeout: 60_000 }, () => {
   it('ends the session on the server: the refresh token and the Auth API refuse it at once, but a copied access token still reads the data API until it expires', async () => {
     const file = sessions.make();
     expect(await signIn(OPERATOR, file)).toMatchObject({ ok: true });
@@ -45,7 +45,7 @@ describe('signing out of the connector (#220)', () => {
     expect(await refreshes(refreshToken), 'the refresh token cannot mint a new access token').toBe(false);
     expect(await dataApiReads(token), 'known limit: the data API checks the signed token, not the session, until it expires (jwt_expiry)').toBe(true);
     expect(JSON.parse(readFileSync(file, 'utf8'))).toEqual({});
-  }, 60_000);
+  });
 
   it('stops a running connector at its next call when the session is signed out from somewhere else', async () => {
     const running = sessions.make();
@@ -62,5 +62,5 @@ describe('signing out of the connector (#220)', () => {
     } finally {
       await connector.client.close();
     }
-  }, 60_000);
+  });
 });

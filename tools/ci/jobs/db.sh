@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# The db job, against a running and unseeded local stack: seed determinism, seed coverage, pgTAP, the web integration
-# tests, the generated types and the household export round trip. CI_STACK_EXCLUDE names the services the stack was
+# The db job, against a running and unseeded local stack: seed determinism, seed coverage, pgTAP, the web and connector
+# integration tests, the generated types and the household export round trip. CI_STACK_EXCLUDE names the services the stack was
 # started without, so a restart after a 502 starts it the same way.
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
@@ -16,6 +16,10 @@ pnpm db:test
 # Each integration file works in its own seeded household; scripts/web-integration.ts sets the test clock first, clears
 # it after, and reruns a file once when the local gateway answered it an invalid upstream response.
 pnpm --filter web test:integration
+# The connector's sign-out, ID cut and folder tests (#220, #223, #461) work in lane households the web files also used, and
+# move the database clock, so they run on a fresh seed.
+reset_with_retry pnpm db:reset
+pnpm --filter @esta/connector test:integration
 pnpm db:types
 git diff --exit-code packages/db/src/database.types.ts
 
