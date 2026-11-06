@@ -8,10 +8,10 @@ import { replayedReads } from './golden/ask-reads';
 
 const HASH = 'a'.repeat(64);
 
-async function promptFor(question: string, { earlier, seed }: { earlier?: string; seed?: Array<{ question: string; answer: string }> } = {}): Promise<string> {
+async function prepare(question: string, { earlier, seed }: { earlier?: string; seed?: Array<{ question: string; answer: string }> } = {}) {
   const tables = askTables(question);
   if (earlier !== undefined) tables.messages?.unshift({ id: 'e1', household_id: HOUSEHOLD, conversation_id: CONVERSATION, role: 'user', content_md: earlier, status: 'done', topic_item_id: null, topic_property_id: null });
-  const prepared = await askRequest({
+  return askRequest({
     db: fakeDb(tables, [], {}, {}, askRpcs(tables)),
     householdId: HOUSEHOLD,
     jobId: 'typed',
@@ -29,8 +29,9 @@ async function promptFor(question: string, { earlier, seed }: { earlier?: string
     reads: replayedReads(),
     clock: clockOn('2026-10-07T07:00:00+07:00'),
   });
-  return prepared.prompt;
 }
+
+const promptFor = async (question: string, options?: Parameters<typeof prepare>[1]): Promise<string> => (await prepare(question, options)).prompt;
 
 describe('the numbers she wrote, listed by handle before the first turn', () => {
   it('lists the amount, the months and the rate of her question, and not a unit label', async () => {
@@ -55,5 +56,13 @@ describe('the numbers she wrote, listed by handle before the first turn', () => 
     const prompt = await promptFor('Còn 5tr thì sao?', { earlier: 'Nếu tăng tiền lên 4tr thì sao?' });
     expect(prompt).toContain('f4: 4.000.000 ₫ (written "4tr")');
     expect(prompt).toContain('f5: 5.000.000 ₫ (written "5tr")');
+  });
+
+  it('still refuses a figure she never typed, and one she typed when the model writes it instead of citing it', async () => {
+    for (const [written, figure] of [['Mỗi tháng trả 3.000.000 ₫.', '3.000.000'], ['Mỗi tháng thu thêm 4.000.000 ₫.', '4.000.000']]) {
+      const prepared = await prepare('Nếu tăng tiền phòng 2 lên 4tr thì sao?');
+      await prepared.onText?.(written ?? '');
+      expect(await prepared.nextTurn?.(), written).toContain(figure);
+    }
   });
 });

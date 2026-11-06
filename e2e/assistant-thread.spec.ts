@@ -1,12 +1,14 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { formatVnd } from '../packages/core/src/format/index.ts';
 import { vnd as money } from '../packages/core/src/money/vnd.ts';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { workerAt } from './helpers/agent-worker';
 import { inEnglishAt130, memberCall, memberRest } from './helpers/auth-api';
 import { boardRow } from './helpers/board';
 import { initialJs, INITIAL_JS_BUDGET_BYTES } from './helpers/bundle';
-import { laneHousehold, laneProperty } from './helpers/seed';
+import { laneHousehold, laneLease, laneProperty } from './helpers/seed';
 import { setClock } from './helpers/test-clock';
 import { clippedText } from './helpers/text-scale';
 import { addOperatorNote, answer, freshThread, incomeIn, laneNotes, laneOperatorNote, latestConversation, noteCard, pinnedArea, pinnedRow, sendInThread } from './helpers/thread';
@@ -24,7 +26,17 @@ const AUGUST = 'Còn tháng 8 thì sao?';
 const OVERDUE_EN = 'Which rooms in Dĩ An are overdue?';
 const ZALO = 'Viết tin nhắn Zalo nhắc khách phòng 5 ở Dĩ An đóng tiền.';
 const HOME_LOAN = 'Lãi suất vay mua nhà bây giờ khoảng bao nhiêu?';
+const RAISE_ROOM = 'Nếu tăng tiền phòng 2 ở Dĩ An lên 4tr thì mỗi năm thu thêm bao nhiêu?';
+const LOAN = 'Vay 2 tỷ trong 15 năm, lãi 9%/năm thì mỗi tháng trả bao nhiêu?';
+const LOAN_AT_QUOTED_RATE = 'Với lãi suất đó, vay 2 tỷ trong 15 năm mỗi tháng trả bao nhiêu?';
 const BY_YEAR = 'Có nên cho thuê theo năm thay vì theo tháng không?';
+
+const truth = JSON.parse(readFileSync(join(import.meta.dirname, '../apps/agent/test/golden/ask-ground-truth.json'), 'utf8')) as Array<{ question: string; figure: string; value: string }>;
+const groundTruth = (question: string, figure: string) => {
+  const row = truth.find((candidate) => candidate.question === question && candidate.figure === figure);
+  if (row === undefined) throw new Error(`ask-ground-truth.sql has no ${question} ${figure}`);
+  return money(Number(row.value));
+};
 
 const NOTE_LANE = 9;
 const NOTES = laneNotes(NOTE_LANE);
@@ -229,6 +241,49 @@ test('thread case T7: Mẹ asks for the home loan rate, reads it quoted from the
   await expect(chip).toHaveAttribute('target', '_blank');
   expect(await seriousAxeViolations(page)).toEqual([]);
   await shot(page, 'p5-14-source-chip-390x844-light');
+});
+
+test('thread case T5: Mẹ asks what raising Phòng 2 to 4tr brings in a year and reads the gain with its working under it', async ({ page }) => {
+  await open(page, 'me.lane2@demo.esta.test', 'light', PHONE);
+  await freshThread(page, 'me', 2);
+  await sendAndTimeFirstSentence(page, RAISE_ROOM);
+  const [lease] = await memberRest<{ rent_vnd: number }[]>(page, 'GET', `leases?id=eq.${laneLease(2, 'di-an', 2)}&select=rent_vnd`);
+  const rent = money(lease?.rent_vnd ?? 0);
+  const monthly = money(4_000_000 - rent);
+  const yearly = money((4_000_000 - rent) * 12);
+  const [from, to, gain, year] = [rent, money(4_000_000), monthly, yearly].map((amount) => formatVnd(amount, 'vi'));
+  await expect(answer(page)).toContainText(`mỗi tháng thu thêm ${gain}, tức mỗi năm thu thêm ${year}.`);
+  expect(year, 'the gain is the ground truth of the seed').toBe(formatVnd(groundTruth('t5', 'di-an room 2 yearly gain at 4tr'), 'vi'));
+  const working = answer(page).getByTestId('answer-working').getByRole('listitem');
+  await expect(working).toHaveText([`Cách tính: ${to} − ${from} = ${gain}`, `Cách tính: ${gain} × 12 = ${year}`]);
+  expect(await seriousAxeViolations(page)).toEqual([]);
+  expect(await noSidewaysScroll(page), 'no sideways scroll').toBe(true);
+  await shot(page, 'p5-15-working-390x844-light');
+});
+
+test('thread case T6: Mẹ asks the monthly payment of a loan she types, and reads it with all three inputs in the working', async ({ page }) => {
+  await open(page, 'me.lane3@demo.esta.test', 'dark', PHONE);
+  await freshThread(page, 'me', 3);
+  await sendAndTimeFirstSentence(page, LOAN);
+  const paid = formatVnd(groundTruth('t6', 'monthly payment of 2 tỷ over 15 năm at 9%'), 'vi');
+  await expect(answer(page)).toContainText(`mỗi tháng trả ${paid}.`);
+  const working = answer(page).getByTestId('answer-working');
+  for (const input of [formatVnd(money(2_000_000_000), 'vi'), '9%', '180 tháng', paid]) await expect(working).toContainText(input);
+  expect(await seriousAxeViolations(page)).toEqual([]);
+  await shot(page, 'p5-15-loan-390x844-dark');
+});
+
+test('thread case T7 follow-up: Ryan applies the quoted home loan rate to a loan he types, and the working names the rate beside its source chip', async ({ page }) => {
+  await open(page, 'ryan.lane4@demo.esta.test', 'light', DESKTOP);
+  await freshThread(page, 'ryan', 4);
+  await sendAndTimeFirstSentence(page, HOME_LOAN);
+  await sendAndTimeFirstSentence(page, LOAN_AT_QUOTED_RATE);
+  const paid = formatVnd(groundTruth('t7', 'monthly payment of 2 tỷ over 15 năm at 7,5%'), 'vi');
+  await expect(answer(page)).toContainText(`mỗi tháng trả ${paid}.`);
+  await expect(answer(page).getByTestId('citation-chip'), 'the page was fetched again in this turn').toHaveAttribute('href', 'https://tin-demo.example/lai-suat-vay-mua-nha');
+  await expect(answer(page).getByTestId('answer-working')).toContainText(`7,5%/năm, 180 tháng → ${paid}/tháng`);
+  expect(await seriousAxeViolations(page)).toEqual([]);
+  await shot(page, 'p5-15-web-calc-1440x900-light');
 });
 
 test('thread case T2: Ryan asks whether to rent by the year, and the advice holds no number', async ({ page }) => {
