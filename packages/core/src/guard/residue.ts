@@ -31,8 +31,6 @@ type Token = { readonly word: string; readonly lower: string; readonly start: nu
 type Context = {
   readonly neighbors: readonly Token[];
   readonly spacedBefore: Token | undefined;
-  /** The word before `spacedBefore`, when only a space or a hyphen stands between them. */
-  readonly spacedBeforeThat: Token | undefined;
   readonly spacedAfter: Token | undefined;
   /** The `spacedBefore` and `spacedAfter` words with no line break between them and this one. */
   readonly sameLine: readonly Token[];
@@ -53,7 +51,7 @@ const isNumberWord = (token: Token) => IS_MASK.test(token.word) || WORDS.get(tok
 
 const isDateMask = (token: Token, isDate: (mask: string) => boolean) => IS_MASK.test(token.word) && isDate(token.word);
 
-function passes(row: WordRow, { neighbors, spacedBefore, spacedBeforeThat, spacedAfter, sameLine, capitalized, isDate }: Context): boolean {
+function passes(row: WordRow, { neighbors, spacedBefore, spacedAfter, sameLine, capitalized, isDate }: Context): boolean {
   if (row.passesLowercase === true && !capitalized) return true;
   if (row.bannedOnlyAfter !== undefined && !row.bannedOnlyAfter.includes(spacedBefore?.lower ?? '')) {
     return !(row.bannedBesideDateMask === true && sameLine.some((token) => isDateMask(token, isDate)));
@@ -62,7 +60,6 @@ function passes(row: WordRow, { neighbors, spacedBefore, spacedBeforeThat, space
   if (row.bannedOnlyNearNumber === true && !neighbors.some(isNumberWord)) return true;
   const counted = spacedBefore !== undefined && spacedAfter !== undefined && row.countedAfter?.includes(spacedBefore.lower) === true && row.countedNouns?.includes(spacedAfter.lower) === true;
   if (!counted && spacedBefore !== undefined && row.passesAfter?.includes(spacedBefore.lower) === true) return true;
-  if (spacedBefore !== undefined && spacedBeforeThat !== undefined && row.passesAfterPhrase?.includes(`${spacedBeforeThat.lower} ${spacedBefore.lower}`) === true) return true;
   if (spacedAfter !== undefined && (row.passesBefore?.includes(spacedAfter.lower) === true || (capitalized && row.passesBeforeCapitalized?.includes(spacedAfter.word) === true))) return true;
   return row.passesNearDate === true && neighbors.some((token) => isDateMask(token, isDate));
 }
@@ -95,7 +92,6 @@ function wordViolations(shown: string, isDate: (mask: string) => boolean): NoteV
     if (FOREIGN_LETTER.test(token.word)) return [{ rule: 'script', text: token.word }];
     const [left, right] = [tokens[i - 1], tokens[i + 1]];
     const spacedBefore = spaced(left, token) ? left : undefined;
-    const spacedBeforeThat = spacedBefore !== undefined && spaced(tokens[i - 2], left) ? tokens[i - 2] : undefined;
     const spacedAfter = spaced(token, right) ? right : undefined;
     const row = wordRow(token);
     const sameLine = [
@@ -104,7 +100,7 @@ function wordViolations(shown: string, isDate: (mask: string) => boolean): NoteV
     ].filter((neighbor) => neighbor !== undefined);
     const neighbors = [left, right].filter((neighbor) => neighbor !== undefined);
     const capitalized = token.word !== token.lower;
-    const banned = isDigitLetters(token.word) || (row === undefined && isGluedNumber(token.lower)) || isRoman(token, spacedBefore, spacedAfter) || (row !== undefined && !passes(row, { neighbors, spacedBefore, spacedBeforeThat, spacedAfter, sameLine, capitalized, isDate }));
+    const banned = isDigitLetters(token.word) || (row === undefined && isGluedNumber(token.lower)) || isRoman(token, spacedBefore, spacedAfter) || (row !== undefined && !passes(row, { neighbors, spacedBefore, spacedAfter, sameLine, capitalized, isDate }));
     return banned ? [{ rule: 'word', text: token.word }] : [];
   });
 }

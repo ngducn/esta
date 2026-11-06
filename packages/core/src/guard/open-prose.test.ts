@@ -21,7 +21,6 @@ describe('the guard on open advice and writing (AGENT.md §5.6 step 7)', () => {
 
 describe('the compounds the open-prose probe added (P5-12)', () => {
   it.each([
-    ['bên thứ ba', 'Bảo hiểm trách nhiệm với bên thứ ba.', ['Hẹn trả vào thứ ba.', 'Thứ ba bên thuê trả.', 'Bên thứ ba trả ba triệu.', 'Có ba bên thuê.']],
     ['đồng hành', 'Rất mong tiếp tục được đồng hành lâu dài.', ['Còn nợ hai triệu đồng.', 'Đồng hành lâu dài, còn thiếu trăm đồng.', 'Đồng hành cùng chị, còn nợ ba triệu.', 'Đồng hành, đồng.']],
     ['chín chắn', 'Đây là quyết định lớn, nên cân nhắc chín chắn.', ['Còn nợ chín triệu.', 'Có chín phòng.', 'Cân nhắc chín chắn vì còn chín tháng.']],
     ['second opinion', 'Here is a second opinion on the sale.', ['The second bill is late.', 'Room on the second floor.', 'A second opinion costs a second fee.']],
@@ -49,8 +48,8 @@ describe('the compounds the open-prose probe added (P5-12)', () => {
     }
   });
 
-  it('passes a third party', () => {
-    expect(rules('Bảo hiểm cho bên thứ ba.')).toEqual([]);
+  it('rejects a third party and số một, which the style rule steers the model away from (#496)', () => {
+    for (const note of ['Bảo hiểm cho bên thứ ba.', 'Phòng của khách là số một.']) expect(rules(note), note).toContain('word');
   });
 
   it('reads a hyphen as the space it stands for, so a date word joined by one is still rejected', () => {

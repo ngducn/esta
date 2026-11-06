@@ -11,6 +11,18 @@ import { systemPrompt } from './system';
 
 export type AskedTurn = { readonly question: string; readonly answer: string };
 
+/** The phrases the guard rejects and what the model writes instead; rule 4 of the ask prompt and `ask-repair.test.ts` both read this table. */
+export const STYLE_SWAPS: readonly { readonly never: string; readonly say: readonly string[] }[] = [
+  { never: 'ba mẹ', say: ['bố mẹ'] },
+  { never: 'hai bên', say: ['bên thuê và bên cho thuê', 'người thuê và chủ nhà'] },
+  { never: 'cả hai', say: ['cả người thuê lẫn chủ nhà'] },
+  { never: 'đồng loạt', say: ['cùng lúc'] },
+  { never: 'phần trăm', say: ['theo tỷ lệ'] },
+  { never: 'số một', say: ['hàng đầu', 'quan trọng nhất'] },
+  { never: 'bên thứ ba', say: ['người ngoài hợp đồng', 'bên không ký'] },
+  { never: 'the two parties', say: ['the tenant and the landlord'] },
+];
+
 const MARKDOWN_LINK = /\[([^\]]*)\]\([^)]*\)/g;
 
 /**
@@ -85,7 +97,7 @@ export function askPrompt(
     '1. Write Markdown: one to four short sentences, a short list, or a table when the reply lists several records with the same fields. Use paragraphs, lists, tables, bold and links only.',
     '2. Write every number, date, amount and name as the placeholder of the field that holds it, such as {{f2.income_display}}. A field without a _display, _label or _name ending, such as status or category, is a code for you to read: write it in your own words. This holds for a name or a numbered label the message itself holds, such as phòng 5: find its record with the tools and write its placeholder.',
     '3. Link the record the reply comes from by its handle, as [Sổ thu chi {{f1.property_label}}](f2). The link target is the bare handle in parentheses, never a placeholder or an address, and the link text is never a bare handle. Link nothing else.',
-    '4. Number words count things even in advice and letters, and the app rejects them: never write hai, ba, bốn, năm, mười or two, three for a count, and write a period as theo năm, mỗi năm, hằng năm or theo tháng, never năm alone. Use a number word only when it states a figure from the data or a tool result, as that field\'s placeholder. Write each, both or cả … lẫn … instead of a count, such as mỗi cách. Say bố mẹ, never ba mẹ, for parents; bên thuê và bên cho thuê or người thuê và chủ nhà, never hai bên; cả người thuê lẫn chủ nhà, never cả hai. In English say the tenant and the landlord, never the two parties.',
+    '4. Number words count things even in advice and letters, and the app rejects them: never write hai, ba, bốn, năm, mười or two, three for a count, and write a period as theo năm, mỗi năm, hằng năm or theo tháng, never năm alone. Use a number word only when it states a figure from the data or a tool result, as that field\'s placeholder. Write each, both or cả … lẫn … instead of a count, such as mỗi cách. Swap each banned phrase for its replacement: ' + STYLE_SWAPS.map(({ say, never }) => `${say.join(' or ')} (never ${never})`).join('; ') + '.',
     '5. If the question asks you to change something, say that you cannot change records yourself; when a change would help, suggest it with create_proposal and say a member can approve it on its card in this conversation.',
     '6. Reply in the language the message is written in, whatever the language of these rules: an English message gets an English reply.',
     ...conversationSoFar(context.earlier ?? []),
