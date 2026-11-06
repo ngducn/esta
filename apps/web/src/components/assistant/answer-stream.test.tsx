@@ -21,7 +21,7 @@ class FakeSource {
   }
 }
 
-const labels: AnswerLabels = { streaming: 'Đang trả lời', deferred: 'Trả lời vào ngày mai', error: 'Chưa trả lời được', stalled: 'Đứt kết nối', searching: 'Trợ lý đang tra cứu trên mạng', citation: 'Nguồn {index}: {source}', dated: '{name} · {date}' };
+const labels: AnswerLabels = { streaming: 'Đang trả lời', deferred: 'Trả lời vào ngày mai', error: 'Chưa trả lời được', stalled: 'Đứt kết nối', searching: 'Trợ lý đang tra cứu trên mạng', citation: 'Nguồn {index}: {source}', dated: '{name} · {date}', working: 'Cách tính: {working}' };
 const ID = '0b6c1f9e-7d1a-4c55-9a3e-5b0c2d1e0c02';
 const CONVERSATION = '0b6c1f9e-7d1a-4c55-9a3e-5b0c2d1e0c01';
 
@@ -101,5 +101,11 @@ describe('an answer streaming on its page', () => {
     const chip = screen.getByTestId('citation-chip') as HTMLAnchorElement;
     expect(chip.href).toBe(source.url);
     expect(chip.textContent).toContain('demo-news.example · 05/10/2026');
+  });
+
+  it('shows the working of each calculation the answer cites under its text', () => {
+    const { send } = stream();
+    send({ content: 'Mỗi năm thu thêm 12.000.000 ₫.', status: 'done', refs: [{ kind: 'calc', working: '1.000.000 ₫ × 12 = 12.000.000 ₫' }] });
+    expect(screen.getByTestId('answer-working').textContent).toBe('Cách tính: 1.000.000 ₫ × 12 = 12.000.000 ₫');
   });
 });

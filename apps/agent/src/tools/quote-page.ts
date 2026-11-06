@@ -3,7 +3,7 @@ import { normalizeUrl } from '@esta/core/research';
 import { z } from 'zod';
 import type { RunSheet } from './fact-sheet';
 import { parseToolInput, ToolRejection } from './server';
-import { checkQuotes, pageDate, quoteLabels, refusedQuotes, type FetchedPage } from './web-quotes';
+import { checkQuotes, pageDate, quoteLabels, quoteNumbers, refusedQuotes, type FetchedPage } from './web-quotes';
 
 const inputSchema = z.strictObject({ url: z.string(), quotes: z.array(z.string()).min(1).max(5) });
 
@@ -20,7 +20,7 @@ export function quotePageTool({ fetched, cite, locale }: { readonly fetched: Rea
     if (labels.length === 0) throw new ToolRejection(`${refused.join('\n')}\nCopy each quote exactly from the page.`);
     const date = pageDate(page.text, locale);
     const host = new URL(page.link).hostname.replace(/^www\./u, '');
-    const record = cite({ source_name: host, source_url: page.link, published_on: date?.on ?? null, ...(date === null ? {} : { published_display: date.display }), ...Object.fromEntries(labels) });
+    const record = cite({ source_name: host, source_url: page.link, published_on: date?.on ?? null, ...(date === null ? {} : { published_display: date.display }), ...Object.fromEntries(labels), ...Object.fromEntries(quoteNumbers(checked, locale)) });
     return refused.length === 0 ? record : { ...record, refused };
   };
 }

@@ -4,6 +4,9 @@ import type { IsoDate } from '@esta/core/date';
 import type { Locale } from '@esta/core/format';
 import type { Json, TablesUpdate } from '@esta/db';
 import { z } from 'zod';
+import { calculateTool, type Calculation } from '../tools/calculate';
+import { hasOtherPeriodRate } from '@esta/core/guard';
+import { citeTypedNumbers, type TypedRecord } from '../tools/typed-numbers';
 import { askFollowUpPrompt, askPrompt, askRepairPrompt, askSourceRepairPrompt, type AskedTurn } from '../prompts/ask';
 import { replyLanguage } from '../prompts/language';
 import type { AgentDb } from '../supabase';
@@ -88,9 +91,17 @@ async function previousSegmentTurns(db: AgentDb, householdId: string, conversati
   return previous === undefined ? [] : (await answeredTurns(db, householdId, previous.id)).slice(-SEED_TURNS);
 }
 
-async function rebuildOrForgetSession(input: AskInput, earlier: EarlierTurn, labels: readonly string[]): Promise<string | null> {
+/** Every question she wrote in this conversation up to this one, oldest first, whether or not it was answered. */
+async function herMessages({ db, householdId, conversationId, questionId }: Pick<AskInput, 'db' | 'householdId' | 'conversationId' | 'questionId'>): Promise<string[]> {
+  const { data, error } = await db.from('messages').select('id, role, content_md').eq('household_id', householdId).eq('conversation_id', conversationId).order('created_at');
+  if (error) throw new Error(`Reading what she wrote failed: ${error.message}`);
+  const end = data.findIndex((row) => row.id === questionId);
+  return data.slice(0, end === -1 ? data.length : end + 1).flatMap((row) => (row.role === 'user' ? [row.content_md] : []));
+}
+
+async function rebuildOrForgetSession(input: AskInput, earlier: EarlierTurn, labels: readonly string[], typed: readonly TypedRecord[], otherPeriodRate: boolean): Promise<string | null> {
   const turns = await answeredTurns(input.db, input.householdId, input.conversationId, input.questionId);
-  if (turns.length > 0) return askPrompt({ locale: input.locale, today: input.asOf, timezone: input.timezone, question: input.question, labels, earlier: turns });
+  if (turns.length > 0) return askPrompt({ locale: input.locale, today: input.asOf, timezone: input.timezone, question: input.question, labels, earlier: turns, typed, otherPeriodRate });
   const { error } = await input.db.from('conversations').update({ sdk_session_id: null, sdk_turn_hash: null }).eq('household_id', input.householdId).eq('id', input.conversationId).eq('sdk_turn_hash', earlier.turnHash);
   if (error) throw new Error(`Forgetting the lost session failed: ${error.message}`);
   return null;
@@ -114,19 +125,24 @@ export async function askRequest(input: AskInput): Promise<PreparedJob> {
   let answer: Answer | null = null;
   const labels = await householdLabels(db, householdId);
   const answerLocale = replyLanguage(input.question, locale, labels);
+  const hers = earlier === null ? [...input.seed.map(({ question }) => question), input.question] : await herMessages(input);
+  const typed = citeTypedNumbers(cite, hers, answerLocale);
+  const otherPeriodRate = hers.some(hasOtherPeriodRate);
+  const calculations: Calculation[] = [];
   const tools = new Map([
     ...readTools(db, householdId, { reads, locale: answerLocale, asOf, cite }),
     estaTool('create_proposal', proposalWriter({ db, householdId, jobId: input.jobId, locale, sheet, clock: input.clock }).write),
     estaTool('quote_page', quotePageTool({ fetched, cite, locale: answerLocale })),
+    estaTool('calculate', calculateTool({ sheet, cite, locale: answerLocale, log: calculations })),
   ]);
   const searchTerms = await familySearchTerms(db, householdId);
   const topic = earlier === null && input.topic !== null ? await loadTopic(tools, input.topic, { reads, asOf }) : null;
   return {
     prompt:
       earlier === null
-        ? askPrompt({ locale, today: asOf, timezone: input.timezone, question: input.question, labels, earlier: input.seed, topic })
-        : askFollowUpPrompt({ locale, today: asOf, timezone: input.timezone, question: input.question, labels, firstHandle }),
-    ...(earlier === null ? {} : { resume: { sessionId: earlier.sessionId, afterInputHash: earlier.turnHash }, rebuild: () => rebuildOrForgetSession(input, earlier, labels) }),
+        ? askPrompt({ locale, today: asOf, timezone: input.timezone, question: input.question, labels, earlier: input.seed, topic, typed, otherPeriodRate })
+        : askFollowUpPrompt({ locale, today: asOf, timezone: input.timezone, question: input.question, labels, firstHandle, typed, otherPeriodRate }),
+    ...(earlier === null ? {} : { resume: { sessionId: earlier.sessionId, afterInputHash: earlier.turnHash }, rebuild: () => rebuildOrForgetSession(input, earlier, labels, typed, otherPeriodRate) }),
     ...(input.deep ? { modelRole: 'deep' as const } : {}),
     tools,
     caps: toolCaps(WEB_CAPS),
@@ -173,7 +189,7 @@ export async function askRequest(input: AskInput): Promise<PreparedJob> {
         ...(turnHash === undefined ? {} : { p_turn_hash: turnHash }),
       });
       if (error) throw new Error(`Finishing the answer failed: ${error.message}`);
-      return { template: answer.template, cited: answer.cited.map(({ placeholder, value }) => ({ placeholder, value })), refs: [...answer.refs] as Json };
+      return { template: answer.template, cited: answer.cited.map(({ placeholder, value }) => ({ placeholder, value })), refs: [...answer.refs] as Json, calculations: calculations.map((calculation) => ({ ...calculation, operands: [...calculation.operands] })) };
     },
   };
 }
