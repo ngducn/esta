@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { noteRelated } from '@esta/core/assistant';
 import { isoDate, type IsoDate } from '@esta/core/date';
 import { askRequest, type EarlierTurn } from '../../src/jobs/ask';
-import { askPrompt, askSourceRepairPrompt, type AskedTurn } from '../../src/prompts/ask';
+import { askPrompt, askSourceRepairPrompt, rejectedTexts, type AskedTurn } from '../../src/prompts/ask';
 import { JOBS, sessionInputs, type PreparedJob } from '../../src/jobs/registry';
 import { canonicalizer, inputHash } from '../../src/replay/canonicalize';
 import { DEFAULT_REPLAY_DIR, writeRecording, type Recording } from '../../src/replay/store';
@@ -296,8 +296,7 @@ export const ASK_CASES: readonly AskCase[] = [
   },
 ];
 
-/** The texts a repair prompt says the guard rejected, one `"<text>": <rule>` line each. */
-export const rejectedTexts = (repair: string) => repair.split('\n').flatMap((line) => /^"([^"]*)":/u.exec(line)?.[1] ?? []);
+export { rejectedTexts };
 
 export const LEAK_REPLAY_DIR = join(DEFAULT_REPLAY_DIR, '..', 'agent-replay-cases', 'ask-leak');
 

@@ -1,5 +1,5 @@
 import { officialSourcesText } from '@esta/core/research';
-import { repairMessage, type NoteViolation } from '@esta/core/guard';
+import { repairMessage, repairTexts, type NoteViolation } from '@esta/core/guard';
 import type { IsoDate } from '@esta/core/date';
 import type { Locale } from '@esta/core/format';
 import type { TypedRecord } from '../tools/typed-numbers';
@@ -117,3 +117,11 @@ export function askRepairPrompt(violations: readonly NoteViolation[]): string {
 /** Asks for the official page a legal answer lacks (AGENT.md §5.6 step 9). */
 export const askSourceRepairPrompt = (): string =>
   `The question is about law, tax or procedure, so the reply needs an official page (${officialSourcesText()}). Search for one, fetch it with WebFetch, quote it with quote_page and name it as {{fN.source_name}}. Write the whole answer again from the start. The handles you already have still hold.`;
+
+/** What `rejectedTexts` names for the repair that asks for a source: it holds no rejected text, and is no guard reject of a number. */
+export const SOURCE_REJECT = 'official source';
+
+/** What a repair turn says the answer was rejected for, one entry each: the guard's texts, or `SOURCE_REJECT`. Every repair names at least one. */
+export function rejectedTexts(repair: string): string[] {
+  return repair === askSourceRepairPrompt() ? [SOURCE_REJECT] : repairTexts(repair);
+}

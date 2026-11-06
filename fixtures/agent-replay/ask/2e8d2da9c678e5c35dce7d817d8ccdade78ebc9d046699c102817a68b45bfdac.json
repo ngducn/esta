@@ -1,7 +1,7 @@
 {
   "version": 1,
   "kind": "ask",
-  "inputHash": "31494fd5ff955f58533b062f2ee31efcf273b5db099ddbac0a482e62ca6fd2b1",
+  "inputHash": "2e8d2da9c678e5c35dce7d817d8ccdade78ebc9d046699c102817a68b45bfdac",
   "input": {
     "version": 1,
     "kind": "ask",
@@ -25,9 +25,9 @@
       "calculate"
     ],
     "maxTurns": 20,
-    "resumesInputHash": "d2e691f0df13c535fc0205e36904711af94b24d543b4c946efd5aa5d6e49126e"
+    "resumesInputHash": "3b2dd4d6dee9295ceafd29d90ea11f13e3d34b96ce061ff6a2cd35f72cb35e5a"
   },
-  "label": "Hand-written source repair turn for guard probe vi-transfer-procedure (P5-14): a legal question the model still answers with no official page; the live recording waits for the P5-10 live run.",
+  "label": "Hand-written source repair turn for guard probe vi-transfer-procedure (P5-14): a legal question the model still answers with no official page; the live recording waits for the P5-10 live run. Re-keyed to resume the first pass: it passes the number guard since P5-10d.",
   "model": "hand-written",
   "numTurns": 1,
   "toolCalls": [],

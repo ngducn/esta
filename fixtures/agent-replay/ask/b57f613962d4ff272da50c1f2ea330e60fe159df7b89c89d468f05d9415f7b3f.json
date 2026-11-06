@@ -1,11 +1,11 @@
 {
   "version": 1,
   "kind": "ask",
-  "inputHash": "a67e8cedcfb1cd134c241ccd0e5b3e8b3b3c41e474df3a972973b24b8ab106c7",
+  "inputHash": "b57f613962d4ff272da50c1f2ea330e60fe159df7b89c89d468f05d9415f7b3f",
   "input": {
     "version": 1,
     "kind": "ask",
-    "prompt": "\"Q7:\": Do not type a number. Cite the tool field that holds it as {{fN.field}}.\n\"hai\": Do not write an amount, unit, number word, Roman numeral, or month or weekday name. Cite the tool field that holds it as {{fN.field}}, such as a _display, _compact or _relative field. Write people's names, nicknames and place names through a _name or _label field.\nWrite the whole answer again from the start with these fixed. The handles you already have still hold.",
+    "prompt": "\"Q7:\": Do not type a number. Cite the tool field that holds it as {{fN.field}}.\nWrite the whole answer again from the start with these fixed. The handles you already have still hold.",
     "builtInTools": [
       "WebSearch",
       "WebFetch"
@@ -27,7 +27,7 @@
     "maxTurns": 20,
     "resumesInputHash": "cbdf3671d8e6ba4eec8183de0cf7ec6c5f55374edb8b35223e9619e72f79a70a"
   },
-  "label": "Re-keyed repair turn for guard probe vi-raise-rent (P5-12 fix round 1): the live reply to the repair that named Q7:, which already wrote \"cả bên thuê lẫn bên cho thuê\", kept under the repair prompt that now also names hai. Re-keyed for #354's advice rule; its reply predates the rule.",
+  "label": "Re-keyed repair turn for guard probe vi-raise-rent (P5-12 fix round 1): the live reply to the repair that named Q7:, which already wrote \"cả bên thuê lẫn bên cho thuê\", kept under the repair prompt that now also names hai. Re-keyed for #354's advice rule; its reply predates the rule. Re-keyed for P5-10d: the repair message no longer names hai bên.",
   "model": "claude-sonnet-5-5",
   "numTurns": 1,
   "toolCalls": [],

@@ -18,12 +18,22 @@ export type WordRow = {
   /** A capitalized word after it reads as a person (`from May Demo`), since a month name holds no figure. */
   readonly passesBeforeName?: readonly string[];
   readonly bannedOnlyNearNumber?: true;
+  /**
+   * Whole phrases with the word in them, where it states no figure (`hai bên cùng ký`, parties to a contract; `ba mẹ`,
+   * parents). A word is one lower-case word; `!con|ba` after the last word means the next word is not one of those, and
+   * a closing ` .` means no word follows in the same clause (`chung của cả hai.`).
+   */
+  readonly passesInPhrases?: readonly string[];
 };
 
 const plain = (kind: WordKind, words: string): Array<[string, WordRow]> => words.split(' ').map((word) => [word, { kind }]);
 const letters = (kind: WordKind, words: string): Array<[string, WordRow]> => words.split(' ').map((word) => [word, { kind, bannedOnlyNearNumber: true }]);
 
 const CLASSIFIERS = 'phòng căn lô thửa tầng dãy tòa gian ngày tuần tháng giờ lần'.split(' ');
+
+/** What two parties do together, so `hai bên` before it is both of them and not a count: `hai bên thuê` counts tenants. */
+const PARTY_ACTS = ['cùng', 'đều', 'tự', 'thỏa', 'đồng ý', 'ký', 'thống', 'xác', 'phải', 'cần', 'có', 'sẽ', 'nên', 'mang', 'chịu', 'nộp', 'lập', 'được', 'đã', 'không'];
+const BOTH_ACTS = 'đều cùng đã không phải có sẽ cũng nên thì'.split(' ');
 
 const EXCEPTIONS: Readonly<Record<string, WordRow>> = {
   ty: { kind: 'amount', passesAfter: ['công'] },
@@ -57,7 +67,23 @@ const EXCEPTIONS: Readonly<Record<string, WordRow>> = {
   nhất: { kind: 'number', bannedOnlyAfter: ['thứ'] },
   nhật: { kind: 'date', bannedOnlyAfter: ['chủ'] },
   linh: { kind: 'number', passesBefore: ['hoạt', 'kiện', 'tinh'] },
-  ba: { kind: 'number', passesAfterPhrase: ['bên thứ'] },
+  ba: {
+    kind: 'number',
+    passesAfterPhrase: ['bên thứ'],
+    passesInPhrases: ['ba mẹ !con', 'ba hoặc mẹ', 'ba và mẹ', 'mẹ hoặc ba', 'mẹ và ba'],
+  },
+  hai: {
+    kind: 'number',
+    passesInPhrases: [
+      ...PARTY_ACTS.map((act) => `hai bên ${act}`),
+      'giữa hai bên',
+      'của hai bên',
+      'cả hai bên',
+      'cả hai .',
+      ...BOTH_ACTS.map((act) => `cả hai ${act}`),
+    ],
+  },
+  trăm: { kind: 'amount', passesAfter: ['phần'] },
   chín: { kind: 'number', passesBefore: ['chắn'] },
   second: { kind: 'number', passesBefore: ['opinion', 'opinions'] },
   double: { kind: 'number', passesBefore: ['check', 'checks', 'checked', 'checking'] },
@@ -88,6 +114,29 @@ export const WORDS: ReadonlyMap<string, WordRow> = new Map([
   ...plain('date', `${MONTHS} monday tuesday wednesday thursday friday saturday sunday fortnight giêng chạp rằm`),
   ...Object.entries(EXCEPTIONS),
 ]);
+
+const isLiteral = (word: string) => word !== '.' && !word.startsWith('!');
+
+/** Every context a number word passes in, as `NON_QUANTITY_PHRASES` for the tests that generate sentences from them. */
+export const NON_QUANTITY_PHRASES: ReadonlyArray<{ readonly word: string; readonly text: string; readonly ends: boolean }> = Object.entries(EXCEPTIONS).flatMap(([word, row]) =>
+  (row.passesInPhrases ?? []).map((phrase) => ({ word, text: phrase.split(' ').filter(isLiteral).join(' '), ends: phrase.endsWith(' .') })),
+);
+
+/** Whether `words` (a `passesInPhrases` entry) reads around the token at `at`; `spaced` says two tokens touch with a space or hyphen. */
+export function phraseAround<T extends { readonly lower: string }>(words: readonly string[], tokens: readonly T[], at: number, spaced: (left: T | undefined, right: T | undefined) => boolean): boolean {
+  const here = tokens[at]?.lower;
+  return words.some((word, k) => {
+    if (word !== here) return false;
+    return words.every((expected, j) => {
+      const pos = at + j - k;
+      const [prev, next] = [tokens[pos - 1], tokens[pos]];
+      if (expected === '.') return next === undefined || !spaced(prev, next);
+      if (expected.startsWith('!')) return next === undefined || !spaced(prev, next) || !expected.slice(1).split('|').includes(next.lower);
+      const previous = words[j - 1];
+      return next?.lower === expected && (j === 0 || previous === undefined || !isLiteral(previous) || spaced(prev, next));
+    });
+  });
+}
 
 export const ROMAN_LABELS: ReadonlySet<string> = new Set('quý tầng dãy khu phòng điều khoản phần đoạn quận phase part article section room floor'.split(' '));
 export const ROMAN_ACRONYMS: ReadonlySet<string> = new Set('MIX CD CV DC MC MD XL'.split(' '));

@@ -2,6 +2,7 @@ import { isoDate } from '@esta/core/date';
 import { OPEN_PROSE } from '@esta/core/guard/fixtures/open-prose';
 import { describe, expect, it } from 'vitest';
 import { askRequest } from '../../src/jobs/ask';
+import { SOURCE_REJECT } from '../../src/prompts/ask';
 import { inputHash } from '../../src/replay/canonicalize';
 import { DEFAULT_REPLAY_DIR } from '../../src/replay/store';
 import { canonicalInput, replaySession, type SessionRequest } from '../../src/sdk/session';
@@ -14,9 +15,10 @@ import { replayedReads } from './ask-reads';
 
 /**
  * The fixed replay set of the live open-prose guard probe (`pnpm agent:guard-probe`, P5-12): what the model wrote for
- * each prompt, guarded again with today's word table. A first pass may be rejected only for the text listed here: a
- * number the model typed, or the `hai` of `hai bên` (both parties), which the guard rejects on purpose because `hai bên
- * thuê` counts tenants (docs/plan/trail/p5-12-guard-probe.md). Any other reject is a false one.
+each prompt, guarded again with today's word table. A first pass may be rejected only for the text listed here: a
+ * number or count the model typed. `hai bên` as both parties, `ba mẹ` and `cả hai` pass in the contexts of
+ * `passesInPhrases` (P5-10d), while `hai bên thuê` counts tenants and is still rejected
+ * (docs/plan/trail/p5-12-guard-probe.md, docs/plan/trail/phase-5-guard.md). Any other reject is a false one.
  */
 const FIRST_PASS_REJECTS: Readonly<Record<string, readonly string[]>> = {
   'vi-zalo-reminder': ['5'],
@@ -25,9 +27,11 @@ const FIRST_PASS_REJECTS: Readonly<Record<string, readonly string[]>> = {
   'vi-zalo-thanks': ['Hai'],
   'vi-rent-tax': ['hai'],
   'vi-red-pink-book': ['hai'],
-  'vi-transfer-procedure': ['hai'],
-  'vi-repair-first': ['hai'],
-  'vi-raise-rent': ['Q7:', 'hai'],
+  'vi-raise-rent': ['Q7:'],
+  // A legal answer with no official page is sent back for one, which names no text (P5-10d).
+  'vi-bank-letter': [SOURCE_REJECT],
+  'vi-transfer-procedure': [SOURCE_REJECT],
+  'vi-notarize-lease': [SOURCE_REJECT],
 };
 
 const reads = replayedReads();
