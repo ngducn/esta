@@ -88,6 +88,8 @@ export const leaseEdit = defineOp<z.output<typeof editInputSchema>, LeaseEdit, L
     const [current] = await viewRows(ctx, 'leases', { id });
     if (current === undefined || (property_id !== undefined && current.property_id !== property_id)) return refuse({ kind: 'not_found' });
     if (current.status !== 'draft') return refuse({ kind: 'not_draft', status: current.status });
+    const [home] = await viewRows(ctx, 'properties', { id: current.property_id });
+    if (home === undefined) return refuse({ kind: 'not_found' });
     const draft = leaseDraftSchema.safeParse({ ...draftOf(current), ...set });
     if (!draft.success) return refuse(invalid(draft.error));
     const changed = changedColumns<LeaseDraft>(current, draft.data, LEASE_DRAFT_KEYS);

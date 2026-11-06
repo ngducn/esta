@@ -271,8 +271,8 @@ select throws_ok(
 
 select tests.clear_request();
 reset role;
-select ok(not has_function_privilege('anon', 'public.activate_lease(uuid, date)', 'execute'), 'anon cannot execute activate_lease');
-select ok(has_function_privilege('authenticated', 'public.activate_lease(uuid, date)', 'execute'), 'authenticated can execute activate_lease');
+select ok(not has_function_privilege('anon', 'public.activate_lease(uuid, date, jsonb)', 'execute'), 'anon cannot execute activate_lease');
+select ok(has_function_privilege('authenticated', 'public.activate_lease(uuid, date, jsonb)', 'execute'), 'authenticated can execute activate_lease');
 select ok(not has_function_privilege('authenticated', 'private.issue_invoices(uuid, date, timestamptz)', 'execute'),
   'a member cannot run issuance with a date of their choosing');
 

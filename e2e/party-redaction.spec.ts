@@ -40,6 +40,22 @@ const partyNamed = (name: string) => {
 const nameOf = (id: string) => query<{ full_name: string }>(workdir, `select full_name from public.parties where id = '${id}'`)[0]?.full_name;
 const downloads = () => query<{ n: number }>(workdir, `select count(*)::int as n from public.document_access_log where household_id = '${HOUSEHOLD}' and action = 'download'`)[0]?.n ?? 0;
 
+/** A new room beside an existing one, because a room holds one lease on any day and each test files its own ended lease. The afterEach below removes it, so no seeded property another spec reads (the Dĩ An card in property-units) keeps a room that reads vacant. */
+const ownRooms: string[] = [];
+test.afterEach(() => {
+  for (const id of ownRooms.splice(0)) {
+    query(workdir, `with gone as (delete from public.leases where unit_id = '${id}' returning 1) select count(*) from gone`);
+    query(workdir, `with gone as (delete from public.units where id = '${id}' returning 1) select count(*) from gone`);
+  }
+});
+async function ownRoom(page: Page) {
+  const [room] = query<{ property_id: string }>(workdir, `select property_id::text as property_id from public.units where household_id = '${HOUSEHOLD}' and kind = 'room' order by id limit 1`);
+  const id = randomUUID();
+  await serviceUpsert(page, 'units', { id, household_id: HOUSEHOLD, property_id: room?.property_id, label: `Demo Phòng ${id.slice(0, 4)}`, kind: 'room' });
+  ownRooms.push(id);
+  return { property_id: room?.property_id, id };
+}
+
 test('Ryan exports one tenant: their rows and files, no other tenant, and one access-log row per document (DOMAIN-VN §8)', async ({ page }) => {
   await open(page, ME, 'light', DESKTOP);
   const tenant = partyNamed('Lê Văn Cường Demo');
@@ -123,7 +139,7 @@ test('Ryan erases a former tenant: the name reads Đã xóa, the ID card he file
   const id = randomUUID();
   const leaseId = randomUUID();
   await serviceUpsert(page, 'parties', { id, household_id: HOUSEHOLD, kind: 'individual', full_name: 'Demo Người Đi Rồi', phone: '+84903999888', email: 'di.roi@demo.test', id_last4: '4321', tags: ['tenant'] });
-  const [room] = query<{ property_id: string; id: string }>(workdir, `select property_id::text as property_id, id::text as id from public.units where household_id = '${HOUSEHOLD}' and kind = 'room' order by id limit 1`);
+  const room = await ownRoom(page);
   await serviceUpsert(page, 'leases', { id: leaseId, household_id: HOUSEHOLD, property_id: room?.property_id, unit_id: room?.id, tenant_party_id: id, start_date: '2019-01-01', end_date: '2019-12-31', rent_vnd: 2_000_000, deposit_vnd: 0, status: 'ended' });
 
   await page.goto(`/properties/${room?.property_id}/rental/leases/${leaseId}`);
@@ -172,7 +188,7 @@ test('an erase that stopped before the files went hides them from a viewer, and 
   const cardId = randomUUID();
   const name = `${HOUSEHOLD}/${cardId}/front.jpg`;
   await serviceUpsert(page, 'parties', { id, household_id: HOUSEHOLD, kind: 'individual', full_name: 'Đã xóa', tags: ['tenant'] });
-  const [room] = query<{ property_id: string; id: string }>(workdir, `select property_id::text as property_id, id::text as id from public.units where household_id = '${HOUSEHOLD}' and kind = 'room' order by id limit 1`);
+  const room = await ownRoom(page);
   await serviceUpsert(page, 'leases', { id: randomUUID(), household_id: HOUSEHOLD, property_id: room?.property_id, unit_id: room?.id, tenant_party_id: id, start_date: '2019-01-01', end_date: '2019-12-31', rent_vnd: 2_000_000, deposit_vnd: 0, status: 'ended' });
   const upload = await page.request.post(`${rest.replace('/rest/v1', '/storage/v1')}/object/documents/${name}`, { headers: { ...service, 'content-type': 'image/jpeg' }, data: Buffer.from('jpeg') });
   expect(upload.ok(), await upload.text()).toBe(true);
