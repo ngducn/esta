@@ -1,0 +1,41 @@
+{
+  "anon": {
+    "public.invoice_qr_by_token(text)": "the signed-out bill page reads a bill through its share token alone"
+  },
+  "authenticated": {
+    "private.admin_bare_name(text)": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.admin_name_exact(text)": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.agent_item_audience(uuid)": "named in a row level security or storage policy, which runs as the signed-in member",
+    "private.blank_matches(text,text,text)": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.blank_matches_once(text,text,text)": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.document_household(text)": "named in a row level security or storage policy, which runs as the signed-in member",
+    "private.document_search_vector(text,text[],text)": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.document_upload_household(text)": "named in a row level security or storage policy, which runs as the signed-in member",
+    "private.export_household(text)": "named in a row level security or storage policy, which runs as the signed-in member",
+    "private.extraction_schema(text)": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.file_pending_removal(text)": "named in a row level security or storage policy, which runs as the signed-in member",
+    "private.holds_national_id(jsonb)": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.is_member(uuid,member_role)": "named in a row level security or storage policy, which runs as the signed-in member",
+    "private.is_operator(uuid)": "named in a row level security or storage policy, which runs as the signed-in member",
+    "private.is_own_member(uuid,uuid)": "named in a row level security or storage policy, which runs as the signed-in member",
+    "private.jsonb_whole_between(jsonb,bigint,bigint)": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.lacks_claimed_admin(uuid)": "named in a row level security or storage policy, which runs as the signed-in member",
+    "private.latest_extraction(uuid,uuid)": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.notification_user(uuid)": "named in a row level security or storage policy, which runs as the signed-in member",
+    "private.payment_status(bigint,bigint)": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.property_photo_household(text)": "named in a row level security or storage policy, which runs as the signed-in member",
+    "private.read_entries(jsonb)": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.statement_line_candidates(statement_rows)": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.statement_line_state(statement_rows)": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.statement_text_key(text)": "called by the statement line views and functions, which run as the signed-in member",
+    "private.thread_row_creator(text,uuid)": "named in a row level security or storage policy, which runs as the signed-in member",
+    "private.valid_annotations(jsonb)": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.valid_area(jsonb)": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.valid_iso_date(jsonb)": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.valid_kind_details(text,jsonb)": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.valid_mortgage(jsonb)": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.valid_ownership_shares(jsonb)": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.valid_purposes(jsonb)": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.whole_unit_id(uuid)": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member"
+  }
+}
