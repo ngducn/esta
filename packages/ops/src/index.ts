@@ -27,6 +27,7 @@ export { readCollectionRows, readMonthCollected, type CollectionRow } from './co
 export { readCompleteness, type PropertyCompleteness } from './completeness';
 export { depositRecord, type DepositRecorded, type DepositRefusal } from './deposit-ops';
 export { documentAttach, type AttachRefusal } from './document-attach';
+export { extractionAccept, extractionReject, type ExtractionAccepted, type ExtractionRefusal, type ExtractionRejected, type ReviewHold } from './extraction-ops';
 export {
   documentRegister,
   documentRow,

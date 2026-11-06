@@ -11,7 +11,6 @@
   "ESTA_BATCH_UNDO_THROUGH_FUNCTION": "batch trigger forcing undo through its function; a direct write only",
   "ESTA_CRON_ARGUMENTS": "nightly invoicing argument guard; only the cron route calls it",
   "ESTA_EXPENSE_NOT_FOUND": "reachable: a sheet left open on an expense deleted since shows the network error; map it when the sheet gets a gone state",
-  "ESTA_FORBIDDEN": "ask follow-up ownership guard; the action reads the thread through RLS first",
   "ESTA_INVOICE_IDENTITY": "invoice identity trigger; only the invoicing job writes invoices",
   "ESTA_INVOICE_ISSUED": "issued invoice immutability trigger; screens offer no edit of an issued invoice",
   "ESTA_ISSUE_ARGUMENTS": "issue function argument guard; only the invoicing job calls it",

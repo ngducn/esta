@@ -12,6 +12,8 @@ import { seedId } from '../../../../../supabase/seed/generator/ids';
 import { integrationLane, outsiderEmail, withCapabilities } from '@/test/lanes';
 import { service, signedInAs, stackName, stackUp } from '@/test/stack';
 import { acceptBill, BILL_TEXT, billTruth, ocrText, waitingBill } from './test/utility-bill';
+import { acceptCutOnce, addressLookupFails, holdFirstLastWrite } from '@/test/session-faults';
+import { twoAtOnce } from '@/test/two-at-once';
 
 const session = vi.hoisted(() => ({
   client: null as unknown,
@@ -20,6 +22,7 @@ const session = vi.hoisted(() => ({
 
 vi.mock('server-only', () => ({}));
 vi.mock('next/cache', () => ({ revalidatePath: () => undefined }));
+vi.mock('@/server/clock', () => ({ readRequestClock: async () => ({ now: () => '2026-10-08T10:00:00+07:00' }) }));
 vi.mock('@/server/member', () => ({ requireMember: async () => withCapabilities(session.member) }));
 vi.mock('@/server/supabase/server', () => ({ createSessionClient: async () => session.client }));
 
@@ -38,7 +41,6 @@ const FIXTURES = join(import.meta.dirname, '../../../../../fixtures/certificates
 const truths = readdirSync(FIXTURES, { withFileTypes: true })
   .filter((entry) => entry.isDirectory() && entry.name !== 'generator')
   .map((entry) => ({ id: entry.name, certificate: (JSON.parse(readFileSync(join(FIXTURES, entry.name, 'truth.json'), 'utf8')) as { certificate: unknown }).certificate }));
-
 
 const rest = <T>(path: string, init?: RequestInit) => service<T>(`/rest/v1/${path}`, init);
 const billLane = { household, propertyId, documents, rest };
@@ -90,28 +92,6 @@ async function written(extractionId: string) {
   };
 }
 
-/** The member's session, except the first upsert into `table` comes back failed, as a cut connection would leave it. */
-function cutOnce(client: SupabaseClient, table: string): SupabaseClient {
-  let cut = false;
-  return new Proxy(client, {
-    get(target, property, receiver) {
-      if (property !== 'from') return Reflect.get(target, property, receiver);
-      return (name: string) => {
-        if (name !== table || cut) return target.from(name);
-        cut = true;
-        return { upsert: async () => ({ data: null, error: { message: 'connection cut' } }) };
-      };
-    },
-  });
-}
-
-/** The member's session, except the address lookup answers with an error, as a dropped connection would leave it. */
-const addressLookupFails = (client: SupabaseClient) =>
-  new Proxy(client, {
-    get: (target, property, receiver) =>
-      property !== 'rpc' ? Reflect.get(target, property, receiver) : (name: string, args: never) => (name === 'suggest_current_unit' ? { select: async () => ({ data: null, error: { message: 'connection cut' } }) } : target.rpc(name, args)),
-  });
-
 describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
   let member: SupabaseClient;
   let outsider: SupabaseClient;
@@ -160,12 +140,12 @@ describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
     expect(Object.keys(extraction?.accepted_fields ?? {}).toSorted()).toEqual(Object.keys(acceptAll).toSorted());
   });
 
-  test('a save cut after the certificate step and saved again converges on the same rows', async () => {
+  test('a save cut before the accepting function answers writes nothing, and saved again converges on the same rows (#184)', async () => {
     asMember();
     const { extractionId } = await waitingExtraction();
-    session.client = cutOnce(member, 'parcels');
+    session.client = acceptCutOnce(member);
     expect(await saveConfirmed(extractionId, acceptAll)).toEqual({ ok: false, reason: 'failed' });
-    expect(await written(extractionId)).toMatchObject({ certificates: 1, parcels: 0 });
+    expect(await written(extractionId)).toMatchObject({ certificates: 0, parcels: 0, structures: 0 });
     expect(await rest(`document_extractions?id=eq.${extractionId}&select=status`)).toEqual([{ status: 'needs_review' }]);
 
     session.client = member;
@@ -173,6 +153,25 @@ describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
     expect(await written(extractionId)).toMatchObject({ certificates: 1, parcels: 1, structures: 1 });
     expect(await rest(`parcels?id=eq.${rowId(extractionId, 'parcels[0]')}&select=area_m2,parcel_no`)).toEqual([{ area_m2: 82.7, parcel_no: '56' }]);
     expect(await rest(`document_extractions?id=eq.${extractionId}&select=status`)).toEqual([{ status: 'accepted' }]);
+  });
+
+  test('two accepts of one extraction, the first held until the second has finished, leave one result that agrees with its own record (#184)', async () => {
+    asMember();
+    const { extractionId } = await waitingExtraction();
+    const hold = holdFirstLastWrite(member);
+    session.client = hold.client;
+    const typed = (area: string) => ({ ...acceptAll, 'parcels[0].area_m2': { kind: 'edited', value: area } });
+    let call = 0;
+    const outcomes = await twoAtOnce(async () => {
+      const mine = call++;
+      if (mine === 1) await hold.held;
+      return saveConfirmed(extractionId, typed(mine === 0 ? '100' : '200'));
+    });
+    expect(outcomes.map((outcome) => outcome.status === 'fulfilled' && outcome.value.ok)).toEqual([true, true]);
+    expect(await written(extractionId)).toMatchObject({ certificates: 1, parcels: 1, structures: 1 });
+    const [parcel] = await rest<{ area_m2: number }[]>(`parcels?id=eq.${rowId(extractionId, 'parcels[0]')}&select=area_m2`);
+    const [extraction] = await rest<{ accepted_fields: Record<string, { value: number }> }[]>(`document_extractions?id=eq.${extractionId}&select=accepted_fields`);
+    expect(parcel?.area_m2).toBe(extraction?.accepted_fields['parcels[0].area_m2']?.value);
   });
 
   test('the history names the member as the actor of every row the save wrote, never the assistant', async () => {
@@ -364,15 +363,10 @@ describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
     expect(await saveExtractionReview(extractionId, decisions)).toEqual({ ok: true, propertyId });
   });
 
-  test('a viewer and a member of another household write nothing', async () => {
+  test('a member of another household writes nothing; a viewer is refused in supabase/tests/accept_extraction.test.sql', async () => {
     const { extractionId } = await waitingExtraction();
-    session.client = member;
-    session.member = { role: 'viewer', household: { id: household } };
-    expect(await saveConfirmed(extractionId, acceptAll)).toEqual({ ok: false, reason: 'forbidden' });
     session.client = outsider;
-    session.member = { role: 'admin', household: { id: household } };
     expect(await saveConfirmed(extractionId, acceptAll)).toEqual({ ok: false, reason: 'not_reviewable' });
     expect(await written(extractionId)).toMatchObject({ certificates: 0, parcels: 0 });
-    expect(await rest(`document_extractions?id=eq.${extractionId}&select=status`)).toEqual([{ status: 'needs_review' }]);
   });
 });
