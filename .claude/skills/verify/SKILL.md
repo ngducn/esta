@@ -123,6 +123,17 @@ Proof standards:
 - Screenshots for UI work are Vietnamese, light and dark, at 390x844 and 1440x900, per CLAUDE.md.
 - Real family data never enters a screenshot. Seed names contain `Demo`.
 
+## Preview target
+
+Once Ryan has deployed the preview (DEPLOY.md section 11), a lane can drive the preview deploy instead of a local slot. Skip Launch: the preview already runs `esta-preview` with the `full` seed. Point the browser at the preview URL (`$S/b.sh goto https://<preview host>/sign-in`) and sign in without sending email:
+
+```bash
+export ESTA_ENV=preview ESTA_PREVIEW_PROJECT_REF=<preview ref> SUPABASE_URL=https://<preview ref>.supabase.co SUPABASE_SERVICE_ROLE_KEY=<esta-preview service role key>
+pnpm lane:otp me.lane1@demo.esta.test      # prints a 6-digit code
+```
+
+Fill `input[name="email"]` and `input[name="code"]` on `/sign-in/code` as `sign-in.sh` does, with that code. `lane:otp` refuses unless `ESTA_ENV=preview` and the `SUPABASE_URL` project equals `ESTA_PREVIEW_PROJECT_REF`, so it can never mint a code for `esta-prod`. Keep the service role key in the shell only, never in a file in the repo or in evidence. Use seeded `Demo` accounts only.
+
 ## Cleanup
 
 ```bash
@@ -148,6 +159,7 @@ Stop only what you started. Never use `pkill`, `killall` or `kill` by name or pa
 | `worker.sh start replay\|live`, `worker.sh stop` | Start or stop the slot's agent worker; pid in `worker.pid`, log in `worker.log` |
 | `cleanup.sh` | Stop everything Launch started and prove the ports are free |
 | `node scripts/inbucket-code.ts <email> [--clear]` | Print the newest 6-digit code for an address, or clear its mail |
+| `pnpm lane:otp <email>` | Preview target only: print a sign-in code from `esta-preview` without sending email |
 
 Every script sources `scripts/env.sh`, which derives the ports and paths above from `ESTA_SLOT`.
 

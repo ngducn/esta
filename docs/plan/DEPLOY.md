@@ -116,3 +116,12 @@ Move `esta-prod` to a paid Supabase plan (daily backups and point-in-time recove
 Run the Mom test on the final build (`docs/plan/mom-test.md`), starting `pnpm dev:lan --prod` for seeded data on a phone. Record each task's time there; a failure becomes a fix.
 
 Steps still to add when P5-09, P5-10, P5-14 and P5-15 merge: any new environment variable, cron route or worker job they bring. Add it to the table in section 4 (a cron route needs nothing else: `smoke` reads `vercel.json`), and rerun the dry run.
+
+## 11. Live lanes on the preview deploy (Agent, after Ryan has deployed preview)
+
+Lanes sign in as seeded `Demo` members on `esta-preview` without any email being sent. Only the agent's shell holds these values; they never go into a file in the repo or into Vercel.
+
+1. In the shell, export `ESTA_ENV=preview`, `ESTA_PREVIEW_PROJECT_REF=<preview ref>`, `SUPABASE_URL=https://<preview ref>.supabase.co` and the `esta-preview` service role key as `SUPABASE_SERVICE_ROLE_KEY`.
+2. `pnpm lane:otp me.lane1@demo.esta.test` prints a 6-digit code through `auth.admin.generateLink`. Type it on the preview's `/sign-in/code` page.
+3. The script refuses, and prints why, unless `ESTA_ENV=preview` and the `SUPABASE_URL` project equals `ESTA_PREVIEW_PROJECT_REF`. A production `SUPABASE_URL` or `ESTA_ENV=production` can never mint a code.
+4. Record the date and who ran the lanes under this section in the step log.
