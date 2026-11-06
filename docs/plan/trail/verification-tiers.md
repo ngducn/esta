@@ -44,6 +44,7 @@ Review checklist for classes no mechanical check catches (a reviewer reads for e
 1. A figure with two definitions: a screen's total and the same total elsewhere come from one home, and a test compares it with an independent figure.
 2. Clock edges, until `clockEdges()` (Q-16) is used by every period-keyed test.
 3. Count, then write, until `twoAtOnce` (Q-16) covers the write.
+4. A denylist where an allowlist belongs: a fix that refuses the bad spellings it was shown (monthly rates, #439) instead of accepting only the good ones. Ask for a property test that random neighbours of the input never pass.
 
 ## Planned tiers for the remaining PRs
 
