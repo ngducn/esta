@@ -40,10 +40,15 @@ const choice = <T extends string>(options: readonly T[]) => ({
 });
 
 const TERM_TOKEN = /(\d{1,2}[./-]\d{1,2}[./-]\d{4}|\d{4}-\d{2}-\d{2})|(?<![\d./])(\d{1,2})[./-](\d{4})(?!\d)/gu;
-const TERM_START = /(?<!\p{L})(?:từ|tu)(?!\p{L})/giu;
-const TERM_END_WORD = /(?<!\p{L})(?:hạn|han|đến|den|tới|toi)(?!\p{L})/giu;
-/** A label that makes the date after it an issue date: `cấp ngày`, `ngày cấp`, `cấp`, and their unaccented forms. */
-const TERM_ISSUED = /(?<!\p{L})(?:(?:ngày|ngay)\s+(?:cấp|cap)|(?:cấp|cap)(?:\s+(?:ngày|ngay))?)(?!\p{L})[\s:.,-]*$/iu;
+/**
+ * What may stand right before a date for it to end a term: a word that means "until" or "expires", with `ngày` or
+ * `tháng` between it and the date at most, or nothing at all when the date is the whole text. Any other phrase before a
+ * date, such as `cấp ngày`, `ký ngày` or `vào sổ ngày`, says what the date is, and it is not the end.
+ */
+const TERM_END_LEAD =
+  /(?:^|(?<!\p{L})(?:(?:đến|den|tới|toi)(?:\s+(?:hết|het))?|(?:hết|het)\s+(?:hạn|han)|hạn|han)(?:\s+(?:sử|su)\s+(?:dụng|dung))?(?!\p{L}))[\s:.,-]*(?:(?:ngày|ngay|tháng|thang)(?!\p{L})[\s:.,-]*)?$/iu;
+/** Between the two dates of a range: no letters or digits, or only a word for "until", as `15/10/1993 đến ngày 15/10/2043`. */
+const TERM_RANGE_JOINER = /^[^\p{L}\p{N}]*(?:(?:đến|den|tới|toi|to|until|and)(?:\s+(?:hết|het))?(?:\s+(?:ngày|ngay))?[^\p{L}\p{N}]*)?$/iu;
 
 /** [app rule] A term printed to the month, as pre-2009 certificates print `Đến tháng 10/2043`, runs to its last day. */
 function readMonthEnd(month: string, year: string): IsoDate | null {
@@ -52,29 +57,27 @@ function readMonthEnd(month: string, year: string): IsoDate | null {
 }
 
 /**
- * The end of a land use term. Every date in the text is read except one labelled as an issue date; when two or more
- * remain the term ends at the last one, whatever stands between them, and they must not run backwards. A single date
- * that `từ` leads, with no `hạn` or `đến` after it, is a start, so a term that names only its start, such as
- * `50 năm kể từ ngày 15/10/1993`, has no end. A date that cannot be read refuses the whole text.
+ * The end of a land use term, by what leads each date and not by what is wrong with the others. A date ends the term
+ * when it is the second of a range (only punctuation, symbols, spaces or a word for "until" between it and the date
+ * before it) or when an end word leads it directly (`TERM_END_LEAD`); the term ends at the last such date. Every other
+ * dated phrase is never the end, so a duration followed by an issue, decision or registry date has none, and a text that
+ * names only a start has none. Dates must not run backwards, and a date that cannot be read refuses the whole text.
  */
 function readTermEnd(text: string): IsoDate | null {
   const dates: IsoDate[] = [];
-  let last = 0;
+  let end: IsoDate | null = null;
+  let previousTo = 0;
   for (const m of text.matchAll(TERM_TOKEN)) {
-    if (TERM_ISSUED.test(text.slice(0, m.index))) continue;
     const [, full, month, year] = m;
     const date = full !== undefined ? readDate(full) : month !== undefined && year !== undefined ? readMonthEnd(month, year) : null;
     if (date === null) return null;
+    const rangeEnd = dates.length > 0 && TERM_RANGE_JOINER.test(text.slice(previousTo, m.index));
+    if (rangeEnd && date < (dates.at(-1) ?? date)) return null;
+    if (rangeEnd || TERM_END_LEAD.test(text.slice(0, m.index))) end = date;
     dates.push(date);
-    last = m.index;
+    previousTo = m.index + m[0].length;
   }
-  const end = dates.at(-1);
-  if (end === undefined || dates.some((date, at) => date > (dates[at + 1] ?? date))) return null;
-  if (dates.length > 1) return end;
-  const before = text.slice(0, last);
-  const startedAt = [...before.matchAll(TERM_START)].at(-1)?.index ?? -1;
-  const endedAt = [...before.matchAll(TERM_END_WORD)].at(-1)?.index ?? -1;
-  return startedAt > endedAt ? null : end;
+  return end;
 }
 
 function readDate(text: string): IsoDate | null {

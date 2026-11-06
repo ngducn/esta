@@ -17,6 +17,10 @@ const joiner = fc.oneof(
   fc.string({ unit: fc.constantFrom(...NOT_DIGIT), minLength: 0, maxLength: 4 }),
   fc.constantFrom(' đến ', ' den ', ' tới ', ' ĐẾN ', ' to ', ' until ', ' and ', ' - '),
 );
+const LETTERS = [...'aăâbcdđeêghiklmnoôơpqrstuưvxyàáảãạằắẳẵặầấẩẫậèéẻẽẹềếểễệìíỉĩịòóỏõọồốổỗộờớởỡợùúủũụừứửữựỳýỷỹỵ'];
+const word = fc.string({ unit: fc.constantFrom(...LETTERS), minLength: 1, maxLength: 7 });
+/** Words that mean "until" or "expires", written down here and not read from the parser. */
+const END_MEANING = new Set(['đến', 'den', 'tới', 'toi', 'hạn', 'han', 'hết', 'het', 'to']);
 const style = fc.constantFrom<'/' | '.' | '-'>('/', '.', '-');
 const printed = (date: Date, sep: string) => {
   const [y = '', m = '', d = ''] = date.toISOString().slice(0, 10).split('-');
@@ -35,11 +39,12 @@ describe('the term parser on generated ranges', () => {
     );
   });
 
-  it('refuses a duration followed by an issue date', () => {
+  it('gives no end to a duration followed by a date that no end word leads', () => {
     fc.assert(
-      fc.property(day, fc.constantFrom('cấp ngày ', 'Cấp ngày ', 'ngày cấp: ', 'cap ngay ', 'ngay cap '), fc.constantFrom('50 năm', '30 năm', 'lâu dài đến hết'), (issued, label, duration) => {
-        fc.pre(!duration.includes('lâu dài'));
-        expect(INPUT_KINDS.term.parse(`Thời hạn sử dụng: ${duration}, ${label}${printed(issued, '/')}`).ok).toBe(false);
+      fc.property(day, fc.array(word, { minLength: 1, maxLength: 4 }), fc.constantFrom('50 năm', '30 năm', '99 năm'), fc.constantFrom(',', '.', ';', ''), (issued, label, duration, stop) => {
+        fc.pre(label.every((one) => !END_MEANING.has(one.toLocaleLowerCase('vi'))));
+        const out = INPUT_KINDS.term.parse(`Thời hạn sử dụng: ${duration}${stop} ${label.join(' ')} ${printed(issued, '/')}`);
+        expect(out.ok).toBe(false);
       }),
       params,
     );
