@@ -28,12 +28,13 @@ function redirectKeepingCookies(request: NextRequest, from: NextResponse, pathna
   return redirect;
 }
 
-/** A signed-out visit remembers where it was going for 30 minutes, so a notice's link opens its note after sign-in. */
+/** A signed-out visit to a page remembers where it was going for 30 minutes, so a notice's link opens its note after sign-in. A background fetch of a page leaves no trace. */
 function redirectToSignIn(request: NextRequest, from: NextResponse): NextResponse {
   const redirect = redirectKeepingCookies(request, from, '/sign-in');
   const { pathname, search } = request.nextUrl;
   const target = safeReturnPath(`${pathname}${search}`);
-  if (request.method === 'GET' && target !== null && target !== '/') {
+  const opensPage = request.headers.get('sec-fetch-mode') === 'navigate' && request.headers.get('sec-fetch-dest') === 'document';
+  if (request.method === 'GET' && opensPage && target !== null && target !== '/') {
     redirect.cookies.set(RETURN_COOKIE, target, { httpOnly: true, sameSite: 'lax', path: '/', maxAge: RETURN_MAX_AGE_SECONDS, secure: request.nextUrl.protocol === 'https:' });
   }
   return redirect;
