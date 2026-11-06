@@ -22,7 +22,7 @@ describe('signing out of the connector (#220)', () => {
     const token = accessToken(file);
     expect(await serverAccepts(token), 'the access token works while signed in').toBe(true);
 
-    expect(await logOut(clientAt(file))).toEqual({ ok: true });
+    expect(await logOut(clientAt(file))).toEqual({ ok: true, value: null });
 
     expect(await serverAccepts(token), 'the server session is gone, not just the saved copy').toBe(false);
     expect(JSON.parse(readFileSync(file, 'utf8'))).toEqual({});

@@ -1,6 +1,5 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
-import { seedId } from '../../../../../supabase/seed/generator/ids';
 import { integrationLane } from '@/test/lanes';
 import { putSigned, service, signedInAs, stackName, stackUp } from '@/test/stack';
 

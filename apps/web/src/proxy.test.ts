@@ -44,7 +44,7 @@ describe('proxy signed Storage previews stay out of shared caches and accept onl
   it.each(signedPaths.flatMap((path) => ['POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'].map((method) => [method, path] as const)))(
     'answers a %s to %s with 405 and never reaches Storage',
     async (method, path) => {
-      const response = await proxy(new NextRequest(`http://localhost:3500${path}`, { method, body: method === 'OPTIONS' ? undefined : 'x' }));
+      const response = await proxy(new NextRequest(`http://localhost:3500${path}`, method === 'OPTIONS' ? { method } : { method, body: 'x' }));
 
       expect(response.status).toBe(405);
       expect(response.headers.get('allow')).toBe('GET, HEAD');
