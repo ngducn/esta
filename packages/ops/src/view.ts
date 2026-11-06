@@ -67,7 +67,7 @@ const READ: { readonly [T in ViewTable]: (ctx: ViewContext, where: Lookup[T]) =>
   units: async (ctx, where) => rowsOf(await ctx.db.from('units').select('id, property_id, label').eq('household_id', ctx.householdId).match(where), 'units'),
   parties: async (ctx, where) => rowsOf(await ctx.db.from('parties').select('id, full_name, phone, id_last4').eq('household_id', ctx.householdId).match(where), 'parties'),
   deposit_entries: async (ctx, where) =>
-    rowsOf(await ctx.db.from('deposit_entries').select('id, lease_id, kind, amount_vnd, on_date').eq('household_id', ctx.householdId).match(where), 'deposit_entries').map((row) => ({
+    rowsOf(await ctx.db.from('deposit_entries').select('id, lease_id, kind, amount_vnd, on_date').eq('household_id', ctx.householdId).match(where).order('on_date').order('created_at').order('id'), 'deposit_entries').map((row) => ({
       ...row,
       kind: z.enum(DEPOSIT_KINDS).parse(row.kind),
       on_date: isoDateSchema.parse(row.on_date),

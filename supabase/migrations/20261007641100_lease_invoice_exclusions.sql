@@ -1,5 +1,5 @@
 -- Two promises the billing tables made through hand-written checks are now kept by the database itself (#198): a room
--- holds one active or terminated lease on any day, and a lease has one bill on any day. The service role, the seed and
+-- is held by one lease that has started (active, terminated or ended) on any day, and a lease has one bill on any day. The service role, the seed and
 -- any later write path meet the same refusal as a member does.
 -- A void bill keeps its stretch: if it did not, the nightly job would draft the voided stretch again.
 create extension if not exists btree_gist with schema extensions;
@@ -7,14 +7,15 @@ create extension if not exists btree_gist with schema extensions;
 alter table public.leases
   add constraint leases_room_one_holder
   exclude using gist (unit_id with =, daterange(start_date, end_date, '[]') with &&)
-  where (status in ('active', 'terminated'));
+  where (status <> 'draft');
 
 alter table public.invoices
   add constraint invoices_lease_one_bill_per_day
   exclude using gist (lease_id with =, daterange(period_start, period_end, '[]') with &&);
 
--- The 20261007306700 guard without its overlap query and unit lock: the exclusion constraint serializes two activations
--- on one room, the second waiting for the first and then failing with 23P01.
+-- The 20261007306700 guard with the unit lock and the overlap query kept: an exclusion constraint does not serialize two
+-- writers (each waits for the other's index entry and Postgres kills one with 40P01), so the lock makes two activations of
+-- one room take turns and the second answers ESTA_LEASE_OVERLAP. The constraint stays as the backstop for every other write.
 create or replace function private.guard_lease()
 returns trigger
 language plpgsql
@@ -47,6 +48,16 @@ begin
     or (new.end_date is distinct from old.end_date and not (old.status = 'active' and new.status = 'terminated'))
   ) then
     raise exception 'ESTA_LEASE_TERMS_LOCKED' using errcode = '23514';
+  end if;
+  if old.status = 'draft' and new.status = 'active' then
+    perform 1 from public.units u where u.id = new.unit_id for no key update;
+    if exists (
+      select 1 from public.leases l
+      where l.unit_id = new.unit_id and l.id <> new.id and l.status <> 'draft'
+        and daterange(l.start_date, l.end_date, '[]') && daterange(new.start_date, new.end_date, '[]')
+    ) then
+      raise exception 'ESTA_LEASE_OVERLAP' using errcode = '23P01';
+    end if;
   end if;
   return new;
 end;
@@ -153,11 +164,7 @@ begin
       raise exception 'ESTA_ACTIVATION_BILLS_CHANGED' using errcode = '40001';
     end if;
   end if;
-  begin
-    update public.leases l set status = 'active', paid_through_date = p_paid_through where l.id = p_lease_id;
-  exception when exclusion_violation then
-    raise exception 'ESTA_LEASE_OVERLAP' using errcode = '23P01';
-  end;
+  update public.leases l set status = 'active', paid_through_date = p_paid_through where l.id = p_lease_id;
   perform private.issue_invoices(p_lease_id, v_today, v_now);
   return query
     select i.id, i.period_start, i.period_end, i.due_date, i.status from public.invoices i

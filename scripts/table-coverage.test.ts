@@ -67,4 +67,11 @@ describe('exclusionProblems', () => {
     ]);
     expect(exclusionProblems(['leases_room_one_holder'], [{ path: 'b.sql', text: 'select "leases_room_one_holder";' }])).toHaveLength(1);
   });
+
+  it('fails a constraint a comment names and a different assertion expects 23P01 from', () => {
+    const elsewhere = `-- "leases_room_one_holder" is tried below
+select throws_ok($$ insert ... $$, '23P01', 'conflicting key value violates exclusion constraint "other_one"', 'x');
+select is(1, 1, 'the "leases_room_one_holder" constraint');`;
+    expect(exclusionProblems(['leases_room_one_holder'], [{ path: 'c.sql', text: elsewhere }])).toHaveLength(1);
+  });
 });

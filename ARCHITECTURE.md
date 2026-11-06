@@ -88,7 +88,7 @@ A rule that decides what gets written lives in SQL, because SQL is the writer: b
 
 - `private.lease_periods` is the one billing planner. Screens and tax read its periods through `public.lease_schedule`, which checks membership per lease, and the seed bills through `run_invoicing` as the nightly job does. `packages/core/src/lease` keeps only pure readers of those rows, such as `currentMonthlyRent` and `leaseTimeline`.
 - When a TypeScript twin must stay, prove parity with golden vectors that pgTAP replays, as `supabase/tests/fixtures/payment_status.csv` does.
-- An invariant over rows belongs in a constraint, not in a check inside one function. Issue #198 adds exclusion constraints for overlapping leases and invoices.
+- An invariant over rows belongs in a constraint, not in a check inside one function. Exclusion constraints keep a room to one started lease on any day (`leases_room_one_holder`) and a lease to one bill on any day (`invoices_lease_one_bill_per_day`). A constraint does not serialize writers: `guard_lease` locks the unit first so two activations take turns and the second answers `ESTA_LEASE_OVERLAP`.
 - Every `'ESTA_*'` sentinel a migration raises is named in a TypeScript refusal table (`dbRefusal`), or sits in `quality/sentinels.json` with a one-line reason it never reaches a screen. `scripts/check-sentinels.ts` runs in `pnpm check` (`pnpm check:sentinels`) and fails on an unmapped, unlisted sentinel; the list only shrinks, so mapping one removes its entry. A rule the database adds that TypeScript lets through (#211) is mapped the same day.
 - Issue #197 squashes the migrations into one baseline before the first deploy, so each function has one current body.
 

@@ -24,10 +24,10 @@ export function hiddenRowProblems(privateTables: readonly string[], files: reado
     .map((name) => `public.${name} limits who may read its rows, and no pgTAP file calls tests.hidden_everywhere('${name}', ...)`);
 }
 
-/** An exclusion constraint is a rule the database keeps (#198): a pgTAP file must name it and try the write it forbids, which raises 23P01. */
+/** An exclusion constraint is a rule the database keeps (#198): a pgTAP `throws_ok` must try the write it forbids, expect 23P01 and name the constraint in the same call. */
 export function exclusionProblems(constraints: readonly string[], files: readonly TestFile[]): string[] {
   return constraints
-    .filter((name) => !files.some(({ text }) => text.includes(`"${name}"`) && text.includes('23P01')))
+    .filter((name) => !files.some(({ text }) => [...stripSqlComments(text).matchAll(/throws_ok\(([\s\S]*?)\)\s*;/g)].some(([, call = '']) => call.includes('23P01') && call.includes(`"${name}"`))))
     .map((name) => `the exclusion constraint ${name} has no pgTAP file that names it and expects 23P01 from the write it forbids`);
 }
 

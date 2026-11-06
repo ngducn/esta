@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(16);
+select plan(19);
 
 select tests.create_household('a') as a \gset
 
@@ -12,6 +12,7 @@ insert into public.properties (id, household_id, nickname, code, kind, use_mode)
 insert into public.units (id, household_id, property_id, label, kind) values
   ('00000000-0000-4000-8000-000000000a11', :'a', '00000000-0000-4000-8000-0000000000a1', 'Phòng 1', 'room'),
   ('00000000-0000-4000-8000-000000000a12', :'a', '00000000-0000-4000-8000-0000000000a1', 'Phòng 2', 'room'),
+  ('00000000-0000-4000-8000-000000000a13', :'a', '00000000-0000-4000-8000-0000000000a1', 'Phòng 3', 'room'),
   ('00000000-0000-4000-8000-000000000a21', :'a', '00000000-0000-4000-8000-0000000000a2', 'Phòng T', 'room');
 insert into public.parties (id, household_id, kind, full_name, tags) values
   ('00000000-0000-4000-8000-00000000a0a1', :'a', 'individual', 'Lê Văn Demo', array['tenant']);
@@ -49,7 +50,12 @@ select lives_ok(
   format($$ insert into public.leases (household_id, property_id, unit_id, tenant_party_id, start_date, end_date, rent_vnd, status)
             values (%L, '00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-000000000a11',
                     '00000000-0000-4000-8000-00000000a0a1', '2025-01-01', '2025-12-31', 3000000, 'ended') $$, :'a'),
-  'an ended lease on the room does not block');
+  'an ended lease that shares no day with the room''s others is accepted');
+select throws_ok(
+  format($$ insert into public.leases (household_id, property_id, unit_id, tenant_party_id, start_date, end_date, rent_vnd, status)
+            values (%L, '00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-000000000a11',
+                    '00000000-0000-4000-8000-00000000a0a1', '2026-04-01', '2026-04-30', 3000000, 'ended') $$, :'a'),
+  '23P01', 'conflicting key value violates exclusion constraint "leases_room_one_holder"', 'an ended lease keeps its days: another lease cannot overlap it, so no day is billed twice');
 
 reset role;
 select tests.clear_request();
@@ -88,6 +94,11 @@ insert into public.leases (id, household_id, property_id, unit_id, tenant_party_
    '00000000-0000-4000-8000-00000000a0a1', '2026-10-01', '2027-09-30', 3000000, 'draft'),
   ('00000000-0000-4000-8000-00000000e003', :'a', '00000000-0000-4000-8000-0000000000a2', '00000000-0000-4000-8000-000000000a21',
    '00000000-0000-4000-8000-00000000a0a1', '2026-10-01', '2027-09-30', 3000000, 'draft');
+insert into public.leases (id, household_id, property_id, unit_id, tenant_party_id, start_date, end_date, rent_vnd, status) values
+  ('00000000-0000-4000-8000-00000000e010', :'a', '00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-000000000a13',
+   '00000000-0000-4000-8000-00000000a0a1', '2026-01-01', '2026-06-30', 3000000, 'ended'),
+  ('00000000-0000-4000-8000-00000000e011', :'a', '00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-000000000a13',
+   '00000000-0000-4000-8000-00000000a0a1', '2026-07-01', null, 3500000, 'active');
 update public.properties set deleted_at = '2026-10-06T00:00:00Z' where id = '00000000-0000-4000-8000-0000000000a2';
 select tests.act_as('member.a@test.esta.test');
 select throws_ok(
@@ -104,6 +115,20 @@ select lives_ok(
           'rent_vnd', p.rent_vnd, 'issues_now', p.issues_now) order by p.period_start), '[]')
         from public.preview_activation('00000000-0000-4000-8000-00000000e002', null) p)) $$,
   'the bills as shown start the lease');
+
+select throws_ok(
+  $$ select public.renew_lease('00000000-0000-4000-8000-00000000e010', 0, null, null) $$,
+  '23P01', 'ESTA_LEASE_OVERLAP', 'renewing into a room another lease holds answers the room is taken');
+reset role;
+select tests.clear_request();
+create extension pgrowlocks with schema extensions;
+set local search_path = public, extensions;
+select ok(
+  exists (
+    select 1 from public.units u join pgrowlocks('public.units') r on r.locked_row = u.ctid
+    where u.id = '00000000-0000-4000-8000-000000000a12' and 'For No Key Update' = any(r.modes)
+  ),
+  'activation locked the unit row for no key update, so two activations of one room take turns instead of deadlocking');
 
 select * from finish();
 rollback;

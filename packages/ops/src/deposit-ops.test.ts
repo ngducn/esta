@@ -21,6 +21,14 @@ const leaseIs = (status: string, entries: readonly unknown[] = []) => (request: 
 const stored = (kind: string, amount_vnd: number, on_date = '2026-03-01') => ({ id: `${KEY}-${kind}-${amount_vnd}`, lease_id: LEASE, kind, amount_vnd, on_date });
 
 describe('depositRecord', () => {
+  it('reads the stored entries in deposit_low_point order, so two entries on one day count the way the database counts them', async () => {
+    const { db, sent } = fakeDb(leaseIs('active', [stored('received', 5_000_000)]));
+    await depositRecord.plan(context(db), input({ ...received, kind: 'refunded', amount_vnd: 1_000_000 }));
+    const reads = sent.filter((request) => request.table === 'deposit_entries' && request.method === 'GET' && !request.query.has('idempotency_key'));
+    expect(reads.length).toBeGreaterThan(0);
+    expect(reads.map((request) => request.query.get('order'))).toEqual(reads.map(() => 'on_date.asc,created_at.asc,id.asc'));
+  });
+
   it('takes a receipt, a deduction or a refund, and leaves applying the deposit to a bill to the screen', () => {
     expect(depositRecord.input.safeParse(received).success).toBe(true);
     expect(depositRecord.input.safeParse({ ...received, kind: 'applied' }).success).toBe(false);

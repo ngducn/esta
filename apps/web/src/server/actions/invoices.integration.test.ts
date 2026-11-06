@@ -224,9 +224,9 @@ describe('the rental tab with more than one page of bills (#226)', () => {
     expect(activated.error).toBeNull();
     // Every month from January 1926 to September 2026, so no draft is left for the nightly cron test that runs after this file.
     const nights = Array.from({ length: 1209 }, (_, n) => `${1926 + Math.floor(n / 12)}-${String((n % 12) + 1).padStart(2, '0')}-01`);
-    for (let from = 0; from < nights.length; from += 50) {
+    for (let from = 0; from < nights.length; from += 20) {
       await Promise.all(
-        nights.slice(from, from + 50).map((night) =>
+        nights.slice(from, from + 20).map((night) =>
           service(`/rest/v1/rpc/run_invoicing`, { method: 'POST', body: JSON.stringify({ p_household_id: HOUSEHOLD, p_as_of: night, p_issued_at: `${night}T00:30:00+07:00` }) }),
         ),
       );
@@ -236,7 +236,10 @@ describe('the rental tab with more than one page of bills (#226)', () => {
     const { count } = await client.from('invoices').select('id', { count: 'exact', head: true }).eq('lease_id', lease);
     expect(count).toBeGreaterThan(1200);
 
-    const { invoices } = await loadPropertyLeases(ids.property, isoDate('2026-10-07'));
+    const { invoices, schedule } = await loadPropertyLeases(ids.property, isoDate('2026-10-07'));
+    const planned = schedule.filter((period) => period.leaseId === lease);
+    expect(planned.length, 'the schedule read is paged too, so it reaches past the first 1,000 periods').toBeGreaterThan(1200);
+    expect(planned.at(-1)?.start).toBe('2028-10-01');
     expect(invoices.filter((invoice) => invoice.leaseId === lease)).toHaveLength(count ?? -1);
     expect(invoices.filter((invoice) => invoice.leaseId === lease && invoice.periodStart >= '2026-10-01').map((invoice) => [invoice.periodStart, invoice.status])).toEqual([
       ['2026-10-01', 'issued'],
