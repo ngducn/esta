@@ -11,19 +11,31 @@ type Step = ReturnType<CalcOp['run']>;
 const BP = 10_000n;
 const MAX_LOAN_MONTHS = 1200;
 
-/** `[app rule]` Exact quotient rounded half up, so 0.5 đồng goes up and -0.5 goes to 0. */
+/**
+ * `[app rule]` Exact quotient rounded half away from zero, so 0.5 đồng goes to 1 and -0.5 to -1.
+ * packages/core has no money rounding helper that handles a negative, and this matches Postgres `round()` on numeric.
+ * The denominator is positive.
+ */
 export function divRoundHalfAway(numerator: bigint, denominator: bigint): bigint {
-  const twice = 2n * denominator;
-  const shifted = 2n * numerator + denominator;
-  const quotient = shifted / twice;
-  return shifted % twice !== 0n && shifted < 0n ? quotient - 1n : quotient;
+  const magnitude = numerator < 0n ? -numerator : numerator;
+  const quotient = (2n * magnitude + denominator) / (2n * denominator);
+  return numerator < 0n ? -quotient : quotient;
+}
+
+const SAFE = BigInt(Number.MAX_SAFE_INTEGER);
+
+function withinSafe(value: bigint): boolean {
+  return value <= SAFE && value >= -SAFE;
 }
 
 function toVnd(value: bigint): Result<TypedValue, CalcRefusal> {
-  if (value > BigInt(Number.MAX_SAFE_INTEGER) || value < -BigInt(Number.MAX_SAFE_INTEGER)) {
-    return { ok: false, reason: { kind: 'overflow' } };
-  }
+  if (!withinSafe(value)) return { ok: false, reason: { kind: 'overflow' } };
   return { ok: true, value: { kind: 'vnd', value: vnd(Number(value)) } };
+}
+
+function toBp(value: bigint): Result<TypedValue, CalcRefusal> {
+  if (!withinSafe(value)) return { ok: false, reason: { kind: 'overflow' } };
+  return { ok: true, value: { kind: 'bp', value: Number(value) } };
 }
 
 function vndStep(value: bigint, working: (result: string) => string, locale: Locale): Step {
@@ -72,9 +84,9 @@ const yearlyToMonthly: Runner = ([a], locale) =>
 
 const shareBp: Runner = ([part, whole], locale) => {
   if (amount(whole) <= 0n) return invalid('whole must be above zero');
-  const value = divRoundHalfAway(amount(part) * BP, amount(whole));
-  const result: TypedValue = { kind: 'bp', value: Number(value) };
-  return { ok: true, value: { value: result, working: `${shown(part, locale)} ÷ ${shown(whole, locale)} = ${displayTyped(result, locale)}` } };
+  const made = toBp(divRoundHalfAway(amount(part) * BP, amount(whole)));
+  if (!made.ok) return made;
+  return { ok: true, value: { value: made.value, working: `${shown(part, locale)} ÷ ${shown(whole, locale)} = ${displayTyped(made.value, locale)}` } };
 };
 
 const applyBp: Runner = ([a, rate], locale) =>
@@ -82,13 +94,15 @@ const applyBp: Runner = ([a, rate], locale) =>
 
 const changeBp: Runner = ([from, to], locale) => {
   if (amount(from) <= 0n) return invalid('starting amount must be above zero');
-  const value = divRoundHalfAway((amount(to) - amount(from)) * BP, amount(from));
-  const result: TypedValue = { kind: 'bp', value: Number(value) };
+  const made = toBp(divRoundHalfAway((amount(to) - amount(from)) * BP, amount(from)));
+  if (!made.ok) return made;
   return {
     ok: true,
-    value: { value: result, working: `(${shown(to, locale)} − ${shown(from, locale)}) ÷ ${shown(from, locale)} = ${displayTyped(result, locale)}` },
+    value: { value: made.value, working: `(${shown(to, locale)} − ${shown(from, locale)}) ÷ ${shown(from, locale)} = ${displayTyped(made.value, locale)}` },
   };
 };
+
+const DAYS_UNIT: Record<Locale, string> = { vi: 'ngày', en: 'days' };
 
 const LOAN_LABELS: Record<Locale, { perYear: string; perMonth: string }> = {
   vi: { perYear: '/năm', perMonth: '/tháng' },
@@ -98,6 +112,7 @@ const LOAN_LABELS: Record<Locale, { perYear: string; perMonth: string }> = {
 const loanPayment: Runner = ([principal, rate, months], locale) => {
   const n = numberOf(months);
   if (amount(principal) <= 0n) return invalid('principal must be above zero');
+  if (bpOf(rate) < 0n) return invalid('rate must not be negative');
   if (n < 1n || n > BigInt(MAX_LOAN_MONTHS)) return invalid(`months must be 1 to ${MAX_LOAN_MONTHS}`);
   const labels = LOAN_LABELS[locale];
   return vndStep(
@@ -109,7 +124,7 @@ const loanPayment: Runner = ([principal, rate, months], locale) => {
 
 const daysBetweenOp: Runner = ([from, to], locale) => {
   if (from?.kind !== 'date' || to?.kind !== 'date') return invalid('dates required');
-  const value: TypedValue = { kind: 'count', value: daysBetween(from.value, to.value), unit: locale === 'vi' ? 'ngày' : 'days' };
+  const value: TypedValue = { kind: 'count', value: daysBetween(from.value, to.value), unit: DAYS_UNIT[locale] };
   return { ok: true, value: { value, working: `${shown(from, locale)} → ${shown(to, locale)} = ${displayTyped(value, locale)}` } };
 };
 

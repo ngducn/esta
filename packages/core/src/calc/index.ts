@@ -10,6 +10,11 @@ export function calcOp(id: string) {
   return CALC_OPS.find((op) => op.id === id);
 }
 
+/** A typed number the registry can do exact integer arithmetic on; the types say `number`, so a stray 1.5 or NaN is caught here. */
+function isWhole(operand: TypedValue): boolean {
+  return operand.kind === 'date' || Number.isSafeInteger(operand.value);
+}
+
 function kindMismatch(expected: readonly TypedKind[], variadic: boolean, operands: readonly TypedValue[]): CalcRefusal | null {
   const last = expected.length - 1;
   const fits = variadic ? operands.length >= expected.length : operands.length === expected.length;
@@ -27,6 +32,7 @@ export function calculate(id: string, operands: readonly TypedValue[], locale: L
   if (op === undefined) return { ok: false, reason: { kind: 'unknown_op' } };
   const refusal = kindMismatch(op.operands, op.variadic === true, operands);
   if (refusal !== null) return { ok: false, reason: refusal };
+  if (!operands.every(isWhole)) return { ok: false, reason: { kind: 'invalid', why: 'operand must be a whole number' } };
   const ran = op.run(operands, locale);
   if (!ran.ok) return ran;
   return { ok: true, value: { value: ran.value.value, result_display: displayTyped(ran.value.value, locale), working_display: ran.value.working } };

@@ -1,7 +1,10 @@
-import { formatBps, formatCount, formatDate, formatVnd, type Locale } from '../format';
+import { formatBps, formatCount, formatDate, formatDays, formatVnd, type Locale } from '../format';
 import type { TypedValue } from './types';
 
-const UNIT_MONTHS: Record<Locale, string> = { vi: 'tháng', en: 'months' };
+function monthsLabel(months: number, locale: Locale): string {
+  if (locale === 'vi') return 'tháng';
+  return Math.abs(months) === 1 ? 'month' : 'months';
+}
 
 export function displayTyped(value: TypedValue, locale: Locale): string {
   switch (value.kind) {
@@ -10,9 +13,9 @@ export function displayTyped(value: TypedValue, locale: Locale): string {
     case 'bp':
       return formatBps(value.value, locale);
     case 'count':
-      return `${formatCount(value.value, locale)} ${value.unit}`;
+      return value.unit === 'days' ? formatDays(value.value, locale) : `${formatCount(value.value, locale)} ${value.unit}`;
     case 'months':
-      return `${formatCount(value.value, locale)} ${UNIT_MONTHS[locale]}`;
+      return `${formatCount(value.value, locale)} ${monthsLabel(value.value, locale)}`;
     case 'date':
       return formatDate(value.value, locale);
   }
