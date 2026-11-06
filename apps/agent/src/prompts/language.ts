@@ -59,12 +59,26 @@ function withoutLabels(tokens: readonly string[], labels: readonly string[]): st
 }
 
 /**
+ * What a message asks for when it opens with a Vietnamese instruction of two words or more, a colon and
+ * pasted text, as in
+ * `Dịch giúp mẹ: your rent is due tomorrow please pay` (#359): the instruction alone picks the language. A quoted
+ * passage is dropped the same way when the words around it hold Vietnamese. Anything else is read whole.
+ */
+function instruction(message: string, labels: readonly string[]): string {
+  const vietnameseWords = (text: string) => withoutLabels(tokensOf(text), labels).filter((token) => hasMark(token) || VIETNAMESE.has(token)).length;
+  const unquoted = message.replace(/["“«][^"”»]*["”»]/gu, ' ');
+  const [head = '', ...rest] = unquoted.split(':');
+  if (rest.length > 0 && vietnameseWords(head) >= 2) return head;
+  return vietnameseWords(unquoted) > 0 ? unquoted : message;
+}
+
+/**
  * The language to reply in: English when the message is clearly English, Vietnamese when it holds a Vietnamese word
  * (marked or not), and otherwise `fallback`, the language the household reads. `labels` are the household's own
  * property nicknames, unit labels, party names and place names, which count as neither language.
  */
 export function replyLanguage(message: string, fallback: Locale, labels: readonly string[] = []): Locale {
-  const words = withoutLabels(tokensOf(message), labels).flatMap((token) => token.match(/\p{L}+/gu) ?? []);
+  const words = withoutLabels(tokensOf(instruction(message, labels)), labels).flatMap((token) => token.match(/\p{L}+/gu) ?? []);
   const english = words.filter((word) => ENGLISH.has(word)).length;
   const vietnamese = words.filter((word) => hasMark(word) || VIETNAMESE.has(word)).length;
   if (english >= RULE.minEnglishWords && english >= RULE.englishPerVietnameseWord * vietnamese) return 'en';
