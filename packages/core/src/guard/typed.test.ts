@@ -125,6 +125,10 @@ describe('extractTypedNumbers', () => {
     const yearly = ['lãi 9% hàng năm', 'lãi 9% trên năm', 'lãi 9% theo năm', 'lãi 9%/năm', 'lãi suất năm 9%', 'lãi suất năm là 9%', 'interest 9% a year', 'interest 9% per year', 'interest 9%/year', 'interest 9% p.a.'];
     for (const text of yearly) expect(kinds(text), text).toEqual([{ kind: 'bp', value: 900 }]);
   });
+  it('B1b leaves a percent unread beside a year marker that a combining mark continues (CI seed -1581416164)', () => {
+    for (const text of ['lãi 0,8% nam\u0DC7a', 'nam\u0DC7a 0,8%', 'lãi 0,8%/nam\u0DC7a', 'lãi 0,8% th\u0301a'])
+      expect(kinds(text).filter((n) => n.kind === 'bp'), text).toEqual([]);
+  });
   it('B1b property: a percent next to any word outside the year and month lists never yields a rate', () => {
     const MARKERS = new Set(['năm', 'nam', 'year', 'tháng', 'thang', 'th', 'month']);
     const word = fc.stringMatching(/^[a-zà-ỹ]{1,8}$/u).filter((w) => !MARKERS.has(w) && w !== 'trong');

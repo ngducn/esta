@@ -7,8 +7,8 @@ import { parseVndInput } from '../parse/vnd-input';
 
 export type TypedNumber = { value_display: string; typed: TypedValue; typed_text: string };
 
-const NOT_WORD_BEFORE = String.raw`(?<![\p{L}\p{N}.,/])`;
-const NOT_WORD_AFTER = String.raw`(?![\p{L}\p{N}])`;
+const NOT_WORD_BEFORE = String.raw`(?<![\p{L}\p{M}\p{N}.,/])`;
+const NOT_WORD_AFTER = String.raw`(?![\p{L}\p{M}\p{N}])`;
 const MONEY_UNIT = String.raw`(?:tỷ|tỉ|ty|ti|triệu|trieu|tr|nghìn|nghin|ngàn|ngan|k)`;
 const UNIT_END = String.raw`(?!\p{L})`;
 const NUMBER = String.raw`\d+(?:[.,]\d+)*`;
@@ -28,16 +28,18 @@ const DATE_IN_WORDS = new RegExp(
 );
 /** A percent's period comes from an allowlist of year and month markers; any other word, before or after, or none, leaves it unread [app rule]. */
 const LEAD = String.raw`(?:(?:\s*\/\s*|\s+)(?:(?:mỗi|moi|một|mot|hàng|hang|hằng|trên|tren|theo|a|per)\s+)?`;
-const YEAR_AFTER = String.raw`${LEAD}(?:năm|nam|year)|\s*\/\s*year|\s+p\.a\.)`;
-const MONTH_AFTER = String.raw`${LEAD}(?:1\s+)?(?:tháng|thang|th|month))`;
+/** A marker ends at the end of the text, a space, punctuation or a symbol; anything else, an unassigned code point included, makes it part of another word. */
+const MARKER_END = String.raw`(?=$|[\s\p{P}\p{S}])`;
+const YEAR_AFTER = String.raw`${LEAD}(?:năm|nam|year)${MARKER_END}|\s*\/\s*year${MARKER_END}|\s+p\.a\.)`;
+const MONTH_AFTER = String.raw`${LEAD}(?:1\s+)?(?:tháng|thang|th|month)${MARKER_END})`;
 const PERCENT = new RegExp(
   String.raw`${NOT_WORD_BEFORE}(\d{1,3}(?:[.,]\d{1,2})?)\s*(?:%|phần trăm)(${YEAR_AFTER}|${MONTH_AFTER})?${NOT_WORD_AFTER}`,
   'giu',
 );
-const YEAR_BEFORE = /(?<![\p{L}])(?:năm|nam|year|yearly|annual)\s*(?:là|:|=)?\s*$/iu;
-const MONTH_BEFORE = /(?<![\p{L}])(?:tháng|thang|month|monthly)\s*(?:là|:|=)?\s*$/iu;
+const YEAR_BEFORE = /(?<![\p{L}\p{M}])(?:năm|nam|year|yearly|annual)\s*(?:là|:|=)?\s*$/iu;
+const MONTH_BEFORE = /(?<![\p{L}\p{M}])(?:tháng|thang|month|monthly)\s*(?:là|:|=)?\s*$/iu;
 const YEAR_WORD = /(?:năm|nam|year|p\.a\.)$/iu;
-const LETTER_NEXT = /^\s*\p{L}/u;
+const LETTER_NEXT = /^\s*[\p{L}\p{M}]/u;
 const TERM_NEXT = /^\s+trong\s+\d+\s+(?:năm|nam)(?![\p{L}\p{N}])/iu;
 
 /** The period of a percent she wrote as a rate: beside a year marker, or beside a month marker, else none. */
