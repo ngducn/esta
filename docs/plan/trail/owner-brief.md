@@ -20,7 +20,7 @@ Everything you read stays in your context and is paid for again on every later t
 4. Prove it on the real surface per the tier table in `verification-tiers.md`: `pnpm check`, the specs your change touches, and the screenshots your tier asks for (two to four, through the verify skill). Evidence under `/tmp/owner-<pr id>/`.
 5. Run `/deslop`. Run `/no-comments` only when the diff adds comment lines (`git diff origin/main... | rg '^\+.*(//|/\*)'`), because it starts a whole subagent. Then `pnpm check` on the committed head. Push.
 6. Wait for CI with one background `gh pr checks <n> --watch --fail-fast`, never a sleep or poll loop. Fix a red job that your change causes.
-7. Report once, only after the final `ci` result, with no background job of yours still running: each one wakes you and makes you report again, which costs tokens. Report code-ready to the root (SendMessage to `main`, at most 10 lines): PR URL, head SHA, `ci` state, evidence, what you could not check and why. Then stop: do not wait for the review. A fresh agent takes any fix round.
+7. Report once, only after the final `ci` result at your pushed head (`gh pr view <n> --json headRefOid,statusCheckRollup`; an earlier head's green run does not count, and root's merge script reads the same), with no background job of yours still running: each one wakes you and makes you report again, which costs tokens. Report code-ready to the root (SendMessage to `main`, at most 10 lines): PR URL, head SHA, `ci` state, evidence, what you could not check and why. Then stop: do not wait for the review. A fresh agent takes any fix round.
 
 ## Rules
 
