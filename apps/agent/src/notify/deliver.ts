@@ -25,7 +25,6 @@ const itemRow = z.object({
 });
 const memberRow = z.object({ id: z.string(), household_id: z.string(), user_id: z.string().nullable(), invited_email: z.string(), is_operator: z.boolean(), locale: z.enum(['vi', 'en']) });
 type ItemRow = z.infer<typeof itemRow>;
-type MemberRow = z.infer<typeof memberRow>;
 
 const ITEM_COLUMNS = 'id, household_id, kind, severity, audience, title, dedupe_key, created_at';
 const MEMBER_COLUMNS = 'id, household_id, user_id, invited_email, is_operator, locale';
