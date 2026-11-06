@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { IsoDate } from '../date';
+import type { IsoDate } from '../date/iso-date';
 import { checkSources, type SourceRef } from './sources';
 
 const chip = (url: string): SourceRef => ({ kind: 'source', n: 1, url, source_name: 'Nguồn', published_on: '2026-10-01' as IsoDate });

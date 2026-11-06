@@ -5,8 +5,6 @@ import { existingLinks } from '@esta/ops';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { JOBS } from '../../src/jobs/registry';
-import { canonicalizer } from '../../src/replay/canonicalize';
 import { DEFAULT_REPLAY_DIR, readRecording } from '../../src/replay/store';
 import { askSourceRepairPrompt } from '../../src/prompts/ask';
 import { inputHash } from '../../src/replay/canonicalize';
@@ -15,7 +13,7 @@ import { fakeDb } from '../../src/test/fake-db';
 import { answerRow, askRpcs, askTables, CONVERSATION, withDraftAndArchivedLeases, withSeedNames } from '../ask-seed';
 import { HOUSEHOLD, seedRecords } from '../full-seed';
 import { tempJobDir } from '../job-dir';
-import { askCase as findCase, askRecording, askRepairRecording, ASK_CASES, caseInput, caseRequest, LEAK_CASE, LEAK_REPLAY_DIR, PAGE_TEXT } from './ask-cases';
+import { askCase as findCase, caseSession, askRecording, askRepairRecording, ASK_CASES, caseInput, caseRequest, LEAK_CASE, LEAK_REPLAY_DIR, PAGE_TEXT } from './ask-cases';
 import { ASK_READS_FIXTURE, replayedReads } from './ask-reads';
 
 const truth = JSON.parse(readFileSync(join(import.meta.dirname, 'ask-ground-truth.json'), 'utf8')) as Array<{ question: string; figure: string; value: string }>;
@@ -34,6 +32,7 @@ const links = (markdown: string) => [...markdown.matchAll(LINK)].map(([, link]) 
 /** The answer with each link target cut to its type, since record ids are the seed's, not the ground truth's. */
 const shown = (markdown: string) => markdown.replace(LINK, (_, link: string) => `](${link.replace(/\/[0-9a-f-]{36}$/, '/…')})`);
 
+
 const EARLIER = { question: '00000000-0000-4000-8000-0000000c0a12', answer: '00000000-0000-4000-8000-0000000c0a13' };
 
 async function askAfterItsChain(id: string, reads = replayedReads()): Promise<Asked> {
@@ -49,16 +48,8 @@ async function askAfterItsChain(id: string, reads = replayedReads()): Promise<As
   if (rebuilt === undefined) throw new Error(`${id} has no session to rebuild`);
   const run = await replaySession(
     {
-      spec: JOBS.ask,
+      ...caseSession(prepared, jobDir),
       prompt: rebuilt ?? prepared.prompt,
-      jobDir,
-      configDir: jobDir,
-      tools: prepared.tools,
-      canon: canonicalizer({ householdName: 'Gia đình Demo', jobDir }),
-      ...(prepared.onText === undefined ? {} : { onText: prepared.onText }),
-      ...(prepared.caps === undefined ? {} : { caps: prepared.caps }),
-      ...(prepared.observe === undefined ? {} : { observe: prepared.observe }),
-      ...(prepared.searchTerms === undefined ? {} : { searchTerms: prepared.searchTerms }),
       ...(prepared.resume === undefined || rebuilt !== null ? {} : { resume: prepared.resume }),
       ...(prepared.modelRole === undefined ? {} : { modelRole: prepared.modelRole }),
     },
@@ -222,7 +213,8 @@ describe('ask in replay on the full seed at 2026-10-07 07:00 (AGENT.md §7.4, AG
   });
 
   it.each(ASK_CASES.filter(({ repairReply }) => repairReply !== undefined))('$id has its committed hand-written repair recording', async (askCase) => {
-    expect(readRecording(DEFAULT_REPLAY_DIR, (await askRepairRecording(askCase)).input)).toEqual(await askRepairRecording(askCase));
+    const repair = await askRepairRecording(askCase);
+    expect(readRecording(DEFAULT_REPLAY_DIR, repair.input as Parameters<typeof readRecording>[1])).toEqual(repair);
   });
 
   it('thread case T7 quotes the rate word for word from the recorded page, with a source chip that resolves to it', async () => {
@@ -254,7 +246,7 @@ describe('ask in replay on the full seed at 2026-10-07 07:00 (AGENT.md §7.4, AG
     const askCase = findCase('procedure-no-source');
     const tables = askTables(askCase.question);
     const prepared = await caseRequest(askCase, { db: fakeDb(tables, [], {}, {}, askRpcs(tables)), householdId: HOUSEHOLD, reads: replayedReads() });
-    const request = { spec: JOBS.ask, prompt: prepared.prompt, jobDir, configDir: jobDir, tools: prepared.tools, canon: canonicalizer({ householdName: 'Gia đình Demo', jobDir }), ...(prepared.onText === undefined ? {} : { onText: prepared.onText }), ...(prepared.caps === undefined ? {} : { caps: prepared.caps }), ...(prepared.observe === undefined ? {} : { observe: prepared.observe }) };
+    const request = caseSession(prepared, jobDir);
     const first = await replaySession(request, DEFAULT_REPLAY_DIR);
     const repair = await prepared.nextTurn?.();
     expect(repair).toBe(askSourceRepairPrompt());
@@ -270,11 +262,12 @@ describe('ask in replay on the full seed at 2026-10-07 07:00 (AGENT.md §7.4, AG
   it('the leak case denies a search holding the tenant\'s name, and no tool input that ran or the answer holds it', async () => {
     const tables = withSeedNames(askTables(LEAK_CASE.question));
     const prepared = await caseRequest(LEAK_CASE, { db: fakeDb(tables, [], {}, {}, askRpcs(tables)), householdId: HOUSEHOLD, reads: replayedReads() });
-    const run = await replaySession({ spec: JOBS.ask, prompt: prepared.prompt, jobDir, configDir: jobDir, tools: prepared.tools, canon: canonicalizer({ householdName: 'Gia đình Demo', jobDir }), ...(prepared.onText === undefined ? {} : { onText: prepared.onText }), ...(prepared.caps === undefined ? {} : { caps: prepared.caps }), ...(prepared.searchTerms === undefined ? {} : { searchTerms: prepared.searchTerms }) }, LEAK_REPLAY_DIR);
+    const run = await replaySession(caseSession(prepared, jobDir), LEAK_REPLAY_DIR);
     await prepared.nextTurn?.();
     await prepared.finish({ reply: run.result.text, model: run.model, sessionId: run.result.sessionId, turnHash: 'c'.repeat(64) });
-    expect(run.result.permissionDenials.map(({ tool_name }) => tool_name)).toEqual(['WebSearch']);
-    const ran = run.toolCalls.filter((call) => !run.result.permissionDenials.some((denied) => denied.tool_input === call.input));
+    const denials = (run.result.permissionDenials ?? []) as Array<{ tool_name: string; tool_input: unknown }>;
+    expect(denials.map(({ tool_name }) => tool_name)).toEqual(['WebSearch']);
+    const ran = run.toolCalls.filter((call) => !denials.some((denied) => denied.tool_input === call.input));
     expect(JSON.stringify(ran)).not.toContain('Hoàng Văn Em');
     expect(answerRow(tables).content_md).not.toContain('Hoàng Văn Em');
     expect(answerRow(tables).status).toBe('done');

@@ -366,3 +366,17 @@ if (import.meta.main) {
   }
   console.log(writeRecording(LEAK_REPLAY_DIR, await askRecording(LEAK_CASE)));
 }
+
+/** The replay session of a prepared ask turn: its prompt, tools and policy inputs, run in `jobDir`. */
+export const caseSession = (prepared: PreparedJob, jobDir: string) => ({
+  spec: JOBS.ask,
+  prompt: prepared.prompt,
+  jobDir,
+  configDir: jobDir,
+  tools: prepared.tools,
+  canon: canonicalizer({ householdName: 'Gia đình Demo', jobDir }),
+  ...(prepared.onText === undefined ? {} : { onText: prepared.onText }),
+  ...(prepared.caps === undefined ? {} : { caps: prepared.caps }),
+  ...(prepared.observe === undefined ? {} : { observe: prepared.observe }),
+  ...(prepared.searchTerms === undefined ? {} : { searchTerms: prepared.searchTerms }),
+});

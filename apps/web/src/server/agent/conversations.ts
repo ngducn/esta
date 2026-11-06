@@ -6,8 +6,8 @@ import { isAnswerState, type AnswerState } from '@/components/assistant/answer-s
 import { createSessionClient } from '@/server/supabase/server';
 import { canonicalStamp, inWindow, type Cursor, type Window } from './thread-cursor';
 
-const answerRow = { content_md: z.string(), status: z.unknown(), refs: z.unknown(), deferred_until: z.string().nullable(), activity: z.string().nullable() };
-function toAnswer({ content_md, status, refs, deferred_until, activity }: { content_md: string; status: unknown; refs: unknown; deferred_until: string | null; activity: string | null }): AnswerState {
+const answerRow = { content_md: z.string(), status: z.unknown(), refs: z.unknown(), deferred_until: z.string().nullable(), activity: z.string().nullish() };
+function toAnswer({ content_md, status, refs, deferred_until, activity }: { content_md: string; status: unknown; refs: unknown; deferred_until: string | null; activity?: string | null | undefined }): AnswerState {
   const answer = { content: content_md, status: status === 'streaming' && deferred_until !== null ? 'deferred' : status, refs, activity: activity === 'web' ? 'web' : null };
   if (!isAnswerState(answer)) throw new Error(`An answer row has status ${JSON.stringify(status)} or refs that are not a list of links`);
   return answer;
