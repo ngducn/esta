@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { isoDate } from '../date/iso-date';
 import { vnd } from '../money/vnd';
-import { calculate, divRoundHalfUp, loanPaymentExact, type TypedValue } from './index';
+import { calculate, divRoundHalfAway, loanPaymentExact, type TypedValue } from './index';
 
 const nb = (s: string) => s.replaceAll(' ₫', '\u00a0₫');
 const v = (n: number): TypedValue => ({ kind: 'vnd', value: vnd(n) });
@@ -113,13 +113,47 @@ describe('refusals', () => {
   });
 });
 
-describe('divRoundHalfUp', () => {
-  it('rounds .5 up and exact quotients stay', () => {
-    expect(divRoundHalfUp(1n, 2n)).toBe(1n);
-    expect(divRoundHalfUp(3n, 2n)).toBe(2n);
-    expect(divRoundHalfUp(-1n, 2n)).toBe(0n);
-    expect(divRoundHalfUp(-3n, 2n)).toBe(-1n);
-    expect(divRoundHalfUp(-4n, 3n)).toBe(-1n);
-    expect(divRoundHalfUp(10n, 5n)).toBe(2n);
+describe('divRoundHalfAway', () => {
+  it('rounds .5 away from zero and exact quotients stay', () => {
+    expect(divRoundHalfAway(1n, 2n)).toBe(1n);
+    expect(divRoundHalfAway(3n, 2n)).toBe(2n);
+    expect(divRoundHalfAway(-1n, 2n)).toBe(-1n);
+    expect(divRoundHalfAway(-3n, 2n)).toBe(-2n);
+    expect(divRoundHalfAway(-4n, 3n)).toBe(-1n);
+    expect(divRoundHalfAway(10n, 5n)).toBe(2n);
+  });
+});
+
+describe('fix round 1', () => {
+  it('B5 refuses a basis-point result above Number.MAX_SAFE_INTEGER', () => {
+    const big = Number.MAX_SAFE_INTEGER;
+    expect(calculate('share_bp', [v(big), v(1)])).toEqual({ ok: false, reason: { kind: 'overflow' } });
+    expect(calculate('change_bp', [v(1), v(big)])).toEqual({ ok: false, reason: { kind: 'overflow' } });
+  });
+  it('rounds a negative half away from zero, like Postgres round()', () => {
+    expect(run('yearly_to_monthly', [v(-6)]).value).toEqual(v(-1));
+    expect(run('yearly_to_monthly', [v(-5)]).value).toEqual(v(0));
+    expect(run('change_bp', [v(20_000), v(19_999)]).value).toEqual(bp(-1));
+  });
+  it('refuses a negative loan rate with a reason', () => {
+    expect(calculate('loan_payment', [v(1_000_000), bp(-1200), months(12)])).toEqual({
+      ok: false,
+      reason: { kind: 'invalid', why: 'rate must not be negative' },
+    });
+  });
+  it('refuses a non-integer operand instead of throwing', () => {
+    const odd = { ok: false, reason: { kind: 'invalid', why: 'operand must be a whole number' } };
+    expect(calculate('loan_payment', [v(1_000_000), bp(900), months(12.5)])).toEqual(odd);
+    expect(calculate('apply_bp', [v(1_000_000), bp(Number.NaN)])).toEqual(odd);
+    expect(calculate('times_count', [v(1_000_000), count(1.5)])).toEqual(odd);
+  });
+  it('writes English units in the singular for one', () => {
+    const day = (a: string, b: string) => calculate('days_between', [{ kind: 'date', value: isoDate(a) }, { kind: 'date', value: isoDate(b) }], 'en');
+    const one = day('2026-10-07', '2026-10-08');
+    expect(one.ok && one.value.result_display).toBe('1 day');
+    const two = day('2026-10-07', '2026-10-09');
+    expect(two.ok && two.value.result_display).toBe('2 days');
+    const loan = calculate('loan_payment', [v(1_000_000), bp(900), months(1)], 'en');
+    expect(loan.ok && loan.value.working_display).toContain('1 month →');
   });
 });

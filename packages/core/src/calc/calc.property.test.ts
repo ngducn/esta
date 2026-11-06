@@ -28,23 +28,40 @@ describe('calc properties', () => {
       }),
     );
   });
-  it('loan_payment is within 1 đồng of an exact rational reference', () => {
+  it('yearly_to_monthly rounds an exact half away from zero, at either sign', () => {
+    fc.assert(
+      fc.property(fc.integer({ min: -100_000_000_000, max: 100_000_000_000 }), (k) => {
+        // 12k + 6 over 12 is k + 0.5: k + 1 above zero, k below it.
+        expect(amountOf('yearly_to_monthly', [v(12 * k + 6)])).toBe(k >= 0 ? k + 1 : k);
+      }),
+    );
+  });
+  it('loan_payment equals the half-up rational reference, edges included', () => {
     fc.assert(
       fc.property(
-        fc.integer({ min: 1_000_000, max: 50_000_000_000 }),
-        fc.integer({ min: 1, max: 3000 }),
-        fc.integer({ min: 1, max: 360 }),
+        fc.integer({ min: 1, max: 100_000_000_000 }),
+        fc.integer({ min: 0, max: 5000 }),
+        fc.integer({ min: 1, max: 1200 }),
         (principal, rate, n) => {
+          const P = BigInt(principal);
+          const N = BigInt(n);
+          let num: bigint;
+          let den: bigint;
+          if (rate === 0) {
+            num = P;
+            den = N;
+          } else {
+            const g = (120_000n + BigInt(rate)) ** N;
+            const f = 120_000n ** N;
+            num = P * BigInt(rate) * g;
+            den = 120_000n * (g - f);
+          }
+          const want = (2n * num + den) / (2n * den);
           const paid = amountOf('loan_payment', [v(principal), { kind: 'bp', value: rate }, { kind: 'months', value: n }]);
-          const base = 120_000n;
-          const growth = (base + BigInt(rate)) ** BigInt(n);
-          const flat = base ** BigInt(n);
-          const numerator = BigInt(principal) * BigInt(rate) * growth;
-          const denominator = base * (growth - flat);
-          const floor = numerator / denominator;
-          expect(BigInt(paid) === floor || BigInt(paid) === floor + 1n).toBe(true);
+          expect(BigInt(paid)).toBe(want);
         },
       ),
+      { numRuns: 200 },
     );
   });
 });

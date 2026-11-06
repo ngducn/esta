@@ -1,9 +1,9 @@
 import type { Locale } from '../format';
 import { displayTyped } from './display';
-import { CALC_OPS, divRoundHalfUp, loanPaymentExact } from './ops';
+import { CALC_OPS, divRoundHalfAway, loanPaymentExact } from './ops';
 import type { CalcRefusal, CalcResult, TypedKind, TypedValue } from './types';
 
-export { CALC_OPS, divRoundHalfUp, loanPaymentExact, displayTyped };
+export { CALC_OPS, divRoundHalfAway, loanPaymentExact, displayTyped };
 export type { CalcOp, CalcOutput, CalcRefusal, CalcResult, TypedKind, TypedValue } from './types';
 
 export function calcOp(id: string) {

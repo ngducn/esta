@@ -54,4 +54,49 @@ describe('extractTypedNumbers', () => {
   it('keeps the words of an answer out: only the strings given are read', () => {
     expect(extractTypedNumbersFrom(['Phòng 2 thu 3tr'])).toHaveLength(1);
   });
+  // Fix round 1 (audit B1 to B4)
+
+  it('reads a spaced trailing part the way parseVndInput does', () => {
+    expect(kinds('1 tỷ 2')).toEqual([{ kind: 'vnd', value: vnd(1_200_000_000) }]);
+    expect(kinds('3 triệu 5')).toEqual([{ kind: 'vnd', value: vnd(3_500_000) }]);
+    expect(kinds('2 tỷ 5')).toEqual([{ kind: 'vnd', value: vnd(2_500_000_000) }]);
+  });
+  it('B2 reads a date written in words as one date, not as durations', () => {
+    expect(kinds('ngày 7 tháng 10 năm 2026')).toEqual([{ kind: 'date', value: isoDate('2026-10-07') }]);
+  });
+  it('B2 still reads a count after a number and its own unit', () => {
+    expect(kinds('3 phòng 2 tháng')).toEqual([
+      { kind: 'count', value: 3, unit: 'phòng' },
+      { kind: 'months', value: 2 },
+    ]);
+  });
+  it('B3 does not read an area or a dotted count as đồng', () => {
+    expect(kinds('đất 1.500 m2')).toEqual([]);
+    expect(kinds('diện tích 1.200 m²')).toEqual([]);
+    expect(kinds('1.000 người')).not.toContainEqual({ kind: 'vnd', value: vnd(1000) });
+  });
+  it('B4 reads an undotted amount with a currency mark', () => {
+    expect(kinds('2000000đ')).toEqual([{ kind: 'vnd', value: vnd(2_000_000) }]);
+    expect(kinds('2000000 đồng')).toEqual([{ kind: 'vnd', value: vnd(2_000_000) }]);
+  });
+
+  it('reads 2 tỷ 5 and 3 tr 5 and 3tr5 and 1 tỷ 200 as the spoken shorthand', () => {
+    expect(kinds('3 tr 5')).toEqual([{ kind: 'vnd', value: vnd(3_500_000) }]);
+    expect(kinds('3tr5')).toEqual([{ kind: 'vnd', value: vnd(3_500_000) }]);
+    expect(kinds('1 tỷ 200')).toEqual([{ kind: 'vnd', value: vnd(1_200_000_000) }]);
+  });
+  it('reads 1 năm rưỡi as 18 months', () => {
+    expect(kinds('vay 1 năm rưỡi')).toEqual([{ kind: 'months', value: 18 }]);
+    expect(kinds('2 năm rưỡi')).toEqual([{ kind: 'months', value: 30 }]);
+  });
+  it('reads tháng 10 năm 2026 as labels', () => {
+    expect(kinds('tháng 10 năm 2026')).toEqual([]);
+  });
+  it('does not read a dotted id or a non-money unit as đồng', () => {
+    expect(kinds('mã 123.456.789.012')).toEqual([]);
+    expect(kinds('lô đất 1.000 m2 giá 15tr/m2')).toEqual([{ kind: 'vnd', value: vnd(15_000_000) }]);
+  });
+  it('reads 2.000.000 VND', () => {
+    expect(kinds('2.000.000 VND')).toEqual([{ kind: 'vnd', value: vnd(2_000_000) }]);
+  });
 });

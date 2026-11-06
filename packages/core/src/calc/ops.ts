@@ -12,7 +12,7 @@ const BP = 10_000n;
 const MAX_LOAN_MONTHS = 1200;
 
 /** `[app rule]` Exact quotient rounded half up, so 0.5 đồng goes up and -0.5 goes to 0. */
-export function divRoundHalfUp(numerator: bigint, denominator: bigint): bigint {
+export function divRoundHalfAway(numerator: bigint, denominator: bigint): bigint {
   const twice = 2n * denominator;
   const shifted = 2n * numerator + denominator;
   const quotient = shifted / twice;
@@ -44,11 +44,11 @@ const shown = (v: TypedValue | undefined, locale: Locale): string => (v === unde
 
 /** monthly payment of an annuity loan: P·i·(1+i)^n / ((1+i)^n − 1) with i = bp / 120000, in exact integers. */
 export function loanPaymentExact(principal: bigint, annualBp: bigint, months: bigint): bigint {
-  if (annualBp === 0n) return divRoundHalfUp(principal, months);
+  if (annualBp === 0n) return divRoundHalfAway(principal, months);
   const base = 120_000n;
   const growth = (base + annualBp) ** months;
   const flat = base ** months;
-  return divRoundHalfUp(principal * annualBp * growth, base * (growth - flat));
+  return divRoundHalfAway(principal * annualBp * growth, base * (growth - flat));
 }
 
 type Runner = CalcOp['run'];
@@ -68,21 +68,21 @@ const monthlyToYearly: Runner = ([a], locale) =>
   vndStep(amount(a) * 12n, (r) => `${shown(a, locale)} × 12 = ${r}`, locale);
 
 const yearlyToMonthly: Runner = ([a], locale) =>
-  vndStep(divRoundHalfUp(amount(a), 12n), (r) => `${shown(a, locale)} ÷ 12 = ${r}`, locale);
+  vndStep(divRoundHalfAway(amount(a), 12n), (r) => `${shown(a, locale)} ÷ 12 = ${r}`, locale);
 
 const shareBp: Runner = ([part, whole], locale) => {
   if (amount(whole) <= 0n) return invalid('whole must be above zero');
-  const value = divRoundHalfUp(amount(part) * BP, amount(whole));
+  const value = divRoundHalfAway(amount(part) * BP, amount(whole));
   const result: TypedValue = { kind: 'bp', value: Number(value) };
   return { ok: true, value: { value: result, working: `${shown(part, locale)} ÷ ${shown(whole, locale)} = ${displayTyped(result, locale)}` } };
 };
 
 const applyBp: Runner = ([a, rate], locale) =>
-  vndStep(divRoundHalfUp(amount(a) * bpOf(rate), BP), (r) => `${shown(a, locale)} × ${shown(rate, locale)} = ${r}`, locale);
+  vndStep(divRoundHalfAway(amount(a) * bpOf(rate), BP), (r) => `${shown(a, locale)} × ${shown(rate, locale)} = ${r}`, locale);
 
 const changeBp: Runner = ([from, to], locale) => {
   if (amount(from) <= 0n) return invalid('starting amount must be above zero');
-  const value = divRoundHalfUp((amount(to) - amount(from)) * BP, amount(from));
+  const value = divRoundHalfAway((amount(to) - amount(from)) * BP, amount(from));
   const result: TypedValue = { kind: 'bp', value: Number(value) };
   return {
     ok: true,
