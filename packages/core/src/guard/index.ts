@@ -127,3 +127,15 @@ export function repairMessage(violations: readonly NoteViolation[]): string {
     .map(({ rule, text }) => `"${text}": ${RULES[rule]}`)
     .join('\n');
 }
+
+/**
+ * The texts a repair message names, in its order: the inverse of `repairMessage` for a reader that must report what the
+ * guard rejected. A text may hold quotation marks (`"5":`), so each line is matched by its rule's hint and not by its quotes.
+ */
+export function repairTexts(message: string): string[] {
+  const hints = Object.values(RULES);
+  return message.split('\n').flatMap((line) => {
+    const hint = line.startsWith('"') ? hints.find((candidate) => line.endsWith(`": ${candidate}`)) : undefined;
+    return hint === undefined ? [] : [line.slice(1, line.length - hint.length - 3)];
+  });
+}
