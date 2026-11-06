@@ -3514,7 +3514,11 @@ export type Database = {
         }[]
       }
       add_rooms: {
-        Args: { p_labels: string[]; p_list_rent_vnd?: number; p_property_id: string }
+        Args: {
+          p_labels: string[]
+          p_list_rent_vnd?: number
+          p_property_id: string
+        }
         Returns: number
       }
       admin_name_fold: { Args: { p_text: string }; Returns: string }
