@@ -8,6 +8,7 @@ import { InvalidJobError } from '../jobs/extract-document';
 import { inputHash, type CanonicalInput, type Canonicalizer } from '../replay/canonicalize';
 import { readRecording, recordingPath } from '../replay/store';
 import { estaServer, runTool, type EstaTools } from '../tools/server';
+import type { SearchTerm } from './search-guard';
 import { buildSdkEnv, buildSdkOptions } from './options';
 import { decideToolUse, isWebTool, pathPolicyHook, rememberSearchHits, toolCaps, type ToolPolicy } from './path-policy';
 import { fromSdkResult, type SessionResult } from './result';
@@ -36,7 +37,7 @@ export type SessionRequest = {
   readonly canon: Canonicalizer;
   readonly caps?: Readonly<Record<string, number>>;
   observe?(call: BuiltInResult): void;
-  readonly searchTerms?: readonly string[];
+  readonly searchTerms?: readonly SearchTerm[];
   /** A web tool call the policy allowed is about to run. */
   onWebTool?(): Promise<void>;
   onText?(delta: string): Promise<void>;

@@ -95,6 +95,11 @@ export function fakeDb(
         window = { from, to };
         return builder;
       },
+      ilike(column: string, pattern: string) {
+        const lower = pattern.toLowerCase();
+        filters.push((row) => typeof row[column] === 'string' && new RegExp(`^${lower.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&').replace(/%/g, '.*')}$`, 's').test(row[column].toLowerCase()));
+        return builder;
+      },
       like(column: string, pattern: string) {
         const literal = (text: string) => text.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
         const source = pattern.replace(/\\(.)|%|_|[^\\%_]+/g, (token: string, escaped: string | undefined) =>
