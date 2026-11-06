@@ -5,12 +5,15 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, realpathSync, rmSync, 
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { WEB_CAPS } from '@esta/core/agent-limits';
+import { memoryDb } from '@esta/ops/test/memory-db';
+import { capsLeftForJob } from '../jobs/web-spent';
 import { JOBS } from '../jobs/registry';
 import { canonicalizer, inputHash } from '../replay/canonicalize';
 import { writeRecording } from '../replay/store';
 import { estaTool, mcpToolName, ToolRejection } from '../tools/server';
-import { judgeResult } from './result';
-import { canonicalInput, liveSession, pruneTranscripts, replaySession, SessionGoneError, type SessionRequest } from './session';
+import { countToolCalls, judgeResult } from './result';
+import { canonicalInput, liveSession, pruneTranscripts, replaySession, SessionGoneError, stoppedRun, type SessionRequest } from './session';
 
 const answersToModel: { isError: boolean; text: string }[] = [];
 
@@ -215,5 +218,26 @@ describe('pruneTranscripts stays inside the conversation it prunes (#340)', () =
     symlinkSync(real, join(parent, 'alias'));
     pruneTranscripts(join(parent, 'alias', 'config'), KEEP);
     expect(readdirSync(join(real, 'config', 'replay-sessions'))).toEqual([]);
+  });
+});
+
+describe('a session that ends without a result still names the calls it spent (#327)', () => {
+  const twoSearches = (end: () => unknown) =>
+    async function* () {
+      for (const query of ['quy hoạch Dĩ An', 'giá đất Dĩ An']) yield { type: 'assistant', message: { content: [{ type: 'tool_use', id: query, name: 'WebSearch', input: { query } }] } };
+      yield* [end()].filter((error) => error !== undefined).flatMap((error) => (error instanceof Error ? (() => { throw error; })() : [error]));
+    };
+
+  it.each([
+    ['a timeout or crash that throws', () => new Error('Claude Code process aborted by user')],
+    ['a stream that stops without a result', () => undefined],
+  ])('%s: the error carries the two searches, and the retry gets 12 less 2', async (_, end) => {
+    model = twoSearches(end) as never;
+    const error = await liveSession(requestSaving(() => Promise.resolve()), live).then(() => null, (thrown: unknown) => thrown);
+    expect(error).toBeInstanceOf(Error);
+    const run = stoppedRun(error);
+    expect(run?.toolCalls.map((call) => call.name)).toEqual(['WebSearch', 'WebSearch']);
+    const db = memoryDb({ agent_runs: [{ id: 'r1', job_id: 'j1', tool_calls: countToolCalls(run?.toolCalls.map((call) => call.name) ?? []) }] });
+    expect(await capsLeftForJob(db, 'j1', WEB_CAPS.research_scan)).toEqual({ WebSearch: WEB_CAPS.research_scan.WebSearch - 2, WebFetch: WEB_CAPS.research_scan.WebFetch });
   });
 });

@@ -55,6 +55,8 @@ Review checklist for classes no mechanical check catches (a reviewer reads for e
 11. A writer race settled by an exclusion constraint: the constraint does not serialize writers (two sessions deadlock, 40P01, where the room answers taken). Take a row lock on the parent first, as `guard_lease` locks the unit, and race about 20 rooms in the integration test.
 12. An e2e spec that writes to a seeded entity another spec reads (a room added to the Dĩ An property made its card read vacant in `property-units` rule 7, #453): the rows a spec creates on a seeded household are removed in an `afterEach` (it runs when the test fails), or sit on a property no other spec asserts on. No lint can tell which seeded rows another spec asserts on, so the reader checks each `serviceUpsert` in a spec for it.
 13. A release step that acts on the whole working tree (`supabase db push` applies every pending migration on one yes): the runbook says to run it from a clean checkout of the release tag, because no check can see which migrations the operator answers yes to.
+14. Where a closing test enters: a test that closes an issue enters where the app enters (the action, op, tool, job or sync function) and never feeds an inner helper an input the real caller does not produce. #326 was closed on a province-only address that `readHeldProperties` rejects, so the new branch never ran under the real caller and reverting it passed every test.
+15. A removed field takes its doc comment with it: after deleting a type member or an option, read the lines around the cut for a comment that now sits on its neighbour (`spacedBeforeThat` left its comment on `spacedAfter`, #501). No lint rule can tell a stale comment from a true one.
 
 ## Planned tiers for the remaining PRs
 

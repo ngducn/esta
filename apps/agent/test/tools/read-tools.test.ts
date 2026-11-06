@@ -91,7 +91,7 @@ describe('what was collected and what was received are two figures (q1, P5-10c)'
     expect(board.month_collected.collected_display).toBe(formatVnd(vnd(0), 'vi'));
     expect(board.month_collected.basis).toContain('not the money received in the month');
     expect(board.month_collected.basis).toContain('ledger');
-    const ledger = await ledgerTool(memoryDb(askTables('')), HOUSEHOLD, 'vi', context.properties, context.cite)({ property: diAn, year: 2026, month: 10 });
+    const ledger = await ledgerTool(memoryDb(askTables('')), HOUSEHOLD, 'vi', context.properties, context.cite, context.asOf)({ property: diAn, year: 2026, month: 10 });
     expect(ledger.ledger.income_display).toBe(formatVnd(vnd(Number(fact('q1', 'di-an income received in October 2026'))), 'vi'));
   });
 

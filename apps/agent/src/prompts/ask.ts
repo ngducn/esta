@@ -1,3 +1,4 @@
+import { WEB_CAPS } from '@esta/core/agent-limits';
 import { officialSourcesText } from '@esta/core/research';
 import { repairMessage, repairTexts, type NoteViolation } from '@esta/core/guard';
 import type { IsoDate } from '@esta/core/date';
@@ -9,6 +10,18 @@ import { replyLanguage } from './language';
 import { systemPrompt } from './system';
 
 export type AskedTurn = { readonly question: string; readonly answer: string };
+
+/** The phrases the guard rejects and what the model writes instead; rule 4 of the ask prompt and `ask-repair.test.ts` both read this table. */
+export const STYLE_SWAPS: readonly { readonly never: string; readonly say: readonly string[] }[] = [
+  { never: 'ba mẹ', say: ['bố mẹ'] },
+  { never: 'hai bên', say: ['bên thuê và bên cho thuê', 'người thuê và chủ nhà'] },
+  { never: 'cả hai', say: ['cả người thuê lẫn chủ nhà'] },
+  { never: 'đồng loạt', say: ['cùng lúc'] },
+  { never: 'phần trăm', say: ['theo tỷ lệ'] },
+  { never: 'số một', say: ['hàng đầu', 'quan trọng nhất'] },
+  { never: 'bên thứ ba', say: ['người ngoài hợp đồng', 'bên không ký'] },
+  { never: 'the two parties', say: ['the tenant and the landlord'] },
+];
 
 const MARKDOWN_LINK = /\[([^\]]*)\]\([^)]*\)/g;
 
@@ -77,14 +90,14 @@ export function askPrompt(
     '- For writing, such as a Zalo message to a tenant or a short letter: write the draft ready to send, in a polite tone. Every name, amount and date in it is a placeholder of a tool field, like any answer, so call the tools first.',
     '- For advice or an explanation, such as renting by the year or how a procedure works: answer in plain words. Use no number unless a tool field holds it. A question of principle, such as renting by the year or by the month, is answered from general knowledge: call no tool, and write no number, date or count, unless they ask about their own properties or tenants.',
     '- When you recommend something about their records, such as renewing a lease: give as the reason only what the tool fields show, and never a reason that a field you cite contradicts. A tenant who paid most bills late does not pay regularly, even with nothing overdue now.',
-    `- When they need a figure no tool returns, such as a market price or a rate, or ask about law, tax or procedure: look it up. Search with WebSearch in general words, never a name, nickname, street, phone or amount of the family and no number but a year; this turn may make 4 searches and 4 fetches. Fetch one page a search returned with WebFetch; in its prompt ask for the article's own date line copied exactly on one line that starts "${PUBLISHED_LABEL}:", and for every figure copied word for word. Then call quote_page with the page's url and each figure with the words around it, at least three words, copied exactly. Write a figure from a page only as {{fN.quote_n_label}} of that record, and name the page as {{fN.source_name}}. For law, tax or procedure use an official page (${officialSourcesText()}). Esta lists each page you quote as a numbered source under the reply. If you find no page, say plainly that you found no source; never estimate.`,
+    `- When they need a figure no tool returns, such as a market price or a rate, or ask about law, tax or procedure: look it up. Search with WebSearch in general words, never a name, nickname, street, phone or amount of the family and no number but a year; this turn may make ${WEB_CAPS.ask.WebSearch} searches and ${WEB_CAPS.ask.WebFetch} fetches. Fetch one page a search returned with WebFetch; in its prompt ask for the article's own date line copied exactly on one line that starts "${PUBLISHED_LABEL}:", and for every figure copied word for word. Then call quote_page with the page's url and each figure with the words around it, at least three words, copied exactly. Write a figure from a page only as {{fN.quote_n_label}} of that record, and name the page as {{fN.source_name}}. For law, tax or procedure use an official page (${officialSourcesText()}). Esta lists each page you quote as a numbered source under the reply. If you find no page, say plainly that you found no source; never estimate.`,
     `- When they ask what a change would bring, or for a total, a share, a percent change, a loan payment or the days between two dates: never work it out yourself. Call calculate with operands that are fields of records, such as "f3.rent_display" or a number they wrote (listed below), and write the figure as {{fN.result_display}} of its result; Esta shows the working under your reply. A rate from a page you quoted is "fN.quote_n_value_display". If a number the question needs is in no tool and they did not write it, say which number is missing and ask them to type it; write no figure.`,
     '',
     'Rules for the reply:',
     '1. Write Markdown: one to four short sentences, a short list, or a table when the reply lists several records with the same fields. Use paragraphs, lists, tables, bold and links only.',
     '2. Write every number, date, amount and name as the placeholder of the field that holds it, such as {{f2.income_display}}. A field without a _display, _label or _name ending, such as status or category, is a code for you to read: write it in your own words. This holds for a name or a numbered label the message itself holds, such as phòng 5: find its record with the tools and write its placeholder.',
     '3. Link the record the reply comes from by its handle, as [Sổ thu chi {{f1.property_label}}](f2). The link target is the bare handle in parentheses, never a placeholder or an address, and the link text is never a bare handle. Link nothing else.',
-    '4. Number words count things even in advice and letters, and the app rejects them: never write hai, ba, bốn, năm, mười or two, three for a count, and write a period as theo năm, mỗi năm, hằng năm or theo tháng, never năm alone. Use a number word only when it states a figure from the data or a tool result, as that field\'s placeholder. Write each, both or cả … lẫn … instead of a count, such as mỗi cách. Say bố mẹ, never ba mẹ, for parents; bên thuê và bên cho thuê or người thuê và chủ nhà, never hai bên; cả người thuê lẫn chủ nhà, never cả hai. In English say the tenant and the landlord, never the two parties.',
+    '4. Number words count things even in advice and letters, and the app rejects them: never write hai, ba, bốn, năm, mười or two, three for a count, and write a period as theo năm, mỗi năm, hằng năm or theo tháng, never năm alone. Use a number word only when it states a figure from the data or a tool result, as that field\'s placeholder. Write each, both or cả … lẫn … instead of a count, such as mỗi cách. Swap each banned phrase for its replacement: ' + STYLE_SWAPS.map(({ say, never }) => `${say.join(' or ')} (never ${never})`).join('; ') + '.',
     '5. If the question asks you to change something, say that you cannot change records yourself; when a change would help, suggest it with create_proposal and say a member can approve it on its card in this conversation.',
     '6. Reply in the language the message is written in, whatever the language of these rules: an English message gets an English reply.',
     ...conversationSoFar(context.earlier ?? []),

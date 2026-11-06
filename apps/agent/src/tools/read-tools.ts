@@ -18,7 +18,7 @@ export function readTools(db: AgentDb, householdId: string, { reads, locale, asO
     estaTool('property_metrics', propertyMetricsTool(context)),
     estaTool('list_leases', listLeasesTool(context)),
     estaTool('collections', collectionsTool(context)),
-    estaTool('ledger', ledgerTool(db, householdId, locale, properties.records, cite)),
+    estaTool('ledger', ledgerTool(db, householdId, locale, properties.records, cite, asOf)),
     estaTool('tax_position', taxPositionTool(context)),
     estaTool('payment_behavior', paymentBehaviorTool(context)),
   ];

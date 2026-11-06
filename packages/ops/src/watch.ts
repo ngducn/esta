@@ -3,7 +3,7 @@ import type { IsoDate } from '@esta/core/date';
 import { addMonths, firstOfMonth } from '@esta/core/date/calendar';
 import { vnd } from '@esta/core/money';
 import { computeTaxPosition, toTaxInputs } from '@esta/core/tax';
-import { carryDepositsToRenewals, watchSnapshotSchema, type WatchLabels, type WatchSnapshot } from '@esta/core/watch';
+import { carryDepositsToRenewals, renewedBy, watchSnapshotSchema, type WatchLabels, type WatchSnapshot } from '@esta/core/watch';
 import { readCompleteness } from './completeness';
 import type { Db } from './db';
 import { readInvoices } from './invoices';
@@ -68,11 +68,9 @@ export async function readWatchSnapshot(db: Db, householdId: string, { asOf, tim
     readWaitingExtractions(db, householdId, timezone),
   ]);
   const signed = leases.filter((lease) => lease.status !== 'draft');
-  const deposits = carryDepositsToRenewals(
-    signed.map((lease) => ({ id: lease.id, renewalOfLeaseId: lease.renewal_of_lease_id })),
-    held,
-  );
-  const renewed = new Set(signed.flatMap((lease) => (lease.renewal_of_lease_id === null ? [] : [lease.renewal_of_lease_id])));
+  const renewals = signed.map((lease) => ({ id: lease.id, renewalOfLeaseId: lease.renewal_of_lease_id }));
+  const deposits = carryDepositsToRenewals(renewals, held);
+  const renewed = renewedBy(renewals);
   return watchSnapshotSchema.parse({
     householdId,
     asOf,

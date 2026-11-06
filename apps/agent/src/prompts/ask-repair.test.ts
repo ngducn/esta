@@ -1,6 +1,6 @@
 import { checkNote } from '@esta/core/guard';
 import { describe, expect, it } from 'vitest';
-import { askRepairPrompt, askSourceRepairPrompt, rejectedTexts, SOURCE_REJECT } from './ask';
+import { askRepairPrompt, askSourceRepairPrompt, rejectedTexts, SOURCE_REJECT, STYLE_SWAPS } from './ask';
 
 describe('the text each repair turn names (P5-10d)', () => {
   it('names the texts the number guard rejected, quotation marks included', () => {
@@ -18,9 +18,8 @@ describe('the text each repair turn names (P5-10d)', () => {
 });
 
 describe('the replacements the style rule suggests (P5-10d)', () => {
-  it('hold no number word the guard rejects', () => {
-    for (const note of ['Bố mẹ vẫn giữ nhà.', 'Bên thuê và bên cho thuê ký hợp đồng.', 'Người thuê và chủ nhà ký hợp đồng.', 'Cả người thuê lẫn chủ nhà đều đồng ý.', 'The tenant and the landlord sign.']) {
-      expect(checkNote(note, new Map()).ok, note).toBe(true);
-    }
+  it.each(STYLE_SWAPS)('rejects "$never" and passes each of $say', ({ never, say }) => {
+    expect(checkNote(`${never}.`, new Map()).ok, never).toBe(false);
+    for (const phrase of say) expect(checkNote(`${phrase}.`, new Map()).ok, phrase).toBe(true);
   });
 });

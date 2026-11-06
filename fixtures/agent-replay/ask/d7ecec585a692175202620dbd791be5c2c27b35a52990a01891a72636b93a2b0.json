@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "kind": "ask",
+  "inputHash": "d7ecec585a692175202620dbd791be5c2c27b35a52990a01891a72636b93a2b0",
+  "input": {
+    "version": 1,
+    "kind": "ask",
+    "prompt": "\"đồng\": Do not write an amount, unit, number word, Roman numeral, or month or weekday name. Cite the tool field that holds it as {{fN.field}}, such as a _display, _compact or _relative field. Write people's names, nicknames and place names through a _name or _label field.\nWrite the whole answer again from the start without these exact words (\"đồng\"): say the same thing in other words, and cite a figure only as a placeholder. The handles you already have still hold.",
+    "builtInTools": [
+      "WebSearch",
+      "WebFetch"
+    ],
+    "mcpTools": [
+      "list_properties",
+      "portfolio_overview",
+      "get_property",
+      "property_metrics",
+      "list_leases",
+      "collections",
+      "ledger",
+      "tax_position",
+      "payment_behavior",
+      "create_proposal",
+      "quote_page",
+      "calculate"
+    ],
+    "maxTurns": 20,
+    "resumesInputHash": "f91429cc61ed1f2a35352afde113ccc115e25654f7945bc0b6894e3a02a5f956"
+  },
+  "label": "Live guard probe vi-raise-rent, repair turn on the full seed at 2026-10-07 07:00 (P5-12).",
+  "model": "claude-sonnet-5-5",
+  "numTurns": 1,
+  "wallMs": 11868,
+  "toolCalls": [],
+  "reply": "Tôi chưa có số liệu giá thuê thị trường nên chưa thể nói mức tăng cụ thể. Theo dữ liệu hiện có, nên cân nhắc tăng giá riêng từng phòng, không áp dụng chung cho tất cả.\n\n- **{{f8.property_label}}:** Kỳ thuê của {{f8.tenant_name}}, xem tại [Thông tin thuê {{f8.property_label}}](f8), sẽ kết thúc vào {{f8.end_date_display}}, còn {{f8.days_until_end_display}} ngày. Tiền thuê hiện là {{f8.rent_display}}. Đây là lúc thuận tiện nhất để điều chỉnh giá khi gia hạn. Tuy vậy, {{f18.tenant_name}} đã trả trễ {{f18.paid_late_count_display}} trên {{f18.invoice_count_display}} kỳ thanh toán, nên chưa thể coi là trả đều đặn dù hiện không còn khoản quá hạn.\n- **{{f3.property_label}}:** Các kỳ thuê kéo dài đến {{f9.end_date_display}}. Giá nên giữ nguyên trong thời hạn này, trừ khi văn bản thuê có điều khoản điều chỉnh. Nếu tăng, nên báo trước và thỏa thuận với từng người thuê.\n- **{{f15.property_label}}:** Kỳ thuê kéo dài đến {{f15.end_date_display}}, nên chưa cần điều chỉnh sớm.\n\nNếu muốn, tôi có thể tra giá thuê tham khảo của khu vực hoặc soạn tin Zalo báo người thuê về giá mới."
+}
