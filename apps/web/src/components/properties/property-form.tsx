@@ -27,6 +27,7 @@ import type { AdminUnitOption } from '@/server/address/suggest';
 import { AddressPicker, FormSelect } from './address-picker';
 import { KindCards } from './kind-cards';
 import { UseModeCards } from './use-mode-cards';
+import { DroppedDetailsNotice } from './dropped-details-notice';
 import { KindFields } from './kind-fields';
 import type { PropertyFormValues } from './property-form-values';
 import { LegacyAddressSuggest } from './legacy-address-suggest';
@@ -190,6 +191,7 @@ export function PropertyForm({
             invalid={invalid?.field === 'detail' ? invalid.key : null}
             onChange={(key, text) => set('kindTexts', { ...values.kindTexts, [key]: text })}
           />
+          <DroppedDetailsNotice kind={values.kind} texts={values.kindTexts} />
           <UseModeCards value={values.useMode} onChange={(use) => set('useMode', use)} />
           <div className="grid gap-4 sm:grid-cols-2">
             <FormSelect

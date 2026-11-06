@@ -1,4 +1,6 @@
+import type { IsoDate } from '@esta/core/date';
 import { formatArea, formatDate } from '@esta/core/format';
+import { landTermEnded } from '@esta/core/schemas/legal';
 import { purposesMismatch, sumLandArea } from '@esta/core/properties/area';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { StatusShape } from '@/components/status-shape';
@@ -19,11 +21,13 @@ export async function ParcelList({
   propertyId,
   parcels,
   codes,
+  today,
   canEdit,
 }: {
   propertyId: string;
   parcels: readonly LegalRow<'parcels'>[];
   codes: ReadonlyMap<string, LandUseCode>;
+  today: IsoDate;
   canEdit: boolean;
 }) {
   const [t, locale] = await Promise.all([getTranslations('propertyLegal'), getLocale()]);
@@ -60,8 +64,9 @@ export async function ParcelList({
                       </span>
                       {purpose.area_m2 === undefined ? null : <span className="num ml-auto text-body text-text">{formatArea(purpose.area_m2, locale)}</span>}
                       {purpose.term === undefined ? null : (
-                        <span className="w-full text-body-sm text-text-muted">
-                          {purpose.term === 'long_term' ? t('termLong') : t('termUntil', { date: formatDate(purpose.term, locale) })}
+                        <span data-testid="purpose-term" data-ended={landTermEnded([purpose], today)} className="flex w-full flex-wrap gap-x-2 text-body-sm text-text-muted">
+                          <span>{purpose.term === 'long_term' ? t('termLong') : t('termUntil', { date: formatDate(purpose.term, locale) })}</span>
+                          {landTermEnded([purpose], today) ? <span className="font-medium text-text">{t('termEnded')}</span> : null}
                         </span>
                       )}
                     </li>

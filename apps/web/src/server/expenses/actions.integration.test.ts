@@ -10,12 +10,13 @@ import { putSigned, service, signedInAs, stackName, stackUp } from '@/test/stack
 const session = vi.hoisted(() => ({
   client: null as unknown,
   member: { role: 'member', household: { id: '' } },
+  today: '2026-10-07',
 }));
 
 vi.mock('server-only', () => ({}));
 vi.mock('next/cache', () => ({ revalidatePath: () => undefined }));
 vi.mock('@/server/env', () => ({ env: { ESTA_SIGNED_URL_TTL_SECONDS: 300 } }));
-vi.mock('@/server/clock', () => ({ readRequestClock: async () => ({ now: () => '2026-10-07T09:00:00+07:00', today: () => '2026-10-07' }) }));
+vi.mock('@/server/clock', () => ({ readRequestClock: async () => ({ now: () => '2026-10-07T09:00:00+07:00', today: () => session.today }) }));
 vi.mock('@/server/member', () => ({ requireMember: async () => session.member }));
 vi.mock('@/server/supabase/server', () => ({ createSessionClient: async () => session.client }));
 
@@ -77,6 +78,28 @@ describe.skipIf(!stackUp)(`expense actions against ${stackName}`, () => {
     expect(await saveExpense(input)).toEqual({ ok: true, expense: { id: input.id, amountVnd: 2_500_000 } });
     expect(await saveExpense({ ...input, amount: '3tr' })).toEqual({ ok: true, expense: { id: input.id, amountVnd: 3_000_000 } });
     expect(await rows('expenses', input.id, 'amount_vnd,paid_on,household_id')).toEqual([{ amount_vnd: 3_000_000, paid_on: '2026-10-07', household_id: household }]);
+  });
+
+  test('a paid date the database refuses, past its own today, reaches the sheet as the date refusal and writes nothing', async () => {
+    session.today = '2099-01-01';
+    try {
+      const input = { ...sheet('1tr'), paidOn: '31/12/2098' };
+      expect(await saveExpense(input)).toEqual({ ok: false, reason: 'date_after_today' });
+      expect(await rows('expenses', input.id)).toEqual([]);
+    } finally {
+      session.today = '2026-10-07';
+    }
+  });
+
+  test('a receipt now filed under no property is refused as another property, not as a network error', async () => {
+    const receipt = await sentReceipt();
+    const first = sheet('1tr');
+    expect(await saveExpense({ ...first, receipt })).toMatchObject({ ok: true });
+    await service(`/rest/v1/documents?id=eq.${receipt.documentId}`, { method: 'PATCH', body: JSON.stringify({ property_id: null }) });
+    expect(await saveExpense({ ...first, amount: '1tr5', receipt: { kind: 'existing', documentId: receipt.documentId } })).toMatchObject({ ok: true });
+    const input = { ...sheet('2tr'), receipt: { kind: 'existing', documentId: receipt.documentId } };
+    expect(await saveExpense(input)).toEqual({ ok: false, reason: 'receipt_other_property' });
+    expect(await rows('expenses', input.id)).toEqual([]);
   });
 
   test('a vendor added in the sheet is saved once, tagged contractor, and the picker offers it next time', async () => {

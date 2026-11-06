@@ -1,14 +1,20 @@
 begin;
 \ir _harness.psql
 
-select plan(43);
+select plan(66);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
-select tests.user_id('member.a@test.esta.test') as member_a \gset
+
+select set_config('esta.actor', 'system:test', true);
+insert into private.local_stack default values on conflict do nothing;
+insert into public.test_clock (id, frozen_now) values (true, '2026-10-07T09:00:00+07:00')
+  on conflict (id) do update set frozen_now = excluded.frozen_now;
+select tests.user_id('member.a@test.esta.test') as member_a, private.business_date(private.audit_now()) as today \gset
 
 select set_config('esta.actor', 'system:test', true);
 insert into public.properties (id, household_id, nickname, code, kind, use_mode) values
   ('00000000-0000-4000-8000-0000000000a1', :'a', 'Nhà phố Q7', 'Q7', 'townhouse', 'rental'),
+  ('00000000-0000-4000-8000-0000000000a2', :'a', 'Nhà phố Thủ Đức', 'TD', 'townhouse', 'rental'),
   ('00000000-0000-4000-8000-0000000000b1', :'b', 'Nhà B', 'B1', 'townhouse', 'rental');
 insert into public.parties (id, household_id, kind, full_name, tags) values
   ('00000000-0000-4000-8000-00000000a0c1', :'a', 'individual', 'Thợ điện Demo', array['contractor']),
@@ -16,6 +22,8 @@ insert into public.parties (id, household_id, kind, full_name, tags) values
 insert into public.documents (id, household_id, property_id, category, title, storage_path, mime, size_bytes, sha256, sensitivity) values
   ('00000000-0000-4000-8000-00000000d0a1', :'a', '00000000-0000-4000-8000-0000000000a1', 'invoice_receipt', 'Hoá đơn sửa điện',
    :'a' || '/00000000-0000-4000-8000-00000000d0a1/hoa-don.jpg', 'image/jpeg', 1000, repeat('a', 64), 'normal'),
+  ('00000000-0000-4000-8000-00000000d0a9', :'a', '00000000-0000-4000-8000-0000000000a2', 'invoice_receipt', 'Hoá đơn Thủ Đức',
+   :'a' || '/00000000-0000-4000-8000-00000000d0a9/hoa-don.jpg', 'image/jpeg', 1000, repeat('9', 64), 'normal'),
   ('00000000-0000-4000-8000-00000000d0b1', :'b', '00000000-0000-4000-8000-0000000000b1', 'invoice_receipt', 'Hoá đơn B',
    :'b' || '/00000000-0000-4000-8000-00000000d0b1/hoa-don.jpg', 'image/jpeg', 1000, repeat('b', 64), 'normal');
 insert into public.expenses (id, household_id, property_id, category, amount_vnd, paid_on) values
@@ -171,6 +179,94 @@ select throws_ok(
   $$ select * from public.save_expense('00000000-0000-4000-8000-00000000e0a2', '00000000-0000-4000-8000-0000000000a1', 'repair',
        100000, '2026-10-07') $$,
   'P0002', 'ESTA_EXPENSE_NOT_FOUND', 'a sheet left open on an expense deleted since then saves nothing');
+
+-- The database holds the rules the sheet also checks (#211): a receipt belongs to the expense's own property, and a
+-- paid date is never after today in Asia/Ho_Chi_Minh, whoever writes it.
+select lives_ok(
+  format($$ select * from public.save_expense('00000000-0000-4000-8000-00000000e0c1', '00000000-0000-4000-8000-0000000000a1', 'repair',
+       100000, %L::date) $$, :'today'),
+  'an expense paid today is accepted');
+select throws_ok(
+  format($$ select * from public.save_expense('00000000-0000-4000-8000-00000000e0c2', '00000000-0000-4000-8000-0000000000a1', 'repair',
+       100000, %L::date + 1) $$, :'today'),
+  '22023', 'ESTA_EXPENSE_DATE_AFTER_TODAY', 'save_expense refuses a paid date after today');
+select throws_ok(
+  format($$ select * from public.save_expense('00000000-0000-4000-8000-00000000e0c1', '00000000-0000-4000-8000-0000000000a1', 'repair',
+       100000, %L::date + 1) $$, :'today'),
+  '22023', 'ESTA_EXPENSE_DATE_AFTER_TODAY', 'an edit cannot move the paid date past today either');
+select throws_ok(format($$
+  insert into public.expenses (household_id, property_id, category, amount_vnd, paid_on)
+  values (%L, '00000000-0000-4000-8000-0000000000a1', 'repair', 100000, '2099-01-01') $$, :'a'),
+  '22023', 'ESTA_EXPENSE_DATE_AFTER_TODAY', 'a direct insert with a future paid date is refused');
+select throws_ok(
+  $$ select * from public.save_expense('00000000-0000-4000-8000-00000000e0c3', '00000000-0000-4000-8000-0000000000a1', 'repair',
+       100000, '2026-10-07', null, null, '00000000-0000-4000-8000-00000000d0a9') $$,
+  '23514', 'ESTA_EXPENSE_RECEIPT_PROPERTY', 'save_expense refuses a receipt filed under another property of the household');
+select throws_ok(
+  format($$ select * from public.save_expense('00000000-0000-4000-8000-00000000e0c3', '00000000-0000-4000-8000-0000000000a1', 'repair',
+       100000, '2026-10-07', null, null, '00000000-0000-4000-8000-00000000d0aa', null, %L) $$,
+    (:'new_receipt'::jsonb || jsonb_build_object('property_id', '00000000-0000-4000-8000-0000000000a2',
+      'storage_path', :'a' || '/00000000-0000-4000-8000-00000000d0aa/hoa-don.jpg', 'sha256', repeat('e', 64)))::text),
+  '23514', 'ESTA_EXPENSE_RECEIPT_PROPERTY', 'save_expense refuses a new receipt created under another property');
+select throws_ok(format($$
+  insert into public.expenses (household_id, property_id, category, amount_vnd, paid_on, document_id)
+  values (%L, '00000000-0000-4000-8000-0000000000a1', 'repair', 100000, '2026-10-07', '00000000-0000-4000-8000-00000000d0a9') $$, :'a'),
+  '23514', 'ESTA_EXPENSE_RECEIPT_PROPERTY', 'a direct insert filing the receipt under another property is refused');
+select is((select count(*)::int from public.expenses where id = '00000000-0000-4000-8000-00000000e0c3'), 0,
+  'a refused receipt leaves no expense behind');
+
+-- The rule judges a write against the stored row (#211, audit B1): `save_expense` upserts, and an upsert fires the
+-- insert trigger first, so an edit of an expense whose receipt moved since must still pass, and a direct update must
+-- be judged the same way.
+select lives_ok(
+  $$ select * from public.save_expense('00000000-0000-4000-8000-00000000e0d1', '00000000-0000-4000-8000-0000000000a1', 'repair',
+       100000, '2026-10-01', null, null, '00000000-0000-4000-8000-00000000d0a1') $$,
+  'an expense is saved with a receipt filed under its property');
+select lives_ok($$ update public.documents set property_id = null where id = '00000000-0000-4000-8000-00000000d0a1' $$,
+  'the receipt is later filed under no property from the documents page');
+select lives_ok(
+  $$ select * from public.save_expense('00000000-0000-4000-8000-00000000e0d1', '00000000-0000-4000-8000-0000000000a1', 'repair',
+       150000, '2026-10-01', null, null, '00000000-0000-4000-8000-00000000d0a1') $$,
+  'the sheet edits the amount of an expense whose receipt was unfiled since');
+select lives_ok($$ update public.expenses set deleted_at = '2026-10-07 09:00+07' where id = '00000000-0000-4000-8000-00000000e0d1' $$,
+  'that expense is deleted');
+select lives_ok($$ update public.expenses set deleted_at = null where id = '00000000-0000-4000-8000-00000000e0d1' $$,
+  'and restored with its receipt still unfiled');
+select lives_ok(
+  $$ select * from public.save_expense('00000000-0000-4000-8000-00000000e0d1', '00000000-0000-4000-8000-0000000000a1', 'repair',
+       170000, '2026-10-01', null, null, '00000000-0000-4000-8000-00000000d0a1') $$,
+  'the restored expense can still be edited');
+select lives_ok($$ update public.documents set property_id = '00000000-0000-4000-8000-0000000000a2' where id = '00000000-0000-4000-8000-00000000d0a1' $$,
+  'the receipt is later moved to another property');
+select lives_ok(
+  $$ select * from public.save_expense('00000000-0000-4000-8000-00000000e0d1', '00000000-0000-4000-8000-0000000000a1', 'repair',
+       180000, '2026-10-01', null, null, '00000000-0000-4000-8000-00000000d0a1') $$,
+  'the sheet edits the amount of an expense whose receipt moved to another property');
+select lives_ok($$ update public.expenses set note = 'Đã sửa' where id = '00000000-0000-4000-8000-00000000e0d1' $$,
+  'a direct update of the note passes with the receipt elsewhere');
+select lives_ok($$ update public.documents set property_id = '00000000-0000-4000-8000-0000000000a1' where id = '00000000-0000-4000-8000-00000000d0a1' $$,
+  'the receipt is filed under the property again');
+select throws_ok($$ update public.expenses set document_id = '00000000-0000-4000-8000-00000000d0a9' where id = '00000000-0000-4000-8000-00000000e0d1' $$,
+  '23514', 'ESTA_EXPENSE_RECEIPT_PROPERTY', 'a direct update pointing the receipt at another property''s document is refused');
+select throws_ok(format($$ update public.expenses set paid_on = %L::date + 1 where id = '00000000-0000-4000-8000-00000000e0d1' $$, :'today'),
+  '22023', 'ESTA_EXPENSE_DATE_AFTER_TODAY', 'a direct update moving the paid date past today is refused');
+
+-- The day turns at midnight in Asia/Ho_Chi_Minh, not at UTC midnight.
+reset role;
+update public.test_clock set frozen_now = '2026-10-07T23:59:00+07:00';
+select tests.act_as('member.a@test.esta.test');
+select lives_ok(
+  $$ select * from public.save_expense('00000000-0000-4000-8000-00000000e0e1', '00000000-0000-4000-8000-0000000000a1', 'repair', 100000, '2026-10-07') $$,
+  'at 23:59 +07 the same day is accepted');
+select throws_ok(
+  $$ select * from public.save_expense('00000000-0000-4000-8000-00000000e0e2', '00000000-0000-4000-8000-0000000000a1', 'repair', 100000, '2026-10-08') $$,
+  '22023', 'ESTA_EXPENSE_DATE_AFTER_TODAY', 'at 23:59 +07 the next day is refused');
+reset role;
+update public.test_clock set frozen_now = '2026-10-08T00:00:00+07:00';
+select tests.act_as('member.a@test.esta.test');
+select lives_ok(
+  $$ select * from public.save_expense('00000000-0000-4000-8000-00000000e0e2', '00000000-0000-4000-8000-0000000000a1', 'repair', 100000, '2026-10-08') $$,
+  'at 00:00 +07 the next day is accepted');
 
 select tests.act_as('viewer.a@test.esta.test');
 select throws_ok(

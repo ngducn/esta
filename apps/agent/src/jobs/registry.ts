@@ -165,7 +165,7 @@ export const JOBS = {
   ask: {
     kind: 'ask',
     builtInTools: ['WebSearch', 'WebFetch'],
-    mcpTools: ['list_properties', 'portfolio_overview', 'get_property', 'property_metrics', 'list_leases', 'collections', 'ledger', 'tax_position', 'payment_behavior', 'create_proposal', 'quote_page'],
+    mcpTools: ['list_properties', 'portfolio_overview', 'get_property', 'property_metrics', 'list_leases', 'collections', 'ledger', 'tax_position', 'payment_behavior', 'create_proposal', 'quote_page', 'calculate'],
     maxTurns: 20,
     timeoutMs: 3 * 60_000,
     modelRole: 'routine',
