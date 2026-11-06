@@ -119,6 +119,24 @@ describe('deliverPending', () => {
     expect(tables.notifications[0]?.status).toBe('sending');
   });
 
+  it('daily cap counts every notice of the Ho Chi Minh day, not only the last six hours', async () => {
+    // cap 1; one notice already went out at 07:10 local; a new action note lands at 14:00 local
+    const tables = world([item('a2', { created_at: '2026-10-07T07:00:00.000Z' })], 1);
+    tables.notifications.push({ id: 'n0', household_id: H, user_id: 'u1', agent_item_id: 'a1', channel: 'email', status: 'sent', attempts: 1, created_at: '2026-10-07T00:10:00.000Z' });
+    const box = inbox();
+    await deliverPending(fakeDb(tables), box.mailer, CONFIG, await clockOn('2026-10-07T14:05:00+07:00')());
+    expect(box.sent).toHaveLength(0);
+    expect(tables.notifications.find((row) => row.agent_item_id === 'a2')?.status).toBe('skipped');
+  });
+
+  it('a notice sent before midnight +07 does not count against the next day', async () => {
+    const tables = world([item('a2', { created_at: '2026-10-06T17:05:00.000Z' })], 1);
+    tables.notifications.push({ id: 'n0', household_id: H, user_id: 'u1', agent_item_id: 'a1', channel: 'email', status: 'sent', attempts: 1, created_at: '2026-10-06T16:50:00.000Z' });
+    const box = inbox();
+    await deliverPending(fakeDb(tables), box.mailer, CONFIG, await clockOn('2026-10-07T00:10:00+07:00')());
+    expect(box.sent).toHaveLength(1);
+  });
+
   it('queues past the daily cap as skipped and sends only the first notices', async () => {
     const tables = world([item('a1'), item('a2', { created_at: '2026-10-07T00:00:20.000Z' }), item('a3', { created_at: '2026-10-07T00:00:30.000Z' })], 2);
     const box = inbox();

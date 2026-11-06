@@ -1,4 +1,5 @@
 import { createTransport } from 'nodemailer';
+import { z } from 'zod';
 
 export type OutgoingMail = { readonly from: string; readonly to: string; readonly subject: string; readonly html: string; readonly text: string };
 export type Mailer = { send(mail: OutgoingMail): Promise<void> };
@@ -21,10 +22,12 @@ const LOCAL_HOSTS: ReadonlySet<string> = new Set(['127.0.0.1', 'localhost', '[::
  * Where nodemailer would really connect. It parses SMTP_URL with its own legacy parser and honours query options such as
  * `service` and `host`, so the check reads nodemailer's reading too and refuses a URL with any query or fragment.
  */
+const transportShape = z.object({ options: z.object({ host: z.string().optional(), service: z.string().optional(), direct: z.boolean().optional() }) });
+
 function mailTarget(smtpUrl: string): string | null {
   const url = new URL(smtpUrl);
   if (url.search !== '' || url.hash !== '' || !LOCAL_HOSTS.has(url.hostname)) return url.hostname;
-  const { options } = createTransport(smtpUrl).transporter as unknown as { options: { host?: string; service?: string; direct?: boolean } };
+  const { options } = transportShape.parse(createTransport(smtpUrl).transporter);
   if (options.service !== undefined || options.direct === true || !LOCAL_HOSTS.has(options.host ?? '')) return options.service ?? options.host ?? url.hostname;
   return null;
 }
