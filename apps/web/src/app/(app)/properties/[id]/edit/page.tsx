@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 export default async function EditPropertyPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const member = await requireMember();
-  if (member.role === 'viewer') notFound();
+  if (!member.can('edit')) notFound();
   const property = await loadEditableProperty(member.household.id, id);
   if (property === null) notFound();
   const province = property.values.address.provinceCode;
