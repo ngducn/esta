@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "kind": "ask",
+  "inputHash": "c881807680380aec735c4332d2af0098cad539f8f36bf8462501c81e81477f4d",
+  "input": {
+    "version": 1,
+    "kind": "ask",
+    "prompt": "The question is about law, tax or procedure, so the reply needs an official page (*.gov.vn, chinhphu.vn, baochinhphu.vn, provincial portals, thuvienphapluat.vn, luatvietnam.vn). Search for one, fetch it with WebFetch, quote it with quote_page and name it as {{fN.source_name}}. Write the whole answer again from the start. The handles you already have still hold.",
+    "builtInTools": [
+      "WebSearch",
+      "WebFetch"
+    ],
+    "mcpTools": [
+      "list_properties",
+      "portfolio_overview",
+      "get_property",
+      "property_metrics",
+      "list_leases",
+      "collections",
+      "ledger",
+      "tax_position",
+      "payment_behavior",
+      "create_proposal",
+      "quote_page",
+      "calculate"
+    ],
+    "maxTurns": 20,
+    "resumesInputHash": "73c4e9e4a23eba51053dee8fe547fe5587f39e6f615bb9992d338997d11c3f6f"
+  },
+  "label": "Hand-written source repair turn for guard probe vi-red-pink-book (P5-14): a legal question the model still answers with no official page; the live recording waits for the P5-10 live run.",
+  "model": "hand-written",
+  "numTurns": 1,
+  "toolCalls": [],
+  "reply": "Trợ lý chưa tìm thấy trang chính thức nào cho câu này."
+}

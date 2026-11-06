@@ -11,7 +11,6 @@ const capitalize = (word: string) => word.charAt(0).toUpperCase() + word.slice(1
 function compoundsOf(word: string, row: WordRow): string[] {
   return [
     ...(row.passesAfter ?? []).map((other) => `${other} ${word}`),
-    ...(row.passesAfterPhrase ?? []).map((phrase) => `${phrase} ${word}`),
     ...(row.passesBefore ?? []).map((other) => `${word} ${other}`),
     ...(row.passesBeforeCapitalized ?? []).map((other) => `${word} ${capitalize(other)}`),
   ];

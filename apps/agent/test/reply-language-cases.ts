@@ -62,4 +62,7 @@ export const VIETNAMESE_WITH_ENGLISH_WORDS = [
   'Dịch giúp mẹ: "your rent is due tomorrow please pay"',
   'Mẹ muốn dịch "your rent is due tomorrow please pay" sang tiếng Việt',
   'Tóm tắt giúp mẹ đoạn này: the tenant will pay the deposit next month and the lease will renew',
+  'Gửi reminder rent late Phòng 3',
+  'Mẹ check Đất Bảo Lộc late send reminder',
+  'Gửi reminder rent late Dãy trọ Dĩ An',
 ] as const;

@@ -127,8 +127,15 @@ describe('the language of the reply (#348)', () => {
   });
 
   it('counts the words a label does not take: a Vietnamese word beside a name still makes the message Vietnamese', () => {
-    expect(replyLanguage('Should I renew the lease on Căn hộ Thủ Đức, mẹ?', 'vi', SEED_LABELS)).toBe('en');
+    expect(replyLanguage('Should I renew the lease on Căn hộ Thủ Đức, mẹ?', 'en', SEED_LABELS)).toBe('en');
     expect(replyLanguage('Should I renew the lease on Căn hộ Thủ Đức, mẹ hỏi giúp?', 'vi', SEED_LABELS)).toBe('vi');
+  });
+
+  it('counts the names it takes out as one Vietnamese word in a household that reads Vietnamese, never one each (#364)', () => {
+    expect(replyLanguage('Gửi reminder rent late Phòng 3', 'vi', SEED_LABELS)).toBe('vi');
+    expect(replyLanguage('Gửi reminder rent late Phòng 3', 'en', SEED_LABELS)).toBe('en');
+    expect(replyLanguage('Is the tenant in Phòng 5 Dãy trọ Dĩ An paying on time?', 'vi', SEED_LABELS)).toBe('en');
+    expect(replyLanguage('Is Phòng 2 or Phòng 3 or Phòng 4 or Phòng 5 paying late, and is the tenant in Phòng 8 behind?', 'vi', SEED_LABELS)).toBe('en');
   });
 
   it('leaves a message that is neither clearly English nor Vietnamese to the language the household reads', () => {

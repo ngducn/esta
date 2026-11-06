@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "kind": "ask",
+  "inputHash": "a3e301b667687cf85cc8ca950e5a908f5e10e7bb2b5c14b0eb3d5d0db8687d4e",
+  "input": {
+    "version": 1,
+    "kind": "ask",
+    "prompt": "Today is 2026-10-07 in Asia/Ho_Chi_Minh. The family member writes again in the conversation so far. Reply with the rules of your first task.\nThe handles and placeholders of your earlier replies no longer hold. Call the tools, and calculate, again for every record and figure this reply writes, and fetch a web page again and quote it again with quote_page, since no page from an earlier turn holds; this turn's handles start at f9.\n\nMessage:\nCòn tháng 9 thì sao?",
+    "builtInTools": [
+      "WebSearch",
+      "WebFetch"
+    ],
+    "mcpTools": [
+      "list_properties",
+      "portfolio_overview",
+      "get_property",
+      "property_metrics",
+      "list_leases",
+      "collections",
+      "ledger",
+      "tax_position",
+      "payment_behavior",
+      "create_proposal",
+      "quote_page",
+      "calculate"
+    ],
+    "maxTurns": 20,
+    "resumesInputHash": "6955f9da9730c5ee37a90f92c5771c3c196046722ba5fb5de1ab96aa9efb59b8"
+  },
+  "label": "Hand-written for q1-follow-up-september, resuming q1-di-an-income on the full seed at 2026-10-07 07:00; the live recording waits for the P5-10 live run.",
+  "model": "hand-written",
+  "numTurns": 3,
+  "toolCalls": [
+    {
+      "name": "mcp__esta__list_properties",
+      "input": {}
+    },
+    {
+      "name": "mcp__esta__ledger",
+      "input": {
+        "property": "f11",
+        "year": 2026,
+        "month": 9
+      }
+    }
+  ],
+  "reply": "Tháng {{f16.period_date_display}}, {{f11.property_label}} đã thu {{f16.income_display}} tiền thuê.\n\nXem từng khoản trong [sổ thu chi của {{f11.property_label}}](f16)."
+}

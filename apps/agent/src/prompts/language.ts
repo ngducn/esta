@@ -41,21 +41,23 @@ const tokensOf = (text: string): string[] => text.normalize('NFC').toLowerCase()
  * language, but each of its marked words would count as Vietnamese. A label matches whole tokens, whatever the case
  * and the marks, and the longest label takes its tokens first.
  */
-function withoutLabels(tokens: readonly string[], labels: readonly string[]): string[] {
+function withoutLabels(tokens: readonly string[], labels: readonly string[]): { readonly kept: string[]; readonly names: number } {
   const folded = tokens.map(foldVietnamese);
   const names = labels
     .map((label) => tokensOf(label).map(foldVietnamese))
     .filter((name) => name.length > 0)
     .toSorted((a, b) => b.length - a.length);
   const taken = new Set<number>();
+  let found = 0;
   for (const name of names) {
     for (let at = 0; at + name.length <= folded.length; at++) {
       if (!name.every((token, offset) => folded[at + offset] === token && !taken.has(at + offset))) continue;
       for (let offset = 0; offset < name.length; offset++) taken.add(at + offset);
+      found++;
       at += name.length - 1;
     }
   }
-  return tokens.filter((_, index) => !taken.has(index));
+  return { kept: tokens.filter((_, index) => !taken.has(index)), names: found };
 }
 
 /**
@@ -65,7 +67,7 @@ function withoutLabels(tokens: readonly string[], labels: readonly string[]): st
  * passage is dropped the same way when the words around it hold Vietnamese. Anything else is read whole.
  */
 function instruction(message: string, labels: readonly string[]): string {
-  const vietnameseWords = (text: string) => withoutLabels(tokensOf(text), labels).filter((token) => hasMark(token) || VIETNAMESE.has(token)).length;
+  const vietnameseWords = (text: string) => withoutLabels(tokensOf(text), labels).kept.filter((token) => hasMark(token) || VIETNAMESE.has(token)).length;
   const unquoted = message.replace(/["“«][^"”»]*["”»]/gu, ' ');
   const [head = '', ...rest] = unquoted.split(':');
   if (rest.length > 0 && vietnameseWords(head) >= 2) return head;
@@ -75,12 +77,15 @@ function instruction(message: string, labels: readonly string[]): string {
 /**
  * The language to reply in: English when the message is clearly English, Vietnamese when it holds a Vietnamese word
  * (marked or not), and otherwise `fallback`, the language the household reads. `labels` are the household's own
- * property nicknames, unit labels, party names and place names, which count as neither language.
+ * property nicknames, unit labels, party names and place names, which count as neither language. Names found count as
+ * one Vietnamese word in all, never one each, in a household that reads Vietnamese (#364): they break a tie there but
+ * do not outvote a clearly English sentence.
  */
 export function replyLanguage(message: string, fallback: Locale, labels: readonly string[] = []): Locale {
-  const words = withoutLabels(tokensOf(instruction(message, labels)), labels).flatMap((token) => token.match(/\p{L}+/gu) ?? []);
+  const { kept, names } = withoutLabels(tokensOf(instruction(message, labels)), labels);
+  const words = kept.flatMap((token) => token.match(/\p{L}+/gu) ?? []);
   const english = words.filter((word) => ENGLISH.has(word)).length;
-  const vietnamese = words.filter((word) => hasMark(word) || VIETNAMESE.has(word)).length;
+  const vietnamese = words.filter((word) => hasMark(word) || VIETNAMESE.has(word)).length + (names > 0 && fallback === 'vi' ? 1 : 0);
   if (english >= RULE.minEnglishWords && english >= RULE.englishPerVietnameseWord * vietnamese) return 'en';
   return vietnamese > 0 ? 'vi' : fallback;
 }

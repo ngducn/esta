@@ -31,6 +31,7 @@ const FIRST_PASS_REJECTS: Readonly<Record<string, readonly string[]>> = {
   // A legal answer with no official page is sent back for one, which names no text (P5-10d).
   'vi-bank-letter': [SOURCE_REJECT],
   'vi-transfer-procedure': ['hai'],
+  'vi-insurance': ['ba'],
   'vi-notarize-lease': [SOURCE_REJECT],
   'vi-repair-first': ['hai'],
 };
