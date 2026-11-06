@@ -7,6 +7,7 @@ import tseslint from 'typescript-eslint';
 import noBrowserSupabaseClient from './eslint-rules/no-browser-supabase-client.mjs';
 import noGuardDisable from './eslint-rules/no-guard-disable.mjs';
 import noJsxLiterals from './eslint-rules/no-jsx-literals.mjs';
+import noSelfSourcedProperty from './eslint-rules/no-self-sourced-property.mjs';
 import serviceRoleAllowlist from './eslint-rules/service-role-allowlist.mjs';
 
 export default defineConfig(
@@ -57,6 +58,7 @@ export default defineConfig(
           'no-jsx-literals': noJsxLiterals,
           'no-browser-supabase-client': noBrowserSupabaseClient,
           'no-guard-disable': noGuardDisable,
+          'no-self-sourced-property': noSelfSourcedProperty,
         },
       },
     },
@@ -65,6 +67,22 @@ export default defineConfig(
   {
     files: ['apps/web/**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}'],
     rules: { 'esta/no-browser-supabase-client': 'error' },
+  },
+  {
+    // A property that draws from a production list can only find what the list already holds (#439, #450).
+    files: ['**/*.test.{ts,tsx}'],
+    ignores: ['eslint-rules/**'],
+    rules: { 'esta/no-self-sourced-property': 'error' },
+  },
+  {
+    // These draw one member of a closed registry, so the registry is the point: a new member is covered the day it is added.
+    files: [
+      'packages/core/src/allocation/allocate.property.test.ts', // every deposit kind
+      'packages/core/src/ledger/buildLedger.property.test.ts', // every expense category
+      'packages/core/src/matching/render.test.ts', // every bank statement layout
+      'packages/core/src/guard/compounds.property.test.ts', // every number-guard compound beside every number word
+    ],
+    rules: { 'esta/no-self-sourced-property': 'off' },
   },
   {
     files: ['apps/web/**/*.{tsx,jsx}'],
@@ -115,6 +133,15 @@ export default defineConfig(
         'error',
         { selector: 'NewExpression[callee.name="Date"][arguments.length=0]', message: 'Seed timestamps come from --as-of (ctx.asOf).' },
         { selector: 'CallExpression[callee.name="Date"]', message: 'Seed timestamps come from --as-of (ctx.asOf).' },
+      ],
+    },
+  },
+  {
+    files: ['apps/web/src/app/**/page.tsx', 'apps/web/src/app/**/layout.tsx'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { paths: [{ name: '@/server/clock', importNames: ['readRequestClock'], message: 'Pages and layouts read the clock through getClock; readRequestClock is for route handlers (#53).' }] },
       ],
     },
   },

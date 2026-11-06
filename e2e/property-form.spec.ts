@@ -302,6 +302,27 @@ const TEN_KINDS = [
   ['Khác', {}],
 ] as const;
 
+test('changing a land property to a warehouse names the details saving would delete, and changing back keeps them (#397)', async ({ page }) => {
+  onlyOn('mobile');
+  await setTheme(page, 'light');
+  await signIn(page, 'me.lane6@demo.esta.test');
+  await page.goto(`/properties/${propertyId(6, 'bao-loc')}/edit`);
+  await expect(page.getByTestId('kind-fields')).toHaveAttribute('data-kind', /_land$/);
+  const notice = page.getByTestId('dropped-details');
+  await expect(notice).toHaveCount(0);
+  await page.getByTestId('detail-frontage_m').fill('8');
+  await page.getByTestId('detail-road_width_m').fill('4,5');
+  await chooseKind(page, 'Kho');
+  await expect(notice).toContainText('mặt tiền, đường trước nhà');
+  await expect(notice).toContainText('bị xóa');
+  expect(await seriousAxeViolations(page)).toEqual([]);
+  await page.screenshot({ path: '/tmp/owner-q-19c/kind-change-warning-390.png' });
+  await chooseKind(page, 'Đất ở');
+  await expect(notice).toHaveCount(0);
+  await expect(page.getByTestId('detail-frontage_m')).toHaveValue('8');
+  await expect(page.getByTestId('detail-road_width_m')).toHaveValue('4,5');
+});
+
 test('PRP-1: one property of each of the ten kinds saves with its own fields', async ({ page }) => {
   test.setTimeout(180_000);
   onlyOn('desktop');

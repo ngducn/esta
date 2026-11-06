@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -156,6 +156,18 @@ describe('writeSlotWorkdir', () => {
     writeSlotWorkdir(root, 2);
     expect(statSync(template).ino).toBe(mounted);
     expect(readFileSync(template, 'utf8')).toBe('{{ .Token }}');
+    rmSync(root, { recursive: true });
+  });
+
+  it('adds a new template and removes one the source no longer has', () => {
+    const root = copyOfSupabase();
+    const templates = join(writeSlotWorkdir(root, 2), 'supabase', 'templates');
+    writeFileSync(join(root, 'supabase', 'templates', 'added.html'), 'new');
+    rmSync(join(root, 'supabase', 'templates', 'recovery.html'));
+    writeSlotWorkdir(root, 2);
+    expect(readdirSync(templates).sort()).toEqual(readdirSync(join(root, 'supabase', 'templates')).sort());
+    expect(existsSync(join(templates, 'added.html'))).toBe(true);
+    expect(existsSync(join(templates, 'recovery.html'))).toBe(false);
     rmSync(root, { recursive: true });
   });
 });

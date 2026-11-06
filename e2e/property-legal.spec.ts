@@ -223,6 +223,31 @@ test('Đất vườn Long An shows a paper-only certificate with no issue date a
   await expect(parcels(page).getByTestId('parcel-area')).toHaveText('Chưa có diện tích');
 });
 
+test('a certificate whose land-use term has ended shows a warning, not Còn hiệu lực, and long-term and future terms stay valid (#367)', async ({ page }) => {
+  await open(page, 'ryan.lane7@demo.esta.test', 'light', PHONE);
+  const parcel = seedId('seed:parcel:lane-7:q7:1');
+  const seeded = [{ land_use_code: 'ODT', area_m2: 80, term: 'long_term' }];
+  const status = page.getByTestId('certificate-status');
+  try {
+    await page.goto(legalPath(7, 'q7'));
+    await expect(status).toHaveText('Còn hiệu lực');
+    for (const term of ['long_term', '2099-01-01']) {
+      await rest(page, 'PATCH', `parcels?id=eq.${parcel}`, { purposes: [{ land_use_code: 'ODT', area_m2: 80, term }] });
+      await page.reload();
+      await expect(status).toHaveText('Còn hiệu lực');
+    }
+    await rest(page, 'PATCH', `parcels?id=eq.${parcel}`, { purposes: [{ land_use_code: 'ODT', area_m2: 80, term: '2020-01-01' }] });
+    await page.reload();
+    await expect(status).toHaveText('Hết thời hạn sử dụng đất');
+    await expect(status).toHaveAttribute('data-status', 'term_ended');
+    await expect(parcels(page).getByTestId('purpose-term')).toContainText('Đã hết thời hạn');
+    expect(await seriousAxeViolations(page)).toEqual([]);
+    await page.screenshot({ path: '/tmp/owner-q-19c/legal-term-ended-390.png', fullPage: true });
+  } finally {
+    await rest(page, 'PATCH', `parcels?id=eq.${parcel}`, { purposes: seeded });
+  }
+});
+
 test('tapping Lưu on an empty parcel form says beside Lưu what is missing and adds no row', async ({ page }) => {
   await open(page, 'ryan.lane6@demo.esta.test', 'light', PHONE);
   await page.goto(`${legalPath(6, 'long-an')}/parcels/new`);
