@@ -12,10 +12,11 @@ import billTruth from '../../../../../fixtures/utility-bills/electricity-q7-scan
 import { seedId } from '../../../../../supabase/seed/generator/ids';
 import { integrationLane, outsiderEmail } from '@/test/lanes';
 import { service, signedInAs, stackName, stackUp } from '@/test/stack';
+import { fakeMember, type FakeMember } from '@/test/fake-member';
 
 const session = vi.hoisted(() => ({
   client: null as unknown,
-  member: { role: 'member', household: { id: '' } },
+  member: null as unknown as FakeMember,
 }));
 
 vi.mock('server-only', () => ({}));
@@ -176,7 +177,7 @@ describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
 
   const asMember = () => {
     session.client = member;
-    session.member = { role: 'member', household: { id: household } };
+    session.member = fakeMember('member', household);
   };
 
   test('saving twice leaves one certificate, the parcels and structures of the truth, and no extra party', async () => {
@@ -389,10 +390,10 @@ describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
   test('a viewer and a member of another household write nothing', async () => {
     const { extractionId } = await waitingExtraction();
     session.client = member;
-    session.member = { role: 'viewer', household: { id: household } };
+    session.member = fakeMember('viewer', household);
     expect(await saveConfirmed(extractionId, acceptAll)).toEqual({ ok: false, reason: 'forbidden' });
     session.client = outsider;
-    session.member = { role: 'admin', household: { id: household } };
+    session.member = fakeMember('admin', household);
     expect(await saveConfirmed(extractionId, acceptAll)).toEqual({ ok: false, reason: 'not_reviewable' });
     expect(await written(extractionId)).toMatchObject({ certificates: 0, parcels: 0 });
     expect(await rest(`document_extractions?id=eq.${extractionId}&select=status`)).toEqual([{ status: 'needs_review' }]);

@@ -5,10 +5,11 @@ import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import { seedId } from '../../../../../supabase/seed/generator/ids';
 import { integrationLane, outsiderEmail } from '@/test/lanes';
 import { putSigned, service, signedInAs, stackName, stackUp } from '@/test/stack';
+import { fakeMember, type FakeMember } from '@/test/fake-member';
 
 const session = vi.hoisted(() => ({
   client: null as unknown,
-  member: { role: 'member', household: { id: '' } },
+  member: null as unknown as FakeMember,
 }));
 
 vi.mock('server-only', () => ({}));
@@ -43,7 +44,7 @@ describe.skipIf(!stackUp)(`document actions against ${stackName}`, () => {
     member = await signedInAs(me);
     outsider = await signedInAs(outsiderEmail('me'));
     session.client = member;
-    session.member = { role: 'member', household: { id: household } };
+    session.member = fakeMember('member', household);
   });
 
   afterAll(async () => {

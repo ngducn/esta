@@ -6,10 +6,11 @@ import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import { seedId } from '../../../../../supabase/seed/generator/ids';
 import { integrationLane } from '@/test/lanes';
 import { putSigned, service, signedInAs, stackName, stackUp } from '@/test/stack';
+import { fakeMember, type FakeMember } from '@/test/fake-member';
 
 const session = vi.hoisted(() => ({
   client: null as unknown,
-  member: { role: 'member', household: { id: '' } },
+  member: null as unknown as FakeMember,
   today: '2026-10-07',
 }));
 
@@ -60,7 +61,7 @@ describe.skipIf(!stackUp)(`expense actions against ${stackName}`, () => {
   beforeAll(async () => {
     member = await signedInAs(ryan);
     session.client = member;
-    session.member = { role: 'member', household: { id: household } };
+    session.member = fakeMember('member', household);
   });
 
   afterAll(async () => {
@@ -161,11 +162,11 @@ describe.skipIf(!stackUp)(`expense actions against ${stackName}`, () => {
   });
 
   test('a viewer cannot save an expense', async () => {
-    session.member = { role: 'viewer', household: { id: household } };
+    session.member = fakeMember('viewer', household);
     try {
       expect(await saveExpense(sheet('500k'))).toEqual({ ok: false, reason: 'forbidden' });
     } finally {
-      session.member = { role: 'member', household: { id: household } };
+      session.member = fakeMember('member', household);
     }
   });
 });

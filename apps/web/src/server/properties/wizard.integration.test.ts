@@ -2,8 +2,9 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import { integrationLane } from '@/test/lanes';
 import { putSigned, service, signedInAs, stackName, stackUp } from '@/test/stack';
+import { fakeMember, type FakeMember } from '@/test/fake-member';
 
-const session = vi.hoisted(() => ({ client: null as unknown, member: { role: 'member', household: { id: '' } } }));
+const session = vi.hoisted(() => ({ client: null as unknown, member: null as unknown as FakeMember }));
 
 vi.mock('server-only', () => ({}));
 vi.mock('next/cache', () => ({ revalidatePath: () => undefined }));
@@ -27,7 +28,7 @@ const code = () => `WZ${String(Date.now()).slice(-6)}`;
 describe.skipIf(!stackUp)(`startPropertyWizard (PRP-7) against ${stackName}`, () => {
   beforeAll(async () => {
     session.client = await signedInAs(me);
-    session.member = { role: 'admin', household: { id: household } };
+    session.member = fakeMember('admin', household);
   });
 
   afterAll(async () => {
@@ -82,11 +83,11 @@ describe.skipIf(!stackUp)(`startPropertyWizard (PRP-7) against ${stackName}`, ()
   });
 
   test('a viewer cannot start the wizard', async () => {
-    session.member = { role: 'viewer', household: { id: household } };
+    session.member = fakeMember('viewer', household);
     try {
       expect(await startPropertyWizard({ propertyId: randomUUID(), nickname: 'Demo', code: code(), kind: 'townhouse', document: null })).toEqual({ ok: false, reason: 'forbidden' });
     } finally {
-      session.member = { role: 'admin', household: { id: household } };
+      session.member = fakeMember('admin', household);
     }
   });
 });
