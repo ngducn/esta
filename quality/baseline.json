@@ -371,9 +371,9 @@
       }
     },
     "testid-query": {
-      "value": 2109,
+      "value": 2116,
       "files": {
-        "apps/web/src/components/assistant/answer-stream.test.tsx": 5,
+        "apps/web/src/components/assistant/answer-stream.test.tsx": 6,
         "apps/web/src/components/assistant/thread-composer.test.tsx": 6,
         "apps/web/src/components/assistant/worker-status-line.test.tsx": 1,
         "apps/web/src/components/data-table.test.tsx": 1,
@@ -391,6 +391,7 @@
         "apps/web/src/components/rental/unit-list.test.tsx": 1,
         "apps/web/src/components/rental/unit-sheet.test.tsx": 1,
         "e2e/agent-crash.spec.ts": 3,
+        "e2e/assistant-calc.spec.ts": 6,
         "e2e/assistant-diagnostics.spec.ts": 9,
         "e2e/assistant-limits.spec.ts": 14,
         "e2e/assistant-links.spec.ts": 1,
@@ -783,6 +784,12 @@
       "from": 0,
       "to": 2109,
       "reason": "new metrics test-db-fake and testid-query record their first counts (Q-09a)"
+    },
+    {
+      "metric": "testid-query",
+      "from": 2109,
+      "to": 2116,
+      "reason": "new metrics test-db-fake and testid-query record their first counts, merged with main's new specs (Q-09a)"
     }
   ]
 }
