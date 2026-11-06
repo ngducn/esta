@@ -745,6 +745,12 @@
       "from": 0,
       "to": 2124,
       "reason": "new metrics test-db-fake and testid-query record their first counts (Q-09a)"
+    },
+    {
+      "metric": "direct-write",
+      "from": 55,
+      "to": 56,
+      "reason": "the global test clock row is updated in place: a delete then insert left a gap the agent worker read as no row"
     }
   ]
 }
