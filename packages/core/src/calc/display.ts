@@ -11,7 +11,7 @@ export function displayTyped(value: TypedValue, locale: Locale): string {
     case 'vnd':
       return formatVnd(value.value, locale);
     case 'bp':
-      return formatBps(value.value, locale);
+      return value.per === 'month' ? `${formatBps(value.value, locale)}${locale === 'vi' ? '/tháng' : '/month'}` : formatBps(value.value, locale);
     case 'count':
       return value.unit === 'days' ? formatDays(value.value, locale) : `${formatCount(value.value, locale)} ${value.unit}`;
     case 'months':

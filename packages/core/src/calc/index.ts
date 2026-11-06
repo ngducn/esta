@@ -4,6 +4,7 @@ import { CALC_OPS, divRoundHalfAway, loanPaymentExact } from './ops';
 import type { CalcRefusal, CalcResult, TypedKind, TypedValue } from './types';
 
 export { CALC_OPS, divRoundHalfAway, loanPaymentExact, displayTyped };
+export { typedValueSchema } from './schema';
 export type { CalcOp, CalcOutput, CalcRefusal, CalcResult, TypedKind, TypedValue } from './types';
 
 export function calcOp(id: string) {

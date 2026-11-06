@@ -5,7 +5,8 @@ import type { Result } from '../result';
 
 export type TypedValue =
   | { kind: 'vnd'; value: Vnd }
-  | { kind: 'bp'; value: number }
+  /** `per: 'month'` marks a rate she wrote per month; a bare bp is a yearly rate or a share. */
+  | { kind: 'bp'; value: number; per?: 'month' | undefined }
   | { kind: 'count'; value: number; unit: string }
   | { kind: 'months'; value: number }
   | { kind: 'date'; value: IsoDate };
