@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { isoDate } from '../date/iso-date';
 import { vnd } from '../money/vnd';
-import { formatArea, formatBps, formatDate, formatDateLong, formatDays, formatMonthWithin, formatMonthYear, formatRelativeDue, formatVnd, formatVndCompact, formatYear, wholePercent } from './index';
+import { formatArea, formatBps, formatDate, formatDateLong, formatDays, formatMonthWithin, formatMonthYear, formatRelativeDue, formatVnd, formatVndCompact, formatWholeBps, formatYear, wholePercent } from './index';
 
 const NBSP = '\u00a0';
 
@@ -66,6 +66,14 @@ describe('formatVndCompact', () => {
     expect(formatVndCompact(vnd(499), 'vi')).toBe(`499${NBSP}₫`);
     expect(formatVndCompact(vnd(500), 'vi')).toBe('1 nghìn');
     expect(formatVndCompact(vnd(0), 'en')).toBe(`0${NBSP}₫`);
+  });
+});
+
+describe('formatWholeBps (#411)', () => {
+  it('rounds down to a whole percent, as the tax card does', () => {
+    expect(formatWholeBps(9_653)).toBe('96%');
+    expect(formatWholeBps(9_999)).toBe('99%');
+    expect(formatWholeBps(0)).toBe('0%');
   });
 });
 

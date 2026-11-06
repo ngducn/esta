@@ -29,6 +29,18 @@ const SESSION_GONE = 'No conversation found with session ID';
 /** A call the policy refused, as the run record keeps it: the tool and why, and the call's input except a WebSearch's, which holds what the model tried to send out (see `storedDenial`). */
 type Denial = { readonly tool_name: string; readonly code: DenialCode; readonly tool_input: Record<string, unknown> };
 
+const stoppedRuns = new WeakMap<object, SessionRun>();
+
+/** What a session had done when a tool error ended it, so the run row still names the model and the calls (#317). */
+export const stoppedRun = (error: unknown): SessionRun | null => (typeof error === 'object' && error !== null ? (stoppedRuns.get(error) ?? null) : null);
+
+function stoppedBy<E>(error: E, run: SessionRun): E {
+  if (typeof error === 'object' && error !== null) stoppedRuns.set(error, run);
+  return error;
+}
+
+const unfinished = (text: string, numTurns: number): SessionResult => ({ isError: true, cause: null, subtype: 'error_during_execution', text, numTurns, sessionId: null, costUsd: 0, usage: {}, modelUsage: {}, permissionDenials: [] });
+
 export type SessionRun = { readonly result: SessionResult; readonly model: string; readonly toolCalls: readonly ToolCall[]; readonly denials: readonly Denial[] };
 
 export type SessionRequest = {
@@ -132,6 +144,7 @@ export async function liveSession(request: SessionRequest, mode: Extract<RunMode
   let result: SDKResultMessage | undefined;
   let cause: string | null = null;
   let streamed = false;
+  let turns = 0;
   try {
     for await (const message of query({ prompt: request.prompt, options })) {
       if (message.type === 'stream_event' && request.onText !== undefined) {
@@ -147,6 +160,7 @@ export async function liveSession(request: SessionRequest, mode: Extract<RunMode
       } else if (message.type === 'assistant') {
         // A turn without an error means the model went on, so an earlier rate limit no longer explains how the session ends.
         cause = message.error ?? null;
+        turns += 1;
         for (const block of message.message.content) {
           if (block.type === 'tool_use') toolCalls.push({ name: block.name, input: block.input as Record<string, unknown> });
         }
@@ -156,12 +170,12 @@ export async function liveSession(request: SessionRequest, mode: Extract<RunMode
     }
   } catch (error) {
     // The SDK throws after it has yielded an error result, or once a tool failure aborted it; either already says what failed.
-    if (result === undefined && toolFailures.length === 0) throw error;
+    if (result === undefined && toolFailures.length === 0) throw stoppedBy(error, { result: unfinished(String(error), turns), model, toolCalls, denials });
   } finally {
     clearTimeout(timer);
   }
-  if (toolFailures.length > 0) throw toolFailures[0];
-  if (result === undefined) throw new Error('The model session ended without a result');
+  if (toolFailures.length > 0) throw stoppedBy(toolFailures[0], { result: unfinished(String(toolFailures[0]), result?.num_turns ?? turns), model, toolCalls, denials });
+  if (result === undefined) throw stoppedBy(new Error('The model session ended without a result'), { result: unfinished('The model session ended without a result', turns), model, toolCalls, denials });
   const resumed = request.resume?.sessionId ?? null;
   if (resumed !== null && result.subtype === 'error_during_execution' && result.errors.some((error) => error.startsWith(SESSION_GONE))) throw new SessionGoneError(resumed);
   return { result: fromSdkResult(result, cause), model, toolCalls, denials };
@@ -247,8 +261,13 @@ export async function replaySession(request: SessionRequest, replayDir: string):
     }
     // The recording already holds the model's next turn, so the answer is dropped; an error other than a rejection fails the job.
     const tool = request.tools.get(call.name);
-    if (tool !== undefined) await runTool(tool, input);
-    else if (call.result !== undefined) observeBuiltIn(request, policy, { name: call.name, input, result: JSON.parse(request.canon.restore(JSON.stringify(call.result))) as unknown });
+    if (tool !== undefined) {
+      try {
+        await runTool(tool, input);
+      } catch (error) {
+        throw stoppedBy(error, { result: unfinished(String(error), index + 1), model: recording.model, toolCalls, denials });
+      }
+    } else if (call.result !== undefined) observeBuiltIn(request, policy, { name: call.name, input, result: JSON.parse(request.canon.restore(JSON.stringify(call.result))) as unknown });
   }
   const reply = request.canon.restore(recording.reply);
   const sessionId = replaySessionId(inputHash(input));

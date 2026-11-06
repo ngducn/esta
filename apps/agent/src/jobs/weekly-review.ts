@@ -1,3 +1,5 @@
+import { WEB_CAPS } from '@esta/core/agent-limits';
+import { capsLeftForJob } from './web-spent';
 import type { Clock } from '@esta/core';
 import { firstRunKey, scheduledWeek } from '@esta/core/agent-schedule';
 import { MAX_WEEKLY_PROPOSALS, weeklyNoteSchema } from '@esta/core/agent-schemas';
@@ -7,7 +9,7 @@ import type { Locale } from '@esta/core/format';
 import { weeklyReviewPrompt, type ReviewCaps } from '../prompts/weekly-review';
 import type { AgentDb } from '../supabase';
 import { askReads, type AskReads } from '../tools/ask-reads';
-import { guardedWriter, type GuardBinding, type WrittenNote } from '../tools/create-item';
+import { assertTitleFits, guardedWriter, type GuardBinding, type WrittenNote } from '../tools/create-item';
 import { proposalWriter } from '../tools/create-proposal';
 import { runSheet } from '../tools/fact-sheet';
 import { householdLocale } from '../tools/household-info';
@@ -18,11 +20,10 @@ import { fetchedPage } from '../tools/web-quotes';
 import { resolveLinks } from './askStream';
 import type { AgentJob, JobContext, PreparedJob } from './registry';
 
-const CAPS: ReviewCaps = { WebSearch: 6, WebFetch: 4 };
-
 const UNRESOLVED_LINK = /\]\((f\d+)\)/g;
 
 export type WeeklyRequestInput = {
+  readonly caps?: ReviewCaps;
   readonly db: AgentDb;
   readonly householdId: string;
   readonly jobId: string;
@@ -71,6 +72,7 @@ function weeklyNoteWriter(binding: GuardBinding & { readonly week: string }) {
       ],
       `${note.title}\n\n${note.body_md}`,
     );
+    assertTitleFits(title?.text);
     const links = [...new Set([...note.related.map((handle) => String(binding.sheet.get(handle)?.link)), ...body.refs])];
     const dedupeKey = `weekly_review:${binding.week}`;
     const added = await guard.save({ kind: 'weekly', severity: 'info', title: title?.text ?? '', body_md: filled?.text ?? '', related: { links }, dedupe_key: dedupeKey });
@@ -83,19 +85,20 @@ function weeklyNoteWriter(binding: GuardBinding & { readonly week: string }) {
 
 export function weeklyReviewRequest(input: WeeklyRequestInput): PreparedJob {
   const { db, householdId, locale, asOf, week, reads } = input;
+  const caps = input.caps ?? WEB_CAPS.weekly_review;
   const { sheet, cite } = runSheet();
   const fetched = new Set<string>();
   const note = weeklyNoteWriter({ ...input, sheet });
   const proposals = proposalWriter({ ...input, sheet, citing: { fetched }, cap: { max: MAX_WEEKLY_PROPOSALS, earlier: input.earlierProposals } });
   return {
-    prompt: weeklyReviewPrompt({ locale, today: asOf, timezone: input.timezone, caps: CAPS, proposals: MAX_WEEKLY_PROPOSALS }),
+    prompt: weeklyReviewPrompt({ locale, today: asOf, timezone: input.timezone, caps, proposals: MAX_WEEKLY_PROPOSALS }),
     tools: new Map([
       ...readTools(db, householdId, { reads, locale, asOf, cite }),
       estaTool('recent_items', recentItemsTool(input, cite, { days: 30, minRelevance: 0, limit: 20 })),
       estaTool('create_item', note.write),
       estaTool('create_proposal', proposals.write),
     ]),
-    caps: { ...CAPS },
+    caps: { ...caps },
     observe(call) {
       for (const url of fetchedPage(call)?.urls ?? []) fetched.add(url);
     },
@@ -129,5 +132,6 @@ async function weekProposals(db: AgentDb, job: Pick<AgentJob, 'id' | 'household_
 export async function prepareWeeklyReview({ db, job, clock, timezone }: JobContext): Promise<PreparedJob> {
   const { week, asOf } = reviewedWeek(job, (await clock()).today());
   const [locale, earlierProposals] = await Promise.all([householdLocale(db, job.household_id), weekProposals(db, job)]);
-  return weeklyReviewRequest({ db, householdId: job.household_id, jobId: job.id, locale, week, asOf, timezone, clock, earlierProposals, reads: askReads(db, job.household_id, { locale, asOf }) });
+  const caps = await capsLeftForJob(db, job.id, WEB_CAPS.weekly_review);
+  return weeklyReviewRequest({ caps, db, householdId: job.household_id, jobId: job.id, locale, week, asOf, timezone, clock, earlierProposals, reads: askReads(db, job.household_id, { locale, asOf }) });
 }

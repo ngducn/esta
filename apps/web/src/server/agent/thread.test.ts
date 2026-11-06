@@ -142,6 +142,12 @@ describe('loadThread pinned', () => {
     expect(pinned.count, 'the older proposal is counted, the info note is not').toBe(4);
   });
 
+  it('pins only the kinds PINNED_KINDS names: an action-severity note of any other kind stays out (#351)', async () => {
+    stored.messages = [];
+    stored.agent_items = ['answer_note', 'research', 'market', 'digest'].map((kind, index) => note(index + 1, at(index + 1), { ...action, kind }));
+    expect((await loadThread(member)).pinned).toEqual({ shown: [], count: 0 });
+  });
+
   it('never pins a brief, a weekly review, a hidden note or a decided proposal, on any page of the thread', async () => {
     stored.messages = [];
     stored.agent_items = [

@@ -3,7 +3,7 @@ import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } 
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { calledJobScripts, jobScriptProblems, jobScriptsOnDisk, parseWorkflow, scriptsCalledBy, securityProblems } from './ci-workflow-rules.ts';
+import { calledJobScripts, jobScriptProblems, jobScriptsOnDisk, jobsThatRun, parseWorkflow, runShapeProblems, scriptsCalledBy, securityProblems } from './ci-workflow-rules.ts';
 
 const root = join(import.meta.dirname, '..');
 const read = (path: string) => readFileSync(join(root, path), 'utf8');
@@ -33,6 +33,49 @@ describe('ci.yml', () => {
 
   it('is the same set of job scripts tools/ci-local.sh runs', () => {
     expect(scriptsCalledBy(read('tools/ci-local.sh'))).toEqual(jobScriptsOnDisk(root));
+  });
+});
+
+describe('runShapeProblems', () => {
+  const shape = (text: string) => runShapeProblems(parseWorkflow(text)).join('\n');
+  const mutate = (from: string, to: string) => {
+    expect(ciText).toContain(from);
+    return ciText.replace(from, to);
+  };
+
+  it('holds for ci.yml', () => {
+    expect(runShapeProblems(parseWorkflow(ciText))).toEqual([]);
+  });
+
+  it('lists what each run starts', () => {
+    const workflow = parseWorkflow(ciText);
+    expect(jobsThatRun(workflow, { event: 'pull_request', draft: true })).toEqual(['check', 'design']);
+    expect(jobsThatRun(workflow, { event: 'push', draft: false })).toEqual(['check', 'ci', 'db', 'design', 'prod-build']);
+  });
+
+  it('fails a heavy job that runs on a draft', () => {
+    expect(shape(mutate("    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}\n    runs-on: ubuntu-24.04\n    timeout-minutes: 20\n    steps:\n      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1\n        with:\n          persist-credentials: false\n      - uses: ./.github/actions/setup\n      - uses: supabase", '    runs-on: ubuntu-24.04\n    timeout-minutes: 20\n    steps:\n      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1\n        with:\n          persist-credentials: false\n      - uses: ./.github/actions/setup\n      - uses: supabase'))).toContain('a draft pull request runs db');
+  });
+
+  it('fails a ci job that runs on a draft', () => {
+    expect(shape(mutate("always() && (github.event_name != 'pull_request' || !github.event.pull_request.draft)", 'always()'))).toContain('a draft pull request runs ci');
+  });
+
+  it('fails a ci job that accepts a skipped job on a ready pull request', () => {
+    expect(shape(mutate("'success skipped' || 'success'", "'success skipped' || 'success skipped'"))).toContain('only success may pass');
+  });
+
+  it('fails e2e on a push to main', () => {
+    expect(shape(mutate("github.event_name != 'push' && (github.event_name != 'pull_request' || !github.event.pull_request.draft) }}\n    name", "github.event_name != 'pull_request' || !github.event.pull_request.draft }}\n    name"))).toContain('push runs e2e');
+  });
+
+  it('fails a nightly or manual run that loses a heavy job', () => {
+    expect(shape(mutate("github.event_name != 'push' && (github.event_name != 'pull_request' || !github.event.pull_request.draft) }}\n    runs-on: ubuntu-24.04\n    timeout-minutes: 10\n    steps:\n      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1\n        with:\n          persist-credentials: false\n      - uses: ./.github/actions/setup\n      - run: tools/ci/jobs/mutation.sh", "github.event_name == 'pull_request' && !github.event.pull_request.draft }}\n    runs-on: ubuntu-24.04\n    timeout-minutes: 10\n    steps:\n      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1\n        with:\n          persist-credentials: false\n      - uses: ./.github/actions/setup\n      - run: tools/ci/jobs/mutation.sh"))).toContain('schedule skips mutation');
+  });
+
+  it('fails a workflow without ready_for_review or the schedule', () => {
+    expect(shape(mutate('opened, synchronize, reopened, ready_for_review', 'opened, synchronize, reopened'))).toContain('ready_for_review');
+    expect(shape(mutate("  schedule:\n    - cron: '0 19 * * *'\n", ''))).toContain('no schedule');
   });
 });
 

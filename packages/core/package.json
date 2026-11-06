@@ -11,7 +11,7 @@
     "./address": "./src/address/index.ts",
     "./agent": "./src/agent/worker-status.ts",
     "./agent-usage": "./src/agent/usage.ts",
-    "./agent-limits": "./src/agent-limits/backoff.ts",
+    "./agent-limits": "./src/agent-limits/index.ts",
     "./agent-schedule": "./src/agent-schedule/index.ts",
     "./agent-schemas": "./src/agent-schemas/index.ts",
     "./extraction": "./src/extraction/score.ts",
