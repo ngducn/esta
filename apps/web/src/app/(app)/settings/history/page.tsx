@@ -36,7 +36,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function ChangeHistoryPage() {
   const member = await requireMember();
-  if (!member.isOperator) notFound();
+  if (!member.can('operate')) notFound();
   const [db, t, nav, intl] = await Promise.all([createSessionClient(), getTranslations('history'), getTranslations('nav'), historyIslandIntl()]);
   const { data, error } = await db.rpc('change_batch_history', { p_household_id: member.household.id });
   if (error) throw new Error(`Reading the change history failed: ${error.message}`);

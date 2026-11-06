@@ -38,7 +38,6 @@ const SENTINELS: Readonly<Record<string, ExtractionRefusal | CommonRefusal>> = {
 /** `accept_extraction`'s arguments: the plan's writes and the fields they came from, ready for one call. */
 type Acceptance = {
   readonly extractionId: string;
-  readonly manualId: string | null;
   readonly propertyId: string | null;
   readonly steps: Json;
   readonly acceptedFields: Json;
@@ -151,7 +150,6 @@ export const extractionAccept = defineOp<AcceptInput, Acceptance, ExtractionAcce
     }
     return change({
       extractionId: input.extraction_id,
-      manualId: target.manualOf === null ? null : target.id,
       propertyId: document.propertyId,
       steps: asJson(planned.plan.steps),
       acceptedFields: asJson(planned.plan.acceptedFields),
@@ -164,7 +162,6 @@ export const extractionAccept = defineOp<AcceptInput, Acceptance, ExtractionAcce
       p_extraction_id: accepting.extractionId,
       p_steps: accepting.steps,
       p_accepted_fields: accepting.acceptedFields,
-      ...(accepting.manualId === null ? {} : { p_manual_id: accepting.manualId }),
       ...(accepting.propertyId === null ? {} : { p_property_id: accepting.propertyId }),
       ...(accepting.ocrText === null ? {} : { p_ocr_text: accepting.ocrText }),
     });

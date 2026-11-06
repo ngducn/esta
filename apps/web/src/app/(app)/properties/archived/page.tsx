@@ -27,7 +27,7 @@ export default async function ArchivedPropertiesPage() {
       <BackLink href="/properties" label={nav('properties')} />
       <h1 className="text-title-2 break-words lg:text-title-1">{t('archivedTitle')}</h1>
       {archived.length === 0 ? (
-        <RegistryEmptyState surface="propertiesArchived" ctx={{ canWrite: member.role !== 'viewer' }} className="max-w-3xl" />
+        <RegistryEmptyState surface="propertiesArchived" ctx={{ canWrite: member.can('edit') }} className="max-w-3xl" />
       ) : (
         <PropertyIntl locale={intl.locale} messages={intl.messages}>
           <ul data-testid="archived-list" className="flex max-w-3xl flex-col divide-y divide-border rounded-lg border border-border bg-surface shadow-xs">
@@ -42,7 +42,7 @@ export default async function ArchivedPropertiesPage() {
                     <span className="text-body font-medium text-text wrap-anywhere">{property.nickname}</span>
                     <span className="text-body-sm text-text-muted">{t('kind', { kind: property.kind })}</span>
                   </span>
-                  {member.role === 'viewer' ? null : <RestoreButton propertyId={property.id} label={t('restore')} />}
+                  {!member.can('edit') ? null : <RestoreButton propertyId={property.id} label={t('restore')} />}
                 </li>
               );
             })}

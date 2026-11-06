@@ -8,7 +8,6 @@ create function public.accept_extraction(
   p_extraction_id uuid,
   p_steps jsonb,
   p_accepted_fields jsonb,
-  p_manual_id uuid default null,
   p_property_id uuid default null,
   p_ocr_text text default null
 )
@@ -20,7 +19,7 @@ as $$
 #variable_conflict use_column
 declare
   v_x public.document_extractions;
-  v_target uuid := coalesce(p_manual_id, p_extraction_id);
+  v_target uuid;
   v_document public.documents;
   v_property uuid;
   v_step jsonb;
@@ -34,10 +33,13 @@ begin
     raise exception 'ESTA_FORBIDDEN' using errcode = '42501';
   end if;
   if jsonb_typeof(p_steps) is distinct from 'array' or jsonb_typeof(p_accepted_fields) is distinct from 'object'
-    or (p_manual_id is null) is distinct from (v_x.status <> 'failed')
     or v_x.status not in ('needs_review', 'accepted', 'failed') then
     raise exception 'ESTA_EXTRACTION_NOT_REVIEWABLE' using errcode = '23514';
   end if;
+
+  -- A failed read is replaced by a manual entry whose id the stored read decides, never the caller.
+  v_target := case when v_x.status = 'failed'
+    then extensions.uuid_generate_v5(extensions.uuid_ns_url(), 'manual:' || v_x.id) else v_x.id end;
 
   select d.* into v_document from public.documents d
   where d.household_id = v_x.household_id and d.id = v_x.document_id and d.deleted_at is null;
@@ -56,9 +58,9 @@ begin
   end if;
 
   -- A failed read is saved as a manual entry, inserted accepted with no model before its rows so the certificate can name it.
-  if p_manual_id is not null then
+  if v_x.status = 'failed' then
     insert into public.document_extractions (id, household_id, document_id, schema_name, schema_version, status, accepted_fields)
-    values (p_manual_id, v_x.household_id, v_x.document_id, v_x.schema_name, 1, 'accepted', p_accepted_fields)
+    values (v_target, v_x.household_id, v_x.document_id, v_x.schema_name, 1, 'accepted', p_accepted_fields)
     on conflict (id) do nothing;
   end if;
 
@@ -122,7 +124,7 @@ begin
 
   update public.document_extractions
   set status = 'accepted', accepted_fields = p_accepted_fields
-  where id = v_target and status in ('needs_review', 'accepted');
+  where id = v_target and household_id = v_x.household_id and document_id = v_x.document_id and status in ('needs_review', 'accepted');
   if not found then
     raise exception 'ESTA_EXTRACTION_NOT_REVIEWABLE' using errcode = '23514';
   end if;
@@ -137,8 +139,8 @@ begin
   return query select v_property, v_x.document_id;
 end;
 $$;
-revoke all on function public.accept_extraction(uuid, jsonb, jsonb, uuid, uuid, text) from public, anon;
-grant execute on function public.accept_extraction(uuid, jsonb, jsonb, uuid, uuid, text) to authenticated;
+revoke all on function public.accept_extraction(uuid, jsonb, jsonb, uuid, text) from public, anon;
+grant execute on function public.accept_extraction(uuid, jsonb, jsonb, uuid, text) to authenticated;
 
 -- `Không dùng`: the read is set aside and the Trợ lý item that pointed at it leaves the new list, together or not at all.
 -- Under the same lock as accept_extraction, so a reject racing an accept finds the accept's result. Returns the

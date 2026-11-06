@@ -65,6 +65,7 @@ Until then, an action outside the ops layer that parses an id adds to `local-id-
 - **Properties.** `searchProperties(db, householdId, tokens)` in `packages/ops/src/properties.ts` reads `property_list_rows` with core's `searchTokens` and `preferPhrase`, for the property list and for `find_property`, so both find the same properties. `readPropertyDetail` reads one property for its detail page and for `get_property`. Lease facts and status marks need the Clock's date, so the web loaders add them on top.
 - **Property form.** `readPropertyForm` reads the columns the property form edits, for its edit page and for an edit's plan.
 - **Clock.** `readClock(db, env)` in `packages/ops/src/clock.ts` reads the test clock row on every call outside production (SPEC FND-9). The web passes a cookieless client, the agent and the connector their own.
+- **Access.** What a role may see or do in the UI is `CAPABILITIES` in `apps/web/src/server/access.ts`; `getCurrentMember` computes `member.can(capability)` from it, and the proxy calls the same `can`. Which page or route needs which capability is `ROUTE_ACCESS` in `apps/web/src/server/route-access.ts`; the proxy answers 404 from it, and `route-access.test.ts` fails on a page or route file in neither it nor the public list. RLS stays the real guard. A role compared with a string literal fails `pnpm quality` (`literal-role-check`, baseline 0).
 - **Membership.** `readMembership(db, userId)` in `packages/ops/src/member.ts` is the one read of the membership Esta opens for a user, the first one they joined. `getCurrentMember` and the connector's operator check both call it.
 - **Addresses.** `suggestCurrentUnits` in `packages/ops/src/address.ts` maps an old address to the current ward and province.
 - **Documents.** `packages/ops/src/documents.ts` signs a document's three uploads (`signDocumentUploads`), finds the household's documents with the same hash (`documentsWithHash`), and registers the row (`documentRegister`), for the vault's server actions and for `documentAttach`.
@@ -80,7 +81,7 @@ A read moves here before a second surface uses it. A read that only one surface 
 
 A user action that writes more than one row runs as one `security definer` function in SQL, in one transaction, and checks membership itself. `record_payment` in `supabase/migrations/20261007305000_record_payment.sql` and `amend_lease` in `supabase/migrations/20261007306700_lease_changes.sql` are the template. Never orchestrate several writes from TypeScript with compensating deletes or a loop of updates.
 
-A connector batch is not one user action: it is a sequence of ops, each atomic on its own, and it ends `partial` with what landed (`docs/spec/CONNECTOR.md` §3.4). It converges without a transaction: an apply that dies is taken over after a five-minute lease, and the takeover plans each item again, so what landed plans as unchanged and nothing lands twice. Four flows still break this rule. Issue #184 moves extraction acceptance into one function. Issue #189 moves the room reorder, the legal save with quick-added owners, and delete-and-undo.
+A connector batch is not one user action: it is a sequence of ops, each atomic on its own, and it ends `partial` with what landed (`docs/spec/CONNECTOR.md` §3.4). It converges without a transaction: an apply that dies is taken over after a five-minute lease, and the takeover plans each item again, so what landed plans as unchanged and nothing lands twice. Three flows still break this rule. Extraction acceptance is one function, `accept_extraction`, that writes every row in one transaction. Issue #189 moves the room reorder, the legal save with quick-added owners, and delete-and-undo.
 
 ## Rules in SQL and rules in TypeScript
 
@@ -156,7 +157,7 @@ Each metric below only goes down, and the path-to-10 plan (`docs/plan/quality-20
 | --- | --- | --- |
 | `long-function` | 0 | Split by state (a hook or a reducer) or by mode (one component per variant). |
 | `direct-write` | 0 | An op in `packages/ops`, run with `runOp` from a server action. |
-| `literal-role-check` | 0 | One access table (Q-08); until then read the role from `requireMember` and add no comparison. |
+| `literal-role-check` | 0 (reached) | `member.can('<capability>')`, from the one table in `apps/web/src/server/access.ts`. |
 | `file-name-case` | 0 | Kebab-case file names; Next.js special files already are. |
 | `ad-hoc-result-type` | 0 | `Result` from `@esta/core/result`. |
 | `double-cast` | 0 | Parse with zod at the boundary, or narrow with a type guard. |

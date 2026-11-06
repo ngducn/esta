@@ -22,7 +22,7 @@ export async function generateMetadata(): Promise<Metadata> {
 /** LSE-8 preview of one import: its lines, what posts on `Ghi sổ`, and the suggestions left to confirm. */
 export default async function StatementPreviewPage({ params, searchParams }: { params: Params; searchParams: Search }) {
   const [{ id }, search, member, t] = await Promise.all([params, searchParams, requireMember(), getTranslations('statements')]);
-  if (!idSchema.safeParse(id).success || member.role !== 'admin') notFound();
+  if (!idSchema.safeParse(id).success || !member.can('import')) notFound();
   const [view, accounts, intl] = await Promise.all([loadStatementImport(member.household.id, id), loadReceivingAccounts(member.household.id), statementIslandIntl()]);
   if (view === null) notFound();
   const account = accounts.find((candidate) => candidate.id === view.accountId);

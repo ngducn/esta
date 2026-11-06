@@ -4,9 +4,11 @@ import { createServerClient } from '@supabase/ssr';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
+import { can } from '@/server/access';
 import { openLinkTarget } from '@/server/agent/open-link';
 import { parseEnv } from '@/server/env-schema';
 import { isAuthPage, isPublicPath } from '@/server/public-paths';
+import { hiddenWithout } from '@/server/route-access';
 import { RETURN_COOKIE, RETURN_MAX_AGE_SECONDS, safeReturnPath } from '@/server/return-path';
 import { buildCsp } from '@/server/security/csp';
 import { sessionCookie } from '@/server/supabase/session';
@@ -83,15 +85,13 @@ const GUARDED_PAGES: readonly GuardedPage[] = [
   recordPage(/^\/assistant\/ask\/([^/]+)$/, [], (supabase, id) => supabase.from('conversations').select('id').eq('id', id).maybeSingle()),
   {
     path: /^\/tenants\/([^/]+)\/?$/,
-    async hidden({ supabase, userId }, id) {
-      if ((await readMembership(supabase, userId))?.role !== 'admin') return true;
+    async hidden({ supabase }, id) {
       const party = idSchema.safeParse(id);
       if (!party.success) return true;
       const { data, error } = await supabase.from('parties').select('id').eq('id', party.data).contains('tags', ['tenant']).maybeSingle();
       return error === null && data === null;
     },
   },
-  { path: /^\/assistant\/diagnostics\/?$/, hidden: async ({ supabase, userId }) => (await readMembership(supabase, userId))?.is_operator !== true },
   { path: /^\/open\/([^/]+\/[^/]+)$/, hidden: async ({ supabase }, link = '') => openLinkTarget(supabase, link).then((target) => target === null, () => false) },
 ];
 
@@ -103,6 +103,11 @@ const GUARDED_PAGES: readonly GuardedPage[] = [
  */
 async function isHiddenPage(request: NextRequest, session: Session): Promise<boolean> {
   if (request.headers.has('rsc')) return false;
+  const needs = hiddenWithout(request.nextUrl.pathname);
+  if (needs.length > 0) {
+    const membership = await readMembership(session.supabase, session.userId);
+    if (membership === null || !needs.every((need) => can({ role: membership.role, isOperator: membership.is_operator }, need))) return true;
+  }
   for (const page of GUARDED_PAGES) {
     const match = page.path.exec(request.nextUrl.pathname);
     if (match !== null) return page.hidden(session, match[1]);

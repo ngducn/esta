@@ -37,9 +37,9 @@ async function qrState(invoice: InvoiceDetail, householdId: string, locale: Loca
 }
 
 /** Adding the account is an admin's call; anyone else is told to ask one. */
-async function noAccountAction(role: Member['role']) {
+async function noAccountAction(member: Member) {
   const t = await getTranslations('invoices');
-  if (role !== 'admin') return <p className="text-body text-text-secondary">{t('noAccountAsk')}</p>;
+  if (!member.can('household')) return <p className="text-body text-text-secondary">{t('noAccountAsk')}</p>;
   const { banks, labels } = await loadAccountSheet();
   return <ReceivingAccountButton label={t('addAccount')} banks={banks} labels={labels} mode={{ kind: 'add', becomesDefault: true }} />;
 }
@@ -66,9 +66,9 @@ export default async function InvoicePage({ params }: { params: Params }) {
   const invoice = await loadInvoice(member.household.id, parsed.data.invoiceId);
   if (invoice === null) notFound();
   const place = invoice.wholeUnit ? invoice.propertyName : collections('place', { unit: invoice.unitLabel, property: invoice.propertyName });
-  const canEdit = member.role !== 'viewer';
+  const canEdit = member.can('edit');
   const qr = await qrState(invoice, member.household.id, locale);
-  const [actions, accountAction] = await Promise.all([canEdit ? billActions(invoice) : null, qr.kind === 'noAccount' ? noAccountAction(member.role) : null]);
+  const [actions, accountAction] = await Promise.all([canEdit ? billActions(invoice) : null, qr.kind === 'noAccount' ? noAccountAction(member) : null]);
   // A draft's `Phát hành` sits under the sentence saying when it would issue, where Mẹ reads it on a phone.
   const issuing = invoice.status === 'draft';
   return (

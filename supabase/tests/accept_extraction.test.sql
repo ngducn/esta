@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(24);
+select plan(33);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 
@@ -17,17 +17,24 @@ insert into public.documents (id, household_id, property_id, category, title, st
   ('00000000-0000-4000-8000-00000000d0a3', :'a', '00000000-0000-4000-8000-0000000000a1', 'certificate', 'Trang trống Demo',
    :'a' || '/00000000-0000-4000-8000-00000000d0a3/trang.jpg', 'image/jpeg', 1000, repeat('c', 64), 'sensitive'),
   ('00000000-0000-4000-8000-00000000d0a4', :'a', '00000000-0000-4000-8000-0000000000a1', 'utility_bill', 'Hóa đơn điện Demo',
-   :'a' || '/00000000-0000-4000-8000-00000000d0a4/hd.pdf', 'application/pdf', 1000, repeat('d', 64), 'normal');
+   :'a' || '/00000000-0000-4000-8000-00000000d0a4/hd.pdf', 'application/pdf', 1000, repeat('d', 64), 'normal'),
+  ('00000000-0000-4000-8000-00000000d0b1', :'b', '00000000-0000-4000-8000-0000000000b1', 'certificate', 'Sổ hồng B Demo',
+   :'b' || '/00000000-0000-4000-8000-00000000d0b1/so.jpg', 'image/jpeg', 1000, repeat('e', 64), 'sensitive'),
+  ('00000000-0000-4000-8000-00000000d0a5', :'a', '00000000-0000-4000-8000-0000000000a1', 'utility_bill', 'Hóa đơn nước Demo',
+   :'a' || '/00000000-0000-4000-8000-00000000d0a5/hd.pdf', 'application/pdf', 1000, repeat('f', 64), 'normal');
 
+select tests.act_as('member.b@test.esta.test');
+select public.enqueue_extract_document('00000000-0000-4000-8000-00000000d0b1', '2026-10-07T02:00:00Z') as other_id \gset
 select tests.act_as('member.a@test.esta.test');
+select public.enqueue_extract_document('00000000-0000-4000-8000-00000000d0a5', '2026-10-07T02:00:00Z') as water_id \gset
 select public.enqueue_extract_document('00000000-0000-4000-8000-00000000d0a1', '2026-10-07T02:00:00Z') as read_id \gset
 select public.enqueue_extract_document('00000000-0000-4000-8000-00000000d0a2', '2026-10-07T02:00:00Z') as unfiled_id \gset
 select public.enqueue_extract_document('00000000-0000-4000-8000-00000000d0a3', '2026-10-07T02:00:00Z') as failed_id \gset
 select public.enqueue_extract_document('00000000-0000-4000-8000-00000000d0a4', '2026-10-07T02:00:00Z') as bill_id \gset
 
 select tests.act_as_service('{"x-esta-actor": "agent:test-worker"}');
-update public.document_extractions set status = 'running' where id in (:'read_id', :'unfiled_id', :'failed_id', :'bill_id');
-update public.document_extractions set status = 'needs_review', result = '{"form": null}', model = 'claude-test' where id in (:'read_id', :'unfiled_id', :'bill_id');
+update public.document_extractions set status = 'running' where id in (:'read_id', :'unfiled_id', :'failed_id', :'bill_id', :'other_id', :'water_id');
+update public.document_extractions set status = 'needs_review', result = '{"form": null}', model = 'claude-test' where id in (:'read_id', :'unfiled_id', :'bill_id', :'other_id', :'water_id');
 update public.document_extractions set status = 'failed' where id = :'failed_id';
 insert into public.agent_items (household_id, kind, severity, title, dedupe_key) values
   (:'a', 'alert', 'info', 'Xem lại sổ', 'extract_review:' || :'read_id'),
@@ -49,6 +56,9 @@ select tests.act_as('viewer.a@test.esta.test');
 select throws_ok(
   format($$ select * from public.accept_extraction(%L, %L, '{}') $$, :'read_id', :'steps'),
   '42501', 'ESTA_FORBIDDEN', 'a viewer cannot accept');
+select throws_ok(
+  format($$ select public.reject_extraction(%L) $$, :'bill_id'),
+  '42501', 'ESTA_FORBIDDEN', 'and a viewer cannot reject');
 select tests.act_as('member.b@test.esta.test');
 select throws_ok(
   format($$ select * from public.accept_extraction(%L, %L, '{}') $$, :'read_id', :'steps'),
@@ -106,16 +116,29 @@ select lives_ok(
   'a retried accept passes');
 select is((select count(*) from public.parcels where certificate_id = '00000000-0000-4000-8000-00000000c001'), 1::bigint, 'and leaves one parcel');
 
--- A failed read is saved as a manual entry named by the caller.
+-- A failed read is saved as a manual entry whose id the stored read decides (manualEntryId's value for this id).
 select lives_ok(
-  format($$ select * from public.accept_extraction(%L, '[]', '{"form": {"decision": "edited", "value": "paper_only"}}', '00000000-0000-4000-8000-00000000e0a1') $$, :'failed_id'),
+  format($$ select * from public.accept_extraction(%L, '[]', '{"form": {"decision": "edited", "value": "paper_only"}}') $$, :'failed_id'),
   'a failed read is accepted as a manual entry');
 select results_eq(
-  $$ select status, model from public.document_extractions where id = '00000000-0000-4000-8000-00000000e0a1' $$,
-  $$ values ('accepted', null::text) $$, 'inserted accepted with no model');
+  format($$ select status, model from public.document_extractions where id = extensions.uuid_generate_v5(extensions.uuid_ns_url(), 'manual:' || %L) $$, :'failed_id'),
+  $$ values ('accepted', null::text) $$, 'inserted accepted with no model, under the id the TypeScript side computes');
+select is(extensions.uuid_generate_v5(extensions.uuid_ns_url(), 'manual:00000000-0000-4000-8000-00000000f0f1'), '73dd4027-1a24-597c-acc1-918b6f2d1220'::uuid,
+  'and that id is the one uuid-v5.ts gives');
 select throws_ok(
-  format($$ select * from public.accept_extraction(%L, '[]', '{}') $$, :'failed_id'),
-  '23514', 'ESTA_EXTRACTION_NOT_REVIEWABLE', 'a failed read with no manual entry named is not reviewable');
+  format($$ select * from public.accept_extraction(%L, '[]', '{}', %L) $$, :'failed_id', :'other_id'),
+  '42883', null, 'no argument names the manual entry, so another household''s extraction cannot be named as one');
+select results_eq(
+  format($$ select status, accepted_fields, reviewed_by from public.document_extractions where id = %L $$, :'other_id'),
+  $$ values ('needs_review', null::jsonb, null::uuid) $$, 'and the other household''s read is untouched');
+
+-- Reject and accept take turns on one read.
+select is((select public.reject_extraction(:'water_id')), '00000000-0000-4000-8000-00000000d0a5'::uuid, 'a waiting read is rejected');
+select throws_ok(
+  format($$ select * from public.accept_extraction(%L, '[]', '{}') $$, :'water_id'),
+  '23514', 'ESTA_EXTRACTION_NOT_REVIEWABLE', 'a rejected read cannot be accepted');
+select is((select public.reject_extraction(:'unfiled_id')), null::uuid, 'an accepted read cannot be rejected');
+select is((select status from public.document_extractions where id = :'unfiled_id'), 'accepted', 'and stays accepted');
 
 -- Rejecting.
 select is((select public.reject_extraction(:'bill_id')), '00000000-0000-4000-8000-00000000d0a4'::uuid, 'rejecting answers the document');

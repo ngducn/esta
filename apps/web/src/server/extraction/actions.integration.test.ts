@@ -10,8 +10,9 @@ import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import truthFile from '../../../../../fixtures/certificates/gcn_2024-photo/truth.json';
 import billTruth from '../../../../../fixtures/utility-bills/electricity-q7-scan/truth.json';
 import { seedId } from '../../../../../supabase/seed/generator/ids';
-import { integrationLane, outsiderEmail } from '@/test/lanes';
+import { integrationLane, outsiderEmail, withCapabilities } from '@/test/lanes';
 import { service, signedInAs, stackName, stackUp } from '@/test/stack';
+import { acceptCutOnce, addressLookupFails, holdFirstLastWrite } from '@/test/session-faults';
 import { twoAtOnce } from '@/test/two-at-once';
 
 const session = vi.hoisted(() => ({
@@ -22,7 +23,7 @@ const session = vi.hoisted(() => ({
 vi.mock('server-only', () => ({}));
 vi.mock('next/cache', () => ({ revalidatePath: () => undefined }));
 vi.mock('@/server/clock', () => ({ readRequestClock: async () => ({ now: () => '2026-10-08T10:00:00+07:00' }) }));
-vi.mock('@/server/member', () => ({ requireMember: async () => session.member }));
+vi.mock('@/server/member', () => ({ requireMember: async () => withCapabilities(session.member) }));
 vi.mock('@/server/supabase/server', () => ({ createSessionClient: async () => session.client }));
 
 const { saveExtractionReview } = await import('./actions');
@@ -125,20 +126,6 @@ async function written(extractionId: string) {
   };
 }
 
-/** The member's session, except the first call of the accepting function comes back failed, as a cut connection would leave it. */
-const acceptCutOnce = (client: SupabaseClient): SupabaseClient => {
-  let cut = false;
-  const cutOnce = (name: string, args: never) => (name !== 'accept_extraction' || cut ? client.rpc(name, args) : ((cut = true), Promise.resolve({ data: null, error: { code: '08006', message: 'connection cut' } })));
-  return new Proxy(client, { get: (target, property, receiver) => (property === 'rpc' ? cutOnce : Reflect.get(target, property, receiver)) });
-};
-
-/** The member's session, except the address lookup answers with an error, as a dropped connection would leave it. */
-const addressLookupFails = (client: SupabaseClient) =>
-  new Proxy(client, {
-    get: (target, property, receiver) =>
-      property !== 'rpc' ? Reflect.get(target, property, receiver) : (name: string, args: never) => (name === 'suggest_current_unit' ? { select: async () => ({ data: null, error: { message: 'connection cut' } }) } : target.rpc(name, args)),
-  });
-
 describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
   let member: SupabaseClient;
   let outsider: SupabaseClient;
@@ -202,12 +189,18 @@ describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
     expect(await rest(`document_extractions?id=eq.${extractionId}&select=status`)).toEqual([{ status: 'accepted' }]);
   });
 
-  test('two accepts of one extraction at once, with different areas typed, leave one result that agrees with its own record (#184)', async () => {
+  test('two accepts of one extraction, the first held until the second has finished, leave one result that agrees with its own record (#184)', async () => {
     asMember();
     const { extractionId } = await waitingExtraction();
+    const hold = holdFirstLastWrite(member);
+    session.client = hold.client;
     const typed = (area: string) => ({ ...acceptAll, 'parcels[0].area_m2': { kind: 'edited', value: area } });
     let call = 0;
-    const outcomes = await twoAtOnce(() => saveConfirmed(extractionId, typed(call++ === 0 ? '100' : '200')));
+    const outcomes = await twoAtOnce(async () => {
+      const mine = call++;
+      if (mine === 1) await hold.held;
+      return saveConfirmed(extractionId, typed(mine === 0 ? '100' : '200'));
+    });
     expect(outcomes.map((outcome) => outcome.status === 'fulfilled' && outcome.value.ok)).toEqual([true, true]);
     expect(await written(extractionId)).toMatchObject({ certificates: 1, parcels: 1, structures: 1 });
     const [parcel] = await rest<{ area_m2: number }[]>(`parcels?id=eq.${rowId(extractionId, 'parcels[0]')}&select=area_m2`);
