@@ -1,6 +1,6 @@
 /** The wizard's main path. `review` is a side step: it opens from any step after `photo` and returns there. */
-export const MAIN_STEPS = ['photo', 'details', 'owners', 'use', 'finish'] as const;
-export type MainStep = (typeof MAIN_STEPS)[number];
+const MAIN_STEPS = ['photo', 'details', 'owners', 'use', 'finish'] as const;
+type MainStep = (typeof MAIN_STEPS)[number];
 export type WizardStep = MainStep | 'review';
 
 export type WizardEvent = 'started' | 'next' | 'back' | 'openReview' | 'closeReview';

@@ -20,7 +20,7 @@ const lineSchema = z
   })
   .transform((line) => ({ kind: line.kind, description: line.description, quantity: line.quantity, unitPriceVnd: line.unit_price_vnd, amountVnd: line.amount_vnd, sortOrder: line.sort_order }));
 
-export type InvoiceLine = z.output<typeof lineSchema>;
+type InvoiceLine = z.output<typeof lineSchema>;
 
 const invoiceSchema = z.object({
   id: z.uuid(),

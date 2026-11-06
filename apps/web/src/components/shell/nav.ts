@@ -1,5 +1,5 @@
 /** `key` is also the section's message key in the `nav` namespace and its icon in `section-icons.ts`. */
-export const sections = [
+const sections = [
   { key: 'home', href: '/', placement: 'primary' },
   { key: 'properties', href: '/properties', placement: 'primary' },
   { key: 'collections', href: '/collections', placement: 'primary' },
@@ -10,7 +10,7 @@ export const sections = [
   { key: 'diagnostics', href: '/assistant/diagnostics', placement: 'operator' },
 ] as const;
 
-export type Section = (typeof sections)[number];
+type Section = (typeof sections)[number];
 export type SectionKey = Section['key'];
 
 export const primarySections = sections.filter((section) => section.placement === 'primary');

@@ -23,7 +23,6 @@ const depositInputSchema = z.object({
   note: z.string().max(1000),
   idempotencyKey: z.uuid(),
 });
-export type DepositInput = z.input<typeof depositInputSchema>;
 
 const amountSchema = z.number().int().min(1).max(MAX_AMOUNT_VND);
 

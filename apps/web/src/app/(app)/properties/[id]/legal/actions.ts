@@ -13,7 +13,7 @@ import { createSessionClient } from '@/server/supabase/server';
 export type LegalWrite = { readonly ok: true; readonly id: string } | { readonly ok: false; readonly reason: 'invalid' | 'failed' };
 
 /** What a delete hands back, so `Hoàn tác` can put the row back and re-link what it unlinked. */
-export type DeletedLegalItem = {
+type DeletedLegalItem = {
   readonly kind: LegalKind;
   readonly propertyId: string;
   readonly row: { readonly id: string } & Record<string, unknown>;

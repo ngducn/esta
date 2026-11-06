@@ -17,5 +17,5 @@ supabase/.temp/
 *.log
 *.pid
 .stryker-tmp/
-reports/
+/packages/core/reports/
 stryker-setup-*.js

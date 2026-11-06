@@ -15,7 +15,7 @@ const STATUSES = [...OPEN_NOTE_STATUSES, 'approved', 'failed', 'dismissed', 'don
 export type NoteStatus = (typeof STATUSES)[number];
 
 /** A proposal as the registry reads its stored params, null when they no longer parse. */
-export type ProposalView = { readonly parsed: Proposal | null; readonly dueOn: IsoDate | null };
+type ProposalView = { readonly parsed: Proposal | null; readonly dueOn: IsoDate | null };
 
 export type InboxNote = {
   readonly id: string;
@@ -86,7 +86,7 @@ export async function listNotes({ household, role, isOperator }: Pick<Member, 'h
   });
 }
 
-export type PinnedNote = { readonly id: string; readonly title: string; readonly proposal: boolean };
+type PinnedNote = { readonly id: string; readonly title: string; readonly proposal: boolean };
 
 export type Pinned = { readonly shown: readonly PinnedNote[]; readonly count: number };
 

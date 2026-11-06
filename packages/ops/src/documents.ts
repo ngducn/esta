@@ -59,7 +59,7 @@ export async function savedDocument(ctx: OpContext, id: string): Promise<Documen
   return data;
 }
 
-export const newDocumentSchema = sentDocumentSchema.extend({
+const newDocumentSchema = sentDocumentSchema.extend({
   propertyId: idSchema,
   category: z.enum(DOCUMENT_CATEGORY_IDS),
   title: documentTitleSchema,

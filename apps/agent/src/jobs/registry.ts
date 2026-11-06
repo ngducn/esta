@@ -55,7 +55,7 @@ const INPUT_KEYS = ['caps', 'fetchable', 'observe', 'searchTerms', 'onWebTool', 
 export const sessionInputs = (prepared: SessionInputs): SessionInputs => Object.fromEntries(INPUT_KEYS.flatMap((key) => (prepared[key] === undefined ? [] : [[key, prepared[key]]])));
 
 /** The session the job's last turn ran in, and that turn's replay key, for a job a later one resumes. */
-export type FinishedRun = { readonly reply: string; readonly model: string; readonly sessionId?: string | null; readonly turnHash?: string };
+type FinishedRun = { readonly reply: string; readonly model: string; readonly sessionId?: string | null; readonly turnHash?: string };
 
 export type JobSpec = {
   readonly kind: string;

@@ -23,7 +23,7 @@ import type { PropertyHandles } from './list-properties';
 /** A lease as the lease pages list it; `property_archived` marks one whose property was archived, whose pages are gone. */
 export type LeaseListing = Awaited<ReturnType<typeof listLeases>>[number] & { readonly property_archived: boolean };
 
-export type PropertyLegalFacts = {
+type PropertyLegalFacts = {
   readonly certificates: readonly LegalRow<'certificates'>[];
   readonly owners: readonly OwnershipShare[];
   /** Each owner's and mortgage bank's name, by party id. */

@@ -8,7 +8,7 @@ import type { AgentDb } from '../supabase';
 import { ToolRejection } from './server';
 
 /** The first answer and two repair turns (AGENT.md §5.1 step 4). */
-export const MAX_SAVE_ATTEMPTS = 3;
+const MAX_SAVE_ATTEMPTS = 3;
 
 const ITEM_TITLES = {
   review: { vi: (title: string) => `Đã đọc xong ${title}. Mời bạn kiểm tra lại.`, en: (title: string) => `Finished reading ${title}. Please check it.` },
@@ -22,10 +22,10 @@ const ITEM_TITLES = {
 export const itemTitle = (item: keyof typeof ITEM_TITLES, locale: Locale, documentTitle: string): string =>
   ITEM_TITLES[item][locale](reduceNationalIds(documentTitle));
 
-export type Validated = { readonly ok: true; readonly result: Record<string, unknown>; readonly fieldConfidence: Record<string, number> } | { readonly ok: false; readonly errors: string };
+type Validated = { readonly ok: true; readonly result: Record<string, unknown>; readonly fieldConfidence: Record<string, number> } | { readonly ok: false; readonly errors: string };
 
 /** Reduces ID numbers first, so a full number in `id_last4` passes as its last four digits instead of costing a repair turn. */
-export function validateExtraction(schemaName: AgentSchemaName, raw: unknown): Validated {
+function validateExtraction(schemaName: AgentSchemaName, raw: unknown): Validated {
   const parsed = AGENT_SCHEMAS[schemaName].schema.safeParse(reduceNationalIds(raw));
   if (!parsed.success) {
     const errors = parsed.error.issues.map((issue) => `${issue.path.join('.') || '(root)'}: ${issue.message}`).join('\n');

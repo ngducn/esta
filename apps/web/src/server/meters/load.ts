@@ -9,7 +9,7 @@ import { loadPropertyRental } from '@/server/properties/rental';
 import { createSessionClient } from '@/server/supabase/server';
 
 const METER_KINDS = ['electricity', 'water'] as const;
-export type MeterKind = (typeof METER_KINDS)[number];
+type MeterKind = (typeof METER_KINDS)[number];
 
 const meterSchema = z.object({ id: idSchema, unit_id: idSchema, kind: z.enum(METER_KINDS) });
 const usageSchema = z.object({ meter_id: idSchema, reading_month: isoDateSchema, reading: z.number().int(), read_on: isoDateSchema, used: z.number().int().nullable() });

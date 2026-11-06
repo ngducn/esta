@@ -13,7 +13,7 @@ function toAnswer({ content_md, status, refs, deferred_until, activity }: { cont
   return answer;
 }
 
-export type MessageTopic = { readonly kind: 'item' | 'property'; readonly name: string; readonly href: string | null };
+type MessageTopic = { readonly kind: 'item' | 'property'; readonly name: string; readonly href: string | null };
 
 export type ConversationMessage = AnswerState & {
   readonly id: string;

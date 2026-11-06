@@ -14,7 +14,7 @@ export type GroupBy = 'property' | 'category';
 export type VaultGroup = { readonly key: string; readonly label: string; readonly tiles: readonly VaultTile[] };
 
 /** SPEC §7.2: a vault this large renders only the rows on screen. */
-export const VIRTUALIZE_ABOVE = 100;
+const VIRTUALIZE_ABOVE = 100;
 
 const categoryOrder = (tile: VaultTile) => DOCUMENT_CATEGORY_IDS.indexOf(tile.category);
 
@@ -28,7 +28,7 @@ function byKey(tiles: readonly VaultTile[], keyOf: (tile: VaultTile) => string):
  * `Theo tài sản`: each property by name, documents without one last, each property's tiles in the category registry's
  * order, since every tile names its category. `Theo loại`: each category in that order. Every group carries its count.
  */
-export function groupTiles(tiles: readonly VaultTile[], by: GroupBy, noProperty: string): VaultGroup[] {
+function groupTiles(tiles: readonly VaultTile[], by: GroupBy, noProperty: string): VaultGroup[] {
   const sorted = tiles.toSorted((a, b) => categoryOrder(a) - categoryOrder(b));
   if (by === 'category') {
     return [...byKey(sorted, (tile) => tile.category)].map(([key, group]) => ({ key, label: group[0]?.categoryLabel ?? key, tiles: group }));

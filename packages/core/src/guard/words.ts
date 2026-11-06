@@ -1,4 +1,4 @@
-export type WordKind = 'amount' | 'currency' | 'number' | 'date';
+type WordKind = 'amount' | 'currency' | 'number' | 'date';
 
 export type WordRow = {
   readonly kind: WordKind;

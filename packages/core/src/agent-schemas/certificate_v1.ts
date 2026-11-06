@@ -37,7 +37,7 @@ const area = z.preprocess(readPrintedArea, z.union([z.number().nonnegative().max
 const text = leaf(z.string());
 const isoDate = leaf(z.string().refine(isIsoDate, 'expected YYYY-MM-DD'));
 
-export const holderSchema = z.object({
+const holderSchema = z.object({
   full_name: text,
   birth_year: leaf(z.number().int().min(1900).max(2100)),
   id_last4: leaf(z.string().regex(/^\d{4}$/, 'exactly four digits')),
@@ -71,7 +71,7 @@ export const structureSchema = z.object({
   ownership_term: text,
 });
 
-export const annotationSchema = z.object({
+const annotationSchema = z.object({
   date: isoDate,
   text,
   kind: leaf(z.enum(ANNOTATION_KINDS)),

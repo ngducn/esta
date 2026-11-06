@@ -3,18 +3,11 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./export": "./src/export/index.ts"
+    ".": "./src/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run --passWithNoTests"
-  },
-  "dependencies": {
-    "@esta/core": "workspace:*",
-    "@supabase/supabase-js": "^2.118.0",
-    "fflate": "^0.8.3",
-    "zod": "^4.6.6"
   }
 }

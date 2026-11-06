@@ -121,27 +121,6 @@ export function SkeletonAddress() {
   );
 }
 
-export function SkeletonTable({ rows = 4 }: { rows?: number }) {
-  return (
-    <Loading className="flex flex-col">
-      <div className="flex items-center justify-between border-b border-border py-3">
-        <Block className="h-6 w-36" />
-        <Block className="h-5 w-20" />
-      </div>
-      {Array.from({ length: rows }, (_, row) => (
-        <div key={row} className="flex items-center gap-3 border-b border-border py-3">
-          <Block className="size-6" />
-          <div className="flex flex-1 flex-col gap-2">
-            <Block className="h-5 w-32" />
-            <Block className="h-4 w-48 max-w-full" />
-          </div>
-          <Block className="h-5 w-24" />
-        </div>
-      ))}
-    </Loading>
-  );
-}
-
 export function SkeletonEmptyState() {
   return (
     <Loading className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-card-pad shadow-xs">

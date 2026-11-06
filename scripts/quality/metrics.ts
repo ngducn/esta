@@ -1,15 +1,15 @@
 import { join } from 'node:path';
 import { cloneOccurrences, DEV_ROUTES, duplicateExports, filesOver, matchPositions, TEST_FILE, type Clone, type Corpus, type Occurrence, type Scope } from './measure.ts';
-import { alwaysOpenPopups, asyncTransitions, catchToFailure, doubleCasts, failureArms, handBuiltQueryBuilders, isoDateRefines, localIdSchemas, pageScrollWidths, putFetches, slowTestSettings, sqlstateReads, webCapLiterals, testIdQueries, viewports } from './smells.ts';
+import { alwaysOpenPopups, asyncTransitions, catchToFailure, doubleCasts, failureArms, handBuiltQueryBuilders, isoDateRefines, localIdSchemas, pageScrollWidths, pageSizeLiterals, putFetches, slowTestSettings, sqlstateReads, testIdQueries, viewports, webCapLiterals } from './smells.ts';
 import { directWrites, literalRoleChecks, longFunctions, MAX_FUNCTION_LINES, memberRoles, notKebabCase, SOFT_DELETE_READ, unfilteredTrashReads } from './structure.ts';
 import { classLists, comments, elements, imported, importsModule, uses, type Finder } from './syntax.ts';
 
 const REPO_ROOT = join(import.meta.dirname, '..', '..');
 
-export type Helper = { readonly name: string; readonly file: string };
+type Helper = { readonly name: string; readonly file: string };
 
 /** What to use instead. Every backticked name in `use` is an exported helper listed here, or a name the pending issue adds. */
-export type Home = {
+type Home = {
   readonly use: string;
   readonly helpers?: readonly Helper[];
   /** The issue that creates the home when it does not exist yet; until it lands, a change that needs one records a raise. */
@@ -25,7 +25,7 @@ export type Metric = {
   readonly cap?: number;
   readonly measure: (input: MeasureInput) => Occurrence[];
 };
-export type MeasureInput = { readonly corpus: Corpus; readonly clones: readonly Clone[]; readonly fixtureClones: readonly Clone[] };
+type MeasureInput = { readonly corpus: Corpus; readonly clones: readonly Clone[]; readonly fixtureClones: readonly Clone[] };
 
 const NOT_PRODUCT = new RegExp(`${TEST_FILE.source}|${DEV_ROUTES.source}`);
 const PRODUCT_CODE: Scope = { include: /^(apps\/[^/]+\/src|packages\/[^/]+\/src)\//, exclude: NOT_PRODUCT };
@@ -138,6 +138,13 @@ export const METRICS: readonly Metric[] = [
     find: sqlstateReads,
   }),
   syntax({ id: 'soft-delete-read', ...SOFT_DELETE_READ, section: 'undo', scope: PRODUCT_CODE, find: unfilteredTrashReads }),
+  syntax({
+    id: 'postgrest-page-literal',
+    message: 'A number is spelled out inside `.range(`, so the page size is written again outside the one constant.',
+    home: { use: '`POSTGREST_PAGE_SIZE` in packages/ops/src/kit.ts, through `readAll`.', helpers: [{ name: 'POSTGREST_PAGE_SIZE', file: OPS_KIT }, { name: 'readAll', file: OPS_KIT }] },
+    section: 'reading-more-than-one-page',
+    scope: without(NOT_TESTS, /^packages\/ops\/src\/kit\.ts$/), find: pageSizeLiterals,
+  }),
   syntax({
     id: 'web-cap-literal',
     message: 'A job states how many searches or fetches it may make as a number, so the prompt, the policy and a retry can disagree.',
@@ -366,11 +373,7 @@ export const METRICS: readonly Metric[] = [
     message: 'A role is compared with a string literal such as `\'admin\'` or `\'viewer\'`.',
     home: {
       use: 'Ask the member (the can method of `getCurrentMember`, which calls `can`); a new capability goes in the one table in apps/web/src/server/access.ts, and a new page or route in `ROUTE_ACCESS`.',
-      helpers: [
-        { name: 'getCurrentMember', file: 'apps/web/src/server/member.ts' },
-        { name: 'can', file: 'apps/web/src/server/access.ts' },
-        { name: 'ROUTE_ACCESS', file: 'apps/web/src/server/route-access.ts' },
-      ],
+      helpers: [{ name: 'getCurrentMember', file: 'apps/web/src/server/member.ts' }, { name: 'can', file: 'apps/web/src/server/access.ts' }, { name: 'ROUTE_ACCESS', file: 'apps/web/src/server/route-access.ts' }],
     },
     section: 'targets',
     scope: WEB_SRC,

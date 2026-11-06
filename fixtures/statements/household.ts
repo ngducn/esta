@@ -13,8 +13,8 @@ import { foldVietnamese } from '../../packages/core/src/search/fold.ts';
 export type OpenBill = { id: string; number: string; memoCode: string; tenantName: string; dueDate: IsoDate; outstanding: Vnd };
 
 /** What the import must make of a line: its status, why, and the bill numbers it names. */
-export type Expected = { status: ImportStatus; reason: ImportReason | null; invoices: string[] };
-export type ScenarioLine = RenderableRow & { expect: Expected };
+type Expected = { status: ImportStatus; reason: ImportReason | null; invoices: string[] };
+type ScenarioLine = RenderableRow & { expect: Expected };
 
 /** The October statement of one household, every line stating its intended match, dated on or before `asOf`. */
 export type HouseholdStatement = { asOf: IsoDate; lines: ScenarioLine[]; fractional: RenderableRow };

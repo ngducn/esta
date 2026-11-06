@@ -1,4 +1,4 @@
-import { readNameLabels } from '@esta/ops';
+import { readAll, readNameLabels } from '@esta/ops';
 import type { AgentDb } from '../supabase';
 import { foldText, type SearchTerm } from '../sdk/search-guard';
 import { adminUnitNames, readHeldProperties } from './list-properties';
@@ -53,16 +53,6 @@ async function isFamilyLabel(db: AgentDb, label: string): Promise<boolean> {
   return rest !== '' && !(await namesAPlace(db, rest));
 }
 
-async function readRows<T>(what: string, read: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>): Promise<T[]> {
-  const rows: T[] = [];
-  for (let from = 0; ; from += 1000) {
-    const { data, error } = await read(from, from + 999);
-    if (error) throw new Error(`Reading the ${what} failed: ${error.message}`);
-    rows.push(...(data ?? []));
-    if ((data ?? []).length < 1000) return rows;
-  }
-}
-
 const filled = (values: readonly (string | null | undefined)[]): string[] => values.filter((value): value is string => typeof value === 'string' && value.trim() !== '');
 
 /**
@@ -73,9 +63,9 @@ const filled = (values: readonly (string | null | undefined)[]): string[] => val
 export async function familySearchTerms(db: AgentDb, householdId: string): Promise<SearchTerm[]> {
   const [{ properties }, parties, accounts, members, household, addresses] = await Promise.all([
     readNameLabels(db, householdId),
-    readRows('party names', (from, to) => db.from('parties').select('id, kind, full_name, short_name').eq('household_id', householdId).order('id').range(from, to)),
-    readRows('utility account holders', (from, to) => db.from('utility_accounts').select('id, holder_name').eq('household_id', householdId).order('id').range(from, to)),
-    readRows('member names', (from, to) => db.from('household_members').select('user_id, display_name').eq('household_id', householdId).order('user_id').range(from, to)),
+    readAll('party names', (from, to) => db.from('parties').select('id, kind, full_name, short_name').eq('household_id', householdId).order('id').range(from, to)),
+    readAll('utility account holders', (from, to) => db.from('utility_accounts').select('id, holder_name').eq('household_id', householdId).order('id').range(from, to)),
+    readAll('member names', (from, to) => db.from('household_members').select('user_id, display_name').eq('household_id', householdId).order('user_id').range(from, to)),
     db.from('households').select('name').eq('id', householdId),
     db.from('properties').select('current_address').eq('household_id', householdId),
   ]);

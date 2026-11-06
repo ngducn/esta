@@ -9,7 +9,7 @@ import { AnswerView, linkRefs, type AnswerLabels, type ShownAnswer } from './ans
 const fetchMarkdownChunk = () => import('@/components/markdown/safe-markdown');
 const SafeMarkdown = dynamic(() => fetchMarkdownChunk().then((markdown) => markdown.SafeMarkdown));
 
-export const reopensFollowUp = (event: AnswerEvent): boolean => event.status === 'done' || event.status === 'error';
+const reopensFollowUp = (event: AnswerEvent): boolean => event.status === 'done' || event.status === 'error';
 
 export function AnswerStream({ id, conversationId, initial, labels }: { id: string; conversationId: string; initial: AnswerState; labels: AnswerLabels }) {
   const router = useRouter();

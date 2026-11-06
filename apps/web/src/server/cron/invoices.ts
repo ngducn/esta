@@ -3,7 +3,7 @@ import type { Clock, IsoDate } from '@esta/core';
 import { cronHandler } from './handler';
 import type { CronClient } from './supabase';
 
-export type InvoicesFailure = { household_id: string; error: string };
+type InvoicesFailure = { household_id: string; error: string };
 export type InvoicesRun = { ok: boolean; as_of: IsoDate; drafted: number; issued: number; households: number; failed: InvoicesFailure[] };
 
 /**

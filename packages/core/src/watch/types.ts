@@ -69,11 +69,11 @@ export type WatchRuleId = 'W1' | 'W2' | 'W3' | 'W4' | 'W5' | 'W6' | 'W7' | 'W8' 
 /** The figures behind a fact, by name: counts and đồng as integers, dates as `IsoDate`. */
 export type WatchNumbers = Readonly<Record<string, number | IsoDate | null>>;
 
-export type WatchSubjectKey = `${'invoice' | 'lease' | 'unit' | 'document' | 'meter' | 'tenant' | 'property'}:${string}` | `owner:${string}:${number}`;
+type WatchSubjectKey = `${'invoice' | 'lease' | 'unit' | 'document' | 'meter' | 'tenant' | 'property'}:${string}` | `owner:${string}:${number}`;
 
 export type WatchFact = { readonly ruleId: WatchRuleId; readonly subjectKey: WatchSubjectKey; readonly severity: WatchSeverity; readonly numbers: WatchNumbers };
 
-export type WatchFinding = Omit<WatchFact, 'ruleId'>;
+type WatchFinding = Omit<WatchFact, 'ruleId'>;
 
 type Thresholds = Readonly<Record<string, number>>;
 

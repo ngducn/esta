@@ -4,7 +4,7 @@ import { idSchema, REDACTED_NAME } from '@esta/ops';
 import { cache } from 'react';
 import { createSessionClient } from '@/server/supabase/server';
 
-export type TenantLease = {
+type TenantLease = {
   readonly id: string;
   readonly propertyId: string;
   readonly propertyName: string;

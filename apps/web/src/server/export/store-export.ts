@@ -1,5 +1,5 @@
 import 'server-only';
-import { zipPartsSink, type ExportSink } from '@esta/db/export';
+import { zipPartsSink, type ExportSink } from '@esta/ops/export';
 import { NextResponse } from 'next/server';
 import { readRequestClock } from '@/server/clock';
 import { env } from '@/server/env';

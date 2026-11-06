@@ -6,10 +6,10 @@ import { z } from 'zod';
 import { guardedWriter, type NoteBinding } from './create-item';
 import { oneAtATime, ToolRejection } from './server';
 
-export type Citing = { readonly fetched: ReadonlySet<string> };
+type Citing = { readonly fetched: ReadonlySet<string> };
 
 /** At most `max` proposals, `earlier` of them already stored by an earlier attempt or retry of the same week's run. */
-export type ProposalCap = { readonly max: number; readonly earlier: number };
+type ProposalCap = { readonly max: number; readonly earlier: number };
 
 export type ProposalBinding = Pick<NoteBinding, 'db' | 'householdId' | 'jobId' | 'locale' | 'sheet' | 'clock'> & { readonly citing?: Citing; readonly cap?: ProposalCap };
 

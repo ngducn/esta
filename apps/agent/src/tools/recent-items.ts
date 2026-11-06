@@ -8,7 +8,7 @@ const KINDS = ['alert', 'research_scan_empty'];
 
 export type ResearchWindow = { readonly days: number; readonly minRelevance: number; readonly limit: number };
 
-export type ResearchRecord = { readonly title_label: string; readonly source_name: string; readonly source_url: string; readonly published_display: string };
+type ResearchRecord = { readonly title_label: string; readonly source_name: string; readonly source_url: string; readonly published_display: string };
 
 type Binding = { readonly db: AgentDb; readonly householdId: string; readonly asOf: IsoDate; readonly timezone: string; readonly locale: Locale; clock(): Promise<Clock> };
 

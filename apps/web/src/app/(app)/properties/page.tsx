@@ -13,6 +13,7 @@ import {
   type PropertyListRow,
   type SearchParamsRecord,
 } from '@esta/core/properties';
+import { sameAddress } from '@esta/core/address';
 import { compareVietnameseNames } from '@esta/core/names';
 import { Archive, CircleCheck, Plus, SearchX } from 'lucide-react';
 import Link from 'next/link';
@@ -48,8 +49,6 @@ import MapView from './map-view';
 
 export const generateMetadata = () => sectionMetadata('properties');
 
-const comparable = (address: string) => address.normalize('NFC').trim().replace(/\s+/g, ' ').toLocaleLowerCase('vi');
-
 const locateParam = z.uuid();
 
 export default async function PropertiesPage({ searchParams }: { searchParams: Promise<SearchParamsRecord> }) {
@@ -79,7 +78,7 @@ export default async function PropertiesPage({ searchParams }: { searchParams: P
       kindLabel: t('kind', { kind: row.kind }),
       address: address === '' ? t('noAddress') : address,
       certificateLine:
-        certificate === null || comparable(certificate) === comparable(address) ? null : t('certificateAddress', { address: certificate }),
+        certificate === null || sameAddress(certificate, address) ? null : t('certificateAddress', { address: certificate }),
       photoUrl: row.coverPhotoPath === null ? null : (photos.get(row.coverPhotoPath) ?? null),
       addPhoto: canEdit ? { href: `/properties/${row.id}/edit`, label: t('addPhoto') } : null,
       rent: row.monthlyRentVnd === null ? null : { amount: formatVnd(row.monthlyRentVnd, locale), per: t('perMonth') },

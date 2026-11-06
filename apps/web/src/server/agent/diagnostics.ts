@@ -9,11 +9,11 @@ import { createSessionClient } from '@/server/supabase/server';
 const DAY_MS = 86_400_000;
 
 /** A run's outcome: its job's status for the job's newest run, `retried` for an attempt the job ran again after. */
-export type RunStatus = (typeof jobStatuses)[number] | 'retried';
+type RunStatus = (typeof jobStatuses)[number] | 'retried';
 
-export const denialCodes = ['number', 'family_data', 'cap', 'not_fetchable', 'policy'] as const;
+const denialCodes = ['number', 'family_data', 'cap', 'not_fetchable', 'policy'] as const;
 
-export type Denial = { readonly tool: string; readonly code: (typeof denialCodes)[number] };
+type Denial = { readonly tool: string; readonly code: (typeof denialCodes)[number] };
 
 export type DiagnosticRun = {
   readonly id: string;
@@ -29,7 +29,7 @@ export type DiagnosticRun = {
   readonly denials: readonly Denial[];
 };
 
-export type HeldNote = { readonly id: string; readonly kind: string | null; readonly createdAt: Instant };
+type HeldNote = { readonly id: string; readonly kind: string | null; readonly createdAt: Instant };
 
 export type Diagnostics = {
   readonly worker: { readonly authMode: string; readonly agentMode: string } | null;

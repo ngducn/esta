@@ -8,7 +8,7 @@ export type AskTopic =
   | { readonly kind: 'note'; readonly title: string; readonly body: string | null; readonly links: readonly string[] }
   | { readonly kind: 'property'; readonly propertyId: string };
 
-export type TopicCall = { readonly name: EstaToolName; readonly input: Readonly<Record<string, unknown>>; readonly answer: string };
+type TopicCall = { readonly name: EstaToolName; readonly input: Readonly<Record<string, unknown>>; readonly answer: string };
 
 export type LoadedTopic =
   | { readonly kind: 'note'; readonly title: string; readonly body: string | null; readonly calls: readonly TopicCall[] }

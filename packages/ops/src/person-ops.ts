@@ -23,7 +23,7 @@ type NewPerson = {
   readonly row: { readonly kind: 'individual'; readonly full_name: string; readonly phone: Phone | null; readonly id_last4: string | null; readonly tags: readonly ['tenant'] };
 };
 export type PersonSaved = Pick<ViewRows['parties'], 'id' | 'full_name' | 'phone'>;
-export type DuplicateReason = 'phone' | 'name_and_id_last4';
+type DuplicateReason = 'phone' | 'name_and_id_last4';
 export type PossibleDuplicate = ViewRows['parties'] & { readonly reasons: readonly DuplicateReason[] };
 export type PersonRefusal = { readonly kind: 'possible_duplicate'; readonly people: readonly PossibleDuplicate[] };
 
