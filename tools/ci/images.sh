@@ -23,7 +23,8 @@ load)
 save)
 	[ -f "$dir/images.tar" ] && exit 0
 	mkdir -p "$dir"
-	mapfile -t refs < <(supabase_images)
+	refs=()
+	while IFS= read -r ref; do refs+=("$ref"); done < <(supabase_images)
 	if [ "${#refs[@]}" -gt 0 ]; then
 		docker save -o "$dir/images.tar" "${refs[@]}"
 	fi

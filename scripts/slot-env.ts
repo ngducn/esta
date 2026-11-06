@@ -13,15 +13,25 @@ function readEnvLocal(repoRoot: string, app: 'web' | 'agent'): Env {
   return existsSync(file) ? (parseEnv(readFileSync(file, 'utf8')) as Env) : {};
 }
 
-function statusKeys(repoRoot: string, slot: number): Env {
+/** `supabase status -o env` of the slot's stack, or `undefined` when it is not running. */
+export function stackStatus(repoRoot: string, slot: number): Env | undefined {
   const result = spawnSync('supabase', ['status', '-o', 'env', '--workdir', slotWorkdir(repoRoot, slot)], {
     encoding: 'utf8',
   });
-  if (result.status !== 0) {
+  return result.status === 0 ? (parseEnv(result.stdout) as Env) : undefined;
+}
+
+/** The values CI keeps out of a public log and of uploaded reports. The anon and publishable keys are left out because every browser request carries them. */
+const SECRET_STATUS_KEYS = ['SERVICE_ROLE_KEY', 'SECRET_KEY', 'JWT_SECRET', 'S3_PROTOCOL_ACCESS_KEY_SECRET'] as const;
+
+export const secretValues = (status: Env): string[] => SECRET_STATUS_KEYS.flatMap((key) => (status[key] ? [status[key]] : []));
+
+function statusKeys(repoRoot: string, slot: number): Env {
+  const status = stackStatus(repoRoot, slot);
+  if (status === undefined) {
     console.error(`ESTA_SLOT=${slot}: local Supabase is not running, so the web app gets no slot keys`);
     return {};
   }
-  const status = parseEnv(result.stdout);
   return Object.fromEntries(
     Object.entries(STATUS_KEYS).flatMap(([from, to]) => (status[from] ? [[to, status[from]]] : [])),
   );

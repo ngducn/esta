@@ -89,6 +89,7 @@ A rule that decides what gets written lives in SQL, because SQL is the writer: b
 - `private.lease_periods` is the one billing planner. Screens and tax read its periods through `public.lease_schedule`, which checks membership per lease, and the seed bills through `run_invoicing` as the nightly job does. `packages/core/src/lease` keeps only pure readers of those rows, such as `currentMonthlyRent` and `leaseTimeline`.
 - When a TypeScript twin must stay, prove parity with golden vectors that pgTAP replays, as `supabase/tests/fixtures/payment_status.csv` does.
 - An invariant over rows belongs in a constraint, not in a check inside one function. Issue #198 adds exclusion constraints for overlapping leases and invoices.
+- Every `'ESTA_*'` sentinel a migration raises is named in a TypeScript refusal table (`dbRefusal`), or sits in `quality/sentinels.json` with a one-line reason it never reaches a screen. `scripts/check-sentinels.ts` runs in `pnpm check` (`pnpm check:sentinels`) and fails on an unmapped, unlisted sentinel; the list only shrinks, so mapping one removes its entry. A rule the database adds that TypeScript lets through (#211) is mapped the same day.
 - Issue #197 squashes the migrations into one baseline before the first deploy, so each function has one current body.
 
 ## Document upload
@@ -161,7 +162,7 @@ Each metric below only goes down, and the path-to-10 plan (`docs/plan/quality-20
 
 ## Integration lanes
 
-`pnpm test:integration` runs the apps/web `*.integration.test.ts` files in parallel against one seeded stack. Each file signs in and writes only in the lane households it owns in `INTEGRATION_LANES` (`apps/web/src/test/lanes.ts`), and reads its household and member emails from `integrationLane(import.meta.url)`. A second sign-in as the same member voids the first one's code, and a shared household shows one file the other's writes. `apps/web/src/test/lanes.test.ts` fails on an unregistered file, a lane owned twice, or a lane email or household id written into a file. The `db` job in CI runs it after pgTAP, and the `ci` job fails when it fails.
+`pnpm test:integration` runs the apps/web `*.integration.test.ts` files in parallel against one seeded stack. Each file signs in and writes only in the lane households it owns in `INTEGRATION_LANES` (`apps/web/src/test/lanes.ts`), and reads its household and member emails from `integrationLane(import.meta.url)`. A second sign-in as the same member voids the first one's code, and a shared household shows one file the other's writes. `apps/web/src/test/lanes.test.ts` fails on an unregistered file, a lane owned twice, or a lane email or household id written into a file. The `db` job in CI runs it after pgTAP, and the `ci` job fails when it fails. A failed file is run once more when its only failure is the local gateway's invalid upstream response (`scripts/web-integration-report.ts`).
 
 ## E2E helpers
 

@@ -36,9 +36,9 @@
 # The e2e job retries a failed test once. Tests that failed and then passed
 # are reported as "flaky: N" with their titles, in the job log and the comment.
 #
-# The db and e2e jobs rerun a reset once when the Supabase CLI answers 502
-# during its container restart. Kong keeps the restarted Storage container's old
-# IP, so the retry runs db:stop and db:start first and waits for health.
+# Each job is tools/ci/jobs/<job>.sh, the script ci.yml runs; scripts/ci-jobs.test.ts fails when either side stops
+# calling one. The db and e2e jobs rerun a reset once when the Supabase CLI answers 502 during its container restart
+# (reset_with_retry in tools/ci/lib.sh).
 set -uo pipefail
 
 worktree=$(realpath "${1:?worktree path}") || exit 2
@@ -142,9 +142,7 @@ status() {
 		-f state="$2" -f context="local-ci/$1" -f description="$3" >/dev/null
 }
 
-gateway_healthy() {
-	[ "$(docker inspect --format '{{.State.Health.Status}}' "supabase_kong_esta-$slot" "supabase_storage_esta-$slot" 2>/dev/null | grep -cx healthy)" = 2 ]
-}
+source "$tree/tools/ci/lib.sh"
 
 ci_root=$(cd "$(dirname "$0")/.." && pwd)
 empty_photos() {
@@ -153,63 +151,30 @@ empty_photos() {
 
 run_e2e() {
 	local report=$logdir/e2e-report.json
-	CI=1 ESTA_E2E_SERVER=build PLAYWRIGHT_JSON_OUTPUT_NAME=$report pnpm e2e --retries=1 --reporter=list,json
+	PLAYWRIGHT_JSON_OUTPUT_NAME=$report tools/ci/jobs/e2e.sh --reporter=list,json
 	local code=$?
 	[ -f "$report" ] && node "$ci_root/tools/flaky-report.mjs" "$report" | tee "$logdir/e2e.flaky"
 	return "$code"
 }
 
-reset_db() {
-	"$@" 2>&1 | tee "$logdir/reset.log"
-	local code=${PIPESTATUS[0]}
-	[ "$code" -eq 0 ] && return 0
-	grep -q 'Error status 502' "$logdir/reset.log" || return "$code"
-	echo "ci-local: $* got a 502 during the container restart; restarting the stack, then retrying once"
-	(cd "$tree" && pnpm db:stop && pnpm db:start) || return "$code"
-	local waited=0
-	until gateway_healthy; do
-		[ $waited -ge 120 ] && echo "ci-local: Kong and Storage are not healthy after 120 s" && return "$code"
-		sleep 2
-		waited=$((waited + 2))
-	done
-	"$@"
-}
-
-# The db job's last step in ci.yml: export a household, load it into an empty database, compare.
-export_round_trip() {
-	local dir log
-	dir=$(mktemp -d) && log="$dir/row-counts.log" &&
-		pnpm exec tsx scripts/roundtrip-checks.ts odd-names ryan.lane9@demo.esta.test &&
-		pnpm exec tsx scripts/export-household.ts ryan.lane9@demo.esta.test "$dir/export" &&
-		pnpm db:reset:empty &&
-		pnpm exec tsx scripts/roundtrip-checks.ts rollback "$dir/export" &&
-		node scripts/import-export.ts "$dir/export" &&
-		node scripts/row-counts.ts "$dir/export" | tee "$log" &&
-		grep -q '^tables and files match what this export holds' "$log"
-}
-
+# The setup around tools/ci/jobs/<job>.sh that Actions does with steps: install, start the stack, leave nothing from the
+# previous branch in Storage. The jobs themselves are the same scripts ci.yml runs.
 run_job() {
 	case $1 in
 	check)
-		pnpm install --frozen-lockfile && VITEST_MAX_WORKERS=3 pnpm check && pnpm run --if-present test:live
+		pnpm install --frozen-lockfile && VITEST_MAX_WORKERS=3 tools/ci/jobs/check.sh
 		;;
 	db)
-		pnpm install --frozen-lockfile &&
-			pnpm db:start && empty_photos &&
-			{ if node -e 'process.exit(require("./package.json").scripts["db:seed:check"]?0:1)'; then reset_db pnpm db:seed:check; else reset_db pnpm db:reset; fi; } &&
-			pnpm db:test &&
-			pnpm --filter web test:integration &&
-			pnpm db:types && git diff --exit-code packages/db/src/database.types.ts &&
-			export_round_trip
+		pnpm install --frozen-lockfile && start_stack && empty_photos && tools/ci/jobs/db.sh
 		;;
 	e2e)
-		pnpm install --frozen-lockfile && pnpm db:start && empty_photos && reset_db pnpm db:reset && run_e2e
+		pnpm install --frozen-lockfile && start_stack && empty_photos && reset_with_retry pnpm db:reset && run_e2e
 		;;
 	prod-build)
-		pnpm install --frozen-lockfile && pnpm run --if-present e2e:prod && pnpm run --if-present check:build-env
+		pnpm install --frozen-lockfile && tools/ci/jobs/prod-build.sh
 		;;
 	design)
-		pnpm install --frozen-lockfile && pnpm design:detect
+		pnpm install --frozen-lockfile && tools/ci/jobs/design.sh
 		;;
 	mutation)
 		pnpm install --frozen-lockfile && tools/ci/mutation.sh
