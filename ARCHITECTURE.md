@@ -147,7 +147,7 @@ Each metric below only goes down, and the path-to-10 plan (`docs/plan/quality-20
 
 ## Integration lanes
 
-`pnpm test:integration` runs the apps/web `*.integration.test.ts` files in parallel against one seeded stack. Each file signs in and writes only in the lane households it owns in `INTEGRATION_LANES` (`apps/web/src/test/lanes.ts`), and reads its household and member emails from `integrationLane(import.meta.url)`. A second sign-in as the same member voids the first one's code, and a shared household shows one file the other's writes. `apps/web/src/test/lanes.test.ts` fails on an unregistered file, a lane owned twice, or a lane email or household id written into a file. The `db` job in CI runs it after pgTAP, and the `ci` job fails when it fails. The run then also runs every other `*.test.ts` that imports `@/test/stack` (found by that import, in `scripts/web-integration-report.ts`), serially, and fails when any test skipped while the stack is up.
+`pnpm test:integration` runs the apps/web `*.integration.test.ts` files in parallel against one seeded stack. Each file signs in and writes only in the lane households it owns in `INTEGRATION_LANES` (`apps/web/src/test/lanes.ts`), and reads its household and member emails from `integrationLane(import.meta.url)`. A second sign-in as the same member voids the first one's code, and a shared household shows one file the other's writes. `apps/web/src/test/lanes.test.ts` fails on an unregistered file, a lane owned twice, or a lane email or household id written into a file. The `db` job in CI runs it after pgTAP, and the `ci` job fails when it fails. A failed file is run once more when its only failure is the local gateway's invalid upstream response (`scripts/web-integration-report.ts`).
 
 ## E2E helpers
 

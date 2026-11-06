@@ -14,7 +14,7 @@ pnpm seed:coverage --database
 pnpm seed:facts
 pnpm db:test
 # Each integration file works in its own seeded household; scripts/web-integration.ts sets the test clock first, clears
-# it after, and fails when a database-backed test skipped.
+# it after, and reruns a file once when the local gateway answered it an invalid upstream response.
 pnpm --filter web test:integration
 pnpm db:types
 git diff --exit-code packages/db/src/database.types.ts

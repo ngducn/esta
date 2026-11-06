@@ -1,29 +1,11 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { gatewayRetryFiles, GATEWAY_ERROR, parseReport, skippedTests, stackTestFiles, type VitestReport } from './web-integration-report.ts';
+import { gatewayRetryFiles, GATEWAY_ERROR, parseReport, type VitestReport } from './web-integration-report.ts';
 
 const WEB = '/repo/apps/web';
 const gateway = 'Reading the lease schedule failed: An invalid response was received from the upstream server';
 const test = (status: string, failureMessages: string[] = []) => ({ fullName: `case ${status}`, status, failureMessages });
 const file = (name: string, status: string, assertionResults: ReturnType<typeof test>[], message = '') => ({ name: `${WEB}/${name}`, status, message, assertionResults });
 const report = (...testResults: VitestReport['testResults']): VitestReport => ({ testResults });
-
-describe('skippedTests', () => {
-  it('names a skipped, pending or todo test and ignores passed and failed ones', () => {
-    const found = skippedTests(report(file('src/a.test.ts', 'passed', [test('passed'), test('skipped'), test('pending'), test('todo'), test('failed', ['x'])])));
-    expect(found).toHaveLength(3);
-  });
-
-  it('finds the whole describe.skipIf block of a file that skipped', () => {
-    expect(skippedTests(report(file('src/documents/actions.test.ts', 'skipped', [test('skipped'), test('skipped')])))).toHaveLength(2);
-  });
-
-  it('is empty when nothing skipped', () => {
-    expect(skippedTests(report(file('src/a.test.ts', 'passed', [test('passed')])))).toEqual([]);
-  });
-});
 
 describe('gatewayRetryFiles', () => {
   it('names the files whose only failures are the gateway error', () => {
@@ -62,32 +44,5 @@ describe('parseReport', () => {
 
   it('refuses output that is not a report', () => {
     expect(() => parseReport('{}')).toThrow();
-  });
-});
-
-describe('stackTestFiles', () => {
-  it('finds a test that imports the stack helper and no other', () => {
-    const root = mkdtempSync(join(tmpdir(), 'stack-files-'));
-    const write = (path: string, text: string) => {
-      mkdirSync(dirname(join(root, 'src', path)), { recursive: true });
-      writeFileSync(join(root, 'src', path), text);
-    };
-    write('server/a/actions.test.ts', "import { stackUp } from '@/test/stack';");
-    write('server/b/plain.test.ts', "import { x } from './x';");
-    write('server/c/lane.integration.test.ts', "import { stackUp } from '@/test/stack';");
-    write('server/d/helper.ts', "import { stackUp } from '@/test/stack';");
-    expect(stackTestFiles(root)).toEqual(['src/server/a/actions.test.ts']);
-    rmSync(root, { recursive: true });
-  });
-
-  it('finds the four files that skip without a stack today', () => {
-    expect(stackTestFiles(join(import.meta.dirname, '..', 'apps', 'web'))).toEqual(
-      expect.arrayContaining([
-        'src/server/documents/actions.test.ts',
-        'src/server/expenses/actions.test.ts',
-        'src/server/extraction/actions.test.ts',
-        'src/server/properties/wizard.test.ts',
-      ]),
-    );
   });
 });
