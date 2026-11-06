@@ -58,7 +58,7 @@ const RULES: Record<NoteRule, string> = {
   number: `Do not type a number. ${CITE}.`,
   symbol: `Do not type a currency or percent sign; the cited value carries its unit. ${CITE}.`,
   invisible: 'Remove this invisible character.',
-  script: `Write only Latin letters (Vietnamese or English). ${CITE} for any number.`,
+  script: `Write only Latin letters (Vietnamese or English). Drop the stroke, ring or accent from a letter such as Ø, Ł or Ş and write the name in plain letters, or leave the name out. ${CITE} for any number.`,
   word: `Do not write an amount, unit, number word, Roman numeral, or month or weekday name. ${CITE}, such as a _display, _compact or _relative field. Write people's names, nicknames and place names through a _name or _label field.`,
   glued: 'Put a space between a placeholder and the next word, and no unit after it; the value carries its unit.',
   malformed: 'Write a placeholder exactly as {{fN.field}}, without spaces, and type no other braces or private-use characters.',
