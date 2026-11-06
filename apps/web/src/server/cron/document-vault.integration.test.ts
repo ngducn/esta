@@ -7,10 +7,9 @@ import { z } from 'zod';
 import { localTarget, runSql } from '../../../../../scripts/export-source.ts';
 
 // `pnpm test:integration` (scripts/web-integration.ts) runs this file alone, with the cron file: the sweep removes the
-// strays of every household. Writes a few documents and Storage files into the first household, and removes them after.
-const { ESTA_IT_SUPABASE_URL: url, ESTA_IT_SERVICE_ROLE_KEY: serviceRoleKey } = z
-  .object({ ESTA_IT_SUPABASE_URL: z.url(), ESTA_IT_SERVICE_ROLE_KEY: z.string().min(1) })
-  .parse(process.env);
+// strays of every household, and the vault search is checked here on the service client, which only cron code may hold. Writes a few documents and Storage files into the first household, and removes them after.
+const url = z.url().parse(process.env.ESTA_IT_SUPABASE_URL);
+const serviceRoleKey = z.string().min(1).parse(process.env.ESTA_IT_SERVICE_ROLE_KEY);
 const SECRET = 'documents-integration-secret';
 
 process.env.SUPABASE_SERVICE_ROLE_KEY = serviceRoleKey;
@@ -30,7 +29,7 @@ vi.mock('@/server/supabase/server', () => ({ createSessionClient: async () => db
 vi.mock('@/server/documents/sign', () => ({ signDocumentUrls: async () => new Map() }));
 vi.mock('next-intl/server', () => ({ getTranslations: async () => (key: string) => key }));
 
-const { searchDocuments } = await import('./search');
+const { searchDocuments } = await import('../documents/search');
 const sweepRoute = await import('@/app/api/cron/document-sweep/route');
 
 const documentIds: string[] = [];

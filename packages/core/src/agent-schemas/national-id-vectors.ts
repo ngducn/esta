@@ -1,4 +1,4 @@
-import { NATIONAL_ID_CASES, NATIONAL_ID_KEPT } from './national-id.cases.ts';
+import { NATIONAL_ID_CASES, NATIONAL_ID_KEPT } from './national-id.cases';
 
 /**
  * Shared test vectors for SPEC D11. The reducer test checks each one against `reduceNationalIds`, and

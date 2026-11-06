@@ -45,15 +45,17 @@ async function removeFiles(client: CronClient, names: readonly string[]): Promis
  */
 async function sweepStrays(client: CronClient): Promise<Removal> {
   const total: Removal = { removed: 0, refused: [] };
+  const strays = async (args: { p_limit: number; p_exclude?: string[]; p_only?: string[] }): Promise<string[]> => {
+    const { data, error } = await client.rpc('stray_document_files', args);
+    if (error) throw new Error(`Reading the unregistered files failed: ${error.message}`);
+    return data;
+  };
   for (let page = 0; page < STRAY_PAGES; page++) {
-    const listed = await client.rpc('stray_document_files', { p_limit: STRAY_PAGE, p_exclude: total.refused });
-    if (listed.error) throw new Error(`Reading the unregistered files failed: ${listed.error.message}`);
-    if (listed.data.length === 0) break;
-    for (let from = 0; from < listed.data.length; from += REMOVE_CHUNK) {
-      const chunk = listed.data.slice(from, from + REMOVE_CHUNK);
-      const confirmed = await client.rpc('stray_document_files', { p_limit: chunk.length, p_only: chunk });
-      if (confirmed.error) throw new Error(`Confirming the unregistered files failed: ${confirmed.error.message}`);
-      const swept = await removeFiles(client, confirmed.data);
+    const listed = await strays({ p_limit: STRAY_PAGE, p_exclude: total.refused });
+    if (listed.length === 0) break;
+    for (let from = 0; from < listed.length; from += REMOVE_CHUNK) {
+      const chunk = listed.slice(from, from + REMOVE_CHUNK);
+      const swept = await removeFiles(client, await strays({ p_limit: chunk.length, p_only: chunk }));
       total.removed += swept.removed;
       total.refused.push(...swept.refused);
     }

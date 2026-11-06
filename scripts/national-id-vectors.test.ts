@@ -4,7 +4,7 @@ import { NATIONAL_ID_REPLAYED, NATIONAL_ID_VECTORS } from '../packages/core/src/
 import { holds, nationalIdTestPath, renderNationalIdTest } from './national-id-vectors.ts';
 
 describe('national ID vectors', () => {
-  it('the pgTAP test holds the current vectors (run node scripts/national-id-vectors.ts)', () => {
+  it('the pgTAP test holds the current vectors (run pnpm exec tsx scripts/national-id-vectors.ts)', () => {
     expect(readFileSync(nationalIdTestPath, 'utf8')).toBe(renderNationalIdTest());
   });
 
