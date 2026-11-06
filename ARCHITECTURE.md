@@ -85,6 +85,8 @@ A rule that decides what gets written lives in SQL, because SQL is the writer: b
 - `private.lease_periods` is the one billing planner. Screens and tax read its periods through `public.lease_schedule`, which checks membership per lease, and the seed bills through `run_invoicing` as the nightly job does. `packages/core/src/lease` keeps only pure readers of those rows, such as `currentMonthlyRent` and `leaseTimeline`.
 - When a TypeScript twin must stay, prove parity with golden vectors that pgTAP replays, as `supabase/tests/fixtures/payment_status.csv` does.
 - An invariant over rows belongs in a constraint, not in a check inside one function. Issue #198 adds exclusion constraints for overlapping leases and invoices.
+- What a statement line can do is the database's alone: `private.statement_line_state` reads it for the preview and for `commit_statement_import`, so whether a code match on a paid or voided bill posts is written once. `packages/core` `planImport` only stores the match. A payment an import made goes back through `undo_statement_import`, in the commit's lock order, and `create_statement_import` locks the receiving account and refuses a memo match whose description lacks that bill's code.
+- A definer function decides from stored rows. It takes no boolean that says a decision was made (`p_params_valid`): `pnpm db:test` runs `scripts/caller-verdict.ts` and fails on one.
 - Issue #197 squashes the migrations into one baseline before the first deploy, so each function has one current body.
 
 ## Document upload

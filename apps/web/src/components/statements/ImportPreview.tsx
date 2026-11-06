@@ -2,20 +2,17 @@
 
 import { formatDate, formatVnd, type Locale } from '@esta/core/format';
 import { vnd } from '@esta/core/money';
-import type { Result } from '@esta/core/result';
-import type { StatementCommitted } from '@esta/ops';
 import { useLocale, useTranslations } from 'next-intl';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { FieldMessage } from '@/components/field-message';
 import { StatusShape, statusBadge, statusMarks, type MarkStatus } from '@/components/status-shape';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useAction } from '@/components/use-action';
 import { cn } from '@/lib/utils';
-import { commitStatement, linkStatementLine } from '@/server/actions/statements';
+import { commitStatement, linkStatementLine, undoStatement } from '@/server/actions/statements';
 import { LINE_STATUSES, type BillLabel, type LineStatus, type RefusedLine, type StatementLine } from '@/lib/statements/lines';
 import { HeldChoices, preselected } from './HeldChoices';
+import { useStatementSave } from './use-statement-save';
 
 /** Shape, word, then color: a match waits to post, a suggestion waits for a person, a held line warns, a posted one is settled. */
 const LINE_MARKS = {
@@ -67,10 +64,11 @@ type RowProps = {
   pick: string | undefined;
   onPick: (paymentId: string) => void;
   onLink: () => void;
+  onUndo: () => void;
   disabled: boolean;
 };
 
-function LineRow({ line, reserve, checked, onCheck, pick, onPick, onLink, disabled }: RowProps) {
+function LineRow({ line, reserve, checked, onCheck, pick, onPick, onLink, onUndo, disabled }: RowProps) {
   const t = useTranslations('statements');
   const locale = useLocale() as Locale;
   const mark = LINE_MARKS[line.status];
@@ -106,6 +104,11 @@ function LineRow({ line, reserve, checked, onCheck, pick, onPick, onLink, disabl
           <LineTarget line={line} />
         </div>
         {line.status === 'held' ? <HeldChoices line={line} pick={pick} onPick={onPick} onLink={onLink} disabled={disabled} /> : null}
+        {line.status === 'posted' ? (
+          <Button type="button" variant="secondary" disabled={disabled} onClick={onUndo} data-testid="statement-undo-line" className="mt-1 w-fit">
+            {t('undoLine', { line: line.index })}
+          </Button>
+        ) : null}
       </div>
     </li>
   );
@@ -119,13 +122,13 @@ function LineRow({ line, reserve, checked, onCheck, pick, onPick, onLink, disabl
 export function ImportPreview({ importId, committed, lines, refused }: { importId: string; committed: boolean; lines: readonly StatementLine[]; refused: readonly RefusedLine[] }) {
   const t = useTranslations('statements');
   const locale = useLocale() as Locale;
-  const router = useRouter();
   const [filter, setFilter] = useState<Filter>('all');
   const [chosen, setChosen] = useState<ReadonlySet<string>>(new Set());
   const [picks, setPicks] = useState<Readonly<Record<string, string>>>({});
-  const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<string | null>(null);
-  const { pending: saving, run } = useAction();
+  const { saving, error, result, save } = useStatementSave(() => {
+    setPicks({});
+    setChosen(new Set());
+  });
 
   const suggestions = lines.filter((line) => line.status === 'suggested');
   const ticked = suggestions.filter((line) => chosen.has(line.id)).length;
@@ -143,24 +146,16 @@ export function ImportPreview({ importId, committed, lines, refused }: { importI
       return next;
     });
 
-  const save = (call: () => Promise<Result<StatementCommitted, 'failed'>>, said: (done: StatementCommitted) => string) => {
-    setError(null);
-    setResult(null);
-    run(call, (outcome) => {
-      if (!outcome.ok) {
-        setError(t('errorFailed'));
-        return;
-      }
-      setResult(said(outcome.value));
-      setPicks({});
-      setChosen(new Set());
-      router.refresh();
-    });
-  };
   const commit = () =>
     save(
       () => commitStatement({ import_id: importId, confirmed_row_ids: [...chosen] }),
-      ({ posted, skipped }) => [posted > 0 || skipped === 0 ? t('posted', { count: posted }) : null, skipped > 0 ? t('skipped', { count: skipped }) : null].filter(Boolean).join(' '),
+      ({ posted, skipped }) =>
+        posted === 0 && skipped === 0 ? t('nothingToPost') : [posted > 0 ? t('posted', { count: posted }) : null, skipped > 0 ? t('skipped', { count: skipped }) : null].filter(Boolean).join(' '),
+    );
+  const undo = (rowIds?: readonly string[]) =>
+    save(
+      () => undoStatement({ import_id: importId, ...(rowIds === undefined ? {} : { row_ids: rowIds }) }),
+      ({ undone }) => (undone === 0 ? t('nothingToUndo') : t('undone', { count: undone })),
     );
   const pickOf = (line: StatementLine) => picks[line.id] ?? preselected(line);
   const link = (line: StatementLine) =>
@@ -205,6 +200,11 @@ export function ImportPreview({ importId, committed, lines, refused }: { importI
             {result}
           </p>
         )}
+        {lines.some((line) => line.status === 'posted') ? (
+          <Button type="button" variant="secondary" onClick={() => undo()} disabled={saving} data-testid="statement-undo" className="w-fit">
+            {saving ? t('undoing') : t('undoImport')}
+          </Button>
+        ) : null}
         {committed && posting.length === 0 && !open ? null : (
           <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
             <Button type="button" onClick={commit} disabled={saving || posting.length === 0} data-testid="statement-commit">
@@ -243,6 +243,7 @@ export function ImportPreview({ importId, committed, lines, refused }: { importI
                 pick={pickOf(line)}
                 onPick={(paymentId) => setPicks((current) => ({ ...current, [line.id]: paymentId }))}
                 onLink={() => link(line)}
+                onUndo={() => undo([line.id])}
               />
             ))}
           </ol>

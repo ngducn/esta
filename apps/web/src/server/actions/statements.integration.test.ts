@@ -18,6 +18,7 @@ import {
 import { UNRECOGNIZED_COLUMNS } from '../../../../../packages/core/src/matching/statement-scenario';
 import { decodeStatementFile, fileColumns, headerCells, pickedHeader, picksOf, type StatementFile } from '@/lib/statements/decodeStatementFile';
 import { integrationLane } from '@/test/lanes';
+import { twoAtOnce } from '@/test/two-at-once';
 import { memberClient } from '@/test/member-client';
 
 // `pnpm test:integration` (scripts/web-integration.ts) sets the slot's database clock to 2026-10-07. The file adds its
@@ -27,7 +28,7 @@ import { memberClient } from '@/test/member-client';
 const { household: HOUSEHOLD, ryan } = integrationLane(import.meta.url);
 const { client, signIn } = memberClient(ryan, HOUSEHOLD);
 
-const { importStatement, commitStatement } = await import('./statements');
+const { importStatement, commitStatement, undoStatement } = await import('./statements');
 const { loadColumnPresets, loadStatementImport } = await import('@/server/statements/load');
 
 const run = Math.floor(Math.random() * 1e6)
@@ -73,18 +74,23 @@ async function insert(table: 'bank_accounts' | 'properties' | 'units' | 'parties
 
 async function seedRoomingHouse(): Promise<OpenBill[]> {
   await insert('bank_accounts', { id: ACCOUNT, household_id: HOUSEHOLD, bank_bin: '970436', account_no: `8${run}`, account_name: 'DEMO P3 21' });
-  await insert('properties', house.property);
-  await insert('units', house.units);
-  await insert('parties', house.parties);
-  await insert('leases', house.leases);
-  for (const activation of house.activations) {
+  return seedHouse(house, house.leases.map((lease) => lease.id));
+}
+
+/** A rooming house's rows with its six bills issued, as the bills the next statement is made for. */
+async function seedHouse(rooms: typeof house, ids: readonly string[]): Promise<OpenBill[]> {
+  await insert('properties', rooms.property);
+  await insert('units', rooms.units);
+  await insert('parties', rooms.parties);
+  await insert('leases', rooms.leases);
+  for (const activation of rooms.activations) {
     const { error } = await client.rpc('activate_lease', activation);
     if (error) throw error;
   }
   const { data, error } = await client
     .from('invoices')
     .select('id, number, memo_code, due_date, lease:leases!invoices_household_id_lease_id_fkey(tenant:parties!leases_household_id_tenant_party_id_fkey(full_name))')
-    .in('lease_id', leaseIds)
+    .in('lease_id', [...ids])
     .eq('status', 'issued');
   if (error) throw error;
   return z
@@ -245,5 +251,74 @@ describe('statement import against local Supabase (LSE-8)', () => {
     const labelled = householdStatement(owedBills, isoDate('2026-10-07'), `IV${run}`);
     expect(await importStatement(input(await readFile(statementCsv(labelled, 'c'), 'statement-2.csv'), 'statement-2.csv'))).toMatchObject({ ok: true });
     expect(await presets()).toEqual(mapped);
+  });
+
+  it('refuses a retry that reuses an import id for another account or other columns, and accepts the same request again (#266)', async () => {
+    const file = decoded.a as Decoded;
+    const same = { ...input(file, 'sao-ke.csv'), import_id: importId };
+    expect(await importStatement(same)).toEqual({ ok: true, value: { import_id: importId, known: 0 } });
+    expect(await importStatement({ ...same, bank_account_id: crypto.randomUUID() })).toEqual({ ok: false, reason: { kind: 'failed' } });
+    expect(await importStatement({ ...same, column_mapping: { ...same.column_mapping, headerRow: same.column_mapping.headerRow + 1 } })).toEqual({ ok: false, reason: { kind: 'failed' } });
+    expect((await lines(importId)).length).toBeGreaterThan(0);
+  });
+});
+
+describe('statement import invariants against local Supabase (#255, #266)', () => {
+  const OTHER = crypto.randomUUID();
+  const second = roomingHouse(HOUSEHOLD, `Demo Q-19b ${run}`, `QB${run}`, ['Cao Văn Ổn', 'Đinh Thị Hợp', 'Ông Văn Đủ', 'Bạch Thị Vừa', 'Châu Văn Khít', 'Dương Thị Chuẩn'].map((name) => `${name} ${run} Demo`));
+  let bills: OpenBill[] = [];
+  let again: HouseholdStatement;
+
+  beforeAll(async () => {
+    await insert('bank_accounts', { id: OTHER, household_id: HOUSEHOLD, bank_bin: '970422', account_no: `7${run}`, account_name: 'DEMO Q 19B' });
+    bills = (await seedHouse(second, second.leases.map((lease) => lease.id))).map((bill) => ({ ...bill, outstanding: vnd(2_500_000) }));
+    const owed = await outstanding(bills.map((bill) => bill.id));
+    bills = bills.map((bill) => ({ ...bill, outstanding: vnd(owed.get(bill.id) ?? 0) })).filter((bill) => bill.outstanding > 0);
+    again = householdStatement(bills, isoDate('2026-10-07'), `QB${run}`);
+  }, 60_000);
+
+  const accountOf = (file: Decoded, name: string) => ({ ...input(file, name), bank_account_id: OTHER });
+  const posted = async (ids: readonly string[]) => {
+    const rows = await Promise.all(ids.map(async (id) => (await lines(id)).map((row) => row.id)));
+    const { data, error } = await client.from('payments').select('id, amount_vnd').in('statement_row_id', rows.flat());
+    if (error) throw error;
+    return data;
+  };
+
+  it('stores a transfer once when two previews of one statement, one read by its value dates, run at the same moment (#266)', async () => {
+    const plain = await readFile(statementCsv(again, 'a'), 'sao-ke-q.csv');
+    const valueDated = await readFile(statementCsv({ ...again, lines: again.lines.map((line) => ({ ...line, date: addDays(line.date, -1) })) }, 'a'), 'sao-ke-q-2.csv');
+    const files = [plain, valueDated];
+    let next = 0;
+    const outcomes = await twoAtOnce(() => importStatement(accountOf(files[next++ % 2] as Decoded, 'sao-ke-q.csv')));
+    const made = outcomes.flatMap((outcome) => (outcome.status === 'fulfilled' && outcome.value.ok ? [outcome.value.value.import_id] : []));
+    expect(made.length, 'at least one preview was kept').toBeGreaterThan(0);
+    for (const id of made) await commitStatement({ import_id: id, confirmed_row_ids: [] });
+    const payments = await posted(made);
+    expect(payments.map((payment) => payment.amount_vnd).toSorted()).toEqual(again.lines.slice(0, 3).map((line) => line.amount as number).toSorted());
+    const references = (await Promise.all(made.map(lines))).flat();
+    expect(references.filter((row) => row.status === 'memo_match')).toHaveLength(3);
+    for (const id of made) expect(await undoStatement({ import_id: id })).toMatchObject({ ok: true });
+    expect(await posted(made)).toEqual([]);
+  });
+
+  it('takes an imported payment back, a line or the whole import, and leaves the bills owing again (#255)', async () => {
+    const fresh = householdStatement(bills, isoDate('2026-10-07'), `QC${run}`);
+    const imported = await importStatement(accountOf(await readFile(statementCsv(fresh, 'c'), 'statement-q.csv'), 'statement-q.csv'));
+    if (!imported.ok) throw new Error(JSON.stringify(imported.reason));
+    const id = imported.value.import_id;
+    const beforeBills = await outstanding(bills.map((bill) => bill.id));
+    expect(await commitStatement({ import_id: id, confirmed_row_ids: [] })).toMatchObject({ ok: true });
+    const firstPosted = await posted([id]);
+    expect(firstPosted.length).toBeGreaterThan(0);
+    const [row] = (await lines(id)).filter((stored) => stored.status === 'memo_match');
+    expect(await undoStatement({ import_id: id, row_ids: [row?.id ?? ''] })).toEqual({ ok: true, value: { undone: 1 } });
+    expect(await posted([id])).toHaveLength(firstPosted.length - 1);
+    expect(await undoStatement({ import_id: id, row_ids: [row?.id ?? ''] }), 'a repeat changes nothing').toEqual({ ok: true, value: { undone: 0 } });
+    expect(await undoStatement({ import_id: id })).toEqual({ ok: true, value: { undone: firstPosted.length - 1 } });
+    expect(await posted([id])).toEqual([]);
+    expect(await outstanding(bills.map((bill) => bill.id))).toEqual(beforeBills);
+    expect((await loadStatementImport(HOUSEHOLD, id))?.committed).toBe(false);
+    expect(await commitStatement({ import_id: id, confirmed_row_ids: [] }), 'and Ghi sổ posts them again, once').toEqual({ ok: true, value: { posted: firstPosted.length, skipped: 0 } });
   });
 });

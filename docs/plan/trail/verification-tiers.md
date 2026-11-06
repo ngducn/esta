@@ -45,6 +45,7 @@ Review checklist for classes no mechanical check catches (a reviewer reads for e
 2. Clock edges, until `clockEdges()` (Q-16) is used by every period-keyed test.
 3. Count, then write, until `twoAtOnce` (Q-16) covers the write.
 4. A denylist where an allowlist belongs: a fix that refuses the bad spellings it was shown (monthly rates, #439) instead of accepting only the good ones. Ask for a property test that random neighbours of the input never pass.
+5. A writer of money with no way back: every function that posts a payment from a file or a batch has an undo that removes the payment, its allocations and the link to its source in the same transaction, and a pgTAP test that proves the bill owes again.
 
 ## Planned tiers for the remaining PRs
 

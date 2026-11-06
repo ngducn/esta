@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState, type ChangeEvent, type FormEvent } from 'react';
+import { useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { FieldMessage } from '@/components/field-message';
 import { FormSelect } from '@/components/properties/address-picker';
 import { Button } from '@/components/ui/button';
@@ -33,7 +33,10 @@ const FILE_ERRORS = {
 
 type Reader = typeof import('@/lib/statements/decodeStatementFile');
 
-/** The import id is minted with the file, so sending it again after a lost connection finds the import already made. */
+/**
+ * The import id is minted with the file, so sending it again after a lost connection finds the import already made. It
+ * stays only while the account and the columns do: other ones send a new id, since the database would answer the first.
+ */
 type Chosen = { readonly name: string; readonly importId: string; readonly file: StatementFile; readonly reader: Reader };
 
 /** A chosen file: how its columns are known, the picks while the mapping is open, and what those columns read. */
@@ -82,6 +85,7 @@ export function StatementUpload({ accounts, presets }: { accounts: readonly Acco
   const [earlier, setEarlier] = useState<string | null>(null);
   const { pending: saving, run } = useAction();
   const hydrated = useHydrated();
+  const sent = useRef<{ readonly file: string; readonly key: string; readonly id: string } | null>(null);
   const read = view?.problem === null ? view.read : null;
   const ready = read !== null && read.rows.length > 0;
 
@@ -122,8 +126,13 @@ export function StatementUpload({ accounts, presets }: { accounts: readonly Acco
     event.preventDefault();
     if (view === null || read === null || !ready) return;
     setError(null);
+    const input = importInput(view, read, accountId);
+    const key = JSON.stringify([input.bank_account_id, input.column_mapping]);
+    const last = sent.current;
+    const importId = last?.file !== view.chosen.importId ? view.chosen.importId : last.key === key ? last.id : crypto.randomUUID();
+    sent.current = { file: view.chosen.importId, key, id: importId };
     run(
-      () => importStatement(importInput(view, read, accountId)),
+      () => importStatement({ ...input, import_id: importId }),
       (result) => {
         if (result.ok) {
           router.push(`/collections/import/${result.value.import_id}${result.value.known > 0 ? `?known=${result.value.known}` : ''}`);
