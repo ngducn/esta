@@ -17,5 +17,5 @@ describe('glyphs:check', () => {
     const counts = [...output.matchAll(/ (\d+)\/(\d+)/g)].map((m) => Number(m[2]));
     expect(counts.length).toBeGreaterThan(0);
     expect(new Set(counts)).toEqual(new Set([147]));
-  }, 60_000);
+  }, 15_000);
 });
