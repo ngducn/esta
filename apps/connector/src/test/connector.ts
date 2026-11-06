@@ -18,7 +18,7 @@ export { call };
 export const env = z.object({ ESTA_SLOT: z.string(), ESTA_IT_SUPABASE_URL: z.url(), ESTA_IT_ANON_KEY: z.string().min(1) }).parse(process.env);
 export const ROOT = join(import.meta.dirname, '..', '..', '..', '..');
 
-const storeAt = (file: string) => fileStore(env.ESTA_IT_SUPABASE_URL, file);
+export const storeAt = (file: string) => fileStore(env.ESTA_IT_SUPABASE_URL, file);
 const stack = { ESTA_SUPABASE_URL: env.ESTA_IT_SUPABASE_URL, ESTA_SUPABASE_ANON_KEY: env.ESTA_IT_ANON_KEY };
 export const clientAt = (file: string) => connectorClient(stack, storeAt(file));
 export const batchClientFor = (session: Db, batchId: string) => batchClient(stack, session, batchId);

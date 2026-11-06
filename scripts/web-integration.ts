@@ -5,7 +5,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { runsAlone } from '../apps/web/src/test/lanes.ts';
+import { runsAlone, runsSerially } from '../apps/web/src/test/lanes.ts';
 import { parseSlot, slotPorts } from './slot.ts';
 import { slotEnv } from './slot-env.ts';
 import { gatewayRetryFiles, parseReport } from './web-integration-report.ts';
@@ -41,6 +41,7 @@ function vitest(filters: readonly string[], extra: readonly string[] = []) {
 
 /** A busy local gateway answers one request with an invalid upstream response (#310); the failed files run once more, and only for that error. */
 function runChecked(filters: readonly string[], extra: readonly string[] = []): number {
+  if (filters.length === 0) return 0;
   let result = vitest(filters, extra);
   if (result.status !== 0 && result.report !== undefined) {
     const retry = gatewayRetryFiles(result.report, webRoot);
@@ -56,8 +57,9 @@ const files = process.argv.slice(2);
 const status =
   files.length > 0
     ? runChecked(files)
-    : runChecked(['integration', ...runsAlone.flatMap((file) => ['--exclude', file])]) ||
-      (runsAlone.length > 0 ? runChecked(runsAlone) : 0);
+    : runChecked(['integration', ...[...runsAlone, ...runsSerially].flatMap((file) => ['--exclude', file])]) ||
+      runChecked(runsAlone) ||
+      runChecked(runsSerially, ['--no-file-parallelism']);
 clock('off');
 rmSync(reportDir, { recursive: true, force: true });
 process.exit(status);

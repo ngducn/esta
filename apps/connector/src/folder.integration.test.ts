@@ -212,8 +212,8 @@ describe('loads the Demo folder into the household as Ryan would enter it by han
     expect(viaClaude).toEqual(await documents(handDb, handDocuments));
 
     const queued = async (db: Db, ids: readonly string[]) => (await db.from('document_extractions').select('document_id').in('document_id', [...ids])).data?.length;
-    expect(await queued(claudeDb, [...documentIds.values()]), 'both certificates are queued for reading, as an upload queues them; nothing waits for the worker').toBe(2);
-    expect(await queued(handDb, handDocuments)).toBe(2);
+    expect(await queued(claudeDb, [...documentIds.values()]), 'both certificates and the lease contract are queued for reading, as an upload queues them (the lease contract since the lease prefill, P3-19); nothing waits for the worker').toBe(3);
+    expect(await queued(handDb, handDocuments)).toBe(3);
   }, 120_000);
 
   it('stores each file whole beside the thumbnail and review copy the vault shows', async () => {

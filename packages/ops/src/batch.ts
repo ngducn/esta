@@ -44,6 +44,16 @@ type Step = {
 };
 
 const asJson = (value: unknown): Json => JSON.parse(JSON.stringify(value ?? null));
+/**
+ * The change as it is stored, shown to Claude and compared at apply (SPEC D11). `before` holds what is in the row now,
+ * which may be a full ID number Mẹ typed on Esta's own screen, so it keeps its last four like everything Claude writes.
+ * `set` is already cut: it came from the input.
+ */
+function asRecorded(change: unknown): Json {
+  const json = asJson(change);
+  return typeof json === 'object' && json !== null && !Array.isArray(json) && 'before' in json ? { ...json, before: asJson(reduceTypedIds(json.before)) } : json;
+}
+
 const refused = (refusal: Refusal): Stepped => ({ plan: { status: 'refused', refusal }, writes: [] });
 
 function batchStep<I, C, O, R extends Refusal>(op: Op<I, C, O, R, LocalContext>): Step {
@@ -57,13 +67,13 @@ function batchStep<I, C, O, R extends Refusal>(op: Op<I, C, O, R, LocalContext>)
       const { value } = planned;
       if (value.kind === 'unchanged') return { plan: { status: 'unchanged', current: asJson(value.current) }, writes: [] };
       const preview = await op.preview?.(ctx, value.change);
-      return { plan: { status: 'change', change: asJson(value.change), ...(preview === undefined ? {} : { preview }) }, writes: op.writes?.(value.change) ?? [] };
+      return { plan: { status: 'change', change: asRecorded(value.change), ...(preview === undefined ? {} : { preview }) }, writes: op.writes?.(value.change) ?? [] };
     },
     async settle(ctx, raw, approved) {
       const input = op.input.safeParse(raw);
       if (!input.success) return { status: 'refused', refusal: { kind: 'stale' } };
       const settled = await settle(op, ctx, input.data, (fresh) => {
-        const now = asJson(fresh);
+        const now = asRecorded(fresh);
         return isDeepStrictEqual(now, approved) ? null : { kind: 'stale', now };
       });
       if (!settled.ok) return { status: 'refused', refusal: settled.reason };

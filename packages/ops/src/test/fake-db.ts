@@ -9,24 +9,33 @@ import type { Pending, ViewRows } from '../view';
 
 export type Sent = { readonly method: string; readonly table: string; readonly query: URLSearchParams; readonly body: unknown };
 
-/** `rows` answers each request; `fails` turns one into the error PostgREST sends for a raised exception. */
-export function fakeDb(rows: (sent: Sent) => readonly unknown[] = () => [], fails: (sent: Sent) => DatabaseError | null = () => null) {
-  const sent: Sent[] = [];
-  const db: Db = createClient<Database>('http://fake.test', 'anon', {
+export type Wire = { readonly method: string; readonly url: URL; readonly headers: Headers; readonly text: string };
+
+/** A supabase-js client whose every request, REST, RPC and Storage alike, is answered by `handle`. */
+export function clientOver(handle: (wire: Wire) => Response | Promise<Response>): Db {
+  return createClient<Database>('http://fake.test', 'anon', {
     auth: { persistSession: false, autoRefreshToken: false },
     global: {
       fetch: async (input, init) => {
         const url = new URL(input instanceof Request ? input.url : String(input));
-        const text = typeof init?.body === 'string' ? init.body : '';
-        const request: Sent = { method: init?.method ?? 'GET', table: url.pathname.replace('/rest/v1/', ''), query: url.searchParams, body: text === '' ? null : JSON.parse(text) };
-        sent.push(request);
-        const failure = fails(request);
-        if (failure !== null) return new Response(JSON.stringify(failure), { status: 400, headers: { 'content-type': 'application/json' } });
-        const single = new Headers(init?.headers).get('Accept')?.includes('vnd.pgrst.object') === true;
-        const reply = rows(request);
-        return new Response(JSON.stringify(single ? reply[0] : reply), { status: 200, headers: { 'content-type': 'application/json' } });
+        return handle({ method: init?.method ?? 'GET', url, headers: new Headers(init?.headers), text: typeof init?.body === 'string' ? init.body : '' });
       },
     },
+  });
+}
+
+export const json = (body: unknown, status = 200): Response => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
+
+/** `rows` answers each request; `fails` turns one into the error PostgREST sends for a raised exception. */
+export function fakeDb(rows: (sent: Sent) => readonly unknown[] = () => [], fails: (sent: Sent) => DatabaseError | null = () => null) {
+  const sent: Sent[] = [];
+  const db = clientOver((wire) => {
+    const request: Sent = { method: wire.method, table: wire.url.pathname.replace('/rest/v1/', ''), query: wire.url.searchParams, body: wire.text === '' ? null : JSON.parse(wire.text) };
+    sent.push(request);
+    const failure = fails(request);
+    if (failure !== null) return json(failure, 400);
+    const reply = rows(request);
+    return json(wire.headers.get('Accept')?.includes('vnd.pgrst.object') === true ? reply[0] : reply);
   });
   return { db, sent };
 }

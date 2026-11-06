@@ -4,7 +4,7 @@
 # commit statuses (context local-ci/<job>) plus one summary comment.
 #
 # Usage: tools/ci-local.sh <worktree> <pr-number> <slot> [job ...]
-#   jobs default to: check db e2e prod-build design
+#   jobs default to: check db e2e prod-build design mutation
 #
 # <worktree> only names the commit: its HEAD must be the PR head. The jobs run
 # in a throwaway detached worktree at that commit, as Actions would on a fresh
@@ -46,7 +46,7 @@ pr=${2:?pr number}
 slot=${3:?ESTA_SLOT for the local stack}
 shift 3
 jobs=("$@")
-[ ${#jobs[@]} -eq 0 ] && jobs=(check db e2e prod-build design)
+[ ${#jobs[@]} -eq 0 ] && jobs=(check db e2e prod-build design mutation)
 
 repo=ngducn/esta
 lock=${CI_LOCAL_LOCK:-/tmp/ci-local/lock}
@@ -175,6 +175,9 @@ run_job() {
 		;;
 	design)
 		pnpm install --frozen-lockfile && tools/ci/jobs/design.sh
+		;;
+	mutation)
+		pnpm install --frozen-lockfile && tools/ci/jobs/mutation.sh
 		;;
 	*)
 		echo "unknown job $1" >&2
