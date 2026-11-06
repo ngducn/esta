@@ -1,0 +1,40 @@
+{
+  "anon": {
+    "public.invoice_qr_by_token": "the signed-out bill page reads a bill through its share token alone"
+  },
+  "authenticated": {
+    "private.admin_bare_name": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.admin_name_exact": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.agent_item_audience": "named in a row level security or storage policy, which runs as the signed-in member",
+    "private.blank_matches": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.blank_matches_once": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.document_household": "named in a row level security or storage policy, which runs as the signed-in member",
+    "private.document_search_vector": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.document_upload_household": "named in a row level security or storage policy, which runs as the signed-in member",
+    "private.export_household": "named in a row level security or storage policy, which runs as the signed-in member",
+    "private.extraction_schema": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.file_pending_removal": "named in a row level security or storage policy, which runs as the signed-in member",
+    "private.holds_national_id": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.is_member": "named in a row level security or storage policy, which runs as the signed-in member",
+    "private.is_operator": "named in a row level security or storage policy, which runs as the signed-in member",
+    "private.is_own_member": "named in a row level security or storage policy, which runs as the signed-in member",
+    "private.jsonb_whole_between": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.lacks_claimed_admin": "named in a row level security or storage policy, which runs as the signed-in member",
+    "private.latest_extraction": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.notification_user": "named in a row level security or storage policy, which runs as the signed-in member",
+    "private.payment_status": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.property_photo_household": "named in a row level security or storage policy, which runs as the signed-in member",
+    "private.read_entries": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.statement_line_candidates": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.statement_line_state": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.thread_row_creator": "named in a row level security or storage policy, which runs as the signed-in member",
+    "private.valid_annotations": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.valid_area": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.valid_iso_date": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.valid_kind_details": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.valid_mortgage": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.valid_ownership_shares": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.valid_purposes": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
+    "private.whole_unit_id": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member"
+  }
+}
