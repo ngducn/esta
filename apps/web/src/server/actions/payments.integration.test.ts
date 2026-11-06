@@ -5,6 +5,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { integrationLane } from '@/test/lanes';
 import { memberClient } from '@/test/member-client';
+import { twoAtOnce } from '@/test/two-at-once';
 import type { PaymentInput } from './payments';
 
 // `pnpm test:integration` (scripts/web-integration.ts) passes the slot's stack and sets its database clock to
@@ -105,11 +106,12 @@ describe('payment actions against local Supabase (LSE-7)', () => {
 
   it('returns the same payment for a repeated key and writes one', async () => {
     const raw = input(await openInvoices('Phòng 6', '2026-10'), '2tr8');
-    const [first, second] = await Promise.all([record(raw), record(raw)]);
-    expect(second.id).toBe(first.id);
+    const [first, second] = await twoAtOnce(() => record(raw));
+    if (!first.ok || !second.ok) throw new Error('both calls with one key must answer');
+    expect(second.value.id).toBe(first.value.id);
     const { count } = await client.from('payments').select('id', { count: 'exact', head: true }).eq('idempotency_key', raw.idempotencyKey);
     expect(count).toBe(1);
-    await undo(first.id);
+    await undo(first.value.id);
   });
 
   it('refuses a sheet left open on Phòng 5 September once that row is recorded elsewhere, so October stays owed', async () => {
