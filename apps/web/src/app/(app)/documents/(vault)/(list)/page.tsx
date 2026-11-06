@@ -39,7 +39,7 @@ export default async function DocumentsPage({ searchParams }: { searchParams: Pr
           ]}
         />
       )}
-      <DocumentVault scope={{ kind: 'household', householdId: member.household.id }} canEdit={member.role !== 'viewer'} {...vault} />
+      <DocumentVault scope={{ kind: 'household', householdId: member.household.id }} canEdit={member.can('edit')} {...vault} />
     </div>
   );
 }

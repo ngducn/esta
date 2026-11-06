@@ -175,7 +175,8 @@ export async function askRequest(input: AskInput): Promise<PreparedJob> {
         return askRepairPrompt(ended.reason);
       }
       await writeGuardItem({ db, householdId, jobId: input.jobId, locale, sheet, clock: input.clock }, stream.template(), ended.reason);
-      throw new NumberGuardError('number_guard: the answer still held text the number guard rejects after its repair turn; the operator note has it');
+      const named = [...new Set(ended.reason.map(({ text }) => `"${text}"`))].slice(0, 8).join(', ');
+      throw new NumberGuardError(`number_guard: the answer still held text the number guard rejects after its repair turn (${named}); the operator note has it`);
     },
     async finish({ sessionId, turnHash }): Promise<Json> {
       if (answer === null || answer.text === '') throw new InvalidJobError(`ask ${input.jobId}: the model ended its turn after its tool calls without writing an answer`);

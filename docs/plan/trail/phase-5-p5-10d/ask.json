@@ -1,0 +1,11 @@
+{
+  "q5": {
+    "question": "Doanh thu cho thuê năm nay của mẹ là bao nhiêu, còn cách ngưỡng 500 triệu bao xa?",
+    "answer": "Tôi chưa chắc ai là mẹ trong sổ, nên tôi lấy Nguyễn Thị Demo (tên có vẻ là nữ). Nếu mẹ là người khác, bạn nhắn tôi để tôi xem lại.\n\nTheo [Thuế thu nhập cho thuê Nguyễn Thị Demo](esta://party/5107e10c-018b-5f2d-ad73-f0ad36ca7467):\n- Doanh thu cho thuê năm 2026 đã ghi nhận đến nay là 386.899.628 ₫. Dự kiến cả năm là 482.658.469 ₫.\n- Ngưỡng là 500.000.000 ₫. Hiện đã đạt 96% ngưỡng, còn cách 17.341.531 ₫.\n- Hiện chưa vượt ngưỡng, nên thuế GTGT ước tính là 0 ₫ và thuế TNCN ước tính là 0 ₫.\n\nMức dự kiến cả năm vẫn dưới ngưỡng, nhưng sát ngưỡng. Nếu có phát sinh thêm khoản thu, bạn nên theo dõi thêm.",
+    "refs": [
+      "esta://party/5107e10c-018b-5f2d-ad73-f0ad36ca7467"
+    ],
+    "seconds": "15.2 s, first text at 15.2 s",
+    "firstContentS": 15.176
+  }
+}

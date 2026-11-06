@@ -24,7 +24,7 @@ export default async function PropertyDocumentsPage({
   return (
     <PropertyDetailFrame property={property} tab="documents">
       <PropertyIntl locale={locale} messages={{ documents: messages.documents, components: { date } }}>
-        <DocumentVault scope={{ kind: 'property', propertyId: id, nickname: property.nickname }} canEdit={member.role !== 'viewer'} {...vault} />
+        <DocumentVault scope={{ kind: 'property', propertyId: id, nickname: property.nickname }} canEdit={member.can('edit')} {...vault} />
       </PropertyIntl>
     </PropertyDetailFrame>
   );
