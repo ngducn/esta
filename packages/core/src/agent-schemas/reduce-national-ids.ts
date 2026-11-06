@@ -31,9 +31,9 @@ const FOLDED = /[\u00AD\u200B-\u200F\u2060-\u2064\uFEFF]|[\u0300-\u036F]|[\u1AB0
  * Between two digit groups of one number: up to three spaces of any kind on one line, one newline, or one or two dots,
  * middle dots, dashes, commas, underscores or bars, with a space on either side.
  */
-const JOIN = /^(?:[^\S\n\r]{1,3}|\r?\n|[^\S\n\r]?[.,_\-\u00B7\u2010-\u2015|]{1,2}[^\S\n\r]?)$/u;
+const JOIN = /^(?:[^\S\n\r]{1,3}|\r?\n|[^\S\n\r]?[.,_\-\u00B7\u2010-\u2015\u2212|]{1,2}[^\S\n\r]?)$/u;
 /** After a label the number may also break across lines or use slashes. */
-const JOIN_AFTER_LABEL = /^(?:\s{1,3}|\s?[./,_\-\u00B7\u2010-\u2015|]{1,2}\s?)$/u;
+const JOIN_AFTER_LABEL = /^(?:\s{1,3}|\s?[./,_\-\u00B7\u2010-\u2015\u2212|\u2044\u2215\u29F8]{1,2}\s?)$/u;
 /**
  * A date such as 12/03/2021, 12/03/21, 2021-03-12 or 20210312. It never belongs to an ID, so the last four digits of a
  * reduced ID never join one.
@@ -158,7 +158,8 @@ function idSpans(original: string, idField: boolean): Span[] {
       const run = runOf(from, length, join);
       const last = run?.at(-1);
       if (run === undefined || last === undefined) continue;
-      if (groups[from + run.length]?.gap === '.' || run.some((group) => dates.has(group) || amounts.has(group))) continue;
+      const endsInDecimal = length !== 12 && groups[from + run.length]?.gap === '.';
+      if (endsInDecimal || run.some((group) => dates.has(group) || amounts.has(group))) continue;
       if (needsLabel && !labelled && !beforeLabel(last.end)) continue;
       if (needsLabel && !labelled && isOtherNumber(from, run)) break;
       if (needsLabel && startsAnotherField(run)) continue;

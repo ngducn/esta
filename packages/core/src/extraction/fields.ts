@@ -40,17 +40,21 @@ const choice = <T extends string>(options: readonly T[]) => ({
 });
 
 const TERM_DATE = /(\d{1,2}[./-]\d{1,2}[./-]\d{4}|\d{4}-\d{2}-\d{2})/u;
-const TERM_END = /(?<!\p{L})đến(?!\p{L})/iu;
-const TERM_START = /(?<!\p{L})từ(?!\p{L})/iu;
+const TERM_JOIN = /(?<!\p{L})(?:đến|den|tới|toi)(?!\p{L})|\s[-\u2010-\u2015\u2212]\s|(?<=\d)[\u2010-\u2015\u2212]|(?<=[./-]\d{4})-(?=\d{1,2}[./-]\d)/iu;
+const TERM_EXPIRY = /(?<!\p{L})(?:hạn|han)(?!\p{L})/iu;
+const TERM_START = /(?<!\p{L})(?:từ|tu)(?!\p{L})/iu;
 
 /**
- * The part of a term that names its end. A range such as `Từ tháng 10/1993 đến tháng 10/2043` ends after `đến`; a term
- * that names only its start, such as `50 năm kể từ ngày 15/10/1993`, has no end to read.
+ * The part of a term that names its end. A range ends after its joiner (`đến`, `den`, `tới` or a dash of any kind), a
+ * certificate that prints an issue date then `hạn` ends after `hạn`, and a term that names only its start, such as
+ * `50 năm kể từ ngày 15/10/1993`, has no end to read.
  */
 function termEnd(text: string): string | null {
-  const end = TERM_END.exec(text);
-  if (end !== null) return text.slice(end.index + end[0].length);
-  return TERM_START.test(text) ? null : text;
+  const join = TERM_JOIN.exec(text);
+  if (join !== null) return text.slice(join.index + join[0].length);
+  const expiry = TERM_EXPIRY.exec(text);
+  const after = expiry === null ? text : text.slice(expiry.index + expiry[0].length);
+  return TERM_START.test(after) ? null : after;
 }
 const TERM_MONTH = /(?<![\d./-])(\d{1,2})[./-](\d{4})(?!\d)/u;
 
