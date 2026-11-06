@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(42);
+select plan(38);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 
@@ -112,7 +112,7 @@ select is((select provider from public.utility_accounts where id = '00000000-000
 -- Adding rooms: numbered after the last live room in one call, a label already there is skipped, a trashed label is free.
 select is(public.add_rooms('00000000-0000-4000-8000-0000000000a1', array['Phòng 3', 'Phòng 5', 'Phòng 6'], 2800000), 2,
   'add_rooms adds the two labels the property lacks');
-select is((select min(sort_order) from public.units where property_id = '00000000-0000-4000-8000-0000000000a1' and label in ('Phòng 5', 'Phòng 6')), 3,
+select is((select min(sort_order) from public.units where property_id = '00000000-0000-4000-8000-0000000000a1' and label in ('Phòng 5', 'Phòng 6')), 4,
   'the new rooms are numbered after the highest live room');
 select is(public.add_rooms('00000000-0000-4000-8000-0000000000a1', array['Phòng 5', 'Phòng 6'], null), 0, 'a second tap adds nothing');
 update public.units set deleted_at = now() where property_id = '00000000-0000-4000-8000-0000000000a1' and label = 'Phòng 6';

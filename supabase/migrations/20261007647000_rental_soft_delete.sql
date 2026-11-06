@@ -238,3 +238,58 @@ left join lateral (
   where u.household_id = p.household_id and u.property_id = p.id and u.deleted_at is null
 ) rent on true
 where p.deleted_at is null;
+
+-- Undoing a batch removes the rooms and accounts it created outright: they are part of the batch's property, which is the row archived.
+create or replace function public.undo_change_batch(p_batch_id uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_batch public.change_batches;
+  v_blockers jsonb;
+  v_archived jsonb := '[]';
+  v_now timestamptz := private.audit_now();
+  v_row record;
+begin
+  select * into v_batch from public.change_batches b where b.id = p_batch_id for update;
+  if not found or not (private.is_member(v_batch.household_id, 'admin') and private.is_operator(v_batch.household_id)) then
+    raise exception 'ESTA_BATCH_NOT_FOUND' using errcode = 'P0002';
+  end if;
+  if v_batch.status not in ('applied', 'partial') then
+    raise exception 'ESTA_BATCH_NOT_UNDOABLE' using errcode = '55000', detail = v_batch.status;
+  end if;
+
+  perform private.lock_batch_rows(p_batch_id);
+  perform private.lock_ledger_parents(p_batch_id);
+  select coalesce(jsonb_agg(distinct to_jsonb(b)), '[]') into v_blockers from private.undo_blockers(p_batch_id) b;
+  if v_blockers <> '[]' then
+    return jsonb_build_object('undone', false, 'blockers', v_blockers);
+  end if;
+
+  perform set_config('esta.via', 'undo', true);
+  perform set_config('esta.batch', p_batch_id::text, true);
+  for v_row in select * from private.batch_rows(p_batch_id) t where not t.created and not t.removed order by t.last_id desc loop
+    perform private.undo_restore(v_row.table_name, v_row.row_id, v_row.before_image);
+  end loop;
+  for v_row in select * from private.batch_rows(p_batch_id) t where t.created and not t.removed order by t.first_id desc loop
+    if v_row.table_name not in ('units', 'utility_accounts') and exists (
+      select from pg_catalog.pg_attribute a
+      where a.attrelid = format('public.%I', v_row.table_name)::regclass and a.attname = 'deleted_at' and not a.attisdropped
+    ) then
+      execute format('update public.%I set deleted_at = $2 where id = $1 and deleted_at is null', v_row.table_name) using v_row.row_id, v_now;
+      v_archived := v_archived || jsonb_build_object('table_name', v_row.table_name, 'row_id', v_row.row_id);
+    else
+      execute format('delete from public.%I where id = $1', v_row.table_name) using v_row.row_id;
+    end if;
+  end loop;
+  for v_row in select * from private.batch_rows(p_batch_id) t where not t.created and t.removed order by t.last_id desc loop
+    perform private.undo_restore(v_row.table_name, v_row.row_id, v_row.before_image);
+  end loop;
+  update public.change_batches set status = 'undone', undone_at = v_now where id = p_batch_id;
+  perform set_config('esta.via', '', true);
+  perform set_config('esta.batch', '', true);
+  return jsonb_build_object('undone', true, 'archived', v_archived);
+end;
+$$;

@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(58);
+select plan(59);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 
