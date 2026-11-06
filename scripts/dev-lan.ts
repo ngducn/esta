@@ -76,6 +76,8 @@ async function waitUntilListening(targets: readonly [string, number][]): Promise
   return false;
 }
 
+const prod = process.argv.includes('--prod');
+
 requireTools();
 const running = liveState(existsSync(stateFile) ? readFileSync(stateFile, 'utf8') : undefined, commandOf);
 if (running !== undefined) {
@@ -98,22 +100,30 @@ const template = readFileSync(join(repoRoot, 'infra', 'caddy', 'Caddyfile.templa
 writeFileSync(caddyfile, renderCaddyfile(template, { lan, slot, certFile, keyFile, publicDir }));
 
 const logFd = openSync(caddyLog, 'w');
+const webEnv = {
+  NEXT_PUBLIC_SUPABASE_URL: `https://${lan}:${ports.apiLan}`,
+  ESTA_LAN_HOST: lan,
+  NODE_EXTRA_CA_CERTS: caFile,
+  NEXT_TELEMETRY_DISABLED: '1',
+};
+if (prod) {
+  // The LAN address is baked into the client bundle at build time, so the build runs here and not before.
+  const build = spawnSync(process.execPath, [join(repoRoot, 'scripts', 'web.ts'), 'build'], {
+    stdio: 'inherit',
+    env: { ...process.env, ...webEnv, ESTA_ENV: 'test', NODE_ENV: 'production' },
+  });
+  if (build.status !== 0) process.exit(build.status ?? 1);
+}
 const children: ChildProcess[] = [
   spawn('caddy', ['run', '--adapter', 'caddyfile', '--config', caddyfile], {
     stdio: ['ignore', logFd, logFd],
     detached: true,
     env: { ...process.env, XDG_DATA_HOME: join(runDir, 'caddy-data'), XDG_CONFIG_HOME: join(runDir, 'caddy-config') },
   }),
-  spawn(process.execPath, [join(repoRoot, 'scripts', 'web.ts'), 'dev', '--hostname', '127.0.0.1'], {
+  spawn(process.execPath, [join(repoRoot, 'scripts', 'web.ts'), prod ? 'start' : 'dev', '--hostname', '127.0.0.1'], {
     stdio: 'inherit',
     detached: true,
-    env: {
-      ...process.env,
-      NEXT_PUBLIC_SUPABASE_URL: `https://${lan}:${ports.apiLan}`,
-      ESTA_LAN_HOST: lan,
-      NODE_EXTRA_CA_CERTS: caFile,
-      NEXT_TELEMETRY_DISABLED: '1',
-    },
+    env: { ...process.env, ...webEnv, ...(prod ? { ESTA_ENV: 'test', NODE_ENV: 'production' } : {}) },
   }),
 ];
 writeFileSync(stateFile, JSON.stringify({ pid: process.pid, lan } satisfies State));
