@@ -1,0 +1,298 @@
+{
+  "run": "fix round 3, slot 7, full seed at 2026-10-07 07:00 +07, claude-sonnet-5-5, subscription auth",
+  "summary": {
+    "prompts": 27,
+    "firstPassRejected": 12,
+    "repairRejected": 3,
+    "error": 0
+  },
+  "rows": [
+    {
+      "id": "en-double-check-deposit",
+      "firstPass": "passed",
+      "rejectedBy": [],
+      "repairRejectedBy": [],
+      "repair": null,
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "en-notarized-lease",
+      "firstPass": "passed",
+      "rejectedBy": [],
+      "repairRejectedBy": [],
+      "repair": null,
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "en-reminder",
+      "firstPass": "passed",
+      "rejectedBy": [],
+      "repairRejectedBy": [],
+      "repair": null,
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "en-rent-by-year",
+      "firstPass": "passed",
+      "rejectedBy": [],
+      "repairRejectedBy": [],
+      "repair": null,
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "en-second-opinion",
+      "firstPass": "passed",
+      "rejectedBy": [],
+      "repairRejectedBy": [],
+      "repair": null,
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "vi-bank-letter",
+      "firstPass": "rejected",
+      "rejectedBy": [
+        "official source"
+      ],
+      "repairRejectedBy": [],
+      "repair": "passed",
+      "status": "done",
+      "model": "claude-sonnet-5-5",
+      "kind": "not the number guard (no official page)"
+    },
+    {
+      "id": "vi-choose-tenant",
+      "firstPass": "rejected",
+      "rejectedBy": [
+        "hai"
+      ],
+      "repairRejectedBy": [],
+      "repair": "passed",
+      "status": "done",
+      "model": "claude-sonnet-5-5",
+      "kind": "true (hai người xin thuê); also \"cả hai đều\" for the two applicants, a steered idiom"
+    },
+    {
+      "id": "vi-deposit",
+      "firstPass": "rejected",
+      "rejectedBy": [
+        "hai"
+      ],
+      "repairRejectedBy": [],
+      "repair": "passed",
+      "status": "done",
+      "model": "claude-sonnet-5-5",
+      "kind": "true, a count (\"hai chữ ký\")"
+    },
+    {
+      "id": "vi-electrician",
+      "firstPass": "passed",
+      "rejectedBy": [],
+      "repairRejectedBy": [],
+      "repair": null,
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "vi-end-lease-letter",
+      "firstPass": "rejected",
+      "rejectedBy": [
+        "2",
+        "hai"
+      ],
+      "repairRejectedBy": [],
+      "repair": "passed",
+      "status": "done",
+      "model": "claude-sonnet-5-5",
+      "kind": "true (\"Phòng 2\" from the question, \"hai ngày\")"
+    },
+    {
+      "id": "vi-inheritance",
+      "firstPass": "rejected",
+      "rejectedBy": [
+        "hai"
+      ],
+      "repairRejectedBy": [],
+      "repair": "passed",
+      "status": "done",
+      "model": "claude-sonnet-5-5",
+      "kind": "true (\"Có hai cách\")"
+    },
+    {
+      "id": "vi-insurance",
+      "firstPass": "passed",
+      "rejectedBy": [],
+      "repairRejectedBy": [],
+      "repair": null,
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "vi-invest",
+      "firstPass": "passed",
+      "rejectedBy": [],
+      "repairRejectedBy": [],
+      "repair": null,
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "vi-late-tenant",
+      "firstPass": "rejected",
+      "rejectedBy": [
+        "5"
+      ],
+      "repairRejectedBy": [],
+      "repair": "passed",
+      "status": "done",
+      "model": "claude-sonnet-5-5",
+      "kind": "true (room number from the question)"
+    },
+    {
+      "id": "vi-notarize-lease",
+      "firstPass": "rejected",
+      "rejectedBy": [
+        "official source"
+      ],
+      "repairRejectedBy": [
+        "403)"
+      ],
+      "repair": "rejected",
+      "status": "done",
+      "model": "claude-sonnet-5-5",
+      "kind": "not the number guard (no official page); the repair was rejected for \"403)\" the model typed (true)"
+    },
+    {
+      "id": "vi-property-manager",
+      "firstPass": "passed",
+      "rejectedBy": [],
+      "repairRejectedBy": [],
+      "repair": null,
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "vi-raise-rent",
+      "firstPass": "rejected",
+      "rejectedBy": [
+        "Q7",
+        "1:"
+      ],
+      "repairRejectedBy": [],
+      "repair": "passed",
+      "status": "done",
+      "model": "claude-sonnet-5-5",
+      "kind": "true (names Q7 and Quận 1 typed by the model)"
+    },
+    {
+      "id": "vi-red-pink-book",
+      "firstPass": "rejected",
+      "rejectedBy": [
+        "hai"
+      ],
+      "repairRejectedBy": [
+        "official source"
+      ],
+      "repair": "rejected",
+      "status": "done",
+      "model": "claude-sonnet-5-5",
+      "kind": "FALSE: \"cả hai\" (both forms) rejected on purpose; the source repair was then rejected for an official page"
+    },
+    {
+      "id": "vi-rent-by-year",
+      "firstPass": "passed",
+      "rejectedBy": [],
+      "repairRejectedBy": [],
+      "repair": null,
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "vi-rent-tax",
+      "firstPass": "passed",
+      "rejectedBy": [],
+      "repairRejectedBy": [],
+      "repair": null,
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "vi-repair-first",
+      "firstPass": "passed",
+      "rejectedBy": [],
+      "repairRejectedBy": [],
+      "repair": null,
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "vi-savings-rate",
+      "firstPass": "rejected",
+      "rejectedBy": [
+        "09/09/2026."
+      ],
+      "repairRejectedBy": [],
+      "repair": "passed",
+      "status": "done",
+      "model": "claude-sonnet-5-5",
+      "kind": "true (a date the model typed)"
+    },
+    {
+      "id": "vi-transfer-procedure",
+      "firstPass": "rejected",
+      "rejectedBy": [
+        "Hai"
+      ],
+      "repairRejectedBy": [
+        "official source"
+      ],
+      "repair": "rejected",
+      "status": "done",
+      "model": "claude-sonnet-5-5",
+      "kind": "FALSE: \"Hai bên mang theo sổ gốc\" (both parties) rejected on purpose; the source repair then ran"
+    },
+    {
+      "id": "vi-zalo-price-change",
+      "firstPass": "passed",
+      "rejectedBy": [],
+      "repairRejectedBy": [],
+      "repair": null,
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "vi-zalo-reminder",
+      "firstPass": "passed",
+      "rejectedBy": [],
+      "repairRejectedBy": [],
+      "repair": null,
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "vi-zalo-thanks",
+      "firstPass": "passed",
+      "rejectedBy": [],
+      "repairRejectedBy": [],
+      "repair": null,
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "vi-zalo-welcome",
+      "firstPass": "rejected",
+      "rejectedBy": [
+        "2"
+      ],
+      "repairRejectedBy": [],
+      "repair": "passed",
+      "status": "done",
+      "model": "claude-sonnet-5-5",
+      "kind": "true (room number from the question)"
+    }
+  ]
+}
