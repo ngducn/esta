@@ -59,7 +59,7 @@ export default async function PropertyRentalPage({ params }: { params: Promise<{
     getLocale(),
     getMessages(),
   ]);
-  const canEdit = member.role !== 'viewer';
+  const canEdit = member.can('edit');
   const roomingHouse = property.kind === 'rooming_house';
   const declared = roomingHouse ? (roomCountSchema.safeParse(property.kindDetails).data?.room_count ?? null) : null;
   const rooms = rental.units.filter((unit) => unit.kind === 'room').length;

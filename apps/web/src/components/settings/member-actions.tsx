@@ -7,6 +7,7 @@ import { FormSelect } from '@/components/properties/address-picker';
 import { useBillAction } from '@/components/invoices/use-bill-action';
 import { Button } from '@/components/ui/button';
 import { DeferredPopup, useDeferredDialog } from '@/components/use-deferred-dialog';
+import { can } from '@/server/access';
 import { removeMember, setMemberRole, type MemberActionRefusal } from '@/server/actions/members';
 import type { Refusals } from './member-refusals';
 
@@ -39,7 +40,7 @@ export function MemberActions({ id, role, self, labels }: { id: string; role: Ro
   const confirm = useDeferredDialog(loadConfirm);
   const [lowered, setLowered] = useState<Role>(role);
   const change = (next: Role) => {
-    if (!self || next === 'admin') return run(() => setMemberRole({ id, role: next }));
+    if (!self || can({ role: next }, 'household')) return run(() => setMemberRole({ id, role: next }));
     setLowered(next);
     confirm.setOpen(true);
   };

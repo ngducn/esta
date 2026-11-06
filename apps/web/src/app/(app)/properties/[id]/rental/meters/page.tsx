@@ -78,17 +78,17 @@ export default async function MeterEntryPage({ params, searchParams }: { params:
             </p>
           )}
         </div>
-        {member.role === 'viewer' ? (
+        {!member.can('edit') ? (
           <p data-testid="meter-viewer-note" className="text-body text-text-secondary">
             {t('viewerNote')}
           </p>
         ) : null}
       </div>
       {rooms.length === 0 ? (
-        <RegistryEmptyState surface="propertyMeters" ctx={{ canWrite: member.role !== 'viewer', propertyId: id }} icon={Gauge} />
+        <RegistryEmptyState surface="propertyMeters" ctx={{ canWrite: member.can('edit'), propertyId: id }} icon={Gauge} />
       ) : (
         <PropertyIntl locale={intl.locale} messages={intl.messages}>
-          <MeterEntryList key={month} propertyId={id} month={month} monthLabel={monthLabel} rooms={rooms} canEdit={member.role !== 'viewer'} />
+          <MeterEntryList key={month} propertyId={id} month={month} monthLabel={monthLabel} rooms={rooms} canEdit={member.can('edit')} />
         </PropertyIntl>
       )}
       <p data-testid="meter-price-note" className="max-w-prose text-body-sm text-text-muted">
