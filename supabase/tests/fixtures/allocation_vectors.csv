@@ -1,0 +1,49 @@
+case,payment_vnd,bill,status,kind,due_date,period_start,total_vnd,paid_vnd,chosen,allocated_vnd,credit_vnd
+exact payment of the only bill,3500000,a,issued,rent,2026-10-05,2026-10-01,3500000,0,no,3500000,0
+one dong short of the bill,3499999,a,issued,rent,2026-10-05,2026-10-01,3500000,0,no,3499999,0
+one dong over the bill,3500001,a,issued,rent,2026-10-05,2026-10-01,3500000,0,no,3500000,1
+partial payment,1000000,a,issued,rent,2026-10-05,2026-10-01,3500000,0,no,1000000,0
+overpayment is credit,10000000,a,issued,rent,2026-10-05,2026-10-01,3500000,0,no,3500000,6500000
+one dong pays one dong,1,a,issued,rent,2026-10-05,2026-10-01,3500000,0,no,1,0
+zero payment is refused,0,a,issued,rent,2026-10-05,2026-10-01,3500000,0,no,0,refused
+oldest due first when listed out of order,5000000,a,issued,rent,2026-10-05,2026-10-01,3500000,0,no,0,0
+oldest due first when listed out of order,5000000,b,issued,rent,2026-08-05,2026-08-01,3500000,0,no,3500000,0
+oldest due first when listed out of order,5000000,c,issued,rent,2026-09-05,2026-09-01,3500000,0,no,1500000,0
+two bills paid exactly,7000000,a,issued,rent,2026-10-05,2026-10-01,3500000,0,no,0,0
+two bills paid exactly,7000000,b,issued,rent,2026-08-05,2026-08-01,3500000,0,no,3500000,0
+two bills paid exactly,7000000,c,issued,rent,2026-09-05,2026-09-01,3500000,0,no,3500000,0
+three bills paid with credit left,12000000,a,issued,rent,2026-10-05,2026-10-01,3500000,0,no,3500000,1500000
+three bills paid with credit left,12000000,b,issued,rent,2026-08-05,2026-08-01,3500000,0,no,3500000,1500000
+three bills paid with credit left,12000000,c,issued,rent,2026-09-05,2026-09-01,3500000,0,no,3500000,1500000
+same due date ties go to the earlier period,4000000,a,issued,rent,2026-10-05,2026-10-01,2000000,0,no,1000000,0
+same due date ties go to the earlier period,4000000,b,issued,rent,2026-10-05,2026-09-01,3000000,0,no,3000000,0
+due date outranks period,1000000,a,issued,rent,2026-09-05,2026-10-01,2000000,0,no,1000000,0
+due date outranks period,1000000,b,issued,rent,2026-09-20,2026-08-01,2000000,0,no,0,0
+a voided bill is skipped,3500000,a,void,rent,2026-08-05,2026-08-01,3500000,0,no,0,0
+a voided bill is skipped,3500000,b,issued,rent,2026-09-05,2026-09-01,3500000,0,no,3500000,0
+a draft bill is skipped,3500000,a,draft,rent,2026-08-05,2026-08-01,3500000,0,no,0,0
+a draft bill is skipped,3500000,b,issued,rent,2026-09-05,2026-09-01,3500000,0,no,3500000,0
+a part-paid bill takes only what it still owes,3000000,a,issued,rent,2026-08-05,2026-08-01,3500000,1500000,no,2000000,0
+a part-paid bill takes only what it still owes,3000000,b,issued,rent,2026-09-05,2026-09-01,3500000,0,no,1000000,0
+a paid bill is skipped,1000000,a,issued,rent,2026-08-05,2026-08-01,3500000,3500000,no,0,0
+a paid bill is skipped,1000000,b,issued,rent,2026-09-05,2026-09-01,3500000,0,no,1000000,0
+an overpaid bill is skipped,1000000,a,issued,rent,2026-08-05,2026-08-01,3500000,4000000,no,0,0
+an overpaid bill is skipped,1000000,b,issued,rent,2026-09-05,2026-09-01,3500000,0,no,1000000,0
+one dong still owed,1,a,issued,rent,2026-08-05,2026-08-01,3500000,3499999,no,1,0
+one dong still owed and one dong over,2,a,issued,rent,2026-08-05,2026-08-01,3500000,3499999,no,1,1
+five bills of one million take 2.500.000 in order,2500000,a,issued,rent,2026-06-05,2026-06-01,1000000,0,no,1000000,0
+five bills of one million take 2.500.000 in order,2500000,b,issued,rent,2026-07-05,2026-07-01,1000000,0,no,1000000,0
+five bills of one million take 2.500.000 in order,2500000,c,issued,rent,2026-08-05,2026-08-01,1000000,0,no,500000,0
+five bills of one million take 2.500.000 in order,2500000,d,issued,rent,2026-09-05,2026-09-01,1000000,0,no,0,0
+five bills of one million take 2.500.000 in order,2500000,e,issued,rent,2026-10-05,2026-10-01,1000000,0,no,0,0
+a chosen bill skips an older one,3500000,a,issued,rent,2026-08-05,2026-08-01,3500000,0,no,0,0
+a chosen bill skips an older one,3500000,b,issued,rent,2026-09-05,2026-09-01,3500000,0,yes,3500000,0
+a chosen bill skips an older one,3500000,c,issued,rent,2026-10-05,2026-10-01,3500000,0,no,0,0
+two chosen bills settle oldest first,5000000,a,issued,rent,2026-08-05,2026-08-01,3500000,0,no,0,0
+two chosen bills settle oldest first,5000000,b,issued,rent,2026-09-05,2026-09-01,3500000,0,yes,3500000,0
+two chosen bills settle oldest first,5000000,c,issued,rent,2026-10-05,2026-10-01,3500000,0,yes,1500000,0
+a chosen bill overpaid leaves credit,4000000,a,issued,rent,2026-08-05,2026-08-01,3500000,0,no,0,500000
+a chosen bill overpaid leaves credit,4000000,b,issued,rent,2026-10-05,2026-10-01,3500000,0,yes,3500000,500000
+a utility bill and a rent bill share a due date,3200000,a,issued,rent,2026-10-05,2026-10-01,3000000,0,no,2750000,0
+a utility bill and a rent bill share a due date,3200000,b,issued,electricity,2026-10-05,2026-09-01,450000,0,no,450000,0
+largest payment over one bill,1000000000000,a,issued,rent,2026-10-05,2026-10-01,2800000,0,no,2800000,999997200000
