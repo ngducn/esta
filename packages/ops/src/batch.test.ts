@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { applyPlan, planChanges, reduceTypedIds } from './batch';
 import type { Db } from './db';
 import type { LocalContext } from './files';
-import { demoBills, fakeDb, LEASE, OCTOBER, opContext, storedLease } from './test/fake-db';
+import { demoBills, fakeDb, LEASE, OCTOBER, opContext, PROPERTY, storedLease } from './test/fake-db';
 
 describe('reduceTypedIds', () => {
   const digitTail = '5a7ba01a-8719-4c6b-a777-000000000123';
@@ -118,32 +118,38 @@ describe('applyPlan with needs', () => {
 
 describe('previews', () => {
   const activation = { lease_id: LEASE, paid_through: '2026-09-30' };
+  const shown = { ...activation, bills: demoBills };
+  const answers = (bills: readonly unknown[], plan?: unknown) => (request: { table: string; method: string }) => {
+    if (request.table === 'change_batches') return request.method === 'POST' ? [{ id: PLAN_ID }] : [{ id: PLAN_ID, plan }];
+    if (request.table === 'leases') return [storedLease()];
+    if (request.table === 'properties') return [{ id: PROPERTY, nickname: 'Demo Nhà Q1' }];
+    if (request.table === 'rpc/preview_lease_bills') return bills;
+    return request.table === 'rpc/activate_lease' ? [OCTOBER] : [];
+  };
 
-  it("reports an activation's bills beside its change and stores none of them", async () => {
-    const { db, sent } = fakeDb((request) => {
-      if (request.table === 'leases') return [storedLease()];
-      if (request.table === 'rpc/preview_lease_bills') return demoBills;
-      return request.method === 'POST' && request.table === 'change_batches' ? [{ id: PLAN_ID }] : [];
-    });
+  it("reports an activation's bills beside its change and stores them, without their display strings, to compare at OK (#241)", async () => {
+    const { db, sent } = fakeDb(answers(demoBills));
     const result = await planChanges(batchContext(db), { summary: 'Demo', items: [{ op: 'lease.activate', input: activation }] });
-    expect(result).toMatchObject({ ok: true, value: { items: [{ status: 'change', change: activation, preview: { paid_through_display: '30/09/2026', bills: [{ rent_vnd: 9_000_000 }, {}] } }] } });
+    expect(result).toMatchObject({ ok: true, value: { items: [{ status: 'change', change: shown, preview: { paid_through_display: '30/09/2026', bills: [{ rent_vnd: 9_000_000 }, {}] } }] } });
     const stored = sent.find((request) => request.method === 'POST' && request.table === 'change_batches');
-    expect(stored?.body).toMatchObject({ plan: { items: [{ input: activation, change: activation }] } });
-    expect(JSON.stringify(stored?.body), 'no preview in the stored plan').not.toContain('bills');
+    expect(stored?.body).toMatchObject({ plan: { items: [{ input: activation, change: shown }] } });
+    expect(JSON.stringify(stored?.body)).not.toContain('rent_display');
   });
 
-  it('applies an approved activation without previewing it again, so bills that moved since never make it stale', async () => {
-    const plan = { v: 1, items: [{ op: 'lease.activate', id: null, needs: [], input: activation, change: activation }] };
-    const { db, sent } = fakeDb((request) => {
-      if (request.table === 'change_batches') return [{ id: PLAN_ID, plan }];
-      if (request.table === 'leases') return [storedLease()];
-      if (request.table === 'rpc/preview_lease_bills') return [{ ...demoBills[0], rent_vnd: 9_500_000 }];
-      return request.table === 'rpc/activate_lease' ? [OCTOBER] : [];
-    });
+  it('refuses an approved activation as stale when its bills moved since the plan, and writes none (#241)', async () => {
+    const plan = { v: 1, items: [{ op: 'lease.activate', id: null, needs: [], input: activation, change: shown }] };
+    const { db, sent } = fakeDb(answers([{ ...demoBills[0], rent_vnd: 9_500_000 }, demoBills[1]], plan));
+    expect(await applyPlan(batchContext(db), PLAN_ID, db)).toMatchObject({ ok: true, value: { status: 'partial', items: [{ status: 'refused', refusal: { kind: 'stale' } }] } });
+    expect(sent.filter((request) => request.table === 'rpc/activate_lease')).toEqual([]);
+  });
+
+  it('applies an approved activation whose bills are the ones shown, and hands them to activate_lease to check again under its lock', async () => {
+    const plan = { v: 1, items: [{ op: 'lease.activate', id: null, needs: [], input: activation, change: shown }] };
+    const { db, sent } = fakeDb(answers(demoBills, plan));
     expect(await applyPlan(batchContext(db), PLAN_ID, db)).toEqual({
       ok: true,
       value: { planId: PLAN_ID, status: 'applied', items: [{ index: 0, op: 'lease.activate', id: null, status: 'landed', output: { lease_id: LEASE, invoices: [OCTOBER] } }] },
     });
-    expect(sent.filter((request) => request.table === 'rpc/preview_lease_bills')).toEqual([]);
+    expect(sent.find((request) => request.table === 'rpc/activate_lease')?.body).toMatchObject({ p_lease_id: LEASE, p_paid_through: '2026-09-30', p_expected_bills: demoBills });
   });
 });

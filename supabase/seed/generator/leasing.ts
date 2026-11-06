@@ -260,6 +260,10 @@ declare
 begin
   select k.key, k.property, k.unit into v_lease from pg_temp.seed_lease k where k.lease_id = new.lease_id;
   new.id := extensions.uuid_generate_v5(extensions.uuid_ns_url(), '${INVOICE_KEY}' || v_lease.key || ':' || new.period_start);
+  -- A night re-plans a period the lease already bills, and its seed id is the same one, which the primary key would refuse before the exclusion constraint speaks.
+  if exists (select 1 from public.invoices i where i.id = new.id) then
+    return null;
+  end if;
   select string_agg(substr('ABCDEFGHJKMNPQRSTUVWXYZ23456789', floor(pg_temp.seed_draw('invoice-memo:' || v_lease.property || ':' || v_lease.unit || ':' || new.period_start, i) * 31)::integer + 1, 1), '' order by i)
   into new.memo_code from generate_series(1, 8) i;
   return new;
