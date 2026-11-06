@@ -1,4 +1,6 @@
 import { checkNote, type FactSheet, type FilledNote, type NoteViolation } from '@esta/core/guard';
+import type { AnswerRef, SourceRef } from '@esta/core/assistant';
+import type { IsoDate } from '@esta/core/date';
 import type { Result } from '@esta/core/result';
 
 export const FLUSH_MS = 300;
@@ -6,7 +8,7 @@ export const FLUSH_MS = 300;
 // The live probe saw the handle written as a placeholder too, `]({{f8}})` or `]({{f3.handle}})` (P5-12).
 const HANDLE_LINK = /\]\((?:(f\d+)|\{\{(f\d+)(?:\.handle)?\}\})\)/g;
 
-export type Answer = FilledNote & { readonly refs: readonly string[] };
+export type Answer = FilledNote & { readonly refs: readonly AnswerRef[] };
 
 /**
  * Swaps each `](fN)` the model wrote for that record's link, in the template before any value is filled, so a cited
@@ -21,6 +23,19 @@ export function resolveLinks(text: string, sheet: FactSheet): { readonly text: s
     return `](${link})`;
   });
   return { text: resolved, refs: [...refs] };
+}
+
+const CITED_HANDLE = /\{\{(f\d+)\./g;
+
+/** The pages the template cites through a source record's fields, numbered in the order it first cites them. */
+export function sourceRefs(template: string, sheet: FactSheet): SourceRef[] {
+  const sources: SourceRef[] = [];
+  for (const [, handle = ''] of template.matchAll(CITED_HANDLE)) {
+    const record = sheet.get(handle);
+    if (typeof record?.source_url !== 'string' || sources.some(({ url }) => url === record.source_url)) continue;
+    sources.push({ kind: 'source', n: sources.length + 1, url: record.source_url, source_name: String(record.source_name), published_on: typeof record.published_on === 'string' ? (record.published_on as IsoDate) : null });
+  }
+  return sources;
 }
 
 /** A line holding only an ordered list's number, such as `1.`. A cut at its `.` would read as a typed number until the item's text comes. */
@@ -47,10 +62,10 @@ function lastSentenceEnd(template: string): number {
 function guarded(template: string, sheet: FactSheet): Result<Answer, NoteViolation[]> {
   const linked = resolveLinks(template, sheet);
   const checked = checkNote(template, sheet, 'markdown-tables', linked.text);
-  return checked.ok ? { ok: true, value: { ...checked.value, refs: linked.refs } } : checked;
+  return checked.ok ? { ok: true, value: { ...checked.value, refs: [...linked.refs, ...sourceRefs(template, sheet)] } } : checked;
 }
 
-export type AnswerText = { readonly content: string; readonly refs: readonly string[] };
+export type AnswerText = { readonly content: string; readonly refs: readonly AnswerRef[] };
 
 export type AnswerStream = {
   push(delta: string): Promise<void>;

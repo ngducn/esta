@@ -1228,6 +1228,8 @@
       "longQuestion": "The question is too long. Write a shorter one.",
       "sendFailed": "The question was not sent. Check the connection and try again.",
       "answering": "Trợ lý is answering",
+      "searching": "Trợ lý is looking this up on the web",
+      "noSource": "Trợ lý found no official source for this, so it will not answer. Please confirm with the relevant office or a notary.",
       "answerFailed": "Trợ lý could not answer this one. You can ask again.",
       "stalled": "Trợ lý has not finished yet. Reload the page to see the rest.",
       "deferred": "The assistant has answered all the questions it can today. It will answer this one tomorrow.",

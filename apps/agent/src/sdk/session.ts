@@ -9,7 +9,7 @@ import { inputHash, type CanonicalInput, type Canonicalizer } from '../replay/ca
 import { readRecording, recordingPath } from '../replay/store';
 import { estaServer, runTool, type EstaTools } from '../tools/server';
 import { buildSdkEnv, buildSdkOptions } from './options';
-import { decideToolUse, pathPolicyHook, rememberSearchHits, toolCaps, type ToolPolicy } from './path-policy';
+import { decideToolUse, isWebTool, pathPolicyHook, rememberSearchHits, toolCaps, type ToolPolicy } from './path-policy';
 import { fromSdkResult, type SessionResult } from './result';
 
 export type ToolCall = { readonly name: string; readonly input: Record<string, unknown> };
@@ -36,6 +36,9 @@ export type SessionRequest = {
   readonly canon: Canonicalizer;
   readonly caps?: Readonly<Record<string, number>>;
   observe?(call: BuiltInResult): void;
+  readonly searchTerms?: readonly string[];
+  /** A web tool call the policy allowed is about to run. */
+  onWebTool?(): Promise<void>;
   onText?(delta: string): Promise<void>;
   readonly resume?: { readonly sessionId: string | null; readonly afterInputHash: string };
   readonly modelRole?: ModelRole;
@@ -56,8 +59,9 @@ export function canonicalInput({ spec, prompt, canon, resume, modelRole }: Pick<
   };
 }
 
-function toolPolicy({ spec, jobDir, tools, caps }: SessionRequest): ToolPolicy {
+function toolPolicy({ spec, jobDir, tools, caps, searchTerms }: SessionRequest): ToolPolicy {
   return {
+    ...(searchTerms === undefined ? {} : { searchTerms }),
     allowed: new Set([...spec.builtInTools, ...tools.keys()]),
     jobDir,
     ...(caps === undefined ? {} : { caps: toolCaps(caps) }),
@@ -102,7 +106,7 @@ export async function liveSession(request: SessionRequest, mode: Extract<RunMode
       toolFailures.push(error);
       abortController.abort();
     }),
-    preToolUse: pathPolicyHook(policy, (toolName, reason) => console.warn(`[agent] denied ${toolName}: ${reason}`)),
+    preToolUse: pathPolicyHook(policy, (toolName, reason) => console.warn(`[agent] denied ${toolName}: ${reason}`), request.onWebTool),
     postToolUse: observeHook(request, policy),
     abortController,
     ...(keepsTranscript(request) ? { streaming: { resume: request.resume?.sessionId ?? null } } : {}),
@@ -216,6 +220,7 @@ export async function replaySession(request: SessionRequest, replayDir: string):
     const input = JSON.parse(request.canon.restore(JSON.stringify(call.input))) as Record<string, unknown>;
     toolCalls.push({ name: call.name, input });
     const decision = decideToolUse(policy, call.name, input);
+    if (decision.allow && isWebTool(call.name)) await request.onWebTool?.();
     if (!decision.allow) {
       console.warn(`[agent] denied ${call.name}: ${decision.reason}`);
       permissionDenials.push({ tool_name: call.name, tool_use_id: `replay-${index + 1}`, tool_input: input as Json });

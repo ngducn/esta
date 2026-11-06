@@ -16,3 +16,14 @@ export async function householdLabels(db: AgentDb, householdId: string): Promise
   const placeNames = [...places.values()].flatMap((name) => [name, name.replace(PLACE_TYPE, '')]);
   return [...new Set([...properties.values(), ...[...units.values()].map(({ label }) => label), ...parties.values(), ...placeNames])];
 }
+
+/** The names, nicknames and streets of the household's records, which no web search may hold [app rule]; place names are not among them. */
+export async function familySearchTerms(db: AgentDb, householdId: string): Promise<string[]> {
+  const [{ properties, parties }, rows] = await Promise.all([readNameLabels(db, householdId), db.from('properties').select('current_address').eq('household_id', householdId)]);
+  if (rows.error) throw new Error(`Reading the property addresses failed: ${rows.error.message}`);
+  const streets = rows.data.flatMap(({ current_address }) => {
+    const street = (current_address as { street?: unknown } | null)?.street;
+    return typeof street === 'string' ? [street] : [];
+  });
+  return [...new Set([...properties.values(), ...parties.values(), ...streets])];
+}

@@ -4,6 +4,7 @@ import { realpathSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative, sep } from 'node:path';
 import { z } from 'zod';
 import { mcpToolName } from '../tools/server';
+import { searchDenial } from './search-guard';
 
 export type ToolDecision = { readonly allow: true } | { readonly allow: false; readonly reason: string };
 
@@ -15,6 +16,8 @@ export type ToolPolicy = {
   readonly caps?: ReadonlyMap<string, ToolCap>;
   /** The links this run's WebSearch returned, as `fetchKey` folds them: the only pages WebFetch may open, so a page cannot send the model elsewhere (#323). */
   readonly fetchable?: Set<string>;
+  /** The names, nicknames and streets of the household's records, which no WebSearch query may hold. */
+  readonly searchTerms?: readonly string[];
 };
 
 export type ToolCap = { readonly max: number; used: number };
@@ -89,7 +92,7 @@ export function decideToolUse(policy: ToolPolicy, toolName: string, input: Reado
   if (toolName.startsWith(ESTA_TOOL_PREFIX)) return { allow: true };
   const web = WEB_RULES.get(toolName);
   if (web !== undefined) {
-    const broken = web(input) ?? searched(policy, toolName, input);
+    const broken = web(input) ?? searched(policy, toolName, input) ?? (toolName === 'WebSearch' && policy.searchTerms !== undefined ? searchDenial(String(input.query), policy.searchTerms) : null);
     return broken === null ? withinCap(policy, toolName) : { allow: false, reason: broken };
   }
   const field = PATH_FIELDS.get(toolName);
@@ -105,12 +108,17 @@ export function decideToolUse(policy: ToolPolicy, toolName: string, input: Reado
 }
 
 /** `allowedTools` auto-approves before `canUseTool` runs, so the policy runs as a PreToolUse hook (S1 correction 1). */
-export function pathPolicyHook(policy: ToolPolicy, onDeny: (toolName: string, reason: string) => void): HookCallback {
+export const isWebTool = (toolName: string): boolean => WEB_RULES.has(toolName);
+
+export function pathPolicyHook(policy: ToolPolicy, onDeny: (toolName: string, reason: string) => void, onWebTool?: () => Promise<void>): HookCallback {
   return async (input) => {
     if (input.hook_event_name !== 'PreToolUse') return {};
     const toolInput = typeof input.tool_input === 'object' && input.tool_input !== null ? (input.tool_input as Record<string, unknown>) : {};
     const decision = decideToolUse(policy, input.tool_name, toolInput);
-    if (decision.allow) return {};
+    if (decision.allow) {
+      if (isWebTool(input.tool_name)) await onWebTool?.();
+      return {};
+    }
     onDeny(input.tool_name, decision.reason);
     return {
       hookSpecificOutput: {

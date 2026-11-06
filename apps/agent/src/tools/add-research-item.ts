@@ -4,14 +4,12 @@ import type { IsoDate } from '@esta/core/date';
 import { formatDate, type Locale } from '@esta/core/format';
 import { checkNote, type FactSheet, type FilledNote } from '@esta/core/guard';
 import { datesInText, publishedDates } from '@esta/core/parse/page-dates';
-import { keepRule, MIN_QUOTE_WORDS, normalizeUrl, quoteOnPage, type DropReason } from '@esta/core/research';
+import { keepRule, normalizeUrl, type DropReason } from '@esta/core/research';
 import type { AgentDb } from '../supabase';
 import { guardedWriter } from './create-item';
 import { daysAgo } from './recent-items';
 import { ToolRejection } from './server';
-
-/** A page WebFetch read in this run: its text, the link it ended on, which `research_items.source_url` stores, and every normalized link it was reached by, so a redirect's two ends name one article. */
-export type FetchedPage = { readonly text: string; readonly link: string; readonly urls: readonly string[] };
+import { requireQuotes, type FetchedPage } from './web-quotes';
 
 export type ResearchBinding = {
   readonly db: AgentDb;
@@ -49,20 +47,8 @@ function handlesIn(list: readonly string[], known: ReadonlyMap<string, unknown>,
   if (unknown.length > 0) throw new ToolRejection(`${unknown.join(', ')}: not a ${tool} record of this run. Use only the handles ${tool} returned.`);
 }
 
-const QUOTE_REFUSAL = {
-  too_short: `a figure is quoted with the words around it, at least ${MIN_QUOTE_WORDS} words`,
-  not_on_page: 'not on the page WebFetch returned as whole words',
-} as const;
-
 function sourceRecord(draft: ResearchItemDraft, url: URL, page: string, locale: Locale): Record<string, string> {
-  const checked = draft.quotes.map((quote) => ({ quote, found: quoteOnPage(quote, page) }));
-  const refused = checked.flatMap(({ quote, found }) => (found.ok ? [] : [`${JSON.stringify(quote)}: ${QUOTE_REFUSAL[found.reason]}`]));
-  if (refused.length > 0) throw new ToolRejection(`${refused.join('\n')}\nCopy each quote exactly from the page, or leave it out.`);
-  return Object.fromEntries([
-    ['published_display', formatDate(draft.published_on, locale)],
-    ['host_label', url.hostname.replace(/^www\./u, '')],
-    ...checked.flatMap(({ found }, i) => (found.ok ? [[`quote_${i + 1}_label`, found.value]] : [])),
-  ]);
+  return Object.fromEntries([['published_display', formatDate(draft.published_on, locale)], ['host_label', url.hostname.replace(/^www\./u, '')], ...requireQuotes(draft.quotes, page)]);
 }
 
 /** `add_research_item` for research_scan (AGENT.md §5.2). */

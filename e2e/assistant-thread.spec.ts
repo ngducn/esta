@@ -23,6 +23,7 @@ const SEPTEMBER = 'Còn tháng 9 thì sao?';
 const AUGUST = 'Còn tháng 8 thì sao?';
 const OVERDUE_EN = 'Which rooms in Dĩ An are overdue?';
 const ZALO = 'Viết tin nhắn Zalo nhắc khách phòng 5 ở Dĩ An đóng tiền.';
+const HOME_LOAN = 'Lãi suất vay mua nhà bây giờ khoảng bao nhiêu?';
 const BY_YEAR = 'Có nên cho thuê theo năm thay vì theo tháng không?';
 
 const NOTE_LANE = 9;
@@ -213,6 +214,21 @@ test('thread case T1: Mẹ asks for a Zalo reminder to Phòng 5, the draft names
   await page.goto('/assistant');
   expect(await seriousAxeViolations(page)).toEqual([]);
   await shot(page, 'p5-12-zalo-draft-390x844-dark');
+});
+
+test('thread case T7: Mẹ asks for the home loan rate, reads it quoted from the fetched page, and its numbered source chip opens that page', async ({ page }) => {
+  await open(page, 'me.lane2@demo.esta.test', 'light', PHONE);
+  await freshThread(page, 'me', 2);
+  await sendAndTimeFirstSentence(page, HOME_LOAN);
+  await expect(answer(page)).toContainText('Lãi suất cho vay mua nhà từ 7,5% một năm');
+  const chip = answer(page).getByTestId('citation-chip');
+  await expect(chip).toHaveCount(1);
+  await expect(chip).toContainText('tin-demo.example');
+  await expect(chip).toContainText('05/10/2026');
+  await expect(chip).toHaveAttribute('href', 'https://tin-demo.example/lai-suat-vay-mua-nha');
+  await expect(chip).toHaveAttribute('target', '_blank');
+  expect(await seriousAxeViolations(page)).toEqual([]);
+  await shot(page, 'p5-14-source-chip-390x844-light');
 });
 
 test('thread case T2: Ryan asks whether to rent by the year, and the advice holds no number', async ({ page }) => {

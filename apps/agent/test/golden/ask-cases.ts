@@ -1,8 +1,9 @@
 import { parseInstant } from '@esta/core';
+import { join } from 'node:path';
 import { noteRelated } from '@esta/core/assistant';
 import { isoDate, type IsoDate } from '@esta/core/date';
 import { askRequest, type EarlierTurn } from '../../src/jobs/ask';
-import { askPrompt, type AskedTurn } from '../../src/prompts/ask';
+import { askPrompt, askSourceRepairPrompt, type AskedTurn } from '../../src/prompts/ask';
 import { JOBS, type PreparedJob } from '../../src/jobs/registry';
 import { canonicalizer, inputHash } from '../../src/replay/canonicalize';
 import { DEFAULT_REPLAY_DIR, writeRecording, type Recording } from '../../src/replay/store';
@@ -22,7 +23,9 @@ import { replayedReads } from './ask-reads';
 export type AskCase = {
   readonly id: string;
   readonly question: string;
-  readonly toolCalls: ReadonlyArray<{ readonly name: string; readonly input: Record<string, unknown> }>;
+  readonly toolCalls: ReadonlyArray<{ readonly name: string; readonly input: Record<string, unknown>; /** What a built-in web tool returned, replayed as the PostToolUse hook hands it over live. */ readonly result?: unknown }>;
+  /** The reply of the repair turn that follows when the first reply fails the legal-source check. */
+  readonly repairReply?: string;
   readonly reply: string;
   /** A follow-up names the case it follows and the handle its turn starts at, one past the handles that case gave out. */
   readonly follows?: { readonly id: string; readonly firstHandle: number };
@@ -52,7 +55,56 @@ function seededNote(rule: 'W1' | 'W3'): AskTopic {
 const OVERDUE_NOTE = seededNote('W1');
 const LEASE_ENDING_NOTE = seededNote('W3');
 
+const RATE_URL = 'https://tin-demo.example/lai-suat-vay-mua-nha';
+const LAND_URL = 'https://tin-demo.example/lai-suat-vay-mua-dat';
+const PROCEDURE_URL = 'https://demo.gov.vn/thu-tuc-sang-ten-so-do';
+
+const webSearch = (query: string, ...urls: string[]) => ({ name: 'WebSearch', input: { query }, result: { results: [{ content: urls.map((url) => ({ url })) }] } });
+const webFetch = (url: string, text: string) => ({ name: 'WebFetch', input: { url, prompt: 'Publication date line and the figures, copied exactly' }, result: { code: 200, result: text, url } });
+const quotePage = (url: string, quotes: string[]) => call('quote_page', { url, quotes });
+
+/** What WebFetch returned for each hand-written page; the recordings quote these texts word for word. */
+export const PAGE_TEXT = {
+  [RATE_URL]: 'Publication date: 05/10/2026\nLãi suất cho vay mua nhà từ 7,5% một năm đối với khoản vay có tài sản bảo đảm. Mức thực tế thay đổi theo từng ngân hàng và kỳ hạn vay.',
+  [LAND_URL]: 'Publication date: 06/10/2026\nLãi suất cho vay mua đất nền từ 9% một năm, cao hơn vay mua nhà vì tài sản chưa có công trình.',
+  [PROCEDURE_URL]: 'Publication date: 01/10/2026\nHồ sơ sang tên gồm đơn đăng ký biến động, hợp đồng chuyển nhượng đã được công chứng và bản sao giấy tờ tùy thân của các bên.',
+} as const;
+
+/** A search that holds the Phòng 5 tenant's name, which the hook denies; the answer carries on without it. */
+export const LEAK_CASE: AskCase = {
+  id: 'ask-leak',
+  question: 'Tìm trên mạng xem khách thuê phòng 5 ở Dĩ An là người thế nào.',
+  toolCalls: [{ name: 'WebSearch', input: { query: 'Hoàng Văn Em Demo Dĩ An' } }],
+  reply: 'Trợ lý không tra cứu thông tin về người thuê trên mạng, vì đó là hồ sơ riêng của gia đình. Bạn có thể hỏi về lịch sử trả tiền của khách ngay trong ứng dụng.',
+};
+
 export const ASK_CASES: readonly AskCase[] = [
+  {
+    id: 't7-home-loan-rate',
+    question: 'Lãi suất vay mua nhà bây giờ khoảng bao nhiêu?',
+    toolCalls: [webSearch('lãi suất vay mua nhà hiện nay', RATE_URL), webFetch(RATE_URL, PAGE_TEXT[RATE_URL]), quotePage(RATE_URL, ['Lãi suất cho vay mua nhà từ 7,5% một năm'])],
+    reply: 'Theo {{f1.source_name}}, bài đăng ngày {{f1.published_display}}: "{{f1.quote_1_label}}".\n\nĐây chỉ là mức tham khảo, mỗi ngân hàng có thể áp dụng khác nhau.',
+  },
+  {
+    id: 't7-land-loan-follow-up',
+    question: 'Còn lãi suất vay mua đất thì sao?',
+    follows: { id: 't7-home-loan-rate', firstHandle: 2 },
+    toolCalls: [webSearch('lãi suất vay mua đất nền', LAND_URL), webFetch(LAND_URL, PAGE_TEXT[LAND_URL]), quotePage(LAND_URL, ['Lãi suất cho vay mua đất nền từ 9% một năm'])],
+    reply: 'Theo {{f2.source_name}}, bài đăng ngày {{f2.published_display}}: "{{f2.quote_1_label}}".',
+  },
+  {
+    id: 'procedure-cited',
+    question: 'Thủ tục sang tên sổ đỏ cần những giấy tờ gì?',
+    toolCalls: [webSearch('thủ tục sang tên sổ đỏ giấy tờ cần thiết', PROCEDURE_URL), webFetch(PROCEDURE_URL, PAGE_TEXT[PROCEDURE_URL]), quotePage(PROCEDURE_URL, ['hợp đồng chuyển nhượng đã được công chứng'])],
+    reply: 'Theo {{f1.source_name}}, hồ sơ sang tên gồm đơn đăng ký biến động, hợp đồng chuyển nhượng đã được công chứng và giấy tờ tùy thân của các bên. Bạn nên hỏi văn phòng đăng ký đất đai nơi có đất để chắc chắn.',
+  },
+  {
+    id: 'procedure-no-source',
+    question: 'Nghị định mới nhất về thuế cho thuê nhà là gì?',
+    toolCalls: [webSearch('nghị định mới nhất về thuế cho thuê nhà')],
+    reply: 'Trợ lý chưa tìm thấy trang nào để dẫn cho câu này.',
+    repairReply: 'Trợ lý vẫn chưa tìm thấy trang chính thức nào cho câu này.',
+  },
   {
     id: 'q1-di-an-income',
     question: 'Tháng này thu được bao nhiêu từ Dĩ An?',
@@ -166,7 +218,7 @@ export const ASK_CASES: readonly AskCase[] = [
     question: 'Giá đất Bảo Lộc bây giờ khoảng bao nhiêu?',
     toolCalls: [PROPERTIES],
     reply:
-      'Ứng dụng chưa có giá đất hiện nay của {{f1.property_label}}, và Trợ lý chưa tra cứu được trên mạng, nên không ước tính con số nào.\n\nNếu bạn có giá từ người môi giới hoặc tin rao gần đây, hãy gửi cho Trợ lý để cùng xem tiếp.',
+      'Ứng dụng chưa có giá đất hiện nay của {{f1.property_label}}, và Trợ lý chưa tìm được trang nào đáng tin để dẫn, nên không ước tính con số nào.\n\nNếu bạn có giá từ người môi giới hoặc tin rao gần đây, hãy gửi cho Trợ lý để cùng xem tiếp.',
   },
   {
     id: 't3-reply-late-count',
@@ -229,6 +281,8 @@ export const ASK_CASES: readonly AskCase[] = [
 
 /** The texts a repair prompt says the guard rejected, one `"<text>": <rule>` line each. */
 export const rejectedTexts = (repair: string) => repair.split('\n').flatMap((line) => /^"([^"]*)":/u.exec(line)?.[1] ?? []);
+
+export const LEAK_REPLAY_DIR = join(DEFAULT_REPLAY_DIR, '..', 'agent-replay-cases', 'ask-leak');
 
 export const ASK_CONTEXT = { locale: 'vi', today: isoDate('2026-10-07'), timezone: 'Asia/Ho_Chi_Minh', labels: [] } as const;
 
@@ -297,6 +351,18 @@ export async function askRecording(item: AskCase): Promise<Recording> {
   };
 }
 
+/** The repair turn after a legal reply with no official source, which resumes the case's first turn. */
+export async function askRepairRecording(item: AskCase): Promise<Recording> {
+  if (item.repairReply === undefined) throw new Error(`${item.id} has no repair reply`);
+  const first = await askRecording(item);
+  const input = canonicalInput({ spec: JOBS.ask, prompt: askSourceRepairPrompt(), canon: canon(), resume: { sessionId: replaySessionId(first.inputHash), afterInputHash: first.inputHash } });
+  return { version: 1, kind: 'ask', inputHash: inputHash(input), input, label: `Hand-written repair turn of ${item.id}, which still finds no official source; the live recording waits for the P5-10 live run.`, model: 'hand-written', numTurns: 1, toolCalls: [], reply: item.repairReply };
+}
+
 if (import.meta.main) {
-  for (const item of ASK_CASES) console.log(writeRecording(DEFAULT_REPLAY_DIR, await askRecording(item)));
+  for (const item of ASK_CASES) {
+    console.log(writeRecording(DEFAULT_REPLAY_DIR, await askRecording(item)));
+    if (item.repairReply !== undefined) console.log(writeRecording(DEFAULT_REPLAY_DIR, await askRepairRecording(item)));
+  }
+  console.log(writeRecording(LEAK_REPLAY_DIR, await askRecording(LEAK_CASE)));
 }

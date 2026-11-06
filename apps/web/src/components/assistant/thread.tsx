@@ -1,11 +1,11 @@
 import { businessDate, type Instant, type IsoDate } from '@esta/core';
 import { wallTime } from '@esta/core/agent';
 import { isOpenNote, type Suggestion } from '@esta/core/assistant';
-import { formatDayMonth } from '@esta/core/format';
+import { formatDayMonth, type Locale } from '@esta/core/format';
 import { visibleText } from '@esta/core/guard';
 import { PROPOSAL_TYPES } from '@esta/core/proposals';
 import { MAX_QUESTION_LENGTH } from '@esta/ops';
-import { getTranslations } from 'next-intl/server';
+import { getLocale, getTranslations } from 'next-intl/server';
 import { MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import { FocusComposerButton } from '@/components/assistant/focus-composer-button';
@@ -19,7 +19,7 @@ import type { Thread, ThreadEntry } from '@/server/agent/thread';
 import type { TopicChoice } from '@/server/agent/topic';
 import type { ReminderLabels } from '@/server/reminders/board';
 import { AnswerStream } from './answer-stream';
-import { AnswerView } from './answer-view';
+import { AnswerView, linkRefs } from './answer-view';
 import { AssistantNote } from './assistant-note';
 import { CopyAnswer } from './copy-answer';
 import { AssistantMonogram } from './monogram';
@@ -146,14 +146,14 @@ function Question({ message, time, t, ask }: { message: ConversationMessage; tim
   );
 }
 
-function Answer({ message, time, t, ask }: { message: ConversationMessage; time: string; t: Translate; ask: AskTranslate }) {
-  const labels = { streaming: ask('answering'), deferred: ask('deferred'), error: ask('answerFailed'), stalled: ask('stalled') };
+function Answer({ message, time, t, ask, locale }: { message: ConversationMessage; time: string; t: Translate; ask: AskTranslate; locale: Locale }) {
+  const labels = { streaming: ask('answering'), deferred: ask('deferred'), error: ask('answerFailed'), stalled: ask('stalled'), searching: ask('searching'), citation: t('citationLabel', { index: '{index}', source: '{source}' }), dated: t('market.source', { name: '{name}', date: '{date}' }), locale };
   const shownAnswer =
     message.status === 'streaming' ? (
-      <AnswerStream id={message.id} conversationId={message.conversationId} initial={{ content: message.content, status: message.status, refs: message.refs }} labels={labels} />
+      <AnswerStream id={message.id} conversationId={message.conversationId} initial={{ content: message.content, status: message.status, refs: message.refs, activity: message.activity ?? null }} labels={labels} />
     ) : (
       <AnswerView shown={message} labels={labels}>
-        <SafeMarkdown refs={message.refs} className="max-w-prose">
+        <SafeMarkdown refs={linkRefs(message.refs)} className="max-w-prose">
           {message.content}
         </SafeMarkdown>
       </AnswerView>
@@ -209,12 +209,12 @@ export async function ThreadView({
   topic: TopicChoice | null;
   suggestions: readonly Suggestion[];
 }) {
-  const [t, ask] = await Promise.all([getTranslations('assistant'), getTranslations('assistant.ask')]);
+  const [t, ask, locale] = await Promise.all([getTranslations('assistant'), getTranslations('assistant.ask'), getLocale() as Promise<Locale>]);
   const opened = note !== null && thread.entries.some((entry) => entry.kind === 'note' && entry.note.id === note);
   const render = (entry: ThreadEntry) => {
     if (entry.kind !== 'note') {
       const time = entryTime(entry.message.createdAt, today, timezone);
-      return entry.kind === 'question' ? <Question message={entry.message} time={time} t={t} ask={ask} /> : <Answer message={entry.message} time={time} t={t} ask={ask} />;
+      return entry.kind === 'question' ? <Question message={entry.message} time={time} t={t} ask={ask} /> : <Answer message={entry.message} time={time} t={t} ask={ask} locale={locale} />;
     }
     const time = entryTime(entry.note.createdAt, today, timezone);
     if (entry.note.status === 'dismissed' || entry.note.status === 'done') return <SettledNote note={entry.note} time={time} canRestore={canDecide} t={t} />;

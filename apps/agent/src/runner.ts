@@ -152,6 +152,8 @@ async function runSession(worker: Worker, job: AgentJob, { waiting, failed }: In
       canon: canonicalizer({ householdName: await householdName(worker.db, job.household_id), jobDir: work.dir }),
       ...(prepared.caps === undefined ? {} : { caps: prepared.caps }),
       ...(prepared.observe === undefined ? {} : { observe: prepared.observe }),
+      ...(prepared.searchTerms === undefined ? {} : { searchTerms: prepared.searchTerms }),
+      ...(prepared.onWebTool === undefined ? {} : { onWebTool: prepared.onWebTool }),
       ...(prepared.onText === undefined ? {} : { onText: prepared.onText }),
       ...(prepared.modelRole === undefined ? {} : { modelRole: prepared.modelRole }),
     };

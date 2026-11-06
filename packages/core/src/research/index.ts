@@ -4,3 +4,4 @@ export { fetchKey, normalizeUrl, sourceLink } from './normalize-url';
 export { deriveResearchTopics, type LegacyUnit, type ResearchTopic, type TopicProperty } from './topics';
 export { MIN_QUOTE_WORDS, quoteOnPage } from './quote';
 export { researchTouches, type TouchedBy } from './touches';
+export { isOfficialHost, OFFICIAL_SOURCES, officialSourcesText, type OfficialSource } from './official-sources';

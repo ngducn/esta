@@ -8,12 +8,14 @@ import { describe, expect, it } from 'vitest';
 import { JOBS } from '../../src/jobs/registry';
 import { canonicalizer } from '../../src/replay/canonicalize';
 import { DEFAULT_REPLAY_DIR, readRecording } from '../../src/replay/store';
-import { replaySession } from '../../src/sdk/session';
+import { askSourceRepairPrompt } from '../../src/prompts/ask';
+import { inputHash } from '../../src/replay/canonicalize';
+import { canonicalInput, replaySession } from '../../src/sdk/session';
 import { fakeDb } from '../../src/test/fake-db';
-import { answerRow, askRpcs, askTables, CONVERSATION, withDraftAndArchivedLeases } from '../ask-seed';
+import { answerRow, askRpcs, askTables, CONVERSATION, withDraftAndArchivedLeases, withSeedNames } from '../ask-seed';
 import { HOUSEHOLD, seedRecords } from '../full-seed';
 import { tempJobDir } from '../job-dir';
-import { askCase as findCase, askRecording, ASK_CASES, caseInput, caseRequest } from './ask-cases';
+import { askCase as findCase, askRecording, askRepairRecording, ASK_CASES, caseInput, caseRequest, LEAK_CASE, LEAK_REPLAY_DIR, PAGE_TEXT } from './ask-cases';
 import { ASK_READS_FIXTURE, replayedReads } from './ask-reads';
 
 const truth = JSON.parse(readFileSync(join(import.meta.dirname, 'ask-ground-truth.json'), 'utf8')) as Array<{ question: string; figure: string; value: string }>;
@@ -54,6 +56,9 @@ async function askAfterItsChain(id: string, reads = replayedReads()): Promise<As
       tools: prepared.tools,
       canon: canonicalizer({ householdName: 'Gia đình Demo', jobDir }),
       ...(prepared.onText === undefined ? {} : { onText: prepared.onText }),
+      ...(prepared.caps === undefined ? {} : { caps: prepared.caps }),
+      ...(prepared.observe === undefined ? {} : { observe: prepared.observe }),
+      ...(prepared.searchTerms === undefined ? {} : { searchTerms: prepared.searchTerms }),
       ...(prepared.resume === undefined || rebuilt !== null ? {} : { resume: prepared.resume }),
       ...(prepared.modelRole === undefined ? {} : { modelRole: prepared.modelRole }),
     },
@@ -176,10 +181,10 @@ describe('ask in replay on the full seed at 2026-10-07 07:00 (AGENT.md §7.4, AG
     expect(missing).toEqual([]);
   });
 
-  it('thread case T8 says the app has no land price and that Trợ lý cannot look it up on the web yet', async () => {
+  it('thread case T8 says the app has no land price and that Trợ lý found no page to cite', async () => {
     const { answer } = await askAfterItsChain('t8-bao-loc-land-price');
     expect(answer.content_md).toContain('Ứng dụng chưa có giá đất hiện nay của Đất Bảo Lộc');
-    expect(answer.content_md).toContain('chưa tra cứu được trên mạng');
+    expect(answer.content_md).toContain('chưa tìm được trang nào đáng tin để dẫn');
   });
 
   it('a new segment\'s first question starts from her previous segment\'s answers, without their links, and reads August from the ledger', async () => {
@@ -214,5 +219,64 @@ describe('ask in replay on the full seed at 2026-10-07 07:00 (AGENT.md §7.4, AG
     expect(answer.content_md).toContain('Ứng dụng chưa có giá thị trường hiện nay của Đất Bảo Lộc');
     expect(result.cited.map(({ placeholder }) => placeholder)).toEqual(['{{f1.property_label}}']);
     expect(answer.content_md).not.toMatch(/\p{N}/u);
+  });
+
+  it.each(ASK_CASES.filter(({ repairReply }) => repairReply !== undefined))('$id has its committed hand-written repair recording', async (askCase) => {
+    expect(readRecording(DEFAULT_REPLAY_DIR, (await askRepairRecording(askCase)).input)).toEqual(await askRepairRecording(askCase));
+  });
+
+  it('thread case T7 quotes the rate word for word from the recorded page, with a source chip that resolves to it', async () => {
+    const { answer, repair, result, run } = await askAfterItsChain('t7-home-loan-rate');
+    expect(repair).toBeNull();
+    expect(answer.status).toBe('done');
+    expect(run.toolCalls.map(({ name }) => name.replace(/^mcp__esta__/, ''))).toEqual(['WebSearch', 'WebFetch', 'quote_page']);
+    const quotes = result.cited.filter(({ placeholder }) => /quote_\d+_label/.test(placeholder)).map(({ value }) => value);
+    expect(quotes).toEqual(['Lãi suất cho vay mua nhà từ 7,5% một năm']);
+    for (const quote of quotes) expect(PAGE_TEXT['https://tin-demo.example/lai-suat-vay-mua-nha']).toContain(quote);
+    expect(answer.content_md.replace(quotes[0] ?? '', '').replace('05/10/2026', '')).not.toMatch(/\p{N}/u);
+    expect(answer.refs).toEqual([{ kind: 'source', n: 1, url: 'https://tin-demo.example/lai-suat-vay-mua-nha', source_name: 'tin-demo.example', published_on: '2026-10-05' }]);
+  });
+
+  it('the follow-up fetches its own page again, and its chips name only that page', async () => {
+    const { answer, run } = await askAfterItsChain('t7-land-loan-follow-up');
+    expect(run.toolCalls.map(({ name }) => name.replace(/^mcp__esta__/, ''))).toEqual(['WebSearch', 'WebFetch', 'quote_page']);
+    expect(answer.refs).toEqual([{ kind: 'source', n: 1, url: 'https://tin-demo.example/lai-suat-vay-mua-dat', source_name: 'tin-demo.example', published_on: '2026-10-06' }]);
+  });
+
+  it('a procedure question cites an official page and holds no number', async () => {
+    const { answer, repair } = await askAfterItsChain('procedure-cited');
+    expect(repair).toBeNull();
+    expect(answer.refs).toEqual([expect.objectContaining({ kind: 'source', url: 'https://demo.gov.vn/thu-tuc-sang-ten-so-do' })]);
+    expect(answer.content_md).not.toMatch(/\p{N}/u);
+  });
+
+  it('a procedure question with no official page is repaired once, then answers the no-source sentence and ends done', async () => {
+    const askCase = findCase('procedure-no-source');
+    const tables = askTables(askCase.question);
+    const prepared = await caseRequest(askCase, { db: fakeDb(tables, [], {}, {}, askRpcs(tables)), householdId: HOUSEHOLD, reads: replayedReads() });
+    const request = { spec: JOBS.ask, prompt: prepared.prompt, jobDir, configDir: jobDir, tools: prepared.tools, canon: canonicalizer({ householdName: 'Gia đình Demo', jobDir }), ...(prepared.onText === undefined ? {} : { onText: prepared.onText }), ...(prepared.caps === undefined ? {} : { caps: prepared.caps }), ...(prepared.observe === undefined ? {} : { observe: prepared.observe }) };
+    const first = await replaySession(request, DEFAULT_REPLAY_DIR);
+    const repair = await prepared.nextTurn?.();
+    expect(repair).toBe(askSourceRepairPrompt());
+    const second = await replaySession({ ...request, prompt: repair ?? '', resume: { sessionId: first.result.sessionId, afterInputHash: inputHash(canonicalInput(request)) } }, DEFAULT_REPLAY_DIR);
+    expect(await prepared.nextTurn?.()).toBeNull();
+    await prepared.finish({ reply: second.result.text, model: second.model, sessionId: second.result.sessionId, turnHash: 'b'.repeat(64) });
+    const answer = answerRow(tables);
+    expect(answer.status).toBe('done');
+    expect(answer.content_md).toContain('chưa tìm được nguồn chính thức');
+    expect(answer.refs).toEqual([]);
+  });
+
+  it('the leak case denies a search holding the tenant\'s name, and no tool input that ran or the answer holds it', async () => {
+    const tables = withSeedNames(askTables(LEAK_CASE.question));
+    const prepared = await caseRequest(LEAK_CASE, { db: fakeDb(tables, [], {}, {}, askRpcs(tables)), householdId: HOUSEHOLD, reads: replayedReads() });
+    const run = await replaySession({ spec: JOBS.ask, prompt: prepared.prompt, jobDir, configDir: jobDir, tools: prepared.tools, canon: canonicalizer({ householdName: 'Gia đình Demo', jobDir }), ...(prepared.onText === undefined ? {} : { onText: prepared.onText }), ...(prepared.caps === undefined ? {} : { caps: prepared.caps }), ...(prepared.searchTerms === undefined ? {} : { searchTerms: prepared.searchTerms }) }, LEAK_REPLAY_DIR);
+    await prepared.nextTurn?.();
+    await prepared.finish({ reply: run.result.text, model: run.model, sessionId: run.result.sessionId, turnHash: 'c'.repeat(64) });
+    expect(run.result.permissionDenials.map(({ tool_name }) => tool_name)).toEqual(['WebSearch']);
+    const ran = run.toolCalls.filter((call) => !run.result.permissionDenials.some((denied) => denied.tool_input === call.input));
+    expect(JSON.stringify(ran)).not.toContain('Hoàng Văn Em');
+    expect(answerRow(tables).content_md).not.toContain('Hoàng Văn Em');
+    expect(answerRow(tables).status).toBe('done');
   });
 });

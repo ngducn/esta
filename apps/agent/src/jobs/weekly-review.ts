@@ -14,9 +14,9 @@ import { householdLocale } from '../tools/household-info';
 import { readTools } from '../tools/read-tools';
 import { recentItemsTool } from '../tools/recent-items';
 import { estaTool, oneAtATime, ToolRejection } from '../tools/server';
+import { fetchedPage } from '../tools/web-quotes';
 import { resolveLinks } from './askStream';
 import type { AgentJob, JobContext, PreparedJob } from './registry';
-import { fetchedPage } from './research-scan';
 
 const CAPS: ReviewCaps = { WebSearch: 6, WebFetch: 4 };
 

@@ -41,6 +41,8 @@ export type PreparedJob = {
   finish(run: FinishedRun): Promise<Json>;
   readonly caps?: Readonly<Record<string, number>>;
   observe?(call: BuiltInResult): void;
+  readonly searchTerms?: readonly string[];
+  onWebTool?(): Promise<void>;
   onText?(delta: string): Promise<void>;
   nextTurn?(): Promise<string | null>;
   /** The earlier turn this job continues, as a follow-up question does (AGENT.md §8). */
@@ -160,10 +162,10 @@ export const JOBS = {
   },
   ask: {
     kind: 'ask',
-    builtInTools: [],
-    mcpTools: ['list_properties', 'portfolio_overview', 'get_property', 'property_metrics', 'list_leases', 'collections', 'ledger', 'tax_position', 'payment_behavior', 'create_proposal'],
-    maxTurns: 15,
-    timeoutMs: 2 * 60_000,
+    builtInTools: ['WebSearch', 'WebFetch'],
+    mcpTools: ['list_properties', 'portfolio_overview', 'get_property', 'property_metrics', 'list_leases', 'collections', 'ledger', 'tax_position', 'payment_behavior', 'create_proposal', 'quote_page'],
+    maxTurns: 20,
+    timeoutMs: 3 * 60_000,
     modelRole: 'routine',
     workDir: 'conversation',
     handler: { prepare: prepareAsk, onFailed: failAsk },

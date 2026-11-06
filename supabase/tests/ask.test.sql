@@ -45,7 +45,7 @@ select throws_ok(
   format($$ insert into public.messages (household_id, conversation_id, role, status) values (%L, '00000000-0000-4000-8000-00000000c0a1', 'user', 'streaming') $$, :'a'),
   '23514', null, 'a question is never saved blank or streaming');
 select isnt_empty($$ select 1 from public.audit_log where table_name = 'messages' $$, 'every answer write is audited');
-select is(private.agent_job_timeout('ask'), interval '4 minutes', 'an ask job is reclaimed only after its answer and its repair turn could both have run (AGENT.md §3)');
+select is(private.agent_job_timeout('ask'), interval '6 minutes', 'an ask job is reclaimed only after its answer and its repair turn could both have run (AGENT.md §3)');
 
 select tests.act_as('viewer.a@test.esta.test');
 select throws_ok(
