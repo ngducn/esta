@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 const text = z.string().trim().min(1).optional();
 
-const envSchema = z.object({
+const objectSchema = z.object({
   SUPABASE_URL: z.url(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'SUPABASE_SERVICE_ROLE_KEY is required by the worker'),
   ESTA_AGENT_MODE: z.enum(['live', 'replay']).default('live'),
@@ -26,6 +26,16 @@ const envSchema = z.object({
   ESTA_TIMEZONE: z.string().default('Asia/Ho_Chi_Minh'),
   /** `off` leaves the daily jobs unqueued, for e2e workers that must not race a spec's own job rows. */
   ESTA_AGENT_SCHEDULE: z.enum(['on', 'off']).default('on'),
+});
+
+const PRODUCTION_MAIL = ['SMTP_URL', 'ESTA_EMAIL_FROM', 'ESTA_APP_URL'] as const;
+
+/** Without these a production worker starts, logs "no SMTP_URL" and sends no notice to anyone, so it refuses to start instead. */
+export const envSchema = objectSchema.superRefine((env, context) => {
+  if (env.ESTA_ENV !== 'production' || env.ESTA_AGENT_MODE !== 'live') return;
+  for (const name of PRODUCTION_MAIL) {
+    if (env[name] === undefined) context.addIssue({ code: 'custom', path: [name], message: `${name} is required by a live production worker: without it no notice email is sent` });
+  }
 });
 
 export type AgentEnv = z.infer<typeof envSchema>;

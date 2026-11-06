@@ -13,4 +13,4 @@ async function endExpiredLeases(client: CronClient, clock: Clock): Promise<Lease
   return { ok: true, as_of: asOf, ended: data };
 }
 
-export const leaseStatusCron = cronHandler(endExpiredLeases);
+export const leaseStatusCron = cronHandler('lease_status', endExpiredLeases);

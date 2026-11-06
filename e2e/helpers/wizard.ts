@@ -99,6 +99,12 @@ export async function serviceUpsert(page: Page, table: string, row: Record<strin
   expect(response.ok(), await response.text()).toBe(true);
 }
 
+/** A plain insert, for a table the service role may not update, so the merge in `serviceUpsert` is refused. */
+export async function serviceInsert(page: Page, table: string, row: Record<string, unknown> | readonly Record<string, unknown>[]) {
+  const response = await page.request.post(`${rest}/${table}`, { headers: { ...service, 'content-type': 'application/json' }, data: row });
+  expect(response.ok(), await response.text()).toBe(true);
+}
+
 type AxeScope = { include?: string[]; exclude?: string[] };
 
 async function seriousAxeRun(page: Page, scope: AxeScope): Promise<string[]> {

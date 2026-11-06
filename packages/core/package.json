@@ -31,6 +31,7 @@
     "./email": "./src/email/notice-email.ts",
     "./export": "./src/export/index.ts",
     "./notify": "./src/notify/recipients.ts",
+    "./ops": "./src/ops/cron-health.ts",
     "./format": "./src/format/index.ts",
     "./guard": "./src/guard/index.ts",
     "./guard/fixtures/open-prose": "./src/guard/fixtures/open-prose.ts",
