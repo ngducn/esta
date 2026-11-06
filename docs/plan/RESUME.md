@@ -18,20 +18,19 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 - The redesign is planned in `docs/plan/redesign-2026-11.md` (b2def8a7): six slices, RD-1 to RD-6, with its defaults listed under "Decisions taken as defaults".
 - #365's fix round 1 had never pushed. The previous owner stopped after merging main locally (840b881e in `/tmp/owner-data-trust-a/wt`). A fresh owner took it over.
 
-## Open items (state at 10:47 2026-11-06 +07)
+## Open items (state at 11:25 2026-11-06 +07)
 
-- **Ryan 2026-11-06:** "merge them and finish the project"; "when done have a deploy plan for me"; "can we paralellize? push it through the last bit"; "can you do a thermo review and audit and rate the codebase in infrastructure, code quality and overall quality". P6-07 cloud steps and the Mom test are his.
-- **Merged today:** #415, #416, #421, #424, #419, #422 (6adc837b), #427 P6-06 runbook (562c1938, Ryan: "push it through"), #430 P5-09 email notice (2dc9a4ee, low #435).
-- **Deploy options page:** https://claude.ai/artifact/LPwsLJvYWMRqa2xtjDT3DW.
-- **#429 P5-14 web quotes:** fix round 1 running (briefs/p5-14-ff1.md, slot 8, wt /tmp/owner-p5-14/wt). It pushed 3cc4e186 with e2e documents-extract rule 5 red (DOC-5 denied Read); owner told to redact only WebSearch denials. Then a scoped reader, merge.
-- **#432 P5-15a calc core:** fix round 1 running (briefs/p5-15a-ff1.md, wt /tmp/owner-p5-15a/wt; audit /tmp/review-432/audit.md B1-B6). Then reader, merge.
-- **#433 P6-07a lane-otp:** fix round 1 running (briefs/p6-07a-ff1.md, slot 14 wt /tmp/owner-p6-07a/wt). Then reader, merge.
-- **P5-10a north-star 7/9 + live-run harness:** owner running (briefs/p5-10a.md, slot 3); told #430 merged.
-- **Codebase review for Ryan:** Opus thermo code review (briefs/codebase-thermo.md -> /tmp/review-codebase/code-quality.md) and Opus infra audit (briefs/codebase-infra.md -> /tmp/review-codebase/infrastructure.md) running; root publishes one rated report as an artifact.
-- **Then:** P5-15b wiring (calculate tool, Cách tính, T5/T6 recordings, re-key) after #429 and #432; P5-10b live run last (live calls on Ryan's subscription; check the week).
-- **Rulings today (Ryan may overrule):** preview gets its own Supabase project; restore drill local, cloud restore #428; ESTA_E2E_SERVER=build replaces ESTA_E2E_BUILD; denied searches never store input; search-guard terms (person names 2+ tokens any order, streets with or without type word, labels except type+place, no orgs); negative half rounding uses the core helper else half away from zero.
+- **Ryan 2026-11-06:** "merge them and finish the project"; "when done have a deploy plan for me"; "can we paralellize? push it through the last bit"; "can you do a thermo review and audit and rate the codebase in infrastructure, code quality and overall quality". P6-07 cloud steps, the Mom test, turning on Dependabot alerts and #428 are his.
+- **Merged today:** #415, #416, #421, #424, #419, #422, #427 (562c1938), #430 (2dc9a4ee), #433 P6-07a lane-otp (aad968d7), #432 P5-15a calc core (81babe0d, low #436), #429 P5-14 web quotes (30e653c5, low #437).
+- **Published:** deploy options https://claude.ai/artifact/LPwsLJvYWMRqa2xtjDT3DW; rated codebase review https://claude.ai/artifact/4V3kWhP76ha26WqyMGzHso (overall 7, code 7, infra 6.5; reports in /tmp/review-codebase/).
+- **#438 security bump** (next 16.4.2, zod 4.6.7, overrides for body-parser, fast-uri, fflate; `pnpm audit --prod --audit-level high` in CI; .github/dependabot.yml) at 9be12192, ci green, audit clean. Sonnet reviewer running (briefs/pr438-review.md, slot 14), standard tier by root deviation. Next: on CLEAN merge with `--match-head-commit 9be12192fb10ba428acee63b846b1e1a108368c8`, comment a plain summary, tell Ryan Dependabot alerts are his click.
+- **#434 P5-10a** north-star steps 7 and 9 in replay plus `pnpm agent:live-run` at 27f92be6, ci green, northstar 9/9 on the production build. Sonnet reviewer running (briefs/pr434-review.md, slot 7), standard tier by root deviation (no product code). Next: on CLEAN merge.
+- **P5-15b what-if wiring:** owner running (briefs/p5-15b.md, slot 8, wt /tmp/owner-p5-15b/wt). Then rigorous review (Opus audit plus lane), one fix round, reader, merge. It re-keys the step 9 ask recording again; expected.
+- **P5-10b live run, last:** after #434 and P5-15b. Live calls on Ryan's subscription (check the week first): `pnpm agent:live-run` live, `pnpm agent:guard-probe`, replace hand-written northstar recordings with live ones, the #430 brief-notice Inbucket check, T5/T6/T7 rows, docs/plan/trail/phase-5-live-run.md, STATUS.md and AGENT.md edits.
+- **Rulings today (Ryan may overrule):** preview gets its own Supabase project; restore drill local, cloud restore #428; ESTA_E2E_SERVER=build replaces ESTA_E2E_BUILD; denied WebSearch never stores its input; search-guard terms (person names 2+ tokens any order, streets with or without type word, labels except type+place and one-word, no orgs, NFKC then diacritic fold); a negative half rounds away from zero (`divRoundHalfAway`); "ngày 7 tháng 10 năm 2026" is one date.
 - **Not ours:** pid 56207 is Ryan's slot 5 worker in /private/tmp/ryan-test; leave it.
-- **Lows open from today:** #420, #423, #425, #426, #431, #435.
+- **Lows open from today:** #420, #423, #425, #426, #431, #435, #436, #437.
+- **Go-live list (infra audit, Ryan's):** main protection, release order (db push then promote), worker in its own clone, cron failure visibility, SMTP required in production, offsite backup, #428.
 - **Tripwire set** 2026-11-05 22:57; clear with `rm /tmp/ci-local/one-at-a-time` when the flake is understood.
 
 ## Waiting for Ryan (defaults apply)
@@ -61,14 +60,7 @@ Ruled 2026-11-02: Thu tiền "Đã thu" counts payments toward this month's rent
 
 ## Budget
 
-Week at 77% at 10:47 on 2026-11-06, resets 2026-11-07 11:00 +07. Guard for "finish the project": stop spawns at 90%, pause owners at 95%.
-
-Week at 71% on 2026-11-06 04:20 +07 (65% at 22:30 the night before), resets 2026-11-07 11:00 +07. Tonight cost about 6% for 13 merges. This run was paused from 2026-11-02, when the week stood near 18%, so most of that is other work. Ryan said "ok im back, lets continue" and was told the figure.
-
-Week at 18% at 02:50 on 2026-11-02 (17% at 00:57) (9% at 23:25 the night before). The root pauses new spawns at 30% of the week and tells Ryan; running agents finish.
-
-
-No cap stated for 2026-11-01; the last explicit one was 50% of a 5-hour window, so spawning stops at 30% and owners pause at 38%. Read the plan limits with the session usage tool, which matches /usage; `usage-pct.sh` under-reads. At 23:25 on 2026-11-01 the week stood at 9%. On a 429, resume the owner with SendMessage after the reset.
+Week at 78% at 11:20 on 2026-11-06, resets 2026-11-07 11:00 +07. Guard for "finish the project": stop spawns at 90%, pause owners at 95%. Read the plan limits with the session usage tool, which matches /usage; `usage-pct.sh` under-reads. On a 429, resume the owner with SendMessage after the reset.
 
 ## Gotchas
 
