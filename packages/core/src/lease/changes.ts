@@ -33,3 +33,10 @@ export function amendmentStarts(
   const taken = new Set(amendments.map((amendment) => amendment.effectivePeriodStart));
   return periods.filter((period) => period.start > floor && !taken.has(period.start)).map((period) => period.start);
 }
+
+/** The end of the latest bill that holds days: issued or void, because a voided bill keeps its days and is never billed again. */
+export function billedThrough(invoices: readonly { status: string; periodEnd: IsoDate }[]): IsoDate | null {
+  return invoices
+    .filter((invoice) => invoice.status === 'issued' || invoice.status === 'void')
+    .reduce<IsoDate | null>((latest, invoice) => (latest === null || invoice.periodEnd > latest ? invoice.periodEnd : latest), null);
+}
