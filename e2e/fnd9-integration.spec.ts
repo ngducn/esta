@@ -1,9 +1,10 @@
-import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 import { parseSlot, slotPorts } from '../scripts/slot.ts';
 import { slotEnv } from '../scripts/slot-env.ts';
 import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/agent-worker';
+import { globalClock, setClock } from './helpers/test-clock';
 import { signIn } from './helpers/inbucket';
 import { accessToken } from './helpers/session';
 import { seriousAxeViolations } from './helpers/wizard';
@@ -33,10 +34,6 @@ function listeningPid(): string {
   return execFileSync('lsof', ['-nP', '-t', `-iTCP:${webPort}`, '-sTCP:LISTEN'], { encoding: 'utf8' }).trim();
 }
 
-async function setClock(request: APIRequestContext, frozenNow: string) {
-  expect((await request.post('/api/test/clock', { headers: cron, data: { frozen_now: frozenNow } })).status()).toBe(200);
-}
-
 function expectNoRestart() {
   expect(listeningPid(), 'the web server kept its pid').toBe(webPid);
   expect(worker.running(), 'the worker is still running').toBe(true);
@@ -55,7 +52,7 @@ const dateLine = (page: Page) => page.getByTestId('date-line');
 const fitsWidth = (page: Page) => page.locator('html').evaluate((html) => html.scrollWidth <= html.clientWidth);
 
 test.beforeAll(async ({ request }) => {
-  await setClock(request, OCT_7);
+  await setClock(request, globalClock, OCT_7);
   webPid = listeningPid();
   expect(webPid, 'one process listens on the web port').toMatch(/^\d+$/);
   worker = await startAgentWorker();
@@ -63,18 +60,18 @@ test.beforeAll(async ({ request }) => {
 });
 
 test.beforeEach(async ({ request }) => {
-  await setClock(request, OCT_7);
+  await setClock(request, globalClock, OCT_7);
 });
 
 test.afterAll(async ({ request }) => {
   await stopAndForget(worker);
-  await request.delete('/api/test/clock', { headers: cron });
+  await setClock(request, globalClock, null);
 });
 
 // Runs first, so on a fresh seed the 08/10 heartbeat it waits for is the worker's next beat, not one from an earlier rule.
 test('rule 4: after the advance the worker reports online at 09:00 on its next heartbeat', async ({ page, request }) => {
   test.setTimeout(120_000);
-  await setClock(request, OCT_8);
+  await setClock(request, globalClock, OCT_8);
   await open(page, 'me.lane4@demo.esta.test', '/assistant', { viewport: [1440, 900], theme: 'light' });
   await expect(async () => {
     await page.reload();
@@ -90,7 +87,7 @@ test('rule 1: the Home header moves from Wednesday to Thursday on reload', async
   await expect(page).not.toHaveTitle('');
   expect(await seriousAxeViolations(page)).toEqual([]);
 
-  await setClock(request, OCT_8);
+  await setClock(request, globalClock, OCT_8);
   await page.reload();
   await expect(dateLine(page)).toHaveText('Thứ Năm, 08/10/2026');
   await expect(page).not.toHaveTitle('');
@@ -107,7 +104,7 @@ test('rule 2: the keep-alive cron route reads the business date of each clock', 
   };
   expect(await keepAlive()).toEqual({ ok: true, as_of: '2026-10-07' });
 
-  await setClock(request, OCT_8);
+  await setClock(request, globalClock, OCT_8);
   expect(await keepAlive()).toEqual({ ok: true, as_of: '2026-10-08' });
   expectNoRestart();
 });
@@ -137,7 +134,7 @@ test('rule 3: a ping on each day runs in the same worker and lands on that busin
   await expect(page).not.toHaveTitle('');
   expect(await seriousAxeViolations(page)).toEqual([]);
 
-  await setClock(request, OCT_8);
+  await setClock(request, globalClock, OCT_8);
   await page.reload();
   await ping();
   const times = await runTimes();
@@ -167,7 +164,7 @@ test('rule 5: in English at 130% and dark the header advances and the page still
   await expect(dateLine(page)).toHaveText('Wednesday, 07/10/2026');
   expect(await fitsWidth(page), 'no sideways scroll on 07/10').toBe(true);
 
-  await setClock(request, OCT_8);
+  await setClock(request, globalClock, OCT_8);
   await page.reload();
   await expect(dateLine(page)).toHaveText('Thursday, 08/10/2026');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');

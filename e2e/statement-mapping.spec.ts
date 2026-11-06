@@ -4,7 +4,7 @@ import { isoDate } from '../packages/core/src/date/iso-date.ts';
 import { UNRECOGNIZED_COLUMNS, UNRECOGNIZED_LAYOUT } from '../packages/core/src/matching/statement-scenario.ts';
 import { inEnglishAt130, memberRest } from './helpers/auth-api';
 import { chooseFile, chooseFromBoard, expectGolden, openBills, secondAccount, statementHousehold, statementPayments, upload } from './helpers/statements';
-import { setClock } from './helpers/test-clock';
+import { setClock, everyLane } from './helpers/test-clock';
 import { DESKTOP, noSidewaysScroll, openNewHousehold, PHONE, recordForPr, seriousAxeViolations, settled, shot, START } from './helpers/wizard';
 
 const holdForRecording = recordForPr();
@@ -14,7 +14,7 @@ const holdForRecording = recordForPr();
 // account's next statement. It runs in the `clock` project at 07/10/2026 like statement-import.spec.ts, each rule in a
 // household of its own.
 test.beforeEach(async ({ request }) => {
-  await setClock(request, START);
+  await setClock(request, everyLane, START);
 });
 
 const mapping = (page: Page) => page.getByTestId('column-mapping');

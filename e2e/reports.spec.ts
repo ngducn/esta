@@ -5,11 +5,11 @@ import { memberRest as rest } from './helpers/auth-api';
 import { pdfText } from '../scripts/receipt-text.ts';
 import { amountOf, readReportTable } from './helpers/report-table';
 import { laneHousehold, laneLease, laneProperty } from './helpers/seed';
-import { frozenAtStart } from './helpers/test-clock';
+import { frozenAtStart, globalClock } from './helpers/test-clock';
 import { DESKTOP, noSidewaysScroll, open, PHONE, seriousAxeViolations } from './helpers/wizard';
 
 // The rent roll and the year's reports read the Clock, so the spec runs in the `clock` project.
-frozenAtStart();
+frozenAtStart(globalClock);
 
 const report = (page: Page) => page.getByTestId('report');
 const sum = (values: readonly number[]) => values.reduce((total, value) => total + value, 0);

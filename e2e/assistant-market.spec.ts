@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/agent-worker';
-import { setClock } from './helpers/test-clock';
+import { setClock, globalClock } from './helpers/test-clock';
 import { clippedText } from './helpers/text-scale';
 import { DESKTOP, noSidewaysScroll, open, PHONE, serviceDelete, serviceGet, servicePatch, serviceUpsert, seriousAxeViolations } from './helpers/wizard';
 
@@ -15,13 +15,13 @@ const RING_ROAD = 'https://tintuc.example.vn/ha-tang/vanh-dai-3-doan-qua-di-an-s
 let worker: AgentWorker | undefined;
 
 test.beforeAll(async ({ request }) => {
-  await setClock(request, '2026-10-07T07:00:00+07:00');
+  await setClock(request, globalClock, '2026-10-07T07:00:00+07:00');
   worker = await startAgentWorker({ schedule: true });
 });
 
 test.afterAll(async ({ request }) => {
   await stopAndForget(worker);
-  await setClock(request, null);
+  await setClock(request, globalClock, null);
 });
 
 const items = (page: Page) => page.getByTestId('market-item');
@@ -30,7 +30,7 @@ async function scanned(page: Page) {
   await expect
     .poll(async () => (await serviceGet<unknown[]>(page, 'agent_jobs?status=in.(queued,running)&run_after=lte.2026-10-07T00:00:00Z&select=id')).length, { timeout: 120_000 })
     .toBe(0);
-  await setClock(page.request, '2026-10-07T07:05:00+07:00');
+  await setClock(page.request, globalClock, '2026-10-07T07:05:00+07:00');
 }
 
 test('Mẹ reads the morning’s market news on Thị trường, each item with its source, and the topics Trợ lý follows', async ({ page }) => {

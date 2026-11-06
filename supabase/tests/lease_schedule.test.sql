@@ -31,8 +31,8 @@ insert into public.invoices (id, household_id, lease_id, period_start, period_en
   ('00000000-0000-4000-8000-0000000f05a3', :'a', '00000000-0000-4000-8000-00000000e5a4', '2026-03-10', '2026-03-31', '2026-03-10', '2026-03-10', 'draft', null, null);
 
 insert into private.local_stack default values on conflict do nothing;
-insert into public.test_clock (id, frozen_now) values (true, '2026-10-07T09:00:00+07:00')
-  on conflict (id) do update set frozen_now = excluded.frozen_now;
+delete from public.test_clock where for_household is null;
+insert into public.test_clock (frozen_now) values ('2026-10-07T09:00:00+07:00');
 
 -- Golden vectors: every call main's TypeScript planner (packages/core/src/schedule/generate.ts and
 -- lease/invoicing.ts at 33c5823) made in its unit tests, the /dev/core examples, 160 fast-check samples from its property

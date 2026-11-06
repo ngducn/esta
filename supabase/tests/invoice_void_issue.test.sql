@@ -47,8 +47,8 @@ insert into public.bank_accounts (id, household_id, bank_bin, account_no, accoun
   ('00000000-0000-4000-8000-00000000bb01', :'b', '970436', '0123456789', 'TRAN VAN DEMO', true);
 
 insert into private.local_stack default values on conflict do nothing;
-insert into public.test_clock (id, frozen_now) values (true, '2026-10-20T09:00:00+07:00')
-  on conflict (id) do update set frozen_now = excluded.frozen_now;
+delete from public.test_clock where for_household is null;
+insert into public.test_clock (frozen_now) values ('2026-10-20T09:00:00+07:00');
 
 -- Voiding (LSE-5).
 select tests.act_as('member.b@test.esta.test');

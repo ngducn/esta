@@ -1,7 +1,7 @@
 import { test, type Page } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 import { laneHousehold } from './seed';
-import { setClock } from './test-clock';
+import { globalClock, setClock } from './test-clock';
 import { servicePatch, serviceUpsert } from './wizard';
 
 export type TaskProposal = { readonly id: string; readonly title: string };
@@ -38,12 +38,12 @@ export const proposalCard = (page: Page, title: string) => page.getByTestId('inb
 export function proposalLane(lane: number): void {
   test.describe.configure({ mode: 'serial' });
   test.beforeEach(async ({ request }) => {
-    await setClock(request, '2026-10-07T07:05:00+07:00');
+    await setClock(request, globalClock, '2026-10-07T07:05:00+07:00');
   });
   test.afterAll(async ({ browser, request }) => {
     const page = await browser.newPage();
     await servicePatch(page, `tasks?household_id=eq.${laneHousehold(lane)}&source=eq.agent_proposal&status=eq.open`, { status: 'done' });
     await page.close();
-    await setClock(request, null);
+    await setClock(request, globalClock, null);
   });
 }

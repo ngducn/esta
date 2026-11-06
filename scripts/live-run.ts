@@ -120,9 +120,15 @@ async function runDailyJobs() {
 }
 
 /** The weekly review is Sunday's job, so the clock moves to the Sunday its recording was made for (AGENT.md §3). */
+async function freezeGlobalClock(frozenNow: string) {
+  await db.from('test_clock').delete().is('for_household', null);
+  const { error } = await db.from('test_clock').insert({ for_household: null, frozen_now: frozenNow });
+  if (error !== null) throw new Error(`Freezing the clock failed: ${error.message}`);
+}
+
 async function runWeekly() {
   const sunday = '2026-10-11T08:00:00+07:00';
-  await db.from('test_clock').upsert({ id: true, frozen_now: sunday });
+  await freezeGlobalClock(sunday);
   const key = `weekly_review:${HOUSEHOLD}:2026-W41`;
   const { error } = await db.from('agent_jobs').insert({ household_id: HOUSEHOLD, kind: 'weekly_review', run_after: sunday, idempotency_key: key, priority: 200 });
   if (error !== null) throw new Error(`Queueing the weekly review failed: ${error.message}`);
@@ -349,7 +355,7 @@ function table(): string {
 }
 
 async function main() {
-  await db.from('test_clock').upsert({ id: true, frozen_now: AS_OF });
+  await freezeGlobalClock(AS_OF);
   const worker = await startWorker();
   try {
     if (wanted('daily')) {
@@ -365,7 +371,7 @@ async function main() {
     if (wanted('guard-probe')) await checkGuardProbe();
   } finally {
     worker.kill('SIGTERM');
-    await db.from('test_clock').delete().eq('id', true);
+    await db.from('test_clock').delete().is('for_household', null);
   }
   mkdirSync(outDir, { recursive: true });
   writeFileSync(join(outDir, only === undefined ? 'table.md' : 'table-rerun.md'), `${table()}\n`);

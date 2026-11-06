@@ -9,12 +9,14 @@ import { pdfText } from '../scripts/receipt-text.ts';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { inEnglishAt130, memberRest } from './helpers/auth-api';
 import { laneInvoice } from './helpers/seed';
-import { setClock } from './helpers/test-clock';
+import { setClock, lanes } from './helpers/test-clock';
 import { DESKTOP, noSidewaysScroll, open, PHONE, seriousAxeViolations, START } from './helpers/wizard';
+
+const CLOCK_LANES = lanes(2, 8, 10);
 
 // The receipt prints today's date from the Clock, so the spec runs in the `clock` project on SPEC §9.3's day.
 test.beforeEach(async ({ request }) => {
-  await setClock(request, START);
+  await setClock(request, CLOCK_LANES, START);
 });
 
 const A5 = { width: 419.528, height: 595.276 };

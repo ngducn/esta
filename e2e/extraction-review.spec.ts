@@ -9,7 +9,7 @@ import { seedId } from '../supabase/seed/generator/ids.ts';
 import { CRAFTED, extractionFixtures, type UploadFile } from '../fixtures/certificates/generator/uploads.tsx';
 import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/agent-worker';
 import { signIn } from './helpers/inbucket';
-import { setClock } from './helpers/test-clock';
+import { setClock, globalClock } from './helpers/test-clock';
 import { seriousAxeViolations } from './helpers/wizard';
 
 // One worker and one test clock per slot, so the rules run in order in the `clock` project.
@@ -37,12 +37,12 @@ const userOf = (person: 'me' | 'ryan', lane: number) => seedId(`seed:user:${pers
 let worker: AgentWorker | undefined;
 
 test.beforeEach(async ({ request }) => {
-  await setClock(request, START);
+  await setClock(request, globalClock, START);
 });
 
 test.afterAll(async ({ request }) => {
   await stopAndForget(worker);
-  await setClock(request, null);
+  await setClock(request, globalClock, null);
 });
 
 async function startWorker() {
@@ -298,7 +298,7 @@ test('rule 4: a blank page the assistant cannot read is entered by hand beside i
     [3, '2026-10-07T09:34:00+07:00'],
   ] as const) {
     await expect.poll(jobOf, { timeout: 10_000 }).toEqual({ status: 'queued', attempts });
-    await setClock(request, next);
+    await setClock(request, globalClock, next);
   }
   await expect.poll(jobOf, { timeout: 10_000 }).toEqual({ status: 'failed', attempts: 4 });
   await page.reload();
@@ -346,7 +346,7 @@ test('rule 5: with the worker offline the review names the last heartbeat, and t
 
   const [beat] = await serviceGet<{ last_seen_at: string }[]>(page, 'worker_heartbeats?select=last_seen_at&order=last_seen_at.desc&limit=1');
   const lastBeat = Math.max(Date.parse(beat?.last_seen_at ?? ''), Date.parse(START));
-  await setClock(request, new Date(lastBeat + 6 * 60_000).toISOString());
+  await setClock(request, globalClock, new Date(lastBeat + 6 * 60_000).toISOString());
   await page.reload();
   const time = new Intl.DateTimeFormat('vi-VN', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Ho_Chi_Minh' }).format(lastBeat);
   await expect(page.getByTestId('review-offline')).toContainText(`Trợ lý ngoại tuyến từ ${time}`);
@@ -472,15 +472,15 @@ test('evidence: every state at 390x844 and 1440x900, light and dark', async ({ p
   for (const combo of combos) {
     await page.setViewportSize(combo.viewport);
     await theme(combo.theme);
-    await setClock(request, START);
+    await setClock(request, globalClock, START);
     await page.goto(`/documents/${reading}/review`);
     await expect(page.getByTestId('review-reading')).toBeVisible();
     await shot(page, `p2-07-reading-${combo.name}`);
-    await setClock(request, offlineAt);
+    await setClock(request, globalClock, offlineAt);
     await page.reload();
     await expect(page.getByTestId('review-offline')).toBeVisible();
     await shot(page, `p2-07-offline-${combo.name}`);
-    await setClock(request, START);
+    await setClock(request, globalClock, START);
 
     await page.goto(`/documents/${review}/review`);
     await expect(page.getByTestId('needs-check').first()).toBeVisible();

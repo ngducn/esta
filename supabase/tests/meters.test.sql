@@ -51,8 +51,8 @@ insert into public.invoice_lines (household_id, invoice_id, kind, unit_price_vnd
 select :'a', id, 'rent', 2500000, 2500000 from public.invoices where household_id = :'a';
 
 insert into private.local_stack default values on conflict do nothing;
-insert into public.test_clock (id, frozen_now) values (true, '2026-11-02T09:00:00+07:00')
-  on conflict (id) do update set frozen_now = excluded.frozen_now;
+delete from public.test_clock where for_household is null;
+insert into public.test_clock (frozen_now) values ('2026-11-02T09:00:00+07:00');
 
 -- Readings sit between their neighbours, whoever writes them.
 select throws_ok($$ insert into public.meter_readings (household_id, meter_id, reading_month, reading, read_on)

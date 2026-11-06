@@ -11,7 +11,7 @@ import { seedId } from '../supabase/seed/generator/ids.ts';
 import { signIn } from './helpers/inbucket';
 import { makeLargeImage } from './helpers/make-large-image';
 import { accessToken } from './helpers/session';
-import { setClock } from './helpers/test-clock';
+import { setClock, globalClock } from './helpers/test-clock';
 import { seriousAxeViolations } from './helpers/wizard';
 
 const repoRoot = join(import.meta.dirname, '..');
@@ -318,7 +318,7 @@ test('rule 7: a member of household 7 reaches nothing of household 8 (FND-2)', a
 
 test('rule 8: the Q7 insurance counts down on the test clock and Long An asks for its certificate photo (PRP-6)', async ({ page, request }) => {
   await open(page, 'ryan.lane8@demo.esta.test', 'dark', DESKTOP);
-  await setClock(request, '2026-10-07T09:00:00+07:00');
+  await setClock(request, globalClock, '2026-10-07T09:00:00+07:00');
   try {
     await documentsPage(page, 8, 'q7');
     await expect(tile(page, 'Bảo hiểm cháy nổ Nhà phố Q7').getByTestId('document-expiry')).toHaveText('Hết hạn sau 23 ngày', COLD_ROUTE);
@@ -327,7 +327,7 @@ test('rule 8: the Q7 insurance counts down on the test clock and Long An asks fo
     await expect(item).toHaveCount(1, COLD_ROUTE);
     await expect(item.getByRole('link')).toHaveAttribute('href', `/properties/${propertyId(8, 'long-an')}/documents#upload`);
   } finally {
-    await setClock(request, null);
+    await setClock(request, globalClock, null);
   }
 });
 

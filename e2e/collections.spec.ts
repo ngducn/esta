@@ -5,7 +5,7 @@ import { slotEnv } from '../scripts/slot-env.ts';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { signIn } from './helpers/inbucket';
 import { accessToken } from './helpers/session';
-import { setClock } from './helpers/test-clock';
+import { setClock, globalClock } from './helpers/test-clock';
 import { seriousAxeViolations } from './helpers/wizard';
 
 const env = slotEnv(join(import.meta.dirname, '..'), parseSlot(process.env.ESTA_SLOT));
@@ -26,7 +26,7 @@ const holdForRecording = (page: Page) => (recording ? page.waitForTimeout(3500) 
 // Overdue days count from the Clock, so the spec runs in the `clock` project on SPEC §9.3's day; rule 4 moves the clock
 // and puts it back. Each rule reads its own lane household.
 test.beforeEach(async ({ request }) => {
-  await setClock(request, SPEC_TODAY);
+  await setClock(request, globalClock, SPEC_TODAY);
 });
 
 async function open(page: Page, email: string, theme: 'light' | 'dark', viewport: { width: number; height: number }) {
@@ -143,7 +143,7 @@ test('rule 3: September shows Phòng 5 overdue without a carry marker and the ot
 });
 
 test('rule 4: on 25/10 the six Dĩ An rooms are due today and Phòng 5 reads 30 days overdue', async ({ page, request }) => {
-  await setClock(request, '2026-10-25T09:00:00+07:00');
+  await setClock(request, globalClock, '2026-10-25T09:00:00+07:00');
   try {
     await open(page, 'me.lane4@demo.esta.test', 'dark', PHONE);
     await page.goto('/collections');
@@ -152,7 +152,7 @@ test('rule 4: on 25/10 the six Dĩ An rooms are due today and Phòng 5 reads 30 
     await expect(row(group(page, 'overdue'), 'Phòng 5, Dãy trọ Dĩ An').locator('[data-status="overdue"]')).toHaveText('Quá hạn 30 ngày');
     expect(await placesIn(group(page, 'notDue'))).toEqual([]);
   } finally {
-    await setClock(request, SPEC_TODAY);
+    await setClock(request, globalClock, SPEC_TODAY);
   }
 });
 

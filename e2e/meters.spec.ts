@@ -7,7 +7,7 @@ import { seedId } from '../supabase/seed/generator/ids.ts';
 import { PRICE_VND, SEPTEMBER } from '../supabase/seed/generator/meters.ts';
 import { inEnglishAt130, memberRest } from './helpers/auth-api';
 import { laneHousehold, laneLease, laneProperty } from './helpers/seed';
-import { setClock } from './helpers/test-clock';
+import { setClock, globalClock } from './helpers/test-clock';
 import { DESKTOP, noSidewaysScroll, open, PHONE, recordForPr, seriousAxeViolations, START, toast, vnd } from './helpers/wizard';
 
 const workdir = slotWorkdir(join(import.meta.dirname, '..'), parseSlot(process.env.ESTA_SLOT));
@@ -17,7 +17,7 @@ const holdForRecording = recordForPr();
 // Readings default to the month before the Clock's, and bills issue on the database clock, so the spec runs in the
 // `clock` project. Each rule reads or writes its own lane's Dĩ An.
 test.beforeEach(async ({ request }) => {
-  await setClock(request, START);
+  await setClock(request, globalClock, START);
 });
 
 const room = (page: Page, n: number) => page.getByTestId('meter-room').filter({ has: page.getByRole('heading', { name: `Phòng ${n}`, exact: true }) });
@@ -63,7 +63,7 @@ test('rule 1: Nhập chỉ số on the Cho thuê tab opens September with every 
 
 test('rule 2: at 02/11 Mẹ enters October for four rooms, then the rest, and each room’s bill from 25/11 issues with its electricity and water (LSE-4)', async ({ page }) => {
   test.setTimeout(120_000);
-  await setClock(page.request, '2026-11-02T09:00:00+07:00');
+  await setClock(page.request, globalClock, '2026-11-02T09:00:00+07:00');
   // The nightly job of 02/11 has drafted the bills from 25/11; each waits for its room's October readings.
   query(workdir, `select * from public.run_invoicing('${laneHousehold(7)}', '2026-11-02', '2026-11-02T00:30:00+07:00')`);
   await open(page, 'me.lane7@demo.esta.test', 'light', PHONE);
@@ -120,7 +120,7 @@ test('rule 2: at 02/11 Mẹ enters October for four rooms, then the rest, and ea
   await page.getByTestId('meter-save').click();
   await expect(toast(page)).toContainText('Đã lưu chỉ số tháng 10/2026. Chưa có hóa đơn nào phát hành.');
   expect(await billFrom(page, 7, 3, '2026-11-25')).toEqual(sent);
-  await setClock(page.request, '2026-11-26T09:00:00+07:00');
+  await setClock(page.request, globalClock, '2026-11-26T09:00:00+07:00');
   query(workdir, `select * from public.run_invoicing('${laneHousehold(7)}', '2026-11-26', '2026-11-26T00:30:00+07:00')`);
   expect(await billFrom(page, 7, 3, '2026-12-25')).toEqual({
     status: 'draft',
@@ -131,7 +131,7 @@ test('rule 2: at 02/11 Mẹ enters October for four rooms, then the rest, and ea
   });
 
   // A month above three times the usual still saves, with the warning on its row.
-  await setClock(page.request, '2026-12-02T09:00:00+07:00');
+  await setClock(page.request, globalClock, '2026-12-02T09:00:00+07:00');
   await page.goto(metersPath(7));
   await expect(page.getByTestId('meter-month')).toHaveText('Tháng 11/2026');
   await expect(reading(page, 2, 'electricity').getByTestId('meter-previous')).toHaveText('Tháng 10: 4.240');
@@ -143,7 +143,7 @@ test('rule 2: at 02/11 Mẹ enters October for four rooms, then the rest, and ea
 });
 
 test('rule 3: a Phòng 4 reading below September’s is refused on its row in dark, and Lưu saves nothing', async ({ page }) => {
-  await setClock(page.request, '2026-11-02T09:00:00+07:00');
+  await setClock(page.request, globalClock, '2026-11-02T09:00:00+07:00');
   await open(page, 'me.lane4@demo.esta.test', 'dark', PHONE);
   await page.goto(metersPath(4));
   const row = reading(page, 4, 'electricity');
@@ -162,7 +162,7 @@ test('rule 3: a Phòng 4 reading below September’s is refused on its row in da
 });
 
 test('rule 4: at 1440 all eight rooms with both meters fit one screen without sideways scroll', async ({ page }) => {
-  await setClock(page.request, '2026-11-02T09:00:00+07:00');
+  await setClock(page.request, globalClock, '2026-11-02T09:00:00+07:00');
   await open(page, 'me.lane8@demo.esta.test', 'light', DESKTOP);
   await page.goto(metersPath(8));
   await expect(page.getByTestId('meter-room')).toHaveCount(8);
@@ -194,7 +194,7 @@ test('rule 5: in English at 130% text and dark, every row keeps its label, last 
 });
 
 test('rule 6: a reading with extra digits is refused in words and saves nothing, and a save without a connection says so', async ({ page }) => {
-  await setClock(page.request, '2026-11-02T09:00:00+07:00');
+  await setClock(page.request, globalClock, '2026-11-02T09:00:00+07:00');
   await open(page, 'ryan.lane4@demo.esta.test', 'dark', PHONE);
   await page.goto(metersPath(4));
   await reading(page, 3, 'electricity').getByRole('textbox').fill('999999999');

@@ -5,7 +5,7 @@ import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/age
 import { inEnglishAt130, memberRest } from './helpers/auth-api';
 import { readReportTable } from './helpers/report-table';
 import { laneHousehold } from './helpers/seed';
-import { setClock } from './helpers/test-clock';
+import { setClock, globalClock } from './helpers/test-clock';
 import { DESKTOP, noSidewaysScroll, open, PHONE, serviceGet, seriousAxeViolations, shot } from './helpers/wizard';
 
 test.describe.configure({ mode: 'serial' });
@@ -18,12 +18,12 @@ const NOW = '2026-10-07T06:45:00+07:00';
 let worker: AgentWorker | undefined;
 
 test.beforeAll(async ({ request }) => {
-  await setClock(request, NOW);
+  await setClock(request, globalClock, NOW);
 });
 
 test.afterAll(async ({ request }) => {
   await stopAndForget(worker);
-  await setClock(request, null);
+  await setClock(request, globalClock, null);
 });
 
 const jobsEnded = async (page: Page, kind: string, status: string) =>

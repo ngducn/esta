@@ -6,7 +6,7 @@ import { parseSlot } from '../scripts/slot.ts';
 import { slotEnv } from '../scripts/slot-env.ts';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { signIn } from './helpers/inbucket';
-import { setClock } from './helpers/test-clock';
+import { setClock, globalClock } from './helpers/test-clock';
 import { seriousAxeViolations } from './helpers/wizard';
 
 const repoRoot = join(import.meta.dirname, '..');
@@ -22,7 +22,7 @@ const documentId = (lane: number, key: string) => seedId(`seed:document:lane-${l
 const member = (person: 'me' | 'ryan', lane: number) => `household_members?id=eq.${seedId(`seed:member:${person}-lane-${lane}`)}`;
 
 test.use({ video: process.env.ESTA_VIDEO === '1' ? { mode: 'on', size: PHONE } : 'off' });
-test.beforeEach(async ({ request }) => setClock(request, '2026-10-07T09:00:00+07:00'));
+test.beforeEach(async ({ request }) => setClock(request, globalClock, '2026-10-07T09:00:00+07:00'));
 
 async function open(page: Page, email: string, theme: 'light' | 'dark', viewport: { width: number; height: number }) {
   await page.setViewportSize(viewport);

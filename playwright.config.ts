@@ -19,40 +19,53 @@ process.env.ESTA_FROZEN_NOW ||= '2026-11-01T10:00:00+07:00';
 // A seeded household's files weigh about 1.8 MB, so a 1 MB part makes every export in the suite a split one.
 process.env.ESTA_EXPORT_PART_MB ||= '1';
 
+// Specs that freeze only the lane households' test clock rows at SPEC §9.3's day (e2e/helpers/test-clock.ts), so they
+// never touch the global row or the worker the `clock` specs use, so they run in parallel in their own project. On
+// 2026-11-06 a parallel run of the first 17 failed 13 tests on lane data, not the date (each of the 8 specs below
+// reads a bill, an overdue count, a document or a lane's totals that a neighbour pays, uploads or amends), so those 8 stay serial.
+const dated = [
+  'leases.spec.ts',
+  'lease-detail.spec.ts',
+  'deposits.spec.ts',
+  'invoices.spec.ts',
+  'receipts.spec.ts',
+  'reminder.spec.ts',
+  'valuations.spec.ts',
+  'statement-mapping.spec.ts',
+  'tax-card.spec.ts',
+];
+
+// Specs that need the global test clock row, the agent worker or a cron route, each of which serves every household
+// at once, or that move the date off SPEC §9.3's day on lanes the dated specs also use. They run one at a time.
 const sharedClock = [
+  // Moves the global date across midnight to prove the web server follows it without a restart.
   'clock.spec.ts',
+  // Move the date on lanes the dated specs also sign in to.
+  'meters.spec.ts',
+  'collections.spec.ts',
+  'home.spec.ts',
+  // Freeze lane households but read what dated neighbours change in the same lanes (paid bills, uploaded documents).
+  'documents-upload.spec.ts',
+  'documents-vault.spec.ts',
+  'property-detail.spec.ts',
+  'record-payment.spec.ts',
+  'statement-import.spec.ts',
+  'fnd8.spec.ts',
+  'reports.spec.ts',
+  'expenses.spec.ts',
+  // Start an agent worker, which polls the jobs and heartbeat of every household.
   'assistant-status.spec.ts',
   'assistant-diagnostics.spec.ts',
   'assistant-weekly.spec.ts',
   'assistant-watch.spec.ts',
   'assistant-topics.spec.ts',
   'fnd9-integration.spec.ts',
-  'fnd8.spec.ts',
-  'property-detail.spec.ts',
-  'documents-upload.spec.ts',
-  'leases.spec.ts',
-  'lease-detail.spec.ts',
-  'deposits.spec.ts',
-  'collections.spec.ts',
   'documents-extract.spec.ts',
-  'record-payment.spec.ts',
-  'invoices.spec.ts',
-  'receipts.spec.ts',
-  'reminder.spec.ts',
   'extraction-review.spec.ts',
-  'documents-vault.spec.ts',
   'documents-multipage.spec.ts',
   'property-wizard.spec.ts',
   'northstar.spec.ts',
-  'valuations.spec.ts',
-  'expenses.spec.ts',
-  'meters.spec.ts',
-  'statement-import.spec.ts',
-  'statement-mapping.spec.ts',
-  'home.spec.ts',
   'lease-from-contract.spec.ts',
-  'tax-card.spec.ts',
-  'reports.spec.ts',
   'assistant-thread.spec.ts',
   'assistant-calc.spec.ts',
   'assistant-pinned.spec.ts',
@@ -82,9 +95,11 @@ export default defineConfig({
     launchOptions: { args: process.platform === 'linux' ? ['--font-render-hinting=none'] : [] },
   },
   projects: [
-    { name: 'mobile', testIgnore: ['prod/**', ...sharedClock], use: { ...devices['Desktop Chrome'], viewport: { width: 390, height: 844 } } },
-    { name: 'desktop', testIgnore: ['prod/**', ...sharedClock], use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } },
-    // The slot has one test clock and one worker, so the specs that move them run one at a time.
+    { name: 'mobile', testIgnore: ['prod/**', ...dated, ...sharedClock], use: { ...devices['Desktop Chrome'], viewport: { width: 390, height: 844 } } },
+    { name: 'desktop', testIgnore: ['prod/**', ...dated, ...sharedClock], use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } },
+    { name: 'dated', testMatch: dated, teardown: 'unfreeze', use: { ...devices['Desktop Chrome'], viewport: { width: 390, height: 844 } } },
+    { name: 'unfreeze', testMatch: 'unfreeze.teardown.ts' },
+    // The slot has one global test clock and one worker, so the specs that move them run one at a time.
     { name: 'clock', testMatch: sharedClock, workers: 1, use: { ...devices['Desktop Chrome'], viewport: { width: 390, height: 844 } } },
   ],
   webServer:

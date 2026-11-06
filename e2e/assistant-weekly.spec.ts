@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/agent-worker';
-import { setClock } from './helpers/test-clock';
+import { setClock, globalClock } from './helpers/test-clock';
 import { DESKTOP, open, PHONE, serviceGet, serviceUpsert, seriousAxeViolations, shot, vnd } from './helpers/wizard';
 
 test.describe.configure({ mode: 'serial' });
@@ -15,7 +15,7 @@ let worker: AgentWorker | undefined;
 
 test.afterAll(async ({ request }) => {
   await stopAndForget(worker);
-  await setClock(request, null);
+  await setClock(request, globalClock, null);
 });
 
 async function onlyTheSeedsWeeklyReview(page: Page) {
@@ -47,7 +47,7 @@ const weekly = (page: Page) => page.locator('[data-testid="inbox-item"][data-kin
 const card = (page: Page, title: string) => page.getByTestId('inbox-item').filter({ has: page.getByRole('heading', { name: title, exact: true }) });
 
 test('on Sunday at 08:05 Hộp thư holds one weekly review with the board’s month figures and its three proposals', async ({ page, request }) => {
-  await setClock(request, `${SUNDAY}T08:00:00+07:00`);
+  await setClock(request, globalClock, `${SUNDAY}T08:00:00+07:00`);
   await onlyTheSeedsWeeklyReview(page);
   await storedRingRoadItem(page);
   worker = await startAgentWorker({ schedule: true });
@@ -57,7 +57,7 @@ test('on Sunday at 08:05 Hộp thư holds one weekly review with the board’s m
   const [job] = await serviceGet<{ id: string }[]>(page, `agent_jobs?idempotency_key=eq.${WEEKLY_KEY}&select=id`);
   const made = await serviceGet<{ kind: string; title: string }[]>(page, `agent_items?job_id=eq.${job?.id}&select=kind,title&order=created_at,kind.desc`);
   expect(made.map(({ kind }) => kind)).toEqual(['weekly', 'proposal', 'proposal', 'proposal']);
-  await setClock(request, `${SUNDAY}T08:05:00+07:00`);
+  await setClock(request, globalClock, `${SUNDAY}T08:05:00+07:00`);
 
   await open(page, 'me@demo.esta.test', 'light', DESKTOP);
   await page.goto('/');

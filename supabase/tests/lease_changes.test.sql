@@ -51,8 +51,8 @@ insert into public.invoice_lines (household_id, invoice_id, kind, unit_price_vnd
   (:'a', '00000000-0000-4000-8000-0000000f00d2', 'rent', 290323, 290323);
 
 insert into private.local_stack default values on conflict do nothing;
-insert into public.test_clock (id, frozen_now) values (true, '2026-10-07T09:00:00+07:00')
-  on conflict (id) do update set frozen_now = excluded.frozen_now;
+delete from public.test_clock where for_household is null;
+insert into public.test_clock (frozen_now) values ('2026-10-07T09:00:00+07:00');
 
 -- Every issued invoice of household a with its lines, to prove nothing below changes one (LSE-2).
 create temporary view issued_snapshot as

@@ -11,7 +11,7 @@ import { slotEnv } from '../scripts/slot-env.ts';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/agent-worker';
 import { signIn } from './helpers/inbucket';
-import { setClock } from './helpers/test-clock';
+import { setClock, globalClock } from './helpers/test-clock';
 import { seriousAxeViolations } from './helpers/wizard';
 
 // Rule 4 runs this slot's one replay worker, so the rules run in order in the `clock` project.
@@ -40,12 +40,12 @@ test.use({ video: process.env.ESTA_VIDEO === '1' ? { mode: 'on', size: PHONE } :
 let worker: AgentWorker | undefined;
 
 test.beforeEach(async ({ request }) => {
-  await setClock(request, '2026-10-07T09:00:00+07:00');
+  await setClock(request, globalClock, '2026-10-07T09:00:00+07:00');
 });
 
 test.afterAll(async ({ request }) => {
   await stopAndForget(worker);
-  await setClock(request, null);
+  await setClock(request, globalClock, null);
 });
 
 async function open(page: Page, email: string, theme: 'light' | 'dark', viewport: { width: number; height: number }) {

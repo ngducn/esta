@@ -25,8 +25,8 @@ insert into public.leases (id, household_id, property_id, unit_id, tenant_party_
 
 -- The database clock on a seeded stack (FND-9): activation and preview read it, never a caller's date.
 insert into private.local_stack default values on conflict do nothing;
-insert into public.test_clock (id, frozen_now) values (true, '2026-10-07T09:00:00+07:00')
-  on conflict (id) do update set frozen_now = excluded.frozen_now;
+delete from public.test_clock where for_household is null;
+insert into public.test_clock (frozen_now) values ('2026-10-07T09:00:00+07:00');
 
 select tests.act_as('member.a@test.esta.test');
 

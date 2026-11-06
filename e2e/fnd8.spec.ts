@@ -3,7 +3,7 @@ import { seedId } from '../supabase/seed/generator/ids.ts';
 import { memberRest } from './helpers/auth-api';
 import { boardRow } from './helpers/board';
 import { clippedText } from './helpers/text-scale';
-import { setClock } from './helpers/test-clock';
+import { setClock, globalClock } from './helpers/test-clock';
 import { noSidewaysScroll, open, PHONE, seriousAxeViolations, shot, START } from './helpers/wizard';
 
 // FND-8 on SPEC §9.3's main Demo household, which only the `clock` project's specs read, one file at a time, so Mẹ's
@@ -57,7 +57,7 @@ for (const [locale, language] of [
 ] as const) {
   test.describe(`in ${language} at 130% text and 390 px`, () => {
     test.beforeEach(async ({ page, request }) => {
-      await setClock(request, START);
+      await setClock(request, globalClock, START);
       await open(page, MOM, 'light', PHONE);
       await memberRest(page, 'PATCH', MEMBER, { text_scale: 130, locale });
     });

@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/agent-worker';
 import { laneHousehold } from './helpers/seed';
-import { setClock } from './helpers/test-clock';
+import { setClock, globalClock } from './helpers/test-clock';
 import { DESKTOP, open, PHONE, serviceGet, seriousAxeViolations, vnd } from './helpers/wizard';
 
 test.describe.configure({ mode: 'serial' });
@@ -15,13 +15,13 @@ let worker: AgentWorker | undefined;
 
 test.afterAll(async ({ request }) => {
   await stopAndForget(worker);
-  await setClock(request, null);
+  await setClock(request, globalClock, null);
 });
 
 const brief = (page: Page) => page.locator('[data-testid="inbox-item"][data-kind="brief"]');
 
 test('before any brief that day, Home says Trợ lý has not written one yet', async ({ page, request }) => {
-  await setClock(request, '2026-10-06T08:00:00+07:00');
+  await setClock(request, globalClock, '2026-10-06T08:00:00+07:00');
   await open(page, ME, 'light', PHONE);
   await page.goto('/');
   await expect(page.getByTestId('home-brief-empty')).toHaveText('Trợ lý chưa viết ghi chú hôm nay.');
@@ -29,14 +29,14 @@ test('before any brief that day, Home says Trợ lý has not written one yet', a
 });
 
 test('at 07:05 Mẹ reads the 07:00 brief in her thread, opens Phòng 5 from it, and finds its summary on Home', async ({ page, request }) => {
-  await setClock(request, `${TODAY}T07:00:00+07:00`);
+  await setClock(request, globalClock, `${TODAY}T07:00:00+07:00`);
   worker = await startAgentWorker({ schedule: true });
   await expect
     .poll(async () => (await serviceGet<unknown[]>(page, `agent_jobs?kind=eq.morning_brief&status=eq.done&idempotency_key=eq.morning_brief:${laneHousehold(LANE)}:${TODAY}&select=id`)).length, {
       timeout: 90_000,
     })
     .toBe(1);
-  await setClock(request, `${TODAY}T07:05:00+07:00`);
+  await setClock(request, globalClock, `${TODAY}T07:05:00+07:00`);
 
   await open(page, ME, 'light', PHONE);
   await page.goto('/assistant');
@@ -78,7 +78,7 @@ test('at 07:05 Mẹ reads the 07:00 brief in her thread, opens Phòng 5 from it,
 
 test('with the worker stopped and the clock 15 minutes on, every page says Trợ lý is offline', async ({ page, request }) => {
   await worker?.stop();
-  await setClock(request, `${TODAY}T07:20:00+07:00`);
+  await setClock(request, globalClock, `${TODAY}T07:20:00+07:00`);
   await open(page, ME, 'light', DESKTOP);
   for (const path of ['/', '/properties', '/collections', '/assistant']) {
     await page.goto(path);

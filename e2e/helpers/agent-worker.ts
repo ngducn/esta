@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { e2eServiceHeaders } from '../../scripts/e2e-service.ts';
 import { parseSlot } from '../../scripts/slot.ts';
 import { slotEnv } from '../../scripts/slot-env.ts';
-import { setClock } from './test-clock';
+import { globalClock, setClock } from './test-clock';
 
 const repoRoot = join(import.meta.dirname, '..', '..');
 const STARTED = /^\[agent\] worker \S+ started/m;
@@ -78,11 +78,11 @@ export async function startAgentWorker({ replayDir, home, crashOn, schedule = fa
 export function workerAt(frozenNow: string) {
   let worker: AgentWorker | undefined;
   test.beforeAll(async ({ request }) => {
-    await setClock(request, frozenNow);
+    await setClock(request, globalClock, frozenNow);
     worker = await startAgentWorker();
   });
   test.afterAll(async ({ request }) => {
     await stopAndForget(worker);
-    await setClock(request, null);
+    await setClock(request, globalClock, null);
   });
 }

@@ -4,6 +4,8 @@ import { golden, householdStatement, roomingHouse, type HouseholdStatement, type
 import { isoDate } from '../../packages/core/src/date/iso-date.ts';
 import { vnd } from '../../packages/core/src/money/vnd.ts';
 import { memberRest } from './auth-api';
+import { households, setClock } from './test-clock';
+import { START } from './wizard';
 
 export const PROPERTY = 'Dãy trọ Demo Sao Kê';
 const TENANTS = ['Nguyễn Văn An Demo', 'Trần Thị Bình Demo', 'Lê Văn Cường Demo', 'Võ Thị Dung Demo', 'Hoàng Văn Em Demo', 'Đặng Thị Giang Demo'];
@@ -28,6 +30,7 @@ export async function statementHousehold(page: Page): Promise<StatementHousehold
   const [household] = await memberRest<{ id: string }[]>(page, 'GET', 'households?select=id');
   if (household === undefined) throw new Error('The new member has no household');
   const householdId = household.id;
+  await setClock(page.request, households(householdId), START);
   const house = roomingHouse(householdId, PROPERTY, 'SK', TENANTS);
   await memberRest(page, 'POST', 'bank_accounts', { household_id: householdId, bank_bin: '970436', account_no: '0123456789', account_name: 'NGUYEN THI DEMO', is_default: true });
   await memberRest(page, 'POST', 'properties', house.property);

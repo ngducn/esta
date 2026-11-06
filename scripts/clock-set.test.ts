@@ -1,9 +1,10 @@
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { seedId } from '../supabase/seed/generator/ids.ts';
 import { checkClockSet } from './clock-set.ts';
 
-const USAGE = 'Usage: pnpm clock:set <iso date-time with offset> | off';
+const USAGE = 'Usage: pnpm clock:set <iso date-time with offset> | off [--lane <n> | --household <uuid>]';
 const LOCAL_URL = 'http://127.0.0.1:54321';
 const REMOTE_URL = 'https://demo-project.supabase.invalid';
 const REFUSAL = 'Refusing to write test_clock on demo-project.supabase.invalid: SUPABASE_URL must point at a local stack';
@@ -25,8 +26,19 @@ describe('checkClockSet', () => {
   });
 
   it.each([LOCAL_URL, 'http://localhost:54321'])('accepts a target on %s', (url) => {
-    expect(checkClockSet('2026-10-07T09:00:00+07:00', url)).toEqual({ target: '2026-10-07T02:00:00.000Z' });
-    expect(checkClockSet('off', url)).toEqual({ target: 'off' });
+    expect(checkClockSet('2026-10-07T09:00:00+07:00', url)).toEqual({ target: '2026-10-07T02:00:00.000Z', household: null });
+    expect(checkClockSet('off', url)).toEqual({ target: 'off', household: null });
+  });
+
+  it('keys the date by a lane household or an explicit household', () => {
+    const lane = checkClockSet('off', LOCAL_URL, '--lane', '3');
+    expect(lane).toEqual({ target: 'off', household: seedId('seed:household:lane-3') });
+    const uuid = seedId('seed:household:lane-9');
+    expect(checkClockSet('off', LOCAL_URL, '--household', uuid)).toEqual({ target: 'off', household: uuid });
+  });
+
+  it.each([['--lane', '11'], ['--lane', undefined], ['--household', 'lane-3'], ['--everything', '1']])('answers the flag %j %j with the usage line', (flag, value) => {
+    expect(checkClockSet('off', LOCAL_URL, flag, value)).toEqual({ exitCode: 2, message: USAGE });
   });
 });
 
