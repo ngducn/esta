@@ -1,17 +1,16 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
-import { integrationLane } from '@/test/lanes';
+import { integrationLane, withCapabilities } from '@/test/lanes';
 import { putSigned, service, signedInAs, stackName, stackUp } from '@/test/stack';
-import { fakeMember, type FakeMember } from '@/test/fake-member';
 
-const session = vi.hoisted(() => ({ client: null as unknown, member: null as unknown as FakeMember }));
+const session = vi.hoisted(() => ({ client: null as unknown, member: { role: 'member', household: { id: '' } } }));
 
 vi.mock('server-only', () => ({}));
 vi.mock('next/cache', () => ({ revalidatePath: () => undefined }));
 vi.mock('next-intl/server', () => ({ getTranslations: async () => () => 'Sổ hồng' }));
 vi.mock('@/server/env', () => ({ env: { ESTA_SIGNED_URL_TTL_SECONDS: 300 } }));
 vi.mock('@/server/clock', () => ({ readRequestClock: async () => ({ now: () => '2026-10-07T09:00:00+07:00' }) }));
-vi.mock('@/server/member', () => ({ requireMember: async () => session.member }));
+vi.mock('@/server/member', () => ({ requireMember: async () => withCapabilities(session.member) }));
 vi.mock('@/server/supabase/server', () => ({ createSessionClient: async () => session.client }));
 
 const { createDocumentUpload } = await import('@/server/documents/actions');
@@ -28,7 +27,7 @@ const code = () => `WZ${String(Date.now()).slice(-6)}`;
 describe.skipIf(!stackUp)(`startPropertyWizard (PRP-7) against ${stackName}`, () => {
   beforeAll(async () => {
     session.client = await signedInAs(me);
-    session.member = fakeMember('admin', household);
+    session.member = { role: 'admin', household: { id: household } };
   });
 
   afterAll(async () => {
@@ -83,11 +82,11 @@ describe.skipIf(!stackUp)(`startPropertyWizard (PRP-7) against ${stackName}`, ()
   });
 
   test('a viewer cannot start the wizard', async () => {
-    session.member = fakeMember('viewer', household);
+    session.member = { role: 'viewer', household: { id: household } };
     try {
       expect(await startPropertyWizard({ propertyId: randomUUID(), nickname: 'Demo', code: code(), kind: 'townhouse', document: null })).toEqual({ ok: false, reason: 'forbidden' });
     } finally {
-      session.member = fakeMember('admin', household);
+      session.member = { role: 'admin', household: { id: household } };
     }
   });
 });

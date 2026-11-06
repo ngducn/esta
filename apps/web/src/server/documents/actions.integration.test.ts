@@ -3,20 +3,19 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { createHash, randomBytes } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import { seedId } from '../../../../../supabase/seed/generator/ids';
-import { integrationLane, outsiderEmail } from '@/test/lanes';
+import { integrationLane, outsiderEmail, withCapabilities } from '@/test/lanes';
 import { putSigned, service, signedInAs, stackName, stackUp } from '@/test/stack';
-import { fakeMember, type FakeMember } from '@/test/fake-member';
 
 const session = vi.hoisted(() => ({
   client: null as unknown,
-  member: null as unknown as FakeMember,
+  member: { role: 'member', household: { id: '' } },
 }));
 
 vi.mock('server-only', () => ({}));
 vi.mock('next/cache', () => ({ revalidatePath: () => undefined }));
 vi.mock('@/server/env', () => ({ env: { ESTA_SIGNED_URL_TTL_SECONDS: 2 } }));
 vi.mock('@/server/clock', () => ({ readRequestClock: async () => ({ now: () => '2026-10-07T09:00:00+07:00' }) }));
-vi.mock('@/server/member', () => ({ requireMember: async () => session.member }));
+vi.mock('@/server/member', () => ({ requireMember: async () => withCapabilities(session.member) }));
 vi.mock('@/server/supabase/server', () => ({ createSessionClient: async () => session.client }));
 
 const { createDocumentUpload, openDocument, registerDocument, updateDocument } = await import('./actions');
@@ -44,7 +43,7 @@ describe.skipIf(!stackUp)(`document actions against ${stackName}`, () => {
     member = await signedInAs(me);
     outsider = await signedInAs(outsiderEmail('me'));
     session.client = member;
-    session.member = fakeMember('member', household);
+    session.member = { role: 'member', household: { id: household } };
   });
 
   afterAll(async () => {

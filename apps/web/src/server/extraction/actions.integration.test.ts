@@ -10,22 +10,20 @@ import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import truthFile from '../../../../../fixtures/certificates/gcn_2024-photo/truth.json';
 import billTruth from '../../../../../fixtures/utility-bills/electricity-q7-scan/truth.json';
 import { seedId } from '../../../../../supabase/seed/generator/ids';
-import { integrationLane, outsiderEmail } from '@/test/lanes';
+import { integrationLane, outsiderEmail, withCapabilities } from '@/test/lanes';
 import { service, signedInAs, stackName, stackUp } from '@/test/stack';
-import { fakeMember, type FakeMember } from '@/test/fake-member';
 
 const session = vi.hoisted(() => ({
   client: null as unknown,
-  member: null as unknown as FakeMember,
+  member: { role: 'member', household: { id: '' } },
 }));
 
 vi.mock('server-only', () => ({}));
 vi.mock('next/cache', () => ({ revalidatePath: () => undefined }));
-vi.mock('@/server/member', () => ({ requireMember: async () => session.member }));
+vi.mock('@/server/member', () => ({ requireMember: async () => withCapabilities(session.member) }));
 vi.mock('@/server/supabase/server', () => ({ createSessionClient: async () => session.client }));
 
 const { saveExtractionReview } = await import('./actions');
-
 
 const { lane, household, ryan } = integrationLane(import.meta.url);
 const propertyId = seedId(`seed:property:lane-${lane}:bao-loc`);
@@ -177,7 +175,7 @@ describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
 
   const asMember = () => {
     session.client = member;
-    session.member = fakeMember('member', household);
+    session.member = { role: 'member', household: { id: household } };
   };
 
   test('saving twice leaves one certificate, the parcels and structures of the truth, and no extra party', async () => {
@@ -390,10 +388,10 @@ describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
   test('a viewer and a member of another household write nothing', async () => {
     const { extractionId } = await waitingExtraction();
     session.client = member;
-    session.member = fakeMember('viewer', household);
+    session.member = { role: 'viewer', household: { id: household } };
     expect(await saveConfirmed(extractionId, acceptAll)).toEqual({ ok: false, reason: 'forbidden' });
     session.client = outsider;
-    session.member = fakeMember('admin', household);
+    session.member = { role: 'admin', household: { id: household } };
     expect(await saveConfirmed(extractionId, acceptAll)).toEqual({ ok: false, reason: 'not_reviewable' });
     expect(await written(extractionId)).toMatchObject({ certificates: 0, parcels: 0 });
     expect(await rest(`document_extractions?id=eq.${extractionId}&select=status`)).toEqual([{ status: 'needs_review' }]);
