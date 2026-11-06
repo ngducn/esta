@@ -46,7 +46,7 @@ export async function PropertyDetailFrame({
     getLocale(),
     signCoverPhotos(member.id, property.coverPhotoPath === null ? [] : [property.coverPhotoPath]),
     loadCompleteness(member.household.id, property.id),
-    member.role === 'viewer' ? null : expenseScope(member, property),
+    !member.can('edit') ? null : expenseScope(member, property),
   ]);
   const score = scores.get(property.id) ?? { percent: 100, failing: [] };
   const screen = (
@@ -68,7 +68,7 @@ export async function PropertyDetailFrame({
           certificateAddress: property.certificateAddressText,
           photoUrl: property.coverPhotoPath === null ? null : (photos.get(property.coverPhotoPath) ?? null),
           statuses: statusPills(property.statuses, statusWords(tp), locale),
-          edit: member.role === 'viewer' ? null : { href: `/properties/${property.id}/edit`, label: t('edit') },
+          edit: !member.can('edit') ? null : { href: `/properties/${property.id}/edit`, label: t('edit') },
           ask: { href: `/assistant?about=${property.id}`, label: t('askAssistantShort'), name: t('askAssistant') },
           completeness: {
             title: tc('title'),
@@ -99,7 +99,7 @@ export async function PropertyDetailFrame({
             items: nextMissing(score, 3).map((item) => ({
               id: item.id,
               label: tc(`checks.${item.id}`),
-              href: member.role === 'viewer' ? null : item.href,
+              href: !member.can('edit') ? null : item.href,
             })),
           }}
         />
