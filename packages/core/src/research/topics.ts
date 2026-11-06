@@ -11,7 +11,7 @@ export type ResearchTopic = {
   readonly source: 'auto';
 };
 
-export type TopicProperty = { readonly id: string; readonly kind: PropertyKind; readonly provinceCode: string; readonly communeCode: string | null };
+export type TopicProperty = { readonly id: string; readonly kind: PropertyKind; readonly provinceCode: string; readonly communeCode: string };
 
 /** A pre-2025 commune merged into `newCommuneCode`, whole or in part, by the names people still use (DOMAIN-VN §4). */
 export type LegacyUnit = { readonly newCommuneCode: string; readonly oldProvinceName: string; readonly oldDistrictName: string; readonly whole: boolean };
@@ -48,13 +48,13 @@ export function deriveResearchTopics(properties: readonly TopicProperty[], admin
   const provinces = distinct(properties.map((property) => property.provinceCode)).toSorted().map((code): ResearchTopic => {
     const held = properties.filter((property) => property.provinceCode === code);
     const name = shortProvinceName(nameOf(code));
-    const former = distinct(wholeMergersInto(held.flatMap((property) => (property.communeCode === null ? [] : [property.communeCode]))).map((unit) => shortProvinceName(unit.oldProvinceName))).filter((old) => !samePlace(old, name));
+    const former = distinct(wholeMergersInto(held.map((property) => property.communeCode)).map((unit) => shortProvinceName(unit.oldProvinceName))).filter((old) => !samePlace(old, name));
     const rented = distinct(held.map((property) => RENTED_AS[property.kind])).join(', ');
     const queries = [name, ...former].flatMap((place) => [`bảng giá đất ${place}`, `quy hoạch ${place}`, `hạ tầng giao thông ${place} vành đai metro cao tốc`, `thị trường cho thuê ${rented} ${place}`]);
     return { key: `province:${code}`, label: `${name}${formerly(former)}`, query_templates: queries, province_codes: [code], property_ids: ids(held), source: 'auto' };
   });
 
-  const communes = distinct(properties.flatMap((property) => (property.communeCode === null ? [] : [property.communeCode]))).toSorted().map((code): ResearchTopic => {
+  const communes = distinct(properties.map((property) => property.communeCode)).toSorted().map((code): ResearchTopic => {
     const held = properties.filter((property) => property.communeCode === code);
     const provinceCode = held[0]?.provinceCode ?? '';
     const province = shortProvinceName(nameOf(provinceCode));

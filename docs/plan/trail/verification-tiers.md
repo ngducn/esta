@@ -54,6 +54,7 @@ Review checklist for classes no mechanical check catches (a reviewer reads for e
 10. A loop over households or leases in a job: one failure is caught per item, logged with its id, returned in the summary and answered with a non-200 status (`cronHandler` answers 500 when `ok` is false).
 11. A writer race settled by an exclusion constraint: the constraint does not serialize writers (two sessions deadlock, 40P01, where the room answers taken). Take a row lock on the parent first, as `guard_lease` locks the unit, and race about 20 rooms in the integration test.
 12. An e2e spec that writes to a seeded entity another spec reads (a room added to the Dĩ An property made its card read vacant in `property-units` rule 7, #453): the rows a spec creates on a seeded household are removed in an `afterEach` (it runs when the test fails), or sit on a property no other spec asserts on. No lint can tell which seeded rows another spec asserts on, so the reader checks each `serviceUpsert` in a spec for it.
+13. Where a closing test enters: a test that closes an issue enters where the app enters (the action, op, tool, job or sync function) and never feeds an inner helper an input the real caller does not produce. #326 was closed on a province-only address that `readHeldProperties` rejects, so the new branch never ran under the real caller and reverting it passed every test.
 
 ## Planned tiers for the remaining PRs
 

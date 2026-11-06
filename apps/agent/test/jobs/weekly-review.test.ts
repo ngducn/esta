@@ -1,3 +1,4 @@
+import { WEB_CAPS } from '@esta/core/agent-limits';
 import { isoDate } from '@esta/core/date';
 import { describe, expect, it, vi } from 'vitest';
 import { JOBS } from '../../src/jobs/registry';
@@ -73,6 +74,13 @@ describe('weekly_review proposals (AGENT.md §5.5)', () => {
     expect((await retry.call('create_proposal', task('Kiểm tra'))).isError).toBe(false);
     expect((await retry.call('create_proposal', task('Gọi'))).text).toContain('already made 3 proposals');
     expect(proposals(tables).filter((row) => row.job_id !== `job:weekly_review:${HOUSEHOLD}:2026-W40`)).toHaveLength(3);
+  });
+
+  it("gives a retried review only what the job's earlier attempts left of its searches and fetches (#327)", async () => {
+    const tables = weeklyTables();
+    tables.agent_runs = [{ id: 'run-1', job_id: `job:${W41}:retry:1`, tool_calls: { WebSearch: 2, WebFetch: 1 } }];
+    const { prepared } = await weeklyRun(tables, { key: `${W41}:retry:1` });
+    expect(prepared.caps).toEqual({ WebSearch: WEB_CAPS.weekly_review.WebSearch - 2, WebFetch: WEB_CAPS.weekly_review.WebFetch - 1 });
   });
 
   it('lists only the proposals it stored, so a duplicate takes no slot and stays out of the result', async () => {

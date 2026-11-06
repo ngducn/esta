@@ -135,11 +135,22 @@ export const doubleCasts: Finder = (source) =>
     return (ts.isAsExpression(inner) || ts.isTypeAssertionExpression(inner)) && inner.type.kind === ts.SyntaxKind.UnknownKeyword;
   });
 
-/** `{ WebSearch: 4 }` or `{ WebFetch: 8 }`: a search or fetch budget written as a number instead of read from `WEB_CAPS`. */
-export const webCapLiterals: Finder = (source) =>
-  nodes(source, ts.SyntaxKind.PropertyAssignment).filter(
-    (node) => ts.isPropertyAssignment(node) && (ts.isIdentifier(node.name) || ts.isStringLiteral(node.name)) && (node.name.text === 'WebSearch' || node.name.text === 'WebFetch') && ts.isNumericLiteral(unwrap(node.initializer)),
-  );
+const CAP_PROPERTIES = new Set(['WebSearch', 'WebFetch', 'research_searches', 'research_fetches']);
+const CAP_CONSTANT = /(?:search|fetch)\w*(?:cap|limit|max)|(?:cap|limit|max)\w*(?:search|fetch)/i;
+const BOUND_METHODS = new Set(['max', 'catch', 'default']);
+
+/** A numeric literal given to a zod bound (`.max(12)`, `.catch(12)`, `.default(12)`) anywhere in `node`. */
+const hasLiteralBound = (node: ts.Node): boolean =>
+  (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression) && BOUND_METHODS.has(node.expression.name.text) && node.arguments.some((argument) => ts.isNumericLiteral(unwrap(argument)))) || ts.forEachChild(node, hasLiteralBound) === true;
+
+/** A search or fetch budget written as a number instead of read from `WEB_CAPS`: `{ WebSearch: 4 }`, a zod bound on `research_searches` such as `.max(12).catch(12)`, or `const SEARCH_CAP = 12`. */
+export const webCapLiterals: Finder = (source) => [
+  ...nodes(source, ts.SyntaxKind.PropertyAssignment).filter((node) => {
+    if (!ts.isPropertyAssignment(node) || !(ts.isIdentifier(node.name) || ts.isStringLiteral(node.name)) || !CAP_PROPERTIES.has(node.name.text)) return false;
+    return ts.isNumericLiteral(unwrap(node.initializer)) || hasLiteralBound(node.initializer);
+  }),
+  ...nodes(source, ts.SyntaxKind.VariableDeclaration).filter((node) => ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && CAP_CONSTANT.test(node.name.text) && node.initializer !== undefined && ts.isNumericLiteral(unwrap(node.initializer))),
+];
 
 const SQLSTATE = /^(?:22|23|40|42|P0)[0-9A-Z]{3}$/;
 const ERROR_NAME = /err|fail|cause|^e$/i;

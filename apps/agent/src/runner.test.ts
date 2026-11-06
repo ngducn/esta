@@ -141,6 +141,20 @@ describe('pollOnce for a portfolio_watch whose session ends as an error', () => 
     expect(states).toEqual(['usage_limited', 'usage_limited']);
   });
 
+  it('clears the paused line when the job that set it fails on its last attempt before any session starts (#361)', async () => {
+    const { job, states, worker } = watchWorker(join(CASES, 'usage-limit'), 0, undefined, [3]);
+    expect(await pollOnce(worker)).toBe(true);
+    expect(states).toEqual(['usage_limited']);
+    const prepare = JOBS.portfolio_watch.handler.prepare.bind(JOBS.portfolio_watch.handler);
+    vi.spyOn(JOBS.portfolio_watch.handler, 'prepare').mockImplementation((context) => (context.job.id === JOB_A ? Promise.reject(new Error('Reading the portfolio failed')) : prepare(context)));
+    Object.assign(job, { attempts: 3, run_after: '2026-10-07T00:00:00.000Z' });
+    while (await pollOnce(worker)) {
+      if (states.length > 4) break;
+    }
+    expect(job).toMatchObject({ status: 'failed' });
+    expect(states.at(-1)).toBe('ok');
+  });
+
   it('fails a rejected login at once, with the Thử lại item for admins and one note for operators that names no error text', async () => {
     const [file = ''] = readdirSync(join(CASES, 'usage-limit', 'portfolio_watch'));
     const usage = recordingSchema.parse(JSON.parse(readFileSync(join(CASES, 'usage-limit', 'portfolio_watch', file), 'utf8')));

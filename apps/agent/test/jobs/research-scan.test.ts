@@ -92,6 +92,14 @@ describe('the web caps in the PreToolUse policy (AGENT.md §5.2)', () => {
     expect(prepared.caps).toEqual({ WebSearch: 3, WebFetch: 5 });
     expect(prepared.prompt).toContain('3 searches and 5 fetches');
   });
+
+  it("gives a Thử lại job, which is a new job, its own full cap: the cap is per job, not per morning", async () => {
+    const tables = researchTables();
+    tables.agent_runs = [{ id: 'run-1', job_id: 'job-1', tool_calls: { WebSearch: 12, WebFetch: 8 } }];
+    const worker = replayWorker(memoryDb(tables), tables.agent_jobs ?? [], jobsDir, clockOn('2026-10-07T06:00:00+07:00'));
+    const prepared = await JOBS.research_scan.handler.prepare({ db: worker.db, job: { household_id: RESEARCH_HOUSEHOLD, id: 'job-1:retry:1' } as never, jobDir: jobsDir, timezone: 'Asia/Ho_Chi_Minh', waiting: [], failed: [], clock: worker.clock });
+    expect(prepared.caps).toEqual({ WebSearch: 12, WebFetch: 8 });
+  });
 });
 
 describe('add_research_item', () => {
@@ -348,6 +356,17 @@ describe('the research tools stay in their household (AGENT.md §4)', () => {
     expect(properties).toHaveLength(7);
     expect(properties.map((row) => row.id)).not.toContain('other-property');
     expect(properties[2]).toMatchObject({ handle: 'f3', property_label: 'Dãy trọ Dĩ An', commune_name: 'Phường Dĩ An', province_name: 'TP. Hồ Chí Minh' });
+  });
+
+  it('gives a property with no current address no place topic, and the one with an address its commune and its province (AGENT.md §5.2, #326)', async () => {
+    const tables = researchTables();
+    const baoLoc = (tables.properties ?? []).find((row) => row.code === 'BAOLOC');
+    tables.properties = (tables.properties ?? []).map((row) => (row === baoLoc ? { ...row, current_address: null } : row));
+    await syncResearchTopics(memoryDb(tables), RESEARCH_HOUSEHOLD);
+    const active = (tables.research_topics ?? []).filter((row) => row.active === true).map((row) => String(row.topic_key));
+    expect(active, 'no address, no topic for its province').not.toContain('province:68');
+    expect(active, 'a property with an address gives both').toEqual(expect.arrayContaining(['province:79', expect.stringMatching(/^commune:/)]));
+    expect(active.filter((key) => key.startsWith('commune:') && !key.endsWith('24823'))).not.toHaveLength(0);
   });
 
   it('syncs the topics from the portfolio, retiring those of a property the household no longer holds, and changes nothing on a rerun', async () => {

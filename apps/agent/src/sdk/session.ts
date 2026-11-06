@@ -170,12 +170,12 @@ export async function liveSession(request: SessionRequest, mode: Extract<RunMode
     }
   } catch (error) {
     // The SDK throws after it has yielded an error result, or once a tool failure aborted it; either already says what failed.
-    if (result === undefined && toolFailures.length === 0) throw error;
+    if (result === undefined && toolFailures.length === 0) throw stoppedBy(error, { result: unfinished(String(error), turns), model, toolCalls, denials });
   } finally {
     clearTimeout(timer);
   }
   if (toolFailures.length > 0) throw stoppedBy(toolFailures[0], { result: unfinished(String(toolFailures[0]), result?.num_turns ?? turns), model, toolCalls, denials });
-  if (result === undefined) throw new Error('The model session ended without a result');
+  if (result === undefined) throw stoppedBy(new Error('The model session ended without a result'), { result: unfinished('The model session ended without a result', turns), model, toolCalls, denials });
   const resumed = request.resume?.sessionId ?? null;
   if (resumed !== null && result.subtype === 'error_during_execution' && result.errors.some((error) => error.startsWith(SESSION_GONE))) throw new SessionGoneError(resumed);
   return { result: fromSdkResult(result, cause), model, toolCalls, denials };
