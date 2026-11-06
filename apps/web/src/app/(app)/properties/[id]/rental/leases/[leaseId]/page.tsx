@@ -18,7 +18,7 @@ import { StatusShape } from '@/components/status-shape';
 import { StatusMark } from '@/components/status-mark';
 import { getClock } from '@/server/clock';
 import { loadContractReading, loadLeaseDocuments } from '@/server/leases/detail';
-import { loadPropertyLeases, loadTenants, type InvoiceSummary, type LeaseWithTenant, type PropertyLeases } from '@/server/leases/load';
+import { loadPropertyLeases, loadTenants, type LeaseWithTenant, type PropertyLeases } from '@/server/leases/load';
 import { requireMember } from '@/server/member';
 import { loadPropertyDetail } from '@/server/properties/detail';
 import { loadPropertyRental } from '@/server/properties/rental';
