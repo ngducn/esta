@@ -127,9 +127,22 @@ export type Certificate = z.output<typeof certificateSchema>;
 export const identifiedCertificateSchema = certificateSchema.refine(identifies('certificate'), { error: UNIDENTIFIED });
 
 /**
- * [app rule] What the certificate card claims (#356): `Còn hiệu lực` needs an issue date behind it; every other status
- * shows as stored.
+ * [app rule] A land-use term has ended when a purpose names a date before `today`; `lâu dài` and a purpose with no term
+ * never end, and a term that ends today is still in force.
  */
-export function shownStatus(certificate: Pick<Certificate, 'status' | 'issued_on'>): CertificateStatus | 'undated' {
-  return certificate.status === 'valid' && certificate.issued_on === null ? 'undated' : certificate.status;
+export function landTermEnded(purposes: readonly Pick<Purpose, 'term'>[], today: IsoDate): boolean {
+  return purposes.some(({ term }) => term !== undefined && term !== LONG_TERM && term < today);
+}
+
+/**
+ * [app rule] What the certificate card claims (#356, #367): `Còn hiệu lực` needs an issue date behind it and no ended
+ * land-use term on the certificate's parcels; every other status shows as stored.
+ */
+export function shownStatus(
+  certificate: Pick<Certificate, 'status' | 'issued_on'>,
+  termEnded = false,
+): CertificateStatus | 'undated' | 'term_ended' {
+  if (certificate.status !== 'valid') return certificate.status;
+  if (certificate.issued_on === null) return 'undated';
+  return termEnded ? 'term_ended' : 'valid';
 }

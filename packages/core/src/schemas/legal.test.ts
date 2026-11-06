@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { isoDate } from '../date/iso-date';
 import { UNIDENTIFIED } from './identity';
-import { CERTIFICATE_FORMS, certificateSchema, newParcelSchema, parcelSchema, purposeSchema, shownStatus } from './legal';
+import { CERTIFICATE_FORMS, certificateSchema, landTermEnded, newParcelSchema, parcelSchema, purposeSchema, shownStatus } from './legal';
 
 const bank = '5f2b7c1e-0b7a-5c39-9d0e-2a4b6c8d0e1f';
 const holder = '0c1d2e3f-4a5b-5c6d-8e7f-8091a2b3c4d5';
@@ -120,10 +120,36 @@ describe('newParcelSchema', () => {
   });
 });
 
+describe('landTermEnded (#367)', () => {
+  const today = isoDate('2026-11-06');
+  const purposes = (...terms: (string | undefined)[]) =>
+    terms.map((term) => purposeSchema.parse({ land_use_code: 'ONT', ...(term === undefined ? {} : { term }) }));
+
+  it.each([
+    ['a term that ended yesterday', ['2026-11-05'], true],
+    ['a term that ended years ago beside a long-term purpose', ['long_term', '2019-03-02'], true],
+    ['a term that ends today, which is still in force', ['2026-11-06'], false],
+    ['a term that ends tomorrow', ['2026-11-07'], false],
+    ['a long-term purpose', ['long_term'], false],
+    ['purposes with no term written', [undefined], false],
+    ['no purposes', [], false],
+  ] as const)('reads %s', (_, terms, ended) => {
+    expect(landTermEnded(purposes(...terms), today)).toBe(ended);
+  });
+});
+
 describe('shownStatus', () => {
   it('claims Còn hiệu lực only for a certificate with an issue date, since a new form opens as valid (#356)', () => {
     expect(shownStatus({ status: 'valid', issued_on: isoDate('2015-03-02') })).toBe('valid');
     expect(shownStatus({ status: 'valid', issued_on: null })).toBe('undated');
+  });
+
+  it('does not claim Còn hiệu lực while a land-use term on the certificate has ended (#367)', () => {
+    const dated = { status: 'valid', issued_on: isoDate('2015-03-02') } as const;
+    expect(shownStatus(dated, true)).toBe('term_ended');
+    expect(shownStatus(dated, false)).toBe('valid');
+    expect(shownStatus({ status: 'valid', issued_on: null }, true)).toBe('undated');
+    for (const status of ['mortgaged', 'replaced', 'lost'] as const) expect(shownStatus({ status, issued_on: dated.issued_on }, true)).toBe(status);
   });
 
   it('shows a status Mẹ chose as she chose it', () => {
