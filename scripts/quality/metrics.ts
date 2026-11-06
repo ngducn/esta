@@ -332,7 +332,7 @@ export const METRICS: readonly Metric[] = [
   syntax({
     id: 'testid-query',
     message: 'A test finds an element by `data-testid`.',
-    home: { use: 'A role or label query (`getByRole`, `getByLabel`), the way Mẹ finds the control; a test id only where no role or label names the element.' },
+    home: { use: 'A role or label query (getByRole, getByLabel), the way Mẹ finds the control; a test id only where no role or label names the element.' },
     section: 'tests',
     scope: { include: TEST_FILE },
     find: testIdQueries,
