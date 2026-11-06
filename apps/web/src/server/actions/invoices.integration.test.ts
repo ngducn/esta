@@ -166,6 +166,7 @@ describe('receiving account actions against local Supabase (PLT-1)', () => {
   });
 });
 
+const ROOMS = 40;
 const LONG_AGO = '1926-01-01';
 /** A draft lease on its own room of the Demo property, started on a date of the test's choosing. */
 async function draftLease(start: string, rent: number) {
@@ -180,20 +181,29 @@ async function draftLease(start: string, rent: number) {
 }
 
 describe('the database keeps a room to one lease (#198)', () => {
-  it('lets one of two leases that start together on a room win, and tells the other the room is taken', async () => {
-    const first = await draftLease('2026-10-01', 3_000_000);
-    const second = crypto.randomUUID();
-    await post('leases', {
-      id: second, household_id: HOUSEHOLD, property_id: ids.property, unit_id: first.unit, tenant_party_id: ids.tenant, start_date: '2026-10-01', rent_vnd: 3_100_000,
-      billing_cycle_months: 1, period_anchor: 'calendar_month', utilities_mode: 'tenant_direct', due_offset_days: 0,
-    });
-    const both = [first.lease, second];
-    let next = 0;
-    const outcomes = await twoAtOnce(async () => (await client.rpc('activate_lease', { p_lease_id: both[next++] ?? '' })).error?.message ?? 'activated');
-    expect(outcomes.map((outcome) => (outcome.status === 'fulfilled' ? outcome.value : 'threw')).sort()).toEqual(['ESTA_LEASE_OVERLAP', 'activated']);
-    const { data } = await client.from('leases').select('status').in('id', both);
-    expect(data?.map((row) => row.status).sort()).toEqual(['active', 'draft']);
-  }, 30_000);
+  it('lets one of two leases that start together on each of 40 rooms win, and tells the other the room is taken, with no deadlock', async () => {
+    const rooms = await Promise.all(
+      Array.from({ length: ROOMS }, async () => {
+        const first = await draftLease('2026-10-01', 3_000_000);
+        const second = crypto.randomUUID();
+        await post('leases', {
+          id: second, household_id: HOUSEHOLD, property_id: ids.property, unit_id: first.unit, tenant_party_id: ids.tenant, start_date: '2026-10-01', rent_vnd: 3_100_000,
+          billing_cycle_months: 1, period_anchor: 'calendar_month', utilities_mode: 'tenant_direct', due_offset_days: 0,
+        });
+        return { unit: first.unit, both: [first.lease, second] };
+      }),
+    );
+    const raced = await Promise.all(
+      rooms.map(async ({ both }) => {
+        let next = 0;
+        const outcomes = await twoAtOnce(async () => (await client.rpc('activate_lease', { p_lease_id: both[next++] ?? '' })).error?.message ?? 'activated');
+        return outcomes.map((outcome) => (outcome.status === 'fulfilled' ? outcome.value : 'threw')).sort();
+      }),
+    );
+    expect(raced).toEqual(rooms.map(() => ['ESTA_LEASE_OVERLAP', 'activated']));
+    const { data } = await client.from('leases').select('unit_id, status').in('unit_id', rooms.map((room) => room.unit)).eq('status', 'active');
+    expect(data?.map((row) => row.unit_id).sort()).toEqual(rooms.map((room) => room.unit).sort());
+  }, 60_000);
 
   it('refuses a second active lease on a held room, even from the service role', async () => {
     const held = await draftLease('2026-10-01', 3_000_000);
