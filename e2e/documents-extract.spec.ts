@@ -190,7 +190,7 @@ test('rule 4: the saved result of a photographed sổ hồng keeps only the last
   expect(holders.map((holder) => holder.id_last4.value).toSorted()).toEqual(photo.printedIdNumbers.map((number) => number.slice(-4)).toSorted());
 });
 
-type Run = { num_turns: number; tool_calls: Record<string, number>; usage: { permission_denials?: { tool_name: string; tool_input: { file_path?: string } }[] } };
+type Run = { num_turns: number; tool_calls: Record<string, number>; usage: { permission_denials?: { tool_name: string; code: string }[] } };
 
 test('rule 5: a repair turn saves area_m2 as a number, a read outside the job directory is denied, and no job directory is left (DOC-5)', async ({ page }) => {
   const home = mkdtempSync(join(tmpdir(), 'esta-e2e-agent-'));
@@ -215,7 +215,7 @@ test('rule 5: a repair turn saves area_m2 as a number, a read outside the job di
 
   const deny = await runOf(denied);
   expect(deny.extraction?.status).toBe('needs_review');
-  expect(deny.runs[0]?.usage.permission_denials).toEqual([expect.objectContaining({ tool_name: 'Read', tool_input: { file_path: '/etc/hosts' } })]);
+  expect(deny.runs[0]?.usage.permission_denials).toEqual([{ tool_name: 'Read', code: 'policy', at: expect.any(String) }]);
 
   for (const jobId of [repair.jobId, deny.jobId]) expect(existsSync(join(home, 'jobs', jobId)), `jobs/${jobId}`).toBe(false);
   expect(readdirSync(join(home, 'jobs'))).toEqual([]);
