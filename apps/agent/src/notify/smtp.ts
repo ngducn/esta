@@ -3,8 +3,11 @@ import { createTransport } from 'nodemailer';
 export type OutgoingMail = { readonly from: string; readonly to: string; readonly subject: string; readonly html: string; readonly text: string };
 export type Mailer = { send(mail: OutgoingMail): Promise<void> };
 
-export function smtpMailer(smtpUrl: string): Mailer {
-  const transport = createTransport(smtpUrl);
+/** How long a mail host may take to connect, greet or answer before a send fails, so a dead host costs seconds, not minutes. */
+export const SMTP_TIMEOUT_MS = 10_000;
+
+export function smtpMailer(smtpUrl: string, timeoutMs: number = SMTP_TIMEOUT_MS): Mailer {
+  const transport = createTransport({ url: smtpUrl, connectionTimeout: timeoutMs, greetingTimeout: timeoutMs, socketTimeout: timeoutMs });
   return {
     async send(mail) {
       await transport.sendMail({ ...mail, encoding: 'utf-8' });

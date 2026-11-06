@@ -86,7 +86,7 @@ while (!stopping) {
     console.error(`[agent] ${error instanceof Error ? error.message : String(error)}`);
     return false;
   });
-  if (ran) await started.delivery?.run();
+  if (ran) started.delivery?.nudge();
   if (!ran && !stopping) await sleep(IDLE_POLL_MS);
 }
 rmSync(started.worker.configDir, { recursive: true, force: true });
