@@ -1,7 +1,7 @@
 {
   "metrics": {
     "clones": {
-      "value": 105,
+      "value": 104,
       "files": {
         "apps/web/src/app/(app)/documents/[documentId]/review/page.tsx": 1,
         "apps/web/src/app/(app)/properties/[id]/documents/page.tsx": 1,
@@ -25,7 +25,6 @@
         "e2e/assistant-status.spec.ts": 5,
         "e2e/auth-password.spec.ts": 5,
         "e2e/collections.spec.ts": 12,
-        "e2e/deposits.spec.ts": 1,
         "e2e/documents-extract.spec.ts": 9,
         "e2e/documents-multipage.spec.ts": 2,
         "e2e/documents-upload.spec.ts": 4,
@@ -52,7 +51,7 @@
       }
     },
     "duplicated-lines": {
-      "value": 1084,
+      "value": 1072,
       "files": {
         "apps/web/src/app/(app)/documents/[documentId]/review/page.tsx": 15,
         "apps/web/src/app/(app)/properties/[id]/documents/page.tsx": 6,
@@ -76,15 +75,14 @@
         "e2e/assistant-status.spec.ts": 33,
         "e2e/auth-password.spec.ts": 31,
         "e2e/collections.spec.ts": 138,
-        "e2e/deposits.spec.ts": 7,
         "e2e/documents-extract.spec.ts": 167,
         "e2e/documents-multipage.spec.ts": 13,
         "e2e/documents-upload.spec.ts": 35,
         "e2e/expenses.spec.ts": 12,
         "e2e/extraction-review.spec.ts": 29,
         "e2e/helpers/session.ts": 6,
-        "e2e/lease-detail.spec.ts": 9,
-        "e2e/leases.spec.ts": 30,
+        "e2e/lease-detail.spec.ts": 10,
+        "e2e/leases.spec.ts": 24,
         "e2e/properties-list.spec.ts": 30,
         "e2e/properties-map.spec.ts": 40,
         "e2e/property-completeness.spec.ts": 62,
@@ -293,10 +291,9 @@
       "files": {}
     },
     "e2e-slot-env-in-spec": {
-      "value": 20,
+      "value": 18,
       "files": {
         "e2e/assistant-status.spec.ts": 1,
-        "e2e/clock.spec.ts": 1,
         "e2e/collections.spec.ts": 1,
         "e2e/documents-extract.spec.ts": 1,
         "e2e/documents-multipage.spec.ts": 1,
@@ -304,7 +301,7 @@
         "e2e/documents-vault.spec.ts": 1,
         "e2e/extraction-review.spec.ts": 1,
         "e2e/fnd9-integration.spec.ts": 1,
-        "e2e/leases.spec.ts": 2,
+        "e2e/leases.spec.ts": 1,
         "e2e/properties-list.spec.ts": 1,
         "e2e/properties-map.spec.ts": 1,
         "e2e/property-completeness.spec.ts": 1,
@@ -371,7 +368,7 @@
       }
     },
     "testid-query": {
-      "value": 2124,
+      "value": 2123,
       "files": {
         "apps/web/src/components/assistant/answer-stream.test.tsx": 6,
         "apps/web/src/components/assistant/thread-composer.test.tsx": 6,
@@ -403,7 +400,7 @@
         "e2e/assistant-topics.spec.ts": 19,
         "e2e/assistant-watch.spec.ts": 15,
         "e2e/assistant-weekly.spec.ts": 5,
-        "e2e/clock.spec.ts": 2,
+        "e2e/clock.spec.ts": 1,
         "e2e/collections.spec.ts": 52,
         "e2e/connector-documents.spec.ts": 9,
         "e2e/connector-history.spec.ts": 7,
