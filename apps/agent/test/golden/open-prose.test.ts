@@ -25,7 +25,7 @@ const FIRST_PASS_REJECTS: Readonly<Record<string, readonly string[]>> = {
   'vi-choose-tenant': ['hai'],
   'vi-late-tenant': ['5'],
   'vi-inheritance': ['hai'],
-  // Not re-recorded live: the probe refuses to write a recording that holds a full national ID number, so this one is the earlier run.
+  // Re-recorded in the #496 run: the first pass wrote `cả hai loại` (both kinds), a false reject like `hai bên`. Only its hand-written source-repair turn is older, because the probe refused the third turn (a recording holding an ID-like number).
   'vi-red-pink-book': ['hai'],
   // `đồng loạt` and `phần trăm` are number words to the guard; the style rule now steers the model to `cùng lúc` and `theo tỷ lệ` (#496).
   'vi-raise-rent': ['đồng'],

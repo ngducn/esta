@@ -131,7 +131,7 @@ export const REVIEWER_SENTENCES: readonly string[] = [
   "Căn trống là số một.",
   "Phòng đầu tiên số một còn trống.",
   "Căn hộ đề số một đã thuê.",
-  "Mối lo số một là phòng ba.",
+  "Mối lo số một là giá thuê.",
   "Dãy tố số một có khách.",
   "Bảo hiểm cho bên thứ ba.",
   "Phòng nằm ở bên thứ ba của dãy.",

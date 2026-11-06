@@ -25,15 +25,6 @@ const ENGLISH = wordSet(
   ].join(' '),
 );
 
-/**
- * English grammar words that are no Vietnamese syllable typed without marks (so not it, to, in, on, no, do, can, the).
- * A message that carries two of them is an English sentence, whatever names it holds (#364).
- */
-const FUNCTION_WORDS = wordSet(
-  'i you your we they she should could would will shall is are was were has have had does did of for with from about what which who when where why how there these those and or'
-);
-const MIN_FUNCTION_WORDS = 2;
-
 /** Vietnamese words typed without their marks. A word with a mark needs no entry: any mark makes a word Vietnamese. */
 const VIETNAMESE = wordSet(
   'khong co la cua va bao nhieu nao gi thi duoc cho nay da chua nen hay voi cac nhung toi thu tien thang nam viet tin nhan dong nhac gia han ban sao ai dau gio muon lam giup hoi tra tu lai roi khach thue phong nha ngay xem gui nop dien nuoc tre loi vao ra xin vui con anh chi em bac chu cau di mot ba nguoi ve tai san dat',
@@ -50,23 +41,21 @@ const tokensOf = (text: string): string[] => text.normalize('NFC').toLowerCase()
  * language, but each of its marked words would count as Vietnamese. A label matches whole tokens, whatever the case
  * and the marks, and the longest label takes its tokens first.
  */
-function withoutLabels(tokens: readonly string[], labels: readonly string[]): { readonly kept: string[]; readonly names: number } {
+function withoutLabels(tokens: readonly string[], labels: readonly string[]): string[] {
   const folded = tokens.map(foldVietnamese);
   const names = labels
     .map((label) => tokensOf(label).map(foldVietnamese))
     .filter((name) => name.length > 0)
     .toSorted((a, b) => b.length - a.length);
   const taken = new Set<number>();
-  let found = 0;
   for (const name of names) {
     for (let at = 0; at + name.length <= folded.length; at++) {
       if (!name.every((token, offset) => folded[at + offset] === token && !taken.has(at + offset))) continue;
       for (let offset = 0; offset < name.length; offset++) taken.add(at + offset);
-      found++;
       at += name.length - 1;
     }
   }
-  return { kept: tokens.filter((_, index) => !taken.has(index)), names: found };
+  return tokens.filter((_, index) => !taken.has(index));
 }
 
 /**
@@ -76,7 +65,7 @@ function withoutLabels(tokens: readonly string[], labels: readonly string[]): { 
  * passage is dropped the same way when the words around it hold Vietnamese. Anything else is read whole.
  */
 function instruction(message: string, labels: readonly string[]): string {
-  const vietnameseWords = (text: string) => withoutLabels(tokensOf(text), labels).kept.filter((token) => hasMark(token) || VIETNAMESE.has(token)).length;
+  const vietnameseWords = (text: string) => withoutLabels(tokensOf(text), labels).filter((token) => hasMark(token) || VIETNAMESE.has(token)).length;
   const unquoted = message.replace(/["“«][^"”»]*["”»]/gu, ' ');
   const [head = '', ...rest] = unquoted.split(':');
   if (rest.length > 0 && vietnameseWords(head) >= 2) return head;
@@ -86,16 +75,12 @@ function instruction(message: string, labels: readonly string[]): string {
 /**
  * The language to reply in: English when the message is clearly English, Vietnamese when it holds a Vietnamese word
  * (marked or not), and otherwise `fallback`, the language the household reads. `labels` are the household's own
- * property nicknames, unit labels, party names and place names, which count as neither language. Names found count as
- * one Vietnamese word in all, never one each, in a household that reads Vietnamese, unless the message holds two
- * English grammar words (#364): a full English sentence naming a record stays English.
+ * property nicknames, unit labels, party names and place names, which count as neither language.
  */
 export function replyLanguage(message: string, fallback: Locale, labels: readonly string[] = []): Locale {
-  const { kept, names } = withoutLabels(tokensOf(instruction(message, labels)), labels);
-  const words = kept.flatMap((token) => token.match(/\p{L}+/gu) ?? []);
+  const words = withoutLabels(tokensOf(instruction(message, labels)), labels).flatMap((token) => token.match(/\p{L}+/gu) ?? []);
   const english = words.filter((word) => ENGLISH.has(word)).length;
-  const functionWords = words.filter((word) => FUNCTION_WORDS.has(word)).length;
-  const vietnamese = words.filter((word) => hasMark(word) || VIETNAMESE.has(word)).length + (names > 0 && fallback === 'vi' && functionWords < MIN_FUNCTION_WORDS ? 1 : 0);
+  const vietnamese = words.filter((word) => hasMark(word) || VIETNAMESE.has(word)).length;
   if (english >= RULE.minEnglishWords && english >= RULE.englishPerVietnameseWord * vietnamese) return 'en';
   return vietnamese > 0 ? 'vi' : fallback;
 }

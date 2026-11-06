@@ -31,7 +31,6 @@ type Token = { readonly word: string; readonly lower: string; readonly start: nu
 type Context = {
   readonly neighbors: readonly Token[];
   readonly spacedBefore: Token | undefined;
-  /** The word before `spacedBefore`, when only a space or a hyphen stands between them. */
   readonly spacedAfter: Token | undefined;
   /** The `spacedBefore` and `spacedAfter` words with no line break between them and this one. */
   readonly sameLine: readonly Token[];

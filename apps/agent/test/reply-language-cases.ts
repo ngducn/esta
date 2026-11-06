@@ -62,23 +62,4 @@ export const VIETNAMESE_WITH_ENGLISH_WORDS = [
   'Dịch giúp mẹ: "your rent is due tomorrow please pay"',
   'Mẹ muốn dịch "your rent is due tomorrow please pay" sang tiếng Việt',
   'Tóm tắt giúp mẹ đoạn này: the tenant will pay the deposit next month and the lease will renew',
-  'Gửi reminder rent late Phòng 3',
-  'Mẹ check Đất Bảo Lộc late send reminder',
-  'Gửi reminder rent late Dãy trọ Dĩ An',
-  'Nhắc tenant late rent Phòng 4 giúp mẹ',
-  'Mẹ check Đất vườn Long An late rent reminder',
-  'Gửi message rent late Phòng 8',
-  'Soạn reminder rent late Kho Biên Hòa',
-  'Check giúp mẹ Mặt bằng Quận 1 late rent send reminder',
-] as const;
-
-/** Full English sentences that name a record: English in a household that reads Vietnamese too (#364). */
-export const ENGLISH_SENTENCES_NAMING_RECORDS = [
-  'Should I renew the lease on Căn hộ Thủ Đức, mẹ?',
-  'Is the tenant in Phòng 5 paying late?',
-  'Can you tell me what Hoàng Văn Em Demo owes for Phòng 3?',
-  'I think the rent for Đất Bảo Lộc should be higher.',
-  'Why was the deposit for Kho Biên Hòa not paid?',
-  'Write to Trần Thị Bình Demo that she has to pay for Phòng 4.',
-  'What is the rent of Mặt bằng Quận 1 and when does it end?',
 ] as const;
