@@ -22,6 +22,7 @@ export const SEED_EXEMPT: Readonly<Record<string, string>> = {
   research_items:
     'runtime: research_scan writes them at 06:00 from its replay recording; seeded items would hold the recorded links, so the replayed scan would drop every one as a duplicate and write the empty note instead',
   notifications: 'runtime: the worker queues a notice when a brief or an action note is written; a seeded row would count against the daily cap and hide the notice the specs wait for',
+  cron_runs: 'runtime: each cron route writes a row per run, so a fresh reset reads every nightly job as not yet run',
   test_clock: 'runtime: set by pnpm clock:set and the tests (FND-9)',
   conversations: 'runtime: a member asks on Hỏi; a seeded conversation would sit on Hỏi with no job that answered it, and the ask specs start from none',
   messages: 'runtime: the questions and answers of conversations, as conversations',

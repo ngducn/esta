@@ -27,7 +27,7 @@ export default async function StatementImportPage() {
       <h1 className="text-title-2 break-words lg:text-title-1">{t('title')}</h1>
     </>
   );
-  if (member.role !== 'admin') {
+  if (!member.can('import')) {
     return (
       <div className="flex flex-col gap-5">
         {heading}

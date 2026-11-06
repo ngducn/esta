@@ -2,11 +2,13 @@ import { getTranslations } from 'next-intl/server';
 import Link from 'next/link';
 import { assistantStatus } from '@/components/assistant/assistant-header';
 import { operatorTime } from '@/components/assistant/operator-card';
+import { CronStatusLine } from '@/components/assistant/cron-status-line';
 import { WorkerStatusLine } from '@/components/assistant/worker-status-line';
 import { Card } from '@/components/ui/card';
 import { loadDiagnostics } from '@/server/agent/diagnostics';
 import { getClock } from '@/server/clock';
 import type { Member } from '@/server/member';
+import { loadCronHealth } from '@/server/ops/cron-status';
 import { loadResearchTopics } from '@/server/settings/load';
 import { SettingsSection } from './settings-section';
 
@@ -15,16 +17,18 @@ const RECENT_RUNS = 5;
 export async function AssistantSection({ member }: { member: Member }) {
   const clock = await getClock();
   const now = clock.now();
-  const [t, status, topics, diagnostics] = await Promise.all([
+  const [t, status, topics, diagnostics, cronHealth] = await Promise.all([
     getTranslations('settings'),
     assistantStatus(now),
     loadResearchTopics(member.household.id),
-    member.isOperator ? loadDiagnostics(member.household.id, now) : null,
+    member.can('operate') ? loadDiagnostics(member.household.id, now) : null,
+    member.can('operate') ? loadCronHealth(member.household.id, now) : null,
   ]);
   return (
     <SettingsSection id="assistant" title={t('assistant')} intro={t('assistantIntro')}>
       <Card className="flex flex-col gap-4">
         <WorkerStatusLine status={status} />
+        {cronHealth === null ? null : <CronStatusLine health={cronHealth} />}
         <div className="flex flex-col gap-2">
           <h3 className="text-headline font-semibold">{t('topics')}</h3>
           {topics.length === 0 ? (
