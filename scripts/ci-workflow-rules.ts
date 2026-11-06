@@ -8,11 +8,12 @@ const stepSchema = z.looseObject({
   uses: z.string().optional(),
   run: z.string().optional(),
   with: z.record(z.string(), z.unknown()).optional(),
+  env: z.record(z.string(), z.unknown()).optional(),
 });
 const workflowSchema = z.looseObject({
   on: z.union([z.string(), z.array(z.string()), z.record(z.string(), z.unknown())]),
   permissions: z.record(z.string(), z.string()).optional(),
-  jobs: z.record(z.string(), z.looseObject({ steps: z.array(stepSchema).default([]) })),
+  jobs: z.record(z.string(), z.looseObject({ steps: z.array(stepSchema).default([]), needs: z.union([z.string(), z.array(z.string())]).optional(), if: z.union([z.string(), z.boolean()]).optional() })),
 });
 
 export type Workflow = z.infer<typeof workflowSchema>;
@@ -79,3 +80,69 @@ export const jobScriptsOnDisk = (root: string): string[] =>
 
 /** The job scripts a local CI script mentions by path. */
 export const scriptsCalledBy = (shell: string): string[] => [...new Set(shell.match(JOB_SCRIPT) ?? [])].sort();
+
+type Scenario = { event: string; draft: boolean };
+const FULL_RUN = ['check', 'db', 'e2e', 'e2e-report', 'prod-build', 'design', 'mutation', 'ci'];
+/** What each kind of run must start, by CLAUDE.md "CI": a draft saves the heavy jobs, a push to main repeats a tested result. */
+const EXPECTED_RUNS: Array<Scenario & { jobs: string[] }> = [
+  { event: 'pull_request', draft: true, jobs: ['check', 'design'] },
+  { event: 'pull_request', draft: false, jobs: FULL_RUN },
+  { event: 'push', draft: false, jobs: ['check', 'db', 'prod-build', 'design', 'ci'] },
+  { event: 'schedule', draft: false, jobs: FULL_RUN },
+  { event: 'workflow_dispatch', draft: false, jobs: FULL_RUN },
+];
+
+/** Evaluates a `${{ }}` expression over the github context, the way Actions does for the operators ci.yml uses. */
+function evaluate(value: unknown, { event, draft }: Scenario): unknown {
+  if (typeof value !== 'string') return value;
+  const match = value.trim().match(/^\$\{\{([\s\S]*)\}\}$/);
+  if (!match) return value;
+  const github = { event_name: event, event: { pull_request: event === 'pull_request' ? { draft } : undefined }, ref: 'refs/heads/main', run_id: '1' };
+  const run = new Function('github', 'always', 'cancelled', `return (${match[1]});`) as (...args: unknown[]) => unknown;
+  return run(github, () => true, () => false);
+}
+
+const statusFunction = /\b(always|cancelled|failure)\(/;
+
+/** The jobs a run of this kind starts, in the order Actions would decide them. */
+export function jobsThatRun(workflow: Workflow, scenario: Scenario): string[] {
+  const ran = new Set<string>();
+  const decided = new Set<string>();
+  const decide = (name: string): void => {
+    if (decided.has(name)) return;
+    decided.add(name);
+    const job = workflow.jobs[name];
+    if (!job) return;
+    const needs = typeof job.needs === 'string' ? [job.needs] : (job.needs ?? []);
+    needs.forEach(decide);
+    const condition = job.if;
+    const overridesStatus = typeof condition === 'string' && statusFunction.test(condition);
+    if (!overridesStatus && !needs.every((need) => ran.has(need))) return;
+    if (condition === undefined || evaluate(condition, scenario)) ran.add(name);
+  };
+  Object.keys(workflow.jobs).forEach(decide);
+  return [...ran].sort();
+}
+
+/** Which jobs run on a draft, a ready pull request, a push to main, the nightly run and a manual run; whether `ci` can pass around a skipped job. */
+export function runShapeProblems(workflow: Workflow): string[] {
+  const problems: string[] = [];
+  const on = workflow.on;
+  const triggers = typeof on === 'object' && !Array.isArray(on) ? on : {};
+  const pullRequest = triggers['pull_request'] as { types?: string[] } | null | undefined;
+  if (!pullRequest?.types?.includes('ready_for_review')) problems.push('pull_request does not list ready_for_review, so marking a draft ready would not start the full run');
+  for (const type of ['opened', 'synchronize', 'reopened']) if (!pullRequest?.types?.includes(type)) problems.push(`pull_request types lack ${type}`);
+  if (!('schedule' in triggers)) problems.push('the workflow has no schedule for the nightly full run');
+  if (!('workflow_dispatch' in triggers)) problems.push('the workflow has no workflow_dispatch');
+  for (const scenario of EXPECTED_RUNS) {
+    const label = scenario.draft ? 'a draft pull request' : scenario.event;
+    const actual = jobsThatRun(workflow, scenario);
+    const expected = [...scenario.jobs].sort();
+    // On a draft `ci` must be skipped; on every other run it must run.
+    for (const name of actual.filter((job) => !expected.includes(job))) problems.push(`${label} runs ${name}, which it must skip`);
+    for (const name of expected.filter((job) => !actual.includes(job))) problems.push(`${label} skips ${name}, which it must run`);
+  }
+  const allowed = String(evaluate(workflow.jobs['ci']?.steps.find((step) => step.env?.['ALLOWED'] !== undefined)?.env?.['ALLOWED'], { event: 'pull_request', draft: false }) ?? '');
+  if (allowed.trim() !== 'success') problems.push(`ci accepts "${allowed}" on a ready pull request; only success may pass`);
+  return problems;
+}

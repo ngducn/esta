@@ -2,6 +2,8 @@ name: CI
 
 on:
   pull_request:
+    # A draft runs check and design only; marking it ready starts the full run.
+    types: [opened, synchronize, reopened, ready_for_review]
   push:
     branches: [main]
     # The coordinator's notes are read by no check; a push of only these skips CI. Pull requests always run.
@@ -12,13 +14,17 @@ on:
       - docs/plan/trail/owner-brief.md
       - docs/plan/trail/lane-brief.md
       - docs/plan/trail/verification-tiers.md
+  # A push to main repeats a result its pull request run already tested, so it runs check, design, db and prod-build;
+  # the nightly run and a manual run are the full suite.
+  schedule:
+    - cron: '0 19 * * *'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.ref }}
+  group: ci-${{ github.event.pull_request.number || (github.event_name == 'push' && github.ref) || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
@@ -48,6 +54,7 @@ jobs:
       - run: tools/ci/jobs/check.sh
 
   db:
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -74,6 +81,7 @@ jobs:
         run: tools/ci/images.sh save ~/.cache/supabase-images
 
   e2e:
+    if: ${{ github.event_name != 'push' && (github.event_name != 'pull_request' || !github.event.pull_request.draft) }}
     name: e2e (${{ matrix.id }})
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -126,7 +134,7 @@ jobs:
 
   e2e-report:
     needs: e2e
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && github.event_name != 'push' && (github.event_name != 'pull_request' || !github.event.pull_request.draft) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -149,6 +157,7 @@ jobs:
           retention-days: 7
 
   prod-build:
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.draft }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -171,6 +180,7 @@ jobs:
       - run: tools/ci/jobs/design.sh
 
   mutation:
+    if: ${{ github.event_name != 'push' && (github.event_name != 'pull_request' || !github.event.pull_request.draft) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -182,13 +192,16 @@ jobs:
 
   ci:
     needs: [check, db, e2e, e2e-report, prod-build, design, mutation]
-    if: ${{ always() }}
+    # Skipped on a draft, so it sends no failure event and no merge can read it as green.
+    if: ${{ always() && (github.event_name != 'pull_request' || !github.event.pull_request.draft) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Every job passed
         run: |
           echo "$RESULTS"
-          for result in $RESULTS; do [ "$result" = success ] || exit 1; done
+          for result in $RESULTS; do case " $ALLOWED " in *" $result "*) ;; *) exit 1 ;; esac; done
         env:
+          # A push to main skips the e2e jobs and mutation by design; no other run may pass with a skipped job.
+          ALLOWED: ${{ github.event_name == 'push' && 'success skipped' || 'success' }}
           RESULTS: ${{ join(needs.*.result, ' ') }}
