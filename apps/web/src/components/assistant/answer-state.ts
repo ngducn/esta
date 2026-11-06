@@ -1,4 +1,4 @@
-import { isSourceRef, type AnswerRef } from '@esta/core/assistant';
+import type { AnswerRef, SourceRef } from '@esta/core/assistant';
 
 /** `deferred` is a streaming row the daily ask cap moved to the next local midnight (`messages.deferred_until`). */
 const ANSWER_STATUSES = ['streaming', 'deferred', 'done', 'error'] as const;
@@ -11,6 +11,9 @@ export type AnswerState = { readonly content: string; readonly status: AnswerSta
 
 /** One server-sent event of `/api/answers/{id}`. */
 export type AnswerEvent = AnswerState | { readonly status: (typeof STOPPED)[number] };
+
+/** Mirrors `isSourceRef` of `@esta/core/assistant`, which a client island must not import: its barrel drags the whole assistant module into the initial bundle. */
+export const isSourceRef = (ref: unknown): ref is SourceRef => isObject(ref) && ref.kind === 'source' && typeof ref.url === 'string' && typeof ref.n === 'number' && typeof ref.source_name === 'string';
 
 const isObject = (value: unknown): value is Readonly<Record<string, unknown>> => typeof value === 'object' && value !== null;
 const isOneOf = <T extends string>(options: readonly T[], value: unknown): value is T => (options as readonly unknown[]).includes(value);

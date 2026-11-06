@@ -1,10 +1,9 @@
-import { isSourceRef, type AnswerRef, type SourceRef } from '@esta/core/assistant';
-import { formatDate, type Locale } from '@esta/core/format';
+import type { AnswerRef, SourceRef } from '@esta/core/assistant';
 import type { ReactNode, Ref } from 'react';
 import { CitationChip } from './citation-chip';
-import type { AnswerState } from './answer-state';
+import { isSourceRef, type AnswerState } from './answer-state';
 
-export type AnswerLabels = Readonly<Record<'streaming' | 'deferred' | 'error' | 'stalled' | 'searching', string>> & { /** The messages `assistant.citationLabel` ({index}, {source}) and `assistant.market.source` ({name}, {date}), filled here because a client island holds no translator. */ readonly citation: string; readonly dated: string; readonly locale: Locale };
+export type AnswerLabels = Readonly<Record<'streaming' | 'deferred' | 'error' | 'stalled' | 'searching', string>> & { /** The messages `assistant.citationLabel` ({index}, {source}) and `assistant.market.source` ({name}, {date}), filled here because a client island holds no translator. */ readonly citation: string; readonly dated: string};
 
 export type ShownAnswer = AnswerState | { readonly content: string; readonly refs: readonly AnswerRef[]; readonly status: 'stalled'; readonly activity?: null };
 
@@ -15,7 +14,7 @@ export function AnswerView({ shown, labels, children, ref }: { shown: ShownAnswe
   const searching = shown.status === 'streaming' && shown.content === '' && shown.activity === 'web';
   const line = shown.status === 'done' || (shown.status === 'streaming' && shown.content !== '') ? null : searching ? labels.searching : labels[shown.status];
   const sources = shown.refs.filter(isSourceRef);
-  const named = (source: SourceRef) => (source.published_on === null ? source.source_name : labels.dated.replace('{name}', source.source_name).replace('{date}', formatDate(source.published_on, labels.locale)));
+  const named = (source: SourceRef) => (source.published_on === null ? source.source_name : labels.dated.replace('{name}', source.source_name).replace('{date}', source.published_on.split('-').reverse().join('/')));
   return (
     <div ref={ref} data-testid="answer" data-status={shown.status} data-activity={searching ? 'web' : undefined} aria-busy={shown.status === 'streaming'} className="flex flex-col gap-3">
       {shown.content === '' ? null : children}
