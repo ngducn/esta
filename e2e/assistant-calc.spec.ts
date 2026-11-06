@@ -13,6 +13,7 @@ test.describe.configure({ mode: 'serial' });
 
 const RAISE_ROOM = 'Nếu tăng tiền phòng 2 ở Dĩ An lên 4tr thì mỗi năm thu thêm bao nhiêu?';
 const LOAN = 'Vay 2 tỷ trong 15 năm, lãi 9%/năm thì mỗi tháng trả bao nhiêu?';
+const MONTHLY_LOAN = 'Vay 2 tỷ trong 15 năm, lãi 0,8% một tháng thì mỗi tháng trả bao nhiêu?';
 const HOME_LOAN = 'Lãi suất vay mua nhà bây giờ khoảng bao nhiêu?';
 const LOAN_AT_QUOTED_RATE = 'Với lãi suất đó, vay 2 tỷ trong 15 năm mỗi tháng trả bao nhiêu?';
 
@@ -61,6 +62,18 @@ test('thread case T6: Mẹ asks the monthly payment of a loan she types, and rea
   await expect(working).toContainText(`${formatVnd(money(2_000_000_000), 'vi')}, 9%/năm, 180 tháng → ${paid}/tháng`);
   expect(await seriousAxeViolations(page)).toEqual([]);
   await shot(page, 'p5-15-loan-390x844-dark');
+});
+
+test('thread case T6 with a monthly rate: Mẹ reads the conversion line first, then a payment of 21.005.345 ₫', async ({ page }) => {
+  await open(page, 'me.lane3@demo.esta.test', 'light', PHONE);
+  await freshThread(page, 'me', 3);
+  await sendAndWaitForAnswer(page, MONTHLY_LOAN);
+  await expect(answer(page)).toContainText(`mỗi tháng trả ${formatVnd(money(21_005_345), 'vi')}.`);
+  const working = answer(page).getByTestId('answer-working').getByRole('listitem');
+  await expect(working).toHaveText(['Cách tính: 0,8%/tháng × 12 = 9,6%/năm', `Cách tính: ${formatVnd(money(2_000_000_000), 'vi')}, 9,6%/năm, 180 tháng → ${formatVnd(money(21_005_345), 'vi')}/tháng`]);
+  expect(await seriousAxeViolations(page)).toEqual([]);
+  expect(await noSidewaysScroll(page), 'no sideways scroll').toBe(true);
+  await shot(page, 'p5-15-monthly-loan-390x844-light');
 });
 
 test('thread case T7 follow-up: Ryan applies the quoted home loan rate to a loan he types, and the working names the rate beside its source chip', async ({ page }) => {

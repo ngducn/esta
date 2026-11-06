@@ -31,7 +31,10 @@ function conversationSoFar(turns: readonly AskedTurn[]): string[] {
 }
 
 const OTHER_PERIOD_RATE =
-  'Her message has a rate for a period other than a year. Esta reads loan rates per year, so do not call a number missing and do not convert it: say that Esta reads loan rates per year and ask her for the yearly rate.';
+  'Her message has a rate for a period other than a year or a month. Esta reads loan rates per year, so do not call a number missing and do not convert it: say that Esta reads loan rates per year and ask her for the yearly rate.';
+const MONTHLY_RATE =
+  'A rate she wrote per month is listed with /tháng. Never use it as a loan rate directly: first call calculate monthly_rate_to_yearly on it, then use that result as the rate of loan_payment, so both workings show.';
+const isMonthly = ({ value_typed }: TypedRecord): boolean => typeof value_typed === 'object' && value_typed !== null && (value_typed as { per?: unknown }).per === 'month';
 
 function typedSection(typed: readonly TypedRecord[] | undefined, otherPeriodRate = false): string[] {
   const note = otherPeriodRate ? ['', OTHER_PERIOD_RATE] : [];
@@ -41,6 +44,7 @@ function typedSection(typed: readonly TypedRecord[] | undefined, otherPeriodRate
     '',
     `Numbers the family member wrote in this conversation, each a record of this turn. Take one as an operand of calculate, such as "${typed[0]?.handle}.value_display", or cite it as {{${typed[0]?.handle}.value_display}}; never write one yourself:`,
     ...typed.map(({ handle, value_display, typed_text }) => `${handle}: ${value_display} (written "${typed_text}")`),
+    ...(typed.some(isMonthly) ? [MONTHLY_RATE] : []),
   ];
 }
 

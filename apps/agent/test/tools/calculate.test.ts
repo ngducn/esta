@@ -34,6 +34,19 @@ describe('calculate', () => {
     expect(String(record.working_display)).toContain('2.000.000.000 ₫');
   });
 
+  it('B1c turns her monthly rate into a yearly one as its own step, then pays 21.005.345 ₫ a month', async () => {
+    const { typed, log, run } = turn('Vay 2 tỷ trong 15 năm, lãi 0,8% một tháng thì mỗi tháng trả bao nhiêu?');
+    expect(typed.map(({ handle, value_display }) => [handle, value_display])).toEqual([['f1', '2.000.000.000\u00a0₫'], ['f2', '180 tháng'], ['f3', '0,8%/tháng']]);
+    await expect(run({ op: 'loan_payment', operands: ['f1.value_display', 'f3.value_display', 'f2.value_display'] })).rejects.toBeInstanceOf(ToolRejection);
+    const yearly = (await run({ op: 'monthly_rate_to_yearly', operands: ['f3.value_display'] })) as Record<string, unknown>;
+    const loan = (await run({ op: 'loan_payment', operands: ['f1.value_display', `${String(yearly.handle)}.result_display`, 'f2.value_display'] })) as Record<string, unknown>;
+    expect(loan.result_display).toBe('21.005.345\u00a0₫');
+    expect(log.map(({ working_display }) => working_display)).toEqual([
+      '0,8%/tháng × 12 = 9,6%/năm',
+      '2.000.000.000 ₫, 9,6%/năm, 180 tháng → 21.005.345 ₫/tháng',
+    ].map((line) => line.replaceAll(' ₫', '\u00a0₫')));
+  });
+
   it('reads the rate from a number in a web quote', async () => {
     const { sheet, cite, run } = turn('Vay 2 tỷ trong 15 năm thì mỗi tháng trả bao nhiêu?');
     const fetched = new Map<string, FetchedPage>();
@@ -72,9 +85,9 @@ describe('calculate', () => {
     expect(await run({ op: 'monthly_to_yearly', operands: ['f1.value_display'] })).toBe(await run({ op: 'monthly_to_yearly', operands: ['f1.value_display'] }));
   });
 
-  it('B1 lists no rate for a monthly rate, and works the loan out from the yearly rate she then types', async () => {
-    const monthly = turn('Vay 2 tỷ trong 15 năm, lãi 0,8% một tháng thì mỗi tháng trả bao nhiêu?');
-    expect(monthly.typed.map(({ value_typed }) => (value_typed as { kind: string }).kind)).toEqual(['vnd', 'months']);
+  it('B1 lists no rate for a quarterly rate, and works the loan out from the yearly rate she then types', async () => {
+    const quarterly = turn('Vay 2 tỷ trong 15 năm, lãi 2,4% một quý thì mỗi tháng trả bao nhiêu?');
+    expect(quarterly.typed.map(({ value_typed }) => (value_typed as { kind: string }).kind)).toEqual(['vnd', 'months']);
     const yearly = turn('Vay 2 tỷ trong 15 năm, lãi 9,6%/năm thì mỗi tháng trả bao nhiêu?');
     const record = (await yearly.run({ op: 'loan_payment', operands: ['f1.value_display', 'f3.value_display', 'f2.value_display'] })) as Record<string, unknown>;
     expect(record.result_display).toBe('21.005.345\u00a0₫');

@@ -108,6 +108,7 @@ export const ASK_CASES: readonly AskCase[] = [
     toolCalls: [call('calculate', { op: 'loan_payment', operands: ['f1.value_display', 'f3.value_display', 'f2.value_display'] })],
     reply: 'Vay {{f1.value_display}} trong {{f2.value_display}}, lãi {{f3.value_display}} mỗi năm, thì mỗi tháng trả {{f4.result_display}}.',
   },
+  { id: 't6-monthly-rate-loan', question: 'Vay 2 tỷ trong 15 năm, lãi 0,8% một tháng thì mỗi tháng trả bao nhiêu?', toolCalls: [call('calculate', { op: 'monthly_rate_to_yearly', operands: ['f3.value_display'] }), call('calculate', { op: 'loan_payment', operands: ['f1.value_display', 'f4.result_display', 'f2.value_display'] })], reply: 'Vay {{f1.value_display}} trong {{f2.value_display}}, lãi {{f3.value_display}}, tức {{f4.result_display}} mỗi năm, thì mỗi tháng trả {{f5.result_display}}.' },
   {
     id: 'procedure-cited',
     question: 'Thủ tục sang tên sổ đỏ cần những giấy tờ gì?',

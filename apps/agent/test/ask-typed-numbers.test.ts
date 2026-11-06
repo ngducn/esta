@@ -65,8 +65,15 @@ describe('the numbers she wrote, listed by handle before the first turn', () => 
     expect(follow).toContain('such as "f4.value_display", or cite it as {{f4.value_display}}');
   });
 
+  it('B1c lists a monthly rate with its period and tells the model to turn it into a yearly one first', async () => {
+    const prompt = await promptFor('Vay 2 tỷ trong 15 năm, lãi 0,8% một tháng thì mỗi tháng trả bao nhiêu?');
+    expect(prompt).toContain('f3: 0,8%/tháng (written "0,8% một tháng")');
+    expect(prompt).toContain('monthly_rate_to_yearly');
+    expect(prompt).not.toContain('Esta reads loan rates per year');
+  });
+
   it('B1b says Esta reads loan rates per year, and lists no rate, when her percent has another period', async () => {
-    const prompt = await promptFor('Vay 2 tỷ trong 15 năm, lãi 0,8% hàng tháng thì mỗi tháng trả bao nhiêu?');
+    const prompt = await promptFor('Vay 2 tỷ trong 15 năm, lãi 0,8% một quý thì mỗi tháng trả bao nhiêu?');
     expect(prompt).toContain('Esta reads loan rates per year');
     expect(prompt).toContain('(written "2 tỷ")');
     expect(prompt).not.toMatch(/written "0,8/);

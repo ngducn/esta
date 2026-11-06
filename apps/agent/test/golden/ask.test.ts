@@ -199,6 +199,17 @@ describe('ask in replay on the full seed at 2026-10-07 07:00 (AGENT.md §7.4, AG
     expect(JSON.stringify(working)).toMatch(/9%.*180 tháng|180 tháng.*9%/u);
   });
 
+  it('thread case T6 with a monthly rate shows the conversion line, then a payment of 21.005.345 ₫', async () => {
+    const { answer, repair, result } = await askAfterItsChain('t6-monthly-rate-loan');
+    expect(repair).toBeNull();
+    expect(answer.content_md).toContain('mỗi tháng trả 21.005.345');
+    expect(answer.refs).toEqual([
+      { kind: 'calc', working: '0,8%/tháng × 12 = 9,6%/năm' },
+      { kind: 'calc', working: '2.000.000.000\u00a0₫, 9,6%/năm, 180 tháng → 21.005.345\u00a0₫/tháng' },
+    ]);
+    expect(result.calculations).toMatchObject([{ op: 'monthly_rate_to_yearly' }, { op: 'loan_payment' }]);
+  });
+
   it('the follow-up to T7 fetches the page again in its own turn and applies the quoted rate to the loan she typed', async () => {
     const { answer, repair, run } = await askAfterItsChain('t7-loan-at-quoted-rate');
     expect(repair).toBeNull();
