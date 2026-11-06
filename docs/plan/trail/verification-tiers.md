@@ -44,9 +44,10 @@ Review checklist for classes no mechanical check catches (a reviewer reads for e
 1. A figure with two definitions: a screen's total and the same total elsewhere come from one home, and a test compares it with an independent figure.
 2. Clock edges, until `clockEdges()` (Q-16) is used by every period-keyed test.
 3. Count, then write, until `twoAtOnce` (Q-16) covers the write.
-4. A denylist where an allowlist belongs: a fix that refuses the bad spellings it was shown (monthly rates, #439) instead of accepting only the good ones. Ask for a property test that random neighbours of the input never pass.
+4. A denylist where an allowlist belongs: a fix that refuses the bad spellings it was shown (monthly rates, #439) instead of accepting only the good ones. Ask for a property test that random neighbours of the input never pass; `esta/no-self-sourced-property` fails a property that draws its inputs from a production list, so read any exemption in `eslint.config.mjs` for its reason.
 5. A merge of main into a branch: compare the merge result with main's side (`git diff <merge>^2 <merge>`) and read every removed line. A gate that stops running looks exactly like green (#448 dropped `classes:check` and `check:migration-order` this way). `scripts/package-scripts.test.ts` catches a lost `scripts/check-*.ts` gate or entry point; it cannot catch a dropped line elsewhere.
 6. A rule only TypeScript holds: if TS refuses it, the database refuses it. A form, action or parser that rejects a future date, a link to another property's row or a value outside a range is matched by a trigger or constraint, and the table's pgTAP file tries the forbidden write directly (expenses, #211). The converse holds too: a rule the database adds must not refuse an edit TypeScript lets through. A trigger that branches on `tg_op` is tested through every write path, including `insert ... on conflict do update`, which fires BEFORE INSERT first, so an edit of an existing row is tried through the function's upsert as well as a direct update (expenses, #449).
+7. Every number in a trail doc (a time, a count, a cost, a quoted answer) cites a committed file that holds it; a figure read off a console and kept nowhere is not stated.
 
 ## Planned tiers for the remaining PRs
 

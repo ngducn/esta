@@ -264,3 +264,52 @@ export const putFetches: Finder = (source) =>
     const method = options.properties.find((property) => ts.isPropertyAssignment(property) && nameOf(property.name) === 'method');
     return method !== undefined && ts.isPropertyAssignment(method) && ts.isStringLiteralLike(method.initializer) && method.initializer.text.toUpperCase() === 'PUT';
   });
+
+const SLOWEST_UNREASONED_TEST_MS = 15_000;
+const TEST_CALLS = new Set(['it', 'test', 'describe', 'beforeAll', 'beforeEach', 'afterAll', 'afterEach']);
+const SUITE_WIDE_SETTINGS = new Set(['testTimeout', 'hookTimeout']);
+/** A `//` or `/*` comment that carries a reason after ` -- `, the way a lint exception gives one. */
+const REASON = /(\/\/|\/\*).*\s--\s+\S/u;
+
+function hasReason(source: ts.SourceFile, node: ts.Node): boolean {
+  const statement = ts.findAncestor(node, ts.isStatement) ?? node;
+  const lines = source.text.split('\n');
+  const near = [node, statement].flatMap((at) => {
+    const line = source.getLineAndCharacterOfPosition(at.getStart(source)).line;
+    return [lines[line], lines[line - 1]];
+  });
+  return near.some((line) => line !== undefined && REASON.test(line));
+}
+
+function isTestCall(call: ts.CallExpression): boolean {
+  const callee = unwrap(call.expression);
+  const name = ts.isIdentifier(callee) ? callee.text : ts.isPropertyAccessExpression(callee) && ts.isIdentifier(callee.expression) ? callee.expression.text : undefined;
+  return name !== undefined && TEST_CALLS.has(name);
+}
+
+const milliseconds = (node: ts.Node) => (ts.isNumericLiteral(node) ? Number(node.text) : undefined);
+
+/**
+ * A unit test that hides slowness instead of fixing it: a suite-wide `testTimeout` or `hookTimeout`, a `retry` other than 0,
+ * or one test or hook with a timeout above 15 s and no ` -- reason` comment on its line or the line above.
+ */
+export const slowTestSettings: Finder = (source) => {
+  const hits: ts.Node[] = [];
+  for (const node of nodes(source, ts.SyntaxKind.PropertyAssignment)) {
+    if (!ts.isPropertyAssignment(node)) continue;
+    const key = nameOf(node.name);
+    if (key !== undefined && SUITE_WIDE_SETTINGS.has(key)) hits.push(node);
+    else if (key === 'retry' && milliseconds(node.initializer) !== 0) hits.push(node);
+  }
+  for (const call of calls(source).filter(isTestCall)) {
+    const options = call.arguments.find(ts.isObjectLiteralExpression);
+    const timeout = options?.properties.find((property) => ts.isPropertyAssignment(property) && nameOf(property.name) === 'timeout');
+    const subject = timeout !== undefined && ts.isPropertyAssignment(timeout) ? timeout.initializer : call.arguments.at(-1);
+    if (subject !== undefined && (milliseconds(subject) ?? 0) > SLOWEST_UNREASONED_TEST_MS && !hasReason(source, subject)) hits.push(subject);
+  }
+  for (const declaration of declarations(source)) {
+    const value = declaration.initializer === undefined ? undefined : milliseconds(declaration.initializer);
+    if (ts.isIdentifier(declaration.name) && /timeout/iu.test(declaration.name.text) && (value ?? 0) > SLOWEST_UNREASONED_TEST_MS && !hasReason(source, declaration)) hits.push(declaration);
+  }
+  return hits;
+};
