@@ -31,5 +31,4 @@ export const LIVE_REJECTS: readonly LiveReject[] = [
   { id: 'vi-zalo-reminder', pass: 'first', kind: 'true', sentence: 'Dưới đây là tin nhắn Zalo để mẹ gửi khách phòng 5:', text: '5' },
   { id: 'vi-zalo-welcome', pass: 'first', kind: 'true', sentence: 'Phòng 2 thuộc Dãy trọ Dĩ An.', text: '2' },
   { id: 'vi-bank-letter', pass: 'repair', kind: 'true', sentence: 'Tôi đã đọc hai trang chính thức nhưng không trích dẫn được trang nào qua công cụ.', text: 'hai' },
-  { id: 'vi-transfer-procedure', pass: 'first', kind: 'false', sentence: 'Hai bên mang giấy tờ tùy thân, giấy tờ về tình trạng hôn nhân và bản gốc sổ.', text: 'Hai' },
 ];

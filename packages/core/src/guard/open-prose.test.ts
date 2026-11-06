@@ -34,7 +34,23 @@ describe('the compounds the open-prose probe added (P5-12)', () => {
   // `hai bên` (both parties) and `ba mẹ` (parents) are written the same as a count of tenants or a family of three, so
   // each passes only in the contexts of `passesInPhrases`, and a count is still rejected and rewritten by the repair turn.
   it('rejects hai and ba before bên or mẹ where they count people', () => {
-    for (const note of ['Có hai bên thuê.', 'Ba mẹ con chị Hoa thuê phòng.', 'Còn hai bên phòng.', 'Hai bên thuê chưa từng trả trễ.', 'Cả hai chủ sở hữu chưa vượt ngưỡng.', 'Có ba mẹ ba con.']) {
+    for (const note of [
+      'Có hai bên thuê.',
+      'Ba mẹ con chị Hoa thuê phòng.',
+      'Còn hai bên phòng.',
+      'Hai bên thuê chưa từng trả trễ.',
+      'Cả hai chủ sở hữu chưa vượt ngưỡng.',
+      'Có ba mẹ ba con.',
+      'Ba mẹ ba mẹ.',
+      'Sổ của mẹ và ba căn hộ cho thuê đều đã cập nhật.',
+      'Mẹ và ba người con.',
+      'Ba và mẹ con chị Hoa thuê phòng.',
+      'Tiền cọc của hai bên thuê đã nhận đủ.',
+      'Cả hai bên thuê đã trả.',
+      'Có hai bên đã đặt cọc giữ phòng.',
+      'Có hai bên không trả tiền đúng hạn.',
+      'Phí quản lý thường là một phần trăm tiền thu.',
+    ]) {
       expect(rules(note), note).toContain('word');
     }
   });

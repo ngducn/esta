@@ -56,7 +56,9 @@ function liveMode(): { mode: LiveMode; env: ReturnType<typeof parseAgentEnv> } {
 
 /** What the tools read in this probe run, to tell a run the model made up from one a tool returned. */
 let seenReads: unknown = null;
-const ID_RUN = /\d(?:[\s.-]?\d){8,}/gu;
+const ID_RUN = /\p{Nd}(?:[\s.-]?\p{Nd}){8,}/gu;
+/** Where a refused recording's capture goes: outside the repo, since it names a digit run. */
+const CAPTURE_DIR = process.env.ESTA_PROBE_CAPTURE_DIR ?? join(tmpdir(), 'esta-guard-probe');
 
 /**
  * When `writeRecording` is about to refuse a recording for a national ID run (SPEC D11), writes outside the repo which
@@ -70,15 +72,15 @@ function captureIdRefusal(item: OpenProsePrompt, recording: Recording, readsSeen
   const sources = { question: item.question, toolResults: JSON.stringify(readsSeen) };
   const lines = Object.entries(fields).flatMap(([field, text]) =>
     [...text.matchAll(ID_RUN)].map((match) => {
-      const digits = match[0].replace(/\D/gu, '');
-      const mask = (part: string) => part.replace(/\d/gu, '#');
+      const digits = match[0].replace(/\P{Nd}/gu, '');
+      const mask = (part: string) => part.replace(/\p{Nd}/gu, '#');
       const around = `${mask(text.slice(Math.max(0, match.index - 20), match.index))}[${digits.length} digits, last four ${digits.slice(-4)}]${mask(text.slice(match.index + match[0].length, match.index + match[0].length + 20))}`;
-      const found = Object.entries(sources).filter(([, source]) => source.replace(/\D/gu, '').includes(digits)).map(([name]) => name);
+      const found = Object.entries(sources).filter(([, source]) => source.replace(/\P{Nd}/gu, '').includes(digits)).map(([name]) => name);
       return `${item.id} ${field}: ${around} | same digits in: ${found.length === 0 ? 'neither the question nor a tool result' : found.join(', ')}`;
     }),
   );
-  mkdirSync('/tmp/owner-p5-10d', { recursive: true });
-  appendFileSync('/tmp/owner-p5-10d/id-refusal.txt', `${lines.length === 0 ? `${item.id}: refused, no digit run matched the capture pattern` : lines.join('\n')}\n`);
+  mkdirSync(CAPTURE_DIR, { recursive: true });
+  appendFileSync(join(CAPTURE_DIR, 'id-refusal.txt'), `${lines.length === 0 ? `${item.id}: refused, no digit run matched the capture pattern` : lines.join('\n')}\n`);
 }
 
 async function probe(item: OpenProsePrompt, mode: LiveMode, reads: ReturnType<typeof askReads>): Promise<ProbeRow> {

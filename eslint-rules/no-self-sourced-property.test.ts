@@ -9,6 +9,7 @@ RuleTester.itOnly = it.only;
 
 const ruleTester = new RuleTester({ languageOptions: { parser: tseslint.parser, sourceType: 'module' } });
 const self = [{ messageId: 'selfSourced' }];
+const mirroredCases = [{ messageId: 'mirroredCases' }];
 
 ruleTester.run('esta/no-self-sourced-property', rule, {
   valid: [
@@ -27,6 +28,8 @@ ruleTester.run('esta/no-self-sourced-property', rule, {
     "import fc from 'fast-check';\nconst LIST = ['a'];\nconst a = fc.integer({ max: LIST.length - 1 }).map((i) => LIST[i]);",
     "import fc from 'fast-check';\nimport { LIST } from './list';\nconst a = [1].map((i) => LIST[i]);",
     "import fc from 'fast-check';\nimport { build } from './build';\nconst a = fc.constantFrom(build(1), build(2));",
+    "import fc from 'fast-check';\nimport { CASES } from './term.cases';\nimport { LIST } from './list';\nit('x', () => expect(LIST.length).toBe(CASES.length));\nconst a = fc.constantFrom(...CASES);",
+    "import fc from 'fast-check';\nimport { CASES } from './term.cases';\nimport { LIST } from './list';\nit('x', () => expect(CASES).toEqual(['a']));\nit('y', () => expect(LIST).toEqual(['b']));\nconst a = fc.constantFrom(...CASES);",
   ],
   invalid: [
     { code: "import fc from 'fast-check';\nimport { allSpellings } from './list';\nconst a = fc.constantFrom(...allSpellings());", errors: self },
@@ -43,6 +46,9 @@ ruleTester.run('esta/no-self-sourced-property', rule, {
     { code: "import fc from 'fast-check';\nimport { LIST } from './list';\nconst a = fc.shuffledSubarray(LIST, { minLength: 1 });", errors: self },
     { code: "import fc from 'fast-check';\nimport { A } from './a';\nconst x = fc.oneof(fc.constant(A), fc.constant(0));", errors: self },
     { code: "import { constantFrom } from 'fast-check';\nimport { LIST } from '@esta/core';\nconst a = constantFrom(...LIST);", errors: self },
+    { code: "import fc from 'fast-check';\nimport { CASES } from './term.cases';\nimport { LIST } from './list';\nit('x', () => expect(CASES).toEqual(LIST));\nconst a = fc.constantFrom(...CASES);", errors: mirroredCases },
+    { code: "import fc from 'fast-check';\nimport { CASES } from './term.cases';\nimport { LIST } from './list';\nit('x', () => expect(LIST.map((x) => x.id)).toStrictEqual(CASES));\nconst PICKS = CASES.filter(Boolean);\nconst a = fc.constantFrom(...PICKS);", errors: mirroredCases },
+    { code: "import fc from 'fast-check';\nimport assert from 'node:assert';\nimport { CASES } from './term.cases';\nimport { LIST } from './list';\nassert.deepEqual(CASES, LIST);\nconst a = fc.subarray(CASES);", errors: mirroredCases },
     { code: "import fc from 'fast-check';\nimport LIST from './list';\nconst a = fc.constantFrom(...LIST);", errors: self },
   ],
 });

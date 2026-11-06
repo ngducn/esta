@@ -19,9 +19,11 @@ export type WordRow = {
   readonly passesBeforeName?: readonly string[];
   readonly bannedOnlyNearNumber?: true;
   /**
-   * Whole phrases with the word in them, where it states no figure (`hai bên cùng ký`, parties to a contract; `ba mẹ`,
-   * parents). A word is one lower-case word; `!con|ba` after the last word means the next word is not one of those, and
-   * a closing ` .` means no word follows in the same clause (`chung của cả hai.`).
+   * The only contexts where the word states no figure (`hai bên ký`, parties to a contract; `ba mẹ vẫn`, parents), one
+   * phrase of lower-case words each. A first `-có|còn` means the word before the phrase is none of those (`#` stands
+   * for any number word), and a last `+ký|thỏa` means the next word is one of those or no word follows in the same
+   * clause (`+` alone: no word follows). A word after the phrase that the list does not name makes the number word a
+   * count (`hai bên thuê`, `mẹ và ba căn`), so the list names what may follow and never what may not.
    */
   readonly passesInPhrases?: readonly string[];
 };
@@ -31,9 +33,12 @@ const letters = (kind: WordKind, words: string): Array<[string, WordRow]> => wor
 
 const CLASSIFIERS = 'phòng căn lô thửa tầng dãy tòa gian ngày tuần tháng giờ lần'.split(' ');
 
-/** What two parties do together, so `hai bên` before it is both of them and not a count: `hai bên thuê` counts tenants. */
-const PARTY_ACTS = ['cùng', 'đều', 'tự', 'thỏa', 'đồng ý', 'ký', 'thống', 'xác', 'phải', 'cần', 'có', 'sẽ', 'nên', 'mang', 'chịu', 'nộp', 'lập', 'được', 'đã', 'không'];
-const BOTH_ACTS = 'đều cùng đã không phải có sẽ cũng nên thì'.split(' ');
+/** The first words of what two parties do together: `hai bên thuê` counts tenants, so no verb that opens a count is here. */
+const PARTY_ACTS = 'ký thỏa thống đồng cam xác thương bàn cùng đều tự'.split(' ').join('|');
+/** What parents or both do next, none of which can be counted (`ba mẹ căn`, `mẹ và ba người`, `ba và mẹ con` are counts). */
+const PARENT_NEXT = 'vẫn không còn muốn cũng đều đã sẽ đang luôn thì và của để cho đứng'.split(' ').join('|');
+const BOTH_NEXT = 'đều cùng đã không phải có sẽ cũng nên thì'.split(' ').join('|');
+const NOT_HAVE = '-có|còn';
 
 const EXCEPTIONS: Readonly<Record<string, WordRow>> = {
   ty: { kind: 'amount', passesAfter: ['công'] },
@@ -70,20 +75,19 @@ const EXCEPTIONS: Readonly<Record<string, WordRow>> = {
   ba: {
     kind: 'number',
     passesAfterPhrase: ['bên thứ'],
-    passesInPhrases: ['ba mẹ !con', 'ba hoặc mẹ', 'ba và mẹ', 'mẹ hoặc ba', 'mẹ và ba'],
+    passesInPhrases: [`${NOT_HAVE} ba mẹ +${PARENT_NEXT}`, ...['ba hoặc mẹ', 'ba và mẹ', 'mẹ hoặc ba', 'mẹ và ba'].map((parents) => `${NOT_HAVE} ${parents} +${PARENT_NEXT}`)],
   },
   hai: {
     kind: 'number',
     passesInPhrases: [
-      ...PARTY_ACTS.map((act) => `hai bên ${act}`),
-      'giữa hai bên',
-      'của hai bên',
-      'cả hai bên',
-      'cả hai .',
-      ...BOTH_ACTS.map((act) => `cả hai ${act}`),
+      `${NOT_HAVE}|giữa|của|cả hai bên +${PARTY_ACTS}`,
+      ...['giữa', 'của', 'cả'].map((lead) => `${NOT_HAVE} ${lead} hai bên +${PARTY_ACTS}`),
+      `${NOT_HAVE} giữa hai bên có thỏa`,
+      `${NOT_HAVE} cả hai bên có thể cùng`,
+      `${NOT_HAVE} cả hai +${BOTH_NEXT}`,
     ],
   },
-  trăm: { kind: 'amount', passesAfter: ['phần'] },
+  trăm: { kind: 'amount', passesInPhrases: ['-# phần trăm'] },
   chín: { kind: 'number', passesBefore: ['chắn'] },
   second: { kind: 'number', passesBefore: ['opinion', 'opinions'] },
   double: { kind: 'number', passesBefore: ['check', 'checks', 'checked', 'checking'] },
@@ -115,26 +119,27 @@ export const WORDS: ReadonlyMap<string, WordRow> = new Map([
   ...Object.entries(EXCEPTIONS),
 ]);
 
-const isLiteral = (word: string) => word !== '.' && !word.startsWith('!');
-
-/** Every context a number word passes in, as `NON_QUANTITY_PHRASES` for the tests that generate sentences from them. */
-export const NON_QUANTITY_PHRASES: ReadonlyArray<{ readonly word: string; readonly text: string; readonly ends: boolean }> = Object.entries(EXCEPTIONS).flatMap(([word, row]) =>
-  (row.passesInPhrases ?? []).map((phrase) => ({ word, text: phrase.split(' ').filter(isLiteral).join(' '), ends: phrase.endsWith(' .') })),
-);
-
-/** Whether `words` (a `passesInPhrases` entry) reads around the token at `at`; `spaced` says two tokens touch with a space or hyphen. */
-export function phraseAround<T extends { readonly lower: string }>(words: readonly string[], tokens: readonly T[], at: number, spaced: (left: T | undefined, right: T | undefined) => boolean): boolean {
-  const here = tokens[at]?.lower;
-  return words.some((word, k) => {
-    if (word !== here) return false;
-    return words.every((expected, j) => {
-      const pos = at + j - k;
-      const [prev, next] = [tokens[pos - 1], tokens[pos]];
-      if (expected === '.') return next === undefined || !spaced(prev, next);
-      if (expected.startsWith('!')) return next === undefined || !spaced(prev, next) || !expected.slice(1).split('|').includes(next.lower);
-      const previous = words[j - 1];
-      return next?.lower === expected && (j === 0 || previous === undefined || !isLiteral(previous) || spaced(prev, next));
-    });
+/**
+ * Whether the `passesInPhrases` entry `phrase` reads around the token at `at`; `spaced` says two tokens touch with a space
+ * or hyphen, and `isNumber` whether a token is a number word.
+ */
+export function phraseAround<T extends { readonly lower: string }>(
+  phrase: string,
+  tokens: readonly T[],
+  at: number,
+  spaced: (left: T | undefined, right: T | undefined) => boolean,
+  isNumber: (token: T) => boolean,
+): boolean {
+  const parts = phrase.split(' ');
+  const notAfter = parts[0]?.startsWith('-') === true ? (parts.shift() ?? '').slice(1).split('|') : [];
+  const next = parts.at(-1)?.startsWith('+') === true ? (parts.pop() ?? '').slice(1).split('|').filter((word) => word !== '') : undefined;
+  return parts.some((word, k) => {
+    const start = at - k;
+    if (word !== tokens[at]?.lower || !parts.every((expected, j) => tokens[start + j]?.lower === expected && (j === 0 || spaced(tokens[start + j - 1], tokens[start + j])))) return false;
+    const before = spaced(tokens[start - 1], tokens[start]) ? tokens[start - 1] : undefined;
+    if (before !== undefined && notAfter.some((word_) => (word_ === '#' ? isNumber(before) : word_ === before.lower))) return false;
+    const [last, after] = [tokens[start + parts.length - 1], tokens[start + parts.length]];
+    return next === undefined || after === undefined || !spaced(last, after) || next.includes(after.lower);
   });
 }
 

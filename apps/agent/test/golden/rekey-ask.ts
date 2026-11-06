@@ -50,11 +50,25 @@ export async function currentOffer() {
 }
 
 /**
+ * The repair lines to drop, by the key of the repair turn they are in: a text the guard no longer rejects (`hai bên` as
+ * both parties, P5-10d) is no longer named, so the repair message the same reply is sent back with has one line fewer.
+ */
+export const DROPPED_REPAIR_LINES: ReadonlyMap<string, readonly string[]> = new Map([
+  ['a67e8cedcfb1cd134c241ccd0e5b3e8b3b3c41e474df3a972973b24b8ab106c7', ['hai']],
+]);
+
+const withoutLines = (prompt: string, texts: readonly string[]): string =>
+  prompt
+    .split('\n')
+    .filter((line) => !texts.some((text) => line.startsWith(`"${text}": `)))
+    .join('\n');
+
+/**
  * Re-keys every ask recording to today's prompt: the rules at the start of a first-turn prompt and the tools it offers
  * are taken from the code, the rest of the prompt, the tool calls and the reply stay as recorded, and a turn that
  * resumes another follows that one's new key. Returns the files written and removed.
  */
-export async function rekeyAsk(dir: string = DEFAULT_REPLAY_DIR): Promise<{ written: string[]; removed: string[] }> {
+export async function rekeyAsk(dir: string = DEFAULT_REPLAY_DIR, dropped: ReadonlyMap<string, readonly string[]> = DROPPED_REPAIR_LINES): Promise<{ written: string[]; removed: string[] }> {
   const offer = await currentOffer();
   const old = new Map<string, { file: string; recording: Recording }>();
   const dirOf = new Map<string, string>();
@@ -71,7 +85,8 @@ export async function rekeyAsk(dir: string = DEFAULT_REPLAY_DIR): Promise<{ writ
     if (recording === undefined) return;
     const resumes = recording.input.resumesInputHash;
     if (resumes !== undefined && old.has(resumes)) settle(resumes);
-    const prompt = recording.input.prompt;
+    const drops = dropped.get(hash);
+    const prompt = drops === undefined ? recording.input.prompt : withoutLines(recording.input.prompt, drops);
     const head = headOf(prompt);
     const day = dayOf(prompt);
     const next = head === null || day === null ? prompt : currentHead(day) + prompt.slice(head.length);
@@ -79,7 +94,7 @@ export async function rekeyAsk(dir: string = DEFAULT_REPLAY_DIR): Promise<{ writ
     const input = { ...rest, prompt, ...(head === null ? {} : { prompt: next, ...offer }), ...(resumes === undefined ? {} : { resumesInputHash: renamed.get(resumes) ?? resumes }) };
     const key = hashOf(input);
     renamed.set(hash, key);
-    rekeyed.set(hash, { ...recording, input, inputHash: key });
+    rekeyed.set(hash, { ...recording, input, inputHash: key, ...(drops === undefined ? {} : { label: `${recording.label} Repair line dropped for ${drops.join(', ')} (P5-10d): the guard no longer rejects it.` }) });
   };
   for (const hash of old.keys()) settle(hash);
   const written: string[] = [];

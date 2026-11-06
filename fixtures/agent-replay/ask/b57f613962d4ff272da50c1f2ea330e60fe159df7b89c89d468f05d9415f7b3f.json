@@ -27,7 +27,7 @@
     "maxTurns": 20,
     "resumesInputHash": "cbdf3671d8e6ba4eec8183de0cf7ec6c5f55374edb8b35223e9619e72f79a70a"
   },
-  "label": "Re-keyed repair turn for guard probe vi-raise-rent (P5-12 fix round 1): the live reply to the repair that named Q7:, which already wrote \"cả bên thuê lẫn bên cho thuê\", kept under the repair prompt that now also names hai. Re-keyed for #354's advice rule; its reply predates the rule. Re-keyed for P5-10d: the repair message no longer names hai bên.",
+  "label": "Re-keyed repair turn for guard probe vi-raise-rent (P5-12 fix round 1): the live reply to the repair that named Q7:, which already wrote \"cả bên thuê lẫn bên cho thuê\", kept under the repair prompt that now also names hai. Re-keyed for #354's advice rule; its reply predates the rule. Repair line dropped for hai (P5-10d): the guard no longer rejects it.",
   "model": "claude-sonnet-5-5",
   "numTurns": 1,
   "toolCalls": [],

@@ -53,6 +53,9 @@ function isDigitLetters(word: string): boolean {
 
 const isNumberWord = (token: Token) => IS_MASK.test(token.word) || WORDS.get(token.lower)?.kind === 'number';
 
+/** A number, amount or currency word, or a placeholder (a figure the sheet holds). */
+const isQuantityWord = (token: Token) => IS_MASK.test(token.word) || ['number', 'amount', 'currency'].includes(WORDS.get(token.lower)?.kind ?? '');
+
 const isDateMask = (token: Token, isDate: (mask: string) => boolean) => IS_MASK.test(token.word) && isDate(token.word);
 
 function passes(row: WordRow, { neighbors, spacedBefore, spacedBeforeThat, spacedAfter, sameLine, capitalized, inPhrase, isDate }: Context): boolean {
@@ -107,7 +110,7 @@ function wordViolations(shown: string, isDate: (mask: string) => boolean): NoteV
     ].filter((neighbor) => neighbor !== undefined);
     const neighbors = [left, right].filter((neighbor) => neighbor !== undefined);
     const capitalized = token.word !== token.lower;
-    const inPhrase = (phrases: readonly string[]) => phrases.some((phrase) => phraseAround(phrase.split(' '), tokens, i, spaced));
+    const inPhrase = (phrases: readonly string[]) => phrases.some((phrase) => phraseAround(phrase, tokens, i, spaced, isQuantityWord));
     const banned = isDigitLetters(token.word) || (row === undefined && isGluedNumber(token.lower)) || isRoman(token, spacedBefore, spacedAfter) || (row !== undefined && !passes(row, { neighbors, spacedBefore, spacedBeforeThat, spacedAfter, sameLine, capitalized, inPhrase, isDate }));
     return banned ? [{ rule: 'word', text: token.word }] : [];
   });
