@@ -1,5 +1,5 @@
 import { addDays, addMonths } from '@esta/core/date/calendar';
-import { amendmentStarts, contractTenant, currentMonthlyRent, holdsUnit, leaseDefaults, leaseFieldsFromExtraction, renewalStart } from '@esta/core/lease';
+import { amendmentStarts, billedThrough, contractTenant, currentMonthlyRent, holdsUnit, leaseDefaults, leaseFieldsFromExtraction, renewalStart } from '@esta/core/lease';
 import type { Metadata } from 'next';
 import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 import Link from 'next/link';
@@ -42,10 +42,6 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 
 /** Rent periods from today's amendable starts, at most this many. */
 const AMEND_STARTS_SHOWN = 12;
-
-function latestIssuedEnd(invoices: readonly InvoiceSummary[]) {
-  return invoices.filter((invoice) => invoice.status === 'issued').reduce<InvoiceSummary['periodEnd'] | null>((latest, invoice) => (latest === null || invoice.periodEnd > latest ? invoice.periodEnd : latest), null);
-}
 
 /** Which lease this one renewed and which renewed it; a draft renewal does not count until it is active. */
 function renewalLinks(lease: LeaseWithTenant, all: PropertyLeases['leases'], leasesHref: string) {
@@ -140,7 +136,7 @@ export default async function LeasePage({ params, searchParams }: { params: Para
       ? { start, startsBeforeToday: start < asOf, lastRentVnd, defaultEnd: addDays(addMonths(start, 12), -1) }
       : null;
   const amendStarts = active
-    ? amendmentStarts(schedule, amendments, { asOf, billedThrough: latestIssuedEnd(invoices), paidThrough: summary.paid_through_date }).slice(0, AMEND_STARTS_SHOWN)
+    ? amendmentStarts(schedule, amendments, { asOf, billedThrough: billedThrough(invoices), paidThrough: summary.paid_through_date }).slice(0, AMEND_STARTS_SHOWN)
     : [];
   const ended = summary.status === 'ended' || summary.status === 'terminated';
 
