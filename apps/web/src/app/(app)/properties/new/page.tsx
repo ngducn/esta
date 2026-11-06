@@ -58,7 +58,7 @@ async function loadWizardProperty(householdId: string, ids: WizardIds): Promise<
  */
 export default async function NewPropertyPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const member = await requireMember();
-  if (member.role === 'viewer') notFound();
+  if (!member.can('edit')) notFound();
   const params = await searchParams;
   const [t, nav, locale, messages] = await Promise.all([getTranslations('propertyWizard'), getTranslations('nav'), getLocale(), getMessages()]);
   const named = readWizard(params);

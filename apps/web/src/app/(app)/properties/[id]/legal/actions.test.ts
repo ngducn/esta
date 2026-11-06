@@ -3,9 +3,12 @@ import { describe, expect, test, vi } from 'vitest';
 const PROPERTY = '00000000-0000-4000-8000-0000000000b0';
 const CERTIFICATE = '00000000-0000-4000-8000-0000000000c1';
 
-const db = vi.hoisted(() => ({ writes: [] as string[], member: { role: 'member', household: { id: '00000000-0000-4000-8000-0000000000a0' } } }));
+const db = vi.hoisted(() => ({ writes: [] as string[] }));
 
-vi.mock('@/server/member', () => ({ requireMember: async () => db.member }));
+vi.mock('@/server/member', async () => {
+  const { fakeMember } = await import('@/test/fake-member');
+  return { requireMember: async () => fakeMember('member', '00000000-0000-4000-8000-0000000000a0') };
+});
 vi.mock('next/cache', () => ({ revalidatePath: () => undefined }));
 vi.mock('@/server/supabase/server', () => ({
   createSessionClient: async () => {

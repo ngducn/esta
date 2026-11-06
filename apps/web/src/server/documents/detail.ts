@@ -92,7 +92,7 @@ export async function loadDocumentPage(documentId: string): Promise<DocumentPage
     fileUrl,
     ...previews,
     statuses: statuses ?? { statuses: {}, workerOffline: false },
-    canEdit: member.role !== 'viewer',
+    canEdit: member.can('edit'),
     properties: properties.data ?? [],
   };
 }

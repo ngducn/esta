@@ -6,6 +6,7 @@ import { createHousehold, inviteMember, type CreateHouseholdState, type InviteSt
 import { NAME_MAX_LENGTH } from './limits';
 
 const ROLES: readonly Role[] = ['admin', 'member', 'viewer'];
+const DEFAULT_ROLE: Role = 'member';
 
 const fieldClass = 'min-h-touch w-full rounded-md border border-border-field bg-surface px-3.5 text-body text-text transition-colors duration-(--duration-fast) ease-standard hover:border-border-field aria-invalid:border-danger-text';
 const primaryClass = 'inline-flex min-h-touch w-full items-center justify-center gap-2 rounded-full bg-accent px-4 font-medium text-on-accent transition-colors duration-(--duration-fast) ease-standard hover:bg-accent-hover active:bg-accent-pressed disabled:opacity-60';
@@ -147,7 +148,7 @@ export function InviteForm() {
               type="radio"
               name="role"
               value={role}
-              defaultChecked={role === (failed?.role ?? 'member')}
+              defaultChecked={role === (failed?.role ?? DEFAULT_ROLE)}
               className="mt-0.5 size-5 shrink-0 accent-accent"
             />
             <span>
