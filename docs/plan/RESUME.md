@@ -18,23 +18,18 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 - The redesign is planned in `docs/plan/redesign-2026-11.md` (b2def8a7): six slices, RD-1 to RD-6, with its defaults listed under "Decisions taken as defaults".
 - #365's fix round 1 had never pushed. The previous owner stopped after merging main locally (840b881e in `/tmp/owner-data-trust-a/wt`). A fresh owner took it over.
 
-## Open items (updated 2026-11-05)
+## Open items (state at 09:45 2026-11-06 +07)
 
-- **Merged since 2026-11-01:** #368 (d2016c5a) design foundation; #376 (496542e4) e2e clock pinned to 2026-11-01T10:00+07:00; #374 (2bbf8891) the shell; #375 (a19892e9) sign-in and onboarding brand layer; #383 (32991ea4) axe judges resting colours, one shared helper (closes #373); #381 (9a898a45) Tài sản workbench. Lows open: #372, #377, #378, #379, #380, #382.
-- **#384 merged** 2026-11-05 (4848b778): Thu tiền on the new design. Lows in #385.
-- **Tonight (2026-11-05, Ryan: "i want to make a lot of progress tonight, and stop at like 85% usage so I can finish it off tomorrow after work"):** RD-4 and RD-5 split by screen so each session stays short, all Sonnet, briefs in `briefs/rd-4a.md`, `rd-4b.md`, `rd-5a.md`, `rd-5b.md`, `rd-5c.md`. Slots: 3 (#384 round), 7, 8, 9; lanes on 14. Then, as budget allows: Cài đặt with P6-01b, P6-05, P6-02, P5-16b. **Stop spawning at 80% of the week, pause owners with a clean push at 85%.**
-- **State at 09:30 2026-11-06.** Merged since 04:20: #410 P5-16f (ef4894b7, low #414), #409 P6-03b (45fd7f69, low #417), #415 P6-02b nightly backup (f945ca97, low #418), #416 P6-02c tenant export and erasure (82fd6416, low #420), #421 privacy cleanup: national ID gaps #140, unsaved-upload sweep #207, four #420 items (a788cc3c, low #425). P6-02b and P6-02c are both in, so they no longer block deploy.
-  - **#419 P6-04a** (723a908b) and **#422 P6-04b** (48b3a088, base esta/p6-04a-polish): reviewed, Ryan's operator gate. He merges #419 first, then #422 (set its base to main if GitHub does not). Review comments are on both PRs; low #423. #422 lists 5 taste items "For Ryan to choose"; root picked yes to 2 (Còn phải thu first) and 4 (one-line document summary), 1 and 3 either way, no to 5. His picks go into one small PR.
-  - **#424 correctness lows** (#129 unreadable dates, #304 collected after archive, #143 invoice room order): round 1 at 2f9bdea7 green; round 2 running on slot 9 (briefs/lows-correctness-ff2.md) to keep archived costs in Lãi lỗ so profit never changes on archive. Then one scoped reader for both rounds, merge with a summary stating the archiving ruling.
-  - Rulings since 04:20: a per-tenant export carries only this tenant's share of a payment someone else made (split or in full); the sweep measures a file's age by Storage's own clock, not the injected Clock; archiving hides a property from lists Mẹ acts on and never changes money already billed, collected or spent (one definition in packages/ops). Ryan may overrule each.
-  - Second fix rounds tonight, each recorded: #421 (a regression against main on contract phone numbers) and #424 (money, caused by round 1).
-  - Next after #424: nothing buildable without Ryan. His picks on #422's taste items; Mẹ's session before P5-09, P5-14, P5-15, P5-10; P6-06 Mom test; P6-07 cloud deploy. Optional: another lows batch (#139, #202, #203 need his decisions first).
-  - Waiting on Ryan: rename "Tài liệu" to "Giấy tờ" (default keep); HSTS on all subdomains (#406) at deploy; where nightly backups live once deployed (#415); the erase survivors list (#416 comment); the archiving ruling (#424).
-  - Week 74% at 09:30; stop spawns at 80%, pause owners at 85%; resets 2026-11-07 11:00 +07. Slots 3, 7, 8, 9, 14 (9 busy). Tripwire still set.
-- **Then:** Mẹ's session (Ryan's step, before more assistant features), P5-09, P5-14, P5-15, P5-10, P6-06, P6-07.
+- **Ryan 2026-11-06:** "merge them and finish the project" and "when done have a deploy plan for me, list me some options to deploy". This lifted the hold for Mẹ's session; P6-07 (cloud) stays his.
+- **Merged today:** #415, #416, #421, #424, #419 (a19e5305), #422 (6adc837b, carries main's tenant route fix).
+- **Deploy options page** published for Ryan: https://claude.ai/artifact/LPwsLJvYWMRqa2xtjDT3DW (recommends A as locked, Supabase Pro once real documents go in, Resend or Brevo free). Source: /tmp/deploy-plan/research.md. Scratch file: the session scratchpad esta-deploy/index.html.
+- **#427 P6-06 deploy runbook**, head 1f28f34d, merge-ready: Opus audit B1-B7 and lane fixed in one round, scoped reader CLEAN, ci green. Held for Ryan's click (the root told him it would wait; its plan has an operator gate) and asked in chat: merge now or after the Mom test. Lows #431 (L4 plist login shell and L9 Supabase sender matter before going live). Ryan decision #428: no cloud restore tool yet.
+- **#429 P5-14 web quotes**, head 53ab8393, ci green: Opus audit (briefs/pr429-audit.md, report /tmp/review-429/audit.md) and Sonnet lane (briefs/pr429-lane.md, slot 9) running. Then one fix round, a reader, merge. Then the P5-15 owner (plan 5059-5132, migration 20261007630000).
+- **#430 P5-09 email notice**, head a9a0e2a6, ci green: Opus audit (briefs/pr430-audit.md, /tmp/review-430/audit.md) and lane (briefs/pr430-lane.md, slot 7) running. The owner added a sign-in return-link cookie beyond the plan; open redirect is the audit's first check. Then one fix round, reader, merge. Then P5-10 (plan 5192-5264): its live run spends Ryan's subscription; check the week first. P5-10 also flips north-star steps 7 and 9 on the production build.
+- **Rulings today (Ryan may overrule):** preview gets its own Supabase project (plan P6-07 step 1 already says so); restore drill local, cloud restore is #428; `ESTA_E2E_BUILD` replaced by the existing `ESTA_E2E_SERVER=build`; plus the 04:20 rulings (tenant export share, sweep clock, archiving never changes money).
+- **Lows open from today:** #420, #423, #425, #426, #431.
 - **Tripwire set** 2026-11-05 22:57: completeness rule 5 failed once beside other specs and passed alone. Clear with `rm /tmp/ci-local/one-at-a-time` when the flake is understood.
 - **#386 merged** 2026-11-02: pushes to main that touch only the notes files skip CI.
-- **Watch:** shell and auth-password specs lost a poll-until-pass in #383; a random failure there means a title-flicker wait, not a retry loop.
 
 ## Waiting for Ryan (defaults apply)
 
@@ -62,6 +57,8 @@ Ruled 2026-11-02: Thu tiền "Đã thu" counts payments toward this month's rent
 - Each member reads only her own conversations and their audit rows. The operator does not either.
 
 ## Budget
+
+Week at 75% at 09:45 on 2026-11-06, resets 2026-11-07 11:00 +07. Guard for "finish the project": stop spawns at 90%, pause owners at 95%.
 
 Week at 71% on 2026-11-06 04:20 +07 (65% at 22:30 the night before), resets 2026-11-07 11:00 +07. Tonight cost about 6% for 13 merges. This run was paused from 2026-11-02, when the week stood near 18%, so most of that is other work. Ryan said "ok im back, lets continue" and was told the figure.
 
