@@ -19,9 +19,7 @@ export async function householdLabels(db: AgentDb, householdId: string): Promise
 }
 
 /** What a property nickname starts with when it only says what the property is, folded: `Đất Bảo Lộc`, `Căn hộ Q7`. */
-const PROPERTY_TYPES: readonly (readonly string[])[] = [
-  ...['dat nen', 'dat vuon', 'dat nong nghiep', 'can ho', 'chung cu', 'nha pho', 'nha tro', 'day tro', 'phong tro', 'biet thu', 'mat bang', 'lo dat', 'van phong', 'cua hang', 'dat', 'nha', 'kho', 'shophouse', 'villa'].map((phrase) => phrase.split(' ')),
-];
+const PROPERTY_TYPES: readonly (readonly string[])[] = ['dat nen', 'dat vuon', 'dat nong nghiep', 'can ho', 'chung cu', 'nha pho', 'nha tro', 'day tro', 'phong tro', 'biet thu', 'mat bang', 'lo dat', 'van phong', 'cua hang', 'dat', 'nha', 'kho', 'shophouse', 'villa'].map((phrase) => phrase.split(' '));
 
 /** A district or ward written short: `Q7`, `P12`, `HCM`. */
 const PLACE_ABBREVIATION = /^(?:(?:q|p|h|tp)\s*\d{1,2}|(?:tp\s*)?hcm|sg|hn)$/u;
