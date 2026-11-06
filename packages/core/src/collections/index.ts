@@ -4,6 +4,7 @@ export {
   groupCollections,
   monthCollected,
   worstCollectionState,
+  type BilledBill,
   type CollectionCandidate,
   type CollectionGroup,
   type CollectionGroupKey,

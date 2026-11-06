@@ -43,7 +43,7 @@ export const REPORTS: Readonly<Record<ReportKind, ReportDefinition>> = {
     strong: 'noi',
     file: (year) => `lai-lo-${year}`,
     estimate: null,
-    build: (snapshot, { t }) => propertyPnl(snapshot, { property: t('property'), income: t('income'), expenses: t('expenses'), noi: t('noi'), total: t('total') }),
+    build: (snapshot, { t }) => propertyPnl(snapshot, { property: t('property'), income: t('income'), expenses: t('expenses'), noi: t('noi'), total: t('total'), archived: t('archivedProperties') }),
   },
   'rent-roll': {
     key: 'rentRoll',

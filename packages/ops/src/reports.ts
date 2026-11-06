@@ -37,7 +37,7 @@ export async function readReportSnapshot(db: Db, householdId: string, { from, to
   const year = Number(from.slice(0, 4));
   const [properties, facts, invoices, leases, units, valuations, tax, otherRevenue] = await Promise.all([
     db.from('properties').select('id, name:nickname').eq('household_id', householdId).is('deleted_at', null).order('nickname').order('id'),
-    readLedgerFacts(db, householdId, { from, to }),
+    readLedgerFacts(db, householdId, { from, to, keepArchived: true }),
     readInvoices(db, householdId, { issuedDueFrom: from, issuedDueTo: to }),
     readLeases(db, householdId),
     readRentalUnits(db, householdId),
@@ -48,7 +48,6 @@ export async function readReportSnapshot(db: Db, householdId: string, { from, to
   if (properties.error) throw new Error(`Reading the properties failed: ${properties.error.message}`);
   const live = new Set(properties.data.map((property) => property.id));
   const liveLeases = leases.filter((lease) => live.has(lease.property_id));
-  const liveLeaseIds = new Set(liveLeases.map((lease) => lease.id));
   const rolled = liveLeases.filter((lease) => inEffect(lease, asOf));
   const ids = rolled.map((lease) => lease.id);
   const [tenanted, names, leaseInvoices, schedule, owners] = await Promise.all([
@@ -65,7 +64,7 @@ export async function readReportSnapshot(db: Db, householdId: string, { from, to
     properties: properties.data,
     incomes: facts.incomes,
     expenses: facts.expenses,
-    invoices: invoices.filter((invoice) => liveLeaseIds.has(invoice.leaseId) || invoice.outstandingVnd > 0),
+    invoices,
     leases: tenanted.map(
       (lease): ReportLease => ({
         ...lease,

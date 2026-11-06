@@ -38,6 +38,12 @@ describe('reduceNationalIds', () => {
     expect(reduced.full_text).toBe('Khách hàng Demo, căn cước công dân 1776'.normalize('NFC'));
   });
 
+  it('fills id_last4 with the last four digits of a CCCD wrapped before its last group', () => {
+    const reduced = reduceNationalIds({ holders: [{ id_last4: leaf(null), address_text: leaf('CCCD số 079 070 001\n234, cấp ngày 12/03/2021') }] });
+    expect(reduced.holders[0]?.id_last4.value).toBe('1234');
+    expect(reduced.holders[0]?.address_text.value).toBe('CCCD số 1234, cấp ngày 12/03/2021');
+  });
+
   it('does not change its input', () => {
     const input = { id_last4: leaf('079062118340') };
     reduceNationalIds(input);
@@ -151,6 +157,11 @@ describe('reduceNationalIds', () => {
   it('fills an empty id_last4 from an unlabelled number in the same holder', () => {
     const reduced = reduceNationalIds({ holders: [{ id_last4: leaf(null), address_text: leaf('Phạm Minh Demo 079062118340, 12 Lê Lợi') }] });
     expect(reduced.holders[0]).toEqual({ id_last4: leaf('8340'), address_text: leaf('Phạm Minh Demo 8340, 12 Lê Lợi') });
+  });
+
+  it('fills id_last4 from the ID, not from a short number on the next line', () => {
+    const reduced = reduceNationalIds({ holders: [{ id_last4: leaf(null), address_text: leaf('Số CMND: 023456789\n12 đường Demo') }] });
+    expect(reduced.holders[0]?.id_last4.value).toBe('6789');
   });
 
   it('reads each string on its own, so six digits in each of two fields stay', () => {

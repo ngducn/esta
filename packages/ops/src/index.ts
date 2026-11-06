@@ -23,7 +23,7 @@ export { householdRename, memberInvite, memberRemove, memberSetRole, type Member
 export { firstRunSetDismissed, type FirstRunDismissed } from './onboarding-ops';
 export { bankAccountCreate, bankAccountDelete, bankAccountEdit, bankAccountSetDefault, type BankAccountRefusal, type BankAccountSaved } from './bank-account-ops';
 export { readClock, type ClockEnv } from './clock';
-export { readCollectionRows, type CollectionRow } from './collections';
+export { readCollectionRows, readMonthCollected, type CollectionRow } from './collections';
 export { readCompleteness, type PropertyCompleteness } from './completeness';
 export { depositRecord, type DepositRecorded, type DepositRefusal } from './deposit-ops';
 export { documentAttach, type AttachRefusal } from './document-attach';
@@ -49,6 +49,7 @@ export { readMembership } from './member';
 export { meterReadingsSave, type MeterRefusal, type ReadingsSaved } from './meter-ops';
 export { runOp, settle, type Op, type OpContext } from './op';
 export { readPropertyDetail, readPropertyForm, searchProperties, type PropertyDetailRow, type PropertyRow, type StoredProperty } from './properties';
+export { partyRedact, REDACTED_NAME, type PartyRedacted, type PartyRefusal } from './party-ops';
 export { personCreate, type PersonRefusal, type PersonSaved, type PossibleDuplicate } from './person-ops';
 export { statementColumnsSchema, statementCommit, statementImport, statementLink, type LinkRefusal, type StatementCommitted, type StatementImported, type StatementRefusal } from './statement-ops';
 export { propertyCreate, propertyEdit, type CodeTaken, type PropertySaved } from './property-ops';

@@ -1,18 +1,18 @@
 'use client';
 
-import type { IsoDate } from '@esta/core/date';
 import { ANNOTATION_KINDS, type Annotation } from '@esta/core/schemas/legal';
 import { Plus, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { DateInput } from '@/components/date-input';
+import { dateInputProps, dateReading, type DateReading } from '@/components/use-date-field';
 import { TextField } from '@/components/form-parts';
 import { FormSelect } from '@/components/properties/address-picker';
 import { Button } from '@/components/ui/button';
 
-export type AnnotationDraft = { readonly key: number; readonly date: IsoDate | null; readonly text: string; readonly kind: string };
+export type AnnotationDraft = { readonly key: number; readonly date: DateReading; readonly text: string; readonly kind: string };
 
 export function annotationDraft(key: number, annotation?: Annotation): AnnotationDraft {
-  return { key, date: annotation?.date ?? null, text: annotation?.text ?? '', kind: annotation?.kind ?? '' };
+  return { key, date: dateReading(annotation?.date ?? null), text: annotation?.text ?? '', kind: annotation?.kind ?? '' };
 }
 
 /** Blank lines are dropped, so an added row left empty saves nothing. */
@@ -20,7 +20,7 @@ export function readAnnotations(drafts: readonly AnnotationDraft[]): Annotation[
   return drafts.flatMap((draft) => {
     if (draft.text.trim() === '') return [];
     const kind = ANNOTATION_KINDS.find((option) => option === draft.kind);
-    return [{ text: draft.text, ...(draft.date === null ? {} : { date: draft.date }), ...(kind === undefined ? {} : { kind }) }];
+    return [{ text: draft.text, ...(draft.date.value === null ? {} : { date: draft.date.value }), ...(kind === undefined ? {} : { kind }) }];
   });
 }
 
@@ -33,7 +33,7 @@ export function AnnotationList({ drafts, onChange, onAdd }: { drafts: readonly A
         {drafts.map((draft, index) => (
           <li key={draft.key} aria-label={t('annotationRow', { index: index + 1 })} className="flex flex-col gap-3 rounded-md border border-border p-3 sm:p-4">
             <div className="grid gap-3 sm:grid-cols-2">
-              <DateInput label={t('annotationDate')} {...(draft.date === null ? {} : { defaultValue: draft.date })} onValueChange={(date) => update(draft.key, { date })} />
+              <DateInput label={t('annotationDate')} {...dateInputProps(draft.date, (date) => update(draft.key, { date }))} />
               <FormSelect
                 label={t('annotationKind')}
                 value={draft.kind}

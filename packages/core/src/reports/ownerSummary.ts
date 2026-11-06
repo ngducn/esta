@@ -3,7 +3,7 @@ import { vnd, type Vnd } from '../money/vnd';
 import { splitByShares } from '../tax/attribute';
 import { toTaxInputs } from '../tax/inputs';
 import { computeTaxPosition, type TaxPosition } from '../tax/position';
-import { propertyLedger } from './propertyPnl';
+import { archivedPropertyIds, propertyLedger } from './propertyPnl';
 import type { ReportSnapshot } from './snapshot';
 
 export type OwnerSummaryLabels = {
@@ -34,9 +34,9 @@ function splitLedgers(snapshot: ReportSnapshot): Map<string, Split> {
     entry[field] += amount;
     split.set(key, entry);
   };
-  for (const property of snapshot.properties) {
-    const shares = snapshot.tax.shares.filter((share) => share.propertyId === property.id);
-    const { totals } = propertyLedger(snapshot, property.id);
+  for (const propertyId of [...snapshot.properties.map((property) => property.id), ...archivedPropertyIds(snapshot)]) {
+    const shares = snapshot.tax.shares.filter((share) => share.propertyId === propertyId);
+    const { totals } = propertyLedger(snapshot, propertyId);
     for (const [field, amount] of [['income', totals.incomeVnd], ['expenses', totals.expensesVnd]] as const) {
       const parts = splitByShares(amount, shares);
       for (const owner of parts.owners) add(owner.partyId, field, owner.amountVnd);
@@ -48,8 +48,8 @@ function splitLedgers(snapshot: ReportSnapshot): Map<string, Split> {
 
 /**
  * FIN-4: one row per owner for the year of the period, keyed by party id. Revenue and the VAT and PIT estimates are the
- * owner's tax card (`computeTaxPosition` over `toTaxInputs`); income received and expenses are each live property's P&L
- * split by ownership share, with a last row for any part no share covers, so the rows add up to the P&L totals.
+ * owner's tax card (`computeTaxPosition` over `toTaxInputs`); income and expenses are each property's P&L figures, archived
+ * ones included, split by ownership share, with a last row for any part no share covers, so the rows add up to the P&L totals.
  */
 export function ownerSummary(snapshot: ReportSnapshot, labels: OwnerSummaryLabels): ExportTable {
   const year = Number(snapshot.from.slice(0, 4));

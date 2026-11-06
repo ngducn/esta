@@ -1,6 +1,5 @@
 'use client';
 
-import type { IsoDate } from '@esta/core/date';
 import { bpToPercentText, formatShareBp, ownershipStatus, percentToBp, FULL_SHARE_BP } from '@esta/core/properties/ownership';
 import type { OwnershipShare } from '@esta/core/schemas/ownership';
 import { usedNewParties } from '@esta/core/schemas/party';
@@ -10,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { useId, useState, type FormEvent, type ReactNode } from 'react';
 import { saveOwnershipShares } from '@/app/(app)/properties/[id]/legal/actions';
 import { DateInput } from '@/components/date-input';
+import { dateInputProps, dateReading, type DateReading } from '@/components/use-date-field';
 import { FormAlert } from '@/components/form-alert';
 import { TextField } from '@/components/form-parts';
 import { StatusShape } from '@/components/status-shape';
@@ -29,7 +29,7 @@ export type OwnershipFormProps = {
   holderIds: readonly string[];
 };
 
-type Draft = { key: number; partyId: string; percent: string; named: boolean; since: IsoDate | null };
+type Draft = { key: number; partyId: string; percent: string; named: boolean; since: DateReading };
 
 /** The total of the percents that parse; a field still being typed counts as nothing until it does. */
 function draftStatus(drafts: readonly Draft[]) {
@@ -94,8 +94,7 @@ function OwnerRow({
         </div>
         <DateInput
           label={t('sinceLabel')}
-          {...(draft.since === null ? {} : { defaultValue: draft.since })}
-          onValueChange={(since) => onChange({ ...draft, since })}
+          {...dateInputProps(draft.since, (since) => onChange({ ...draft, since }))}
         />
       </fieldset>
     </li>
@@ -126,7 +125,7 @@ export function OwnershipForm({
       partyId: share.party_id,
       percent: bpToPercentText(share.share_bp, locale),
       named: share.named_on_certificate,
-      since: share.since,
+      since: dateReading(share.since),
     })),
   );
   const [showErrors, setShowErrors] = useState(false);
@@ -144,7 +143,7 @@ export function OwnershipForm({
       const missing = FULL_SHARE_BP - draftStatus(current).totalBp;
       const percent = missing > 0 ? bpToPercentText(missing, locale) : '';
       const key = Math.max(-1, ...current.map((draft) => draft.key)) + 1;
-      return [...current, { key, partyId, percent, named: holderIds.includes(partyId), since: null }];
+      return [...current, { key, partyId, percent, named: holderIds.includes(partyId), since: dateReading(null) }];
     });
   };
 
@@ -152,9 +151,9 @@ export function OwnershipForm({
     event.preventDefault();
     const values = drafts.flatMap((draft, index) => {
       const result = parsed[index];
-      return result?.ok ? [{ party_id: draft.partyId, share_bp: result.value, named_on_certificate: draft.named, since: draft.since }] : [];
+      return result?.ok ? [{ party_id: draft.partyId, share_bp: result.value, named_on_certificate: draft.named, since: draft.since.value }] : [];
     });
-    if (values.length !== drafts.length) {
+    if (values.length !== drafts.length || drafts.some((draft) => draft.since.unreadable)) {
       setShowErrors(true);
       return;
     }

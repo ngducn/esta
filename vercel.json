@@ -3,6 +3,7 @@
   "crons": [
     { "path": "/api/cron/lease-status", "schedule": "20 17 * * *" },
     { "path": "/api/cron/invoices", "schedule": "30 17 * * *" },
+    { "path": "/api/cron/document-sweep", "schedule": "0 21 * * *" },
     { "path": "/api/cron/keep-alive", "schedule": "0 1 * * *" }
   ]
 }

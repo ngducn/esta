@@ -31,7 +31,7 @@ import { KindFields } from './kind-fields';
 import type { PropertyFormValues } from './property-form-values';
 import { LegacyAddressSuggest } from './legacy-address-suggest';
 
-type Invalid = { field: 'nickname' | 'code' | 'commune' | 'price' } | { field: 'detail'; key: KindDetailKey };
+type Invalid = { field: 'nickname' | 'code' | 'commune' | 'price' | 'acquiredOn' } | { field: 'detail'; key: KindDetailKey };
 
 type FormError = { kind: 'invalid' } | { kind: 'network' } | { kind: 'code_taken'; code: string; takenBy: string };
 
@@ -65,6 +65,7 @@ export function PropertyForm({
   const [values, setValues] = useState(initial);
   const [codeEdited, setCodeEdited] = useState(propertyId !== null);
   const [invalid, setInvalid] = useState<Invalid | null>(null);
+  const [acquiredUnreadable, setAcquiredUnreadable] = useState(false);
   const [error, setError] = useState<FormError | null>(null);
   const { pending, run } = useAction();
   const hydrated = useHydrated();
@@ -115,6 +116,7 @@ export function PropertyForm({
     if (address.provinceCode !== null && address.communeCode === null) return fail({ field: 'commune' });
     const price = values.priceText.trim() === '' ? null : parseVndInput(values.priceText);
     if (price !== null && !price.ok) return fail({ field: 'price' });
+    if (acquiredUnreadable) return fail({ field: 'acquiredOn' });
     setInvalid(null);
 
     const input = {
@@ -239,7 +241,10 @@ export function PropertyForm({
             <DateInput
               label={t('acquiredOn')}
               {...(values.acquiredOn === null ? {} : { defaultValue: values.acquiredOn })}
-              onValueChange={(date) => set('acquiredOn', date)}
+              onValueChange={(date, readable) => {
+                set('acquiredOn', date);
+                setAcquiredUnreadable(!readable);
+              }}
             />
             <FormSelect
               label={t('acquisitionKind')}

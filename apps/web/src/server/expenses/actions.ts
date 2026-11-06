@@ -13,7 +13,7 @@ import { createSessionClient } from '@/server/supabase/server';
 export type ExpenseSaved =
   | { readonly ok: true; readonly expense: { readonly id: string; readonly amountVnd: Vnd } }
   | { readonly ok: false; readonly reason: 'invalid'; readonly problems: ExpenseProblems }
-  | { readonly ok: false; readonly reason: 'forbidden' | 'failed' };
+  | { readonly ok: false; readonly reason: 'forbidden' | 'failed' | 'file_gone' };
 
 const failed = { ok: false, reason: 'failed' } as const;
 const savedSchema = z.tuple([z.object({ id: z.uuid(), amount_vnd: z.number().int().transform(vnd), property_id: z.uuid() })]);
@@ -35,7 +35,7 @@ export async function saveExpense(input: unknown): Promise<ExpenseSaved> {
     receipt?.kind === 'new'
       ? await documentRow(supabase, member.household.id, { ...receipt, propertyId, category: 'invoice_receipt', expiresOn: null, leaseId: null })
       : null;
-  if (receipt?.kind === 'new' && document === null) return failed;
+  if (receipt?.kind === 'new' && document === null) return { ok: false, reason: 'file_gone' };
   const { data, error } = await supabase.rpc('save_expense', {
     p_id: id,
     p_property_id: propertyId,

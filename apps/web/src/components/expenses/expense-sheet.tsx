@@ -37,7 +37,7 @@ import { ReceiptField, useReceipt } from './receipt-field';
 const NEW_VENDOR = 'new';
 const NO_VENDOR = '';
 
-type Errors = ExpenseProblems & { readonly category?: true; readonly vendorName?: true; readonly save?: 'networkError' | 'forbidden' | 'receiptBlocking' };
+type Errors = ExpenseProblems & { readonly category?: true; readonly vendorName?: true; readonly save?: 'networkError' | 'forbidden' | 'receiptBlocking' | 'receiptGone' };
 
 function without(errors: Errors, field: keyof Errors): Errors {
   return Object.fromEntries(Object.entries(errors).filter(([key]) => key !== field));
@@ -160,6 +160,7 @@ export function ExpenseSheet({
         }
         if (!result.ok) {
           if (result.reason === 'forbidden') setErrors({ save: 'forbidden' });
+          else if (result.reason === 'file_gone') setErrors({ save: 'receiptGone' });
           else if (result.reason === 'invalid' && (result.problems.amount !== undefined || result.problems.paidOn !== undefined)) setErrors(result.problems);
           else setErrors({ save: 'networkError' });
           return;

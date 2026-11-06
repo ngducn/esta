@@ -1,12 +1,12 @@
 'use client';
 
-import type { IsoDate } from '@esta/core/date';
 import { UNIDENTIFIED } from '@esta/core/schemas/identity';
 import { CERTIFICATE_FORMS, CERTIFICATE_STATUSES, identifiedCertificateSchema, type Certificate } from '@esta/core/schemas/legal';
 import { usedNewParties } from '@esta/core/schemas/party';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { DateInput } from '@/components/date-input';
+import { useDateField } from '@/components/use-date-field';
 import { Group, TextField } from '@/components/form-parts';
 import { FormSelect } from '@/components/properties/address-picker';
 import { Button } from '@/components/ui/button';
@@ -33,7 +33,7 @@ export function CertificateForm({
   const [form, setForm] = useState<string>(initial?.form ?? 'gcn_2009_2024');
   const [serialNo, setSerialNo] = useState(initial?.serial_no ?? '');
   const [bookEntryNo, setBookEntryNo] = useState(initial?.book_entry_no ?? '');
-  const [issuedOn, setIssuedOn] = useState<IsoDate | null>(initial?.issued_on ?? null);
+  const issued = useDateField(initial?.issued_on ?? null);
   const [issuedBy, setIssuedBy] = useState(initial?.issued_by ?? '');
   const [holders, setHolders] = useState<readonly string[]>(initial?.holder_party_ids ?? []);
   const [status, setStatus] = useState(initial?.status ?? 'valid');
@@ -49,6 +49,7 @@ export function CertificateForm({
   const submit = () => {
     setUnidentified(false);
     const read = readMortgage(status, activeMortgage);
+    if (issued.reading.unreadable || annotations.some((draft) => draft.date.unreadable)) return null;
     if (!read.ok) {
       setInvalid(read.invalid);
       return null;
@@ -58,7 +59,7 @@ export function CertificateForm({
       form,
       serial_no: serialNo,
       book_entry_no: bookEntryNo,
-      issued_on: issuedOn,
+      issued_on: issued.reading.value,
       issued_by: issuedBy,
       holder_party_ids: holders,
       status,
@@ -91,7 +92,7 @@ export function CertificateForm({
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField label={t('serialNo')} inputId="serial-no" value={serialNo} maxLength={40} className="num" error={null} onChange={setSerialNo} />
           <TextField label={t('bookEntryNo')} value={bookEntryNo} maxLength={40} className="num" error={null} onChange={setBookEntryNo} />
-          <DateInput label={t('issuedOn')} {...(issuedOn === null ? {} : { defaultValue: issuedOn })} onValueChange={setIssuedOn} />
+          <DateInput label={t('issuedOn')} {...issued.input} />
           <TextField label={t('issuedByLabel')} value={issuedBy} maxLength={300} error={null} onChange={setIssuedBy} />
         </div>
         <FormSelect

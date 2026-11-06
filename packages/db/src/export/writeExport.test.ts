@@ -2,14 +2,13 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { EXPORT_TABLES } from '@esta/core/export';
 import { isoDate, parseInstant } from '@esta/core';
 import { describe, expect, it } from 'vitest';
-import type { EntryData, ExportSink } from './sink';
+import { fakeStorage, recordingSink } from './test-support';
 import { writeExport } from './writeExport';
 
 const HOUSEHOLD = '00000000-0000-4000-8000-0000000000aa';
 const clock = { source: 'table', now: () => parseInstant('2026-10-07T02:00:00Z'), today: () => isoDate('2026-10-07') } as const;
 
 const exporter = { role: 'admin', isOperator: true };
-const decoder = new TextDecoder('utf-8', { ignoreBOM: true });
 
 const row = (index: number) => ({ id: `id-${String(index).padStart(5, '0')}`, household_id: HOUSEHOLD, note: `Ghi chú ${index}, "một"` });
 
@@ -22,6 +21,8 @@ type Fake = {
   between?: (rows: Record<string, unknown>[]) => void;
   /** Added to the exact count, to model rows the pages did not reach. */
   countDrift?: number;
+  /** Document files of erased ID cards that Storage still holds. */
+  waiting?: readonly string[];
 };
 
 function fakeClient(files: Record<string, string>, fake: Fake = {}) {
@@ -58,40 +59,10 @@ function fakeClient(files: Record<string, string>, fake: Fake = {}) {
       };
       return query;
     },
-    storage: {
-      from: (bucket: string) => ({
-        list: (prefix: string) => {
-          const names = Object.keys(files).filter((path) => path.startsWith(`${bucket}/${prefix}/`)).map((path) => path.slice(`${bucket}/${prefix}/`.length));
-          const entries = [...new Set(names.map((name) => name.split('/')[0] ?? ''))].map((name) => ({ name, id: names.includes(name) ? `obj-${name}` : null }));
-          return Promise.resolve({ data: entries, error: null });
-        },
-        download: (path: string) => Promise.resolve({ data: new Blob([files[`${bucket}/${path}`] ?? '']), error: null }),
-      }),
-    },
+    rpc: (name: string) => Promise.resolve(name === 'pending_file_removal_names' ? { data: fake.waiting ?? [], error: null } : { data: null, error: { message: `unexpected ${name}` } }),
+    storage: fakeStorage(files),
   };
   return { client: client as unknown as SupabaseClient, reads };
-}
-
-async function collect(data: EntryData): Promise<string> {
-  if (data instanceof Uint8Array) return decoder.decode(data);
-  let text = '';
-  for await (const chunk of data) text += decoder.decode(chunk);
-  return text;
-}
-
-function recordingSink() {
-  const entries = new Map<string, string>();
-  let manifestParts: readonly string[] = [];
-  const sink: ExportSink = {
-    async add(path, data) {
-      entries.set(path, await collect(data));
-    },
-    async finish(manifest) {
-      entries.set('manifest.json', await collect(manifest(['x.zip'])));
-      manifestParts = ['x.zip'];
-    },
-  };
-  return { sink, entries, parts: () => manifestParts };
 }
 
 describe('writeExport', () => {
@@ -157,6 +128,15 @@ describe('writeExport', () => {
     ]);
     expect(manifest.files).toBe(3);
     expect(documentIds).toEqual(['doc-1']);
+  });
+
+  it('leaves out the files of erased ID cards that are waiting to be removed', async () => {
+    const waiting = `${HOUSEHOLD}/doc-erased/front.jpg`;
+    const { client } = fakeClient({ [`documents/${waiting}`]: 'ID PHOTO', [`documents/${HOUSEHOLD}/doc-1/so-hong.pdf`]: 'PDF' }, { waiting: [waiting] });
+    const { sink, entries } = recordingSink();
+    const { manifest } = await writeExport(client, HOUSEHOLD, sink, { clock, exporter });
+    expect([...entries.keys()].filter((name) => name.startsWith('files/'))).toEqual([`files/documents/${HOUSEHOLD}/doc-1/so-hong.pdf`]);
+    expect(manifest.files).toBe(1);
   });
 
   it('writes the manifest last, with the Clock date', async () => {

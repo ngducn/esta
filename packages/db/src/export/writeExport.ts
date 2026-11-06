@@ -10,7 +10,7 @@ const PAGE_ROWS = 1000;
 const LIST_LIMIT = 100;
 const encoder = new TextEncoder();
 const pageSchema = z.array(z.record(z.string(), z.unknown()));
-type Row = Record<string, unknown>;
+export type Row = Record<string, unknown>;
 
 export type WriteExportOptions = {
   readonly clock: Clock;
@@ -51,7 +51,7 @@ async function* pagesOf(client: SupabaseClient, table: HouseholdTable, household
   if (count !== read) throw new Error(`Reading ${table.name} returned ${read} of ${count} rows; try again`);
 }
 
-async function* jsonChunks(pages: AsyncIterable<Row[]>, onRows: (rows: Row[]) => void): AsyncGenerator<Uint8Array> {
+export async function* jsonChunks(pages: AsyncIterable<Row[]>, onRows: (rows: Row[]) => void): AsyncGenerator<Uint8Array> {
   let first = true;
   for await (const rows of pages) {
     onRows(rows);
@@ -61,7 +61,7 @@ async function* jsonChunks(pages: AsyncIterable<Row[]>, onRows: (rows: Row[]) =>
   yield encoder.encode(first ? '[]\n' : '\n]\n');
 }
 
-async function* csvChunks(pages: AsyncIterable<Row[]>, columns: readonly string[]): AsyncGenerator<Uint8Array> {
+export async function* csvChunks(pages: AsyncIterable<Row[]>, columns: readonly string[]): AsyncGenerator<Uint8Array> {
   yield encoder.encode(csvHead(columns));
   for await (const rows of pages) yield encoder.encode(csvRows(columns, rows));
 }
@@ -80,6 +80,19 @@ export async function* objectsUnder(client: SupabaseClient, bucket: string, pref
   }
 }
 
+export async function addObject(client: SupabaseClient, sink: ExportSink, object: StorageObject): Promise<void> {
+  const { data, error } = await client.storage.from(object.bucket).download(object.path);
+  if (error || data === null) throw new Error(`Reading ${object.bucket}/${object.path} failed: ${error?.message ?? 'no data'}`);
+  await sink.add(`files/${object.bucket}/${object.path}`, new Uint8Array(await data.arrayBuffer()), data.size);
+}
+
+/** The documents-bucket names of ID cards erased from the household whose files Storage still holds; an export leaves them out. */
+async function waitingForRemoval(client: SupabaseClient, householdId: string): Promise<ReadonlySet<string>> {
+  const { data, error } = await client.rpc('pending_file_removal_names', { p_household_id: householdId });
+  if (error) throw new Error(`Reading the files waiting to be removed failed: ${error.message}`);
+  return new Set(z.array(z.string()).parse(data));
+}
+
 export async function writeExport(client: SupabaseClient, householdId: string, sink: ExportSink, { clock, exporter, pageRows = PAGE_ROWS, complete = false }: WriteExportOptions): Promise<WrittenExport> {
   const counts: { table: string; rows: number }[] = [];
   const documentPaths = new Map<string, string>();
@@ -96,11 +109,11 @@ export async function writeExport(client: SupabaseClient, householdId: string, s
 
   const documentIds: string[] = [];
   let files = 0;
+  const waiting = await waitingForRemoval(client, householdId);
   for (const bucket of EXPORT_BUCKETS) {
     for await (const object of objectsUnder(client, bucket, householdId)) {
-      const { data, error } = await client.storage.from(object.bucket).download(object.path);
-      if (error || data === null) throw new Error(`Reading ${object.bucket}/${object.path} failed: ${error?.message ?? 'no data'}`);
-      await sink.add(`files/${object.bucket}/${object.path}`, new Uint8Array(await data.arrayBuffer()), data.size);
+      if (bucket === 'documents' && waiting.has(object.path)) continue;
+      await addObject(client, sink, object);
       files += 1;
       const documentId = bucket === 'documents' ? documentPaths.get(object.path) : undefined;
       if (documentId !== undefined) documentIds.push(documentId);
