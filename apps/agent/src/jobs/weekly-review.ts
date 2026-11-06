@@ -9,7 +9,7 @@ import type { Locale } from '@esta/core/format';
 import { weeklyReviewPrompt, type ReviewCaps } from '../prompts/weekly-review';
 import type { AgentDb } from '../supabase';
 import { askReads, type AskReads } from '../tools/ask-reads';
-import { guardedWriter, type GuardBinding, type WrittenNote } from '../tools/create-item';
+import { assertTitleFits, guardedWriter, type GuardBinding, type WrittenNote } from '../tools/create-item';
 import { proposalWriter } from '../tools/create-proposal';
 import { runSheet } from '../tools/fact-sheet';
 import { householdLocale } from '../tools/household-info';
@@ -72,6 +72,7 @@ function weeklyNoteWriter(binding: GuardBinding & { readonly week: string }) {
       ],
       `${note.title}\n\n${note.body_md}`,
     );
+    assertTitleFits(title?.text);
     const links = [...new Set([...note.related.map((handle) => String(binding.sheet.get(handle)?.link)), ...body.refs])];
     const dedupeKey = `weekly_review:${binding.week}`;
     const added = await guard.save({ kind: 'weekly', severity: 'info', title: title?.text ?? '', body_md: filled?.text ?? '', related: { links }, dedupe_key: dedupeKey });

@@ -150,6 +150,17 @@ describe('the weekly note (AGT-8)', () => {
     expect((tables.agent_items ?? []).filter((row) => row.kind === 'weekly')).toHaveLength(1);
   });
 
+  it('sends the model back to shorten a title that is longer than an item holds once its handles are filled in, instead of failing in the database (#408)', async () => {
+    const tables = weeklyTables();
+    for (const property of tables.properties ?? []) property.nickname = 'Nhà cho thuê dài hạn ở phường rất xa trung tâm thành phố';
+    const { call } = await weeklyRun(tables);
+    const long = await call('create_item', { ...note, title: `${'{{f33.property_label}} '.repeat(8)}đang trống` });
+    expect(long.isError).toBe(true);
+    expect(long.text).toMatch(/300/);
+    expect((tables.agent_items ?? []).filter((row) => row.kind === 'weekly')).toEqual([]);
+    expect((await call('create_item', note)).isError).toBe(false);
+  });
+
   it('refuses a second note in one run, a link to a handle no tool returned, and fails a run that saved no note', async () => {
     const { prepared, call } = await weeklyRun(weeklyTables());
     await expect(prepared.finish({ reply: 'xong', model: 'm' })).rejects.toThrow('The model ended without saving the weekly note');
