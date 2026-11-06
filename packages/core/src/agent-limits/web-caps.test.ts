@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { remainingWebCaps, WEB_CAPS } from './web-caps';
 
 describe('remainingWebCaps', () => {
