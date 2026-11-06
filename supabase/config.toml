@@ -195,3 +195,36 @@ s3_host = "env(S3_HOST)"
 s3_region = "env(S3_REGION)"
 s3_access_key = "env(S3_ACCESS_KEY)"
 s3_secret_key = "env(S3_SECRET_KEY)"
+
+# What `supabase config push` sends to each cloud project. Local keys above name the local stack (127.0.0.1,
+# Google off), so without these blocks a push would point sign-in at localhost. The CLI picks the block whose
+# project_id matches the linked project and layers it over the keys above; `pnpm db:start` ignores the blocks
+# (scripts/slot.ts drops them from the slot's copy). The values come from the shell that runs the push
+# (docs/plan/DEPLOY.md section 2) so no project id or host is written in the repository.
+# `email_sent` is per hour for the whole project and applies once custom SMTP is on; 2 would lock the family out.
+[remotes.production]
+project_id = "env(ESTA_PRODUCTION_PROJECT_REF)"
+
+[remotes.production.auth]
+site_url = "env(ESTA_PRODUCTION_URL)"
+additional_redirect_urls = ["env(ESTA_PRODUCTION_CALLBACK_URL)"]
+
+[remotes.production.auth.rate_limit]
+email_sent = 30
+
+# Flip to true only after a test sign-in works on preview (DEPLOY.md section 3).
+[remotes.production.auth.external.google]
+enabled = false
+
+[remotes.preview]
+project_id = "env(ESTA_PREVIEW_PROJECT_REF)"
+
+[remotes.preview.auth]
+site_url = "env(ESTA_PREVIEW_URL)"
+additional_redirect_urls = ["env(ESTA_PREVIEW_CALLBACK_URL)"]
+
+[remotes.preview.auth.rate_limit]
+email_sent = 30
+
+[remotes.preview.auth.external.google]
+enabled = true

@@ -62,23 +62,25 @@ export function slotConfig(baseToml: string, slot: number, lan?: string): string
   let section = '';
   return baseToml
     .split('\n')
-    .map((line) => {
+    .flatMap((line) => {
       const header = /^\[([^\]]+)\]/.exec(line);
       if (header?.[1] !== undefined) {
         section = header[1];
-        return line;
       }
-      if (section === '' && line.startsWith('project_id =')) return `project_id = "esta-${slot}"`;
-      if (lan !== undefined && line.startsWith('site_url =')) return `site_url = "https://${lan}:${ports.webLan}"`;
+      // `[remotes.*]` blocks describe cloud projects for `supabase config push`; a local stack never reads them.
+      if (section === 'remotes' || section.startsWith('remotes.')) return [];
+      if (header?.[1] !== undefined) return [line];
+      if (section === '' && line.startsWith('project_id =')) return [`project_id = "esta-${slot}"`];
+      if (lan !== undefined && line.startsWith('site_url =')) return [`site_url = "https://${lan}:${ports.webLan}"`];
       if (/^(site_url|additional_redirect_urls) =/.test(line)) {
         const local = line.replaceAll(`127.0.0.1:${BASE_PORTS.web}`, `127.0.0.1:${ports.web}`);
-        return lan === undefined ? local : local.replace(/\]$/, `, "https://${lan}:${ports.webLan}/**"]`);
+        return [lan === undefined ? local : local.replace(/\]$/, `, "https://${lan}:${ports.webLan}/**"]`)];
       }
       const portsNameRemoteServers = section.startsWith('auth');
-      if (portsNameRemoteServers) return line;
+      if (portsNameRemoteServers) return [line];
       const port = /^(\w*port)\s*=\s*(\d+)(.*)$/.exec(line);
-      if (port?.[1] === undefined || port[2] === undefined) return line;
-      return `${port[1]} = ${Number(port[2]) + offset}${port[3] ?? ''}`;
+      if (port?.[1] === undefined || port[2] === undefined) return [line];
+      return [`${port[1]} = ${Number(port[2]) + offset}${port[3] ?? ''}`];
     })
     .join('\n');
 }
