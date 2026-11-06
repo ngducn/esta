@@ -23,6 +23,7 @@
     "agent:record": "node --import tsx scripts/agent-record.ts",
     "connector": "node --import tsx scripts/connector.ts",
     "connector:login": "node --import tsx scripts/connector.ts login",
+    "connector:logout": "node --import tsx scripts/connector.ts logout",
     "build": "pnpm --filter @esta/web build",
     "start": "node scripts/web.ts start",
     "check": "pnpm i18n:parity && pnpm plan:coverage --quiet && pnpm seed:coverage && pnpm quality && pnpm check:migration-order && pnpm check:sentinels && pnpm tokens:check && pnpm classes:check && pnpm glyphs:check && pnpm contrast:check && pnpm -r --include-workspace-root run typecheck && pnpm lint && pnpm -r --include-workspace-root run test",

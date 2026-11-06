@@ -9,6 +9,7 @@ const MESSAGES: Record<LoginRefusal, string> = {
   wrong_credentials: 'The email, password or code is wrong.',
   send_failed: 'The code could not be sent. Wait a minute and try again.',
   signed_out: 'The sign-in did not stick. Try again.',
+  unreachable: 'Esta could not be reached. Try again when it is up.',
   no_household: 'This account belongs to no household yet. Finish onboarding in Esta first.',
   not_operator: 'Only the household operator can use the connector.',
 };

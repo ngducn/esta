@@ -13,8 +13,12 @@ vi.unstubAllEnvs();
 const url = env.NEXT_PUBLIC_SUPABASE_URL ?? '';
 const anonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
 
-/** The slot's local stack answers; the tests that need it skip without it. */
+/**
+ * The slot's local stack answers. A plain `pnpm test` skips the tests that need it; `pnpm test:integration` names its
+ * stack in ESTA_IT_SUPABASE_URL, and there a stack that is down fails the run instead of skipping (#122).
+ */
 export const stackUp = anonKey !== '' && (await fetch(`${url}/auth/v1/health`, { headers: { apikey: anonKey } }).then((r) => r.ok, () => false));
+if (!stackUp && process.env.ESTA_IT_SUPABASE_URL !== undefined) throw new Error(`pnpm test:integration needs the local stack at ${url || 'the slot URL'}, and it did not answer`);
 export const stackName = `the ESTA_SLOT=${process.env.ESTA_SLOT ?? 0} stack`;
 
 // Each call of e2eServiceHeaders runs `supabase status`; one key per run keeps many requests from racing it.
