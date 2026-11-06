@@ -93,6 +93,14 @@ When Actions is down, `tools/ci-local.sh <worktree> <pr> <slot>` runs the same j
 
 See SPEC §9.1. In short: `pnpm check`, `pnpm db:test` and the touched e2e flows pass; for UI, zero detector findings (or a recorded ignore with a reason), axe clean, screenshots at 390 × 844 and 1440 × 900 in Vietnamese light and dark through the `verify` skill; for agent work, the golden tests in AGENT.md §7 pass in replay mode. Tests alone are not sufficient; drive the real surface.
 
+## Codify every finding
+
+Ryan, 2026-11-06: "everything you find as issue, be sure to codify it in some way, and make sure every subsequent implementation efforts carry this quality forward". Targets and the ledger are in `docs/plan/quality-2026-11.md`.
+
+- A defect found by a review, a test, a lane or by you while building is fixed together with a check that would catch it next time. Prefer, in order: a type that makes it unrepresentable, an `esta/*` lint rule, a `pnpm quality` metric with its home, a pgTAP or unit test or harness helper, a CI step. When no mechanical check can catch the class, say why and add it to the review checklist in `docs/plan/trail/verification-tiers.md`.
+- Every PR body has a `## Codified` section: each defect fixed and the check that now holds it, or `None found`. A `[low]` issue names the check its fix will add.
+- New code uses the home ARCHITECTURE.md names for its concern. When a concern has no home, the first PR that needs one creates it, registers it in ARCHITECTURE.md and in `scripts/quality/metrics.ts`, and deletes any second way it finds. A quality metric only falls; a rise needs `--allow-raise` with a reason root accepts.
+
 ## `[verify]` facts
 
 Follow DOMAIN-VN §0. Confirm from a source in the mapped spike or phase and record the source. If only a professional could confirm it, ship the labelled `[app rule]` behavior, list it in `docs/plan/STATUS.md`, and keep going.

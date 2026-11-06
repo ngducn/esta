@@ -16,6 +16,7 @@ Everything you read stays in your context and is paid for again on every later t
 1. Work in the worktree and branch the brief gives, with the `ESTA_SLOT` it names.
 2. Push early and open the PR ready (never draft) with a Conventional Commits title, the PR id as scope, and the tier on the body's first line.
 3. Name the data shape first. Build. Push after every verifiable unit.
+3a. Codify (Ryan, 2026-11-06). Every defect you fix, including one you cause and catch while building, ships with the check that would catch it next time (CLAUDE.md "Codify every finding"). The PR body has a `## Codified` section listing each defect and its check, or `None found`; root's merge script refuses a PR without it. Your diff raises no `pnpm quality` metric and adds no second way to do something ARCHITECTURE.md gives a home.
 4. Prove it on the real surface per the tier table in `verification-tiers.md`: `pnpm check`, the specs your change touches, and the screenshots your tier asks for (two to four, through the verify skill). Evidence under `/tmp/owner-<pr id>/`.
 5. Run `/deslop`. Run `/no-comments` only when the diff adds comment lines (`git diff origin/main... | rg '^\+.*(//|/\*)'`), because it starts a whole subagent. Then `pnpm check` on the committed head. Push.
 6. Wait for CI with one background `gh pr checks <n> --watch --fail-fast`, never a sleep or poll loop. Fix a red job that your change causes.
@@ -39,7 +40,7 @@ Everything you read stays in your context and is paid for again on every later t
 - Money is integer VND. No `new Date()` in domain code. No `any`. Every user-facing string goes through next-intl. Design tokens only.
 - Keep comments to a non-obvious why. No phase-narrating comments.
 - If the plan section is wrong or impossible as written, do the smallest correct thing, record why in decisions.tsv and in the PR body under Tradeoffs, and tell the root.
-- Known defect classes (2026-10-30). Reviewers found each of these more than once in Phase 5, always after the build. Check every one that your diff touches before you report code-ready, and say in the PR body how you checked it:
+- Known defect classes (2026-10-30). Reviewers found each of these more than once in Phase 5, always after the build. Check every one that your diff touches before you report code-ready, and say in the PR body how you checked it. Q-16 in `docs/plan/quality-2026-11.md` turns each into a check; once a class has its check, this list names the check instead:
   1. **A private row with a public copy.** Any table or row that some members must not read (creator-only, operator-only) also hides its `audit_log` rows, and anything else that copies its content, from those members. Prove it in pgTAP as the reader who must not see it.
   2. **Count, then write.** A cap, a limit or a "one at a time" rule that counts rows and then inserts must hold under two calls at once and under a retry. Use one definer function under an advisory lock, or serialize the writers, and test two parallel calls.
   3. **Clock edges.** Test any logic keyed by a day, a week or a month at 23:59 and 00:01 +07, on Sunday to Monday, for a retry that runs after midnight, and on a frozen test clock. Keys come from the job or the row, never from "today" at run time.
