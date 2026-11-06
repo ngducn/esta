@@ -13,7 +13,7 @@
   "dependencies": {
     "@esta/core": "workspace:*",
     "@esta/db": "workspace:*",
-    "@supabase/supabase-js": "^2.117.2",
+    "@supabase/supabase-js": "^2.118.0",
     "zod": "^4.6.6"
   }
 }
