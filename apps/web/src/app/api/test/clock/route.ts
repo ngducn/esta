@@ -13,6 +13,11 @@ function guard(request: Request): Response | null {
   return requireCronSecret(request);
 }
 
+/** Reads nothing. It exists so `pnpm smoke` can tell this route hidden (404) from visible (401 without the secret) with a GET, since a route with no GET answers 405 before its guard runs. */
+export async function GET(request: Request): Promise<Response> {
+  return guard(request) ?? new Response(null, { status: 405, headers: { allow: 'POST, DELETE' } });
+}
+
 export async function POST(request: Request): Promise<Response> {
   const denied = guard(request);
   if (denied) return denied;

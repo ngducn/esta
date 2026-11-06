@@ -32,7 +32,7 @@ export async function runSmoke(base: string, buildEnv: BuildEnv): Promise<SmokeR
     const clock = await status(base, '/api/test/clock');
     results.push(
       { name: '/dev is hidden', ok: dev === 404, detail: String(dev) },
-      { name: '/api/test/clock is hidden', ok: clock === 404, detail: clock === 404 ? '404, hidden' : `${clock}, ${clock === 405 || clock === 401 ? 'visible, the route exists' : 'not hidden'}` },
+      { name: '/api/test/clock is hidden', ok: clock === 404, detail: clock === 404 ? '404, hidden' : `${clock}, ${clock === 401 || clock === 405 ? 'visible, the route answers' : 'not hidden'}` },
     );
   }
   for (const path of CRON_PATHS) {
