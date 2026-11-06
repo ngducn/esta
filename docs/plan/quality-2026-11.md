@@ -120,6 +120,7 @@ A finding is closed only when a check would catch it next time. The check is, in
 | CI tests the PR head; main unprotected | CI checks out the merge ref; branch protection is Ryan's click (needs an admin token, so no check can read it from CI) | Q-11 |
 | Email notices silently off in production | `check:env` and `assertStartAllowed` require SMTP for the production worker, with a test | Q-13 |
 | The only backup sits on one disk | the backup job writes an operator item when the offsite copy is missing or older than two days | Q-13 |
+| #439 went red on main's new audit step: GitHub ran main's workflow against the PR head's older lockfile (found 2026-11-06) | CI checks out the merge ref, so a branch is tested as it would land | Q-11 |
 | `ci-local.sh` skips checks CI runs | both call `tools/ci/jobs/*.sh`; a test that every `ci.yml` job step calls one | Q-11 |
 | Tests pass only on retry | Playwright `retries: 0` in CI after #208's root cause | Q-12 |
 | 131 e2e tests skipped by viewport gating | `e2e-report` prints the skip count; new `viewport-skip` metric ratcheted | Q-12 |
