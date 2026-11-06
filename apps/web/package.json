@@ -32,7 +32,7 @@
     "maplibre-gl": "^6.14.0",
     "mdast-util-gfm-table": "^2.0.0",
     "micromark-extension-gfm-table": "^2.1.2",
-    "next": "^16.3.8",
+    "next": "16.4.2",
     "next-intl": "^4.14.9",
     "pdf-lib": "1.17.1",
     "pdfjs-dist": "6.4.299",
@@ -47,7 +47,7 @@
     "terra-draw-maplibre-gl-adapter": "^1.5.0",
     "undici": "^8.12.2",
     "write-excel-file": "4.1.1",
-    "zod": "^4.6.5"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
