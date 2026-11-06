@@ -5,6 +5,7 @@ import { visibleText } from './visible-text';
 
 export { escapeMarkdown, MAX_VALUE_LENGTH, visibleText };
 export { WORDS } from './words';
+export { extractTypedNumbers, extractTypedNumbersFrom, type TypedNumber } from './typed';
 
 /** Handle (`f1`) to the record a tool returned under it in this run. */
 export type FactSheet = ReadonlyMap<string, Readonly<Record<string, unknown>>>;

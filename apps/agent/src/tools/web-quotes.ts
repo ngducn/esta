@@ -1,4 +1,5 @@
 import { formatDate, type Locale } from '@esta/core/format';
+import { extractTypedNumbers } from '@esta/core/guard';
 import { normalizeUrl, quoteOnPage, MIN_QUOTE_WORDS, sourceLink } from '@esta/core/research';
 import { publishedDates } from '@esta/core/parse/page-dates';
 import { z } from 'zod';
@@ -40,6 +41,13 @@ export const refusedQuotes = (checked: readonly CheckedQuote[]): string[] => che
 
 /** `quote_n_label` for each quote that matched, numbered by its place in the list. */
 export const quoteLabels = (checked: readonly CheckedQuote[]): Array<[string, string]> => checked.flatMap(({ found }, i) => (found.ok ? [[`quote_${i + 1}_label`, found.value] as [string, string]] : []));
+
+/** `quote_n_value_display` and `quote_n_value_typed` for the first number each matching quote holds, read as a number she typed would be, so a quoted rate can be an operand of `calculate`. */
+export const quoteNumbers = (checked: readonly CheckedQuote[], locale: Locale): Array<[string, unknown]> =>
+  checked.flatMap(({ found }, i) => {
+    const [first] = found.ok ? extractTypedNumbers(found.value, locale) : [];
+    return first === undefined ? [] : [[`quote_${i + 1}_value_display`, first.value_display] as [string, unknown], [`quote_${i + 1}_value_typed`, first.typed] as [string, unknown]];
+  });
 
 /** The quotes all matching, or a rejection naming each that did not. */
 export function requireQuotes(quotes: readonly string[], page: string): Array<[string, string]> {

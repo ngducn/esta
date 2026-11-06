@@ -1,4 +1,6 @@
+import type { TypedValue } from '@esta/core/calc';
 import type { FactSheet } from '@esta/core/guard';
+import type { Vnd } from '@esta/core/money';
 
 export type CitedRecord<T> = T & { readonly handle: string };
 
@@ -29,3 +31,7 @@ export function sameAnswer<A extends unknown[], T>(run: (...args: A) => Promise<
     return answer;
   };
 }
+
+/** The `TypedValue` a calculation reads, kept in a record beside its `_display` string as `<stem>_typed`. */
+export const typedVnd = (value: Vnd | null): TypedValue | null => (value === null ? null : { kind: 'vnd', value });
+export const typedBp = (value: number | null): TypedValue | null => (value === null ? null : { kind: 'bp', value });

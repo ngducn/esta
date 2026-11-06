@@ -6,7 +6,7 @@ import { estaUri } from '@esta/core/links';
 import { paymentBehavior } from '@esta/core/reports';
 import { z } from 'zod';
 import type { LeaseListing, ReadToolContext } from './ask-reads';
-import { sameAnswer } from './fact-sheet';
+import { sameAnswer, typedVnd } from './fact-sheet';
 import { propertyByHandle } from './list-properties';
 import { parseToolInput } from './server';
 
@@ -41,6 +41,8 @@ export function listLeasesTool({ reads, locale, asOf, cite, properties }: ReadTo
             tenant_name: lease.tenant?.full_name ?? null,
             status: lease.status,
             rent_display: lease.rent_vnd === null ? null : formatVnd(lease.rent_vnd, locale),
+            rent_typed: typedVnd(lease.rent_vnd),
+            deposit_held_typed: typedVnd(lease.held_deposit_vnd),
             deposit_held_display: formatVnd(lease.held_deposit_vnd, locale),
             start_date_display: lease.start_date === null ? null : formatDate(lease.start_date, locale),
             end_date_display: lease.end_date === null ? null : formatDate(lease.end_date, locale),

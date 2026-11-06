@@ -1,5 +1,5 @@
 import { checkNote, type FactSheet, type FilledNote, type NoteViolation } from '@esta/core/guard';
-import type { AnswerRef, SourceRef } from '@esta/core/assistant';
+import type { AnswerRef, CalcRef, SourceRef } from '@esta/core/assistant';
 import type { IsoDate } from '@esta/core/date';
 import type { Result } from '@esta/core/result';
 
@@ -38,6 +38,16 @@ export function sourceRefs(template: string, sheet: FactSheet): SourceRef[] {
   return sources;
 }
 
+/** The working of each calculation result the template cites, in the order it first cites them. */
+export function calcRefs(template: string, sheet: FactSheet): CalcRef[] {
+  const workings = new Set<string>();
+  for (const [, handle = ''] of template.matchAll(CITED_HANDLE)) {
+    const working = sheet.get(handle)?.working_display;
+    if (typeof working === 'string') workings.add(working);
+  }
+  return [...workings].map((working) => ({ kind: 'calc', working }));
+}
+
 /** A line holding only an ordered list's number, such as `1.`. A cut at its `.` would read as a typed number until the item's text comes. */
 const LIST_MARKER = /^[ \t]*\d{1,9}$/;
 
@@ -62,7 +72,7 @@ function lastSentenceEnd(template: string): number {
 function guarded(template: string, sheet: FactSheet): Result<Answer, NoteViolation[]> {
   const linked = resolveLinks(template, sheet);
   const checked = checkNote(template, sheet, 'markdown-tables', linked.text);
-  return checked.ok ? { ok: true, value: { ...checked.value, refs: [...linked.refs, ...sourceRefs(template, sheet)] } } : checked;
+  return checked.ok ? { ok: true, value: { ...checked.value, refs: [...linked.refs, ...sourceRefs(template, sheet), ...calcRefs(template, sheet)] } } : checked;
 }
 
 export type AnswerText = { readonly content: string; readonly refs: readonly AnswerRef[] };

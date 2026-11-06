@@ -8,7 +8,7 @@ import { billsDueIn } from '@esta/core/reports';
 import { portfolioValue } from '@esta/core/valuations';
 import { z } from 'zod';
 import { monthStart, type ReadToolContext } from './ask-reads';
-import { sameAnswer } from './fact-sheet';
+import { sameAnswer, typedVnd } from './fact-sheet';
 import { propertyByHandle } from './list-properties';
 import { parseToolInput } from './server';
 
@@ -33,6 +33,7 @@ export function collectionsTool({ reads, locale, asOf, cite, properties }: ReadT
           days_overdue_display: state.group === 'overdue' ? formatCount(state.days, locale) : null,
           due_date_display: formatDate(row.dueDate, locale),
           amount_display: formatVnd(amountVnd, locale),
+          amount_typed: typedVnd(amountVnd),
           carried_over: carriedFrom !== null,
           link: row.propertyArchived ? null : estaUri({ type: 'invoice', id: row.invoiceId }),
         }),
@@ -45,7 +46,7 @@ export function collectionsTool({ reads, locale, asOf, cite, properties }: ReadT
     // The month's figure counts every bill due in it, archived property or not, as Báo cáo does; a live property's own rows hold all of its bills.
     const own = groups.flatMap((group) => group.items).filter((item) => item.carriedFrom === null).map((item) => item.row);
     const { collectedVnd, billedVnd } = monthCollected(scope === null ? billsDueIn((await reads.report(year)).invoices, start) : own);
-    const month_collected = cite({ month_date_display: formatMonthYear(start, locale), collected_display: formatVnd(collectedVnd, locale), billed_display: formatVnd(billedVnd, locale) });
+    const month_collected = cite({ month_date_display: formatMonthYear(start, locale), collected_display: formatVnd(collectedVnd, locale), billed_display: formatVnd(billedVnd, locale), collected_typed: typedVnd(collectedVnd), billed_typed: typedVnd(billedVnd) });
     return { bills, totals, month_collected };
   });
 }

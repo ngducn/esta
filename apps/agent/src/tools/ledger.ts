@@ -7,7 +7,7 @@ import { readLedgerFacts } from '@esta/ops';
 import { z } from 'zod';
 import type { AgentDb } from '../supabase';
 import { monthStart } from './ask-reads';
-import { sameAnswer, type RunSheet } from './fact-sheet';
+import { sameAnswer, typedVnd, type RunSheet } from './fact-sheet';
 import { propertyByHandle, type PropertyHandles } from './list-properties';
 import { parseToolInput } from './server';
 
@@ -24,6 +24,9 @@ export function ledgerTool(db: AgentDb, householdId: string, locale: Locale, pro
     income_display: formatVnd(sums.incomeVnd, locale),
     expenses_display: formatVnd(sums.expensesVnd, locale),
     net_display: formatVnd(sums.noiVnd, locale),
+    income_typed: typedVnd(sums.incomeVnd),
+    expenses_typed: typedVnd(sums.expensesVnd),
+    net_typed: typedVnd(sums.noiVnd),
   });
   return sameAnswer(async (raw: Record<string, unknown>) => {
     const { property: handle, year, month } = parseToolInput(inputSchema, raw, USAGE);
@@ -39,7 +42,7 @@ export function ledgerTool(db: AgentDb, householdId: string, locale: Locale, pro
       link: property === null ? null : estaUri({ type: 'ledger', id: property.id }),
     });
     const expensesByCategory = EXPENSE_CATEGORY_IDS.filter((category) => totals.byCategory[category] > 0).map((category) =>
-      cite({ category, amount_display: formatVnd(totals.byCategory[category], locale) }),
+      cite({ category, amount_display: formatVnd(totals.byCategory[category], locale), amount_typed: typedVnd(totals.byCategory[category]) }),
     );
     if (month !== undefined) return { ledger, expenses_by_category: expensesByCategory };
     return { ledger, expenses_by_category: expensesByCategory, by_month: months.map((row) => cite({ month_date_display: formatMonthYear(row.monthStart, locale), ...amounts(row) })) };
