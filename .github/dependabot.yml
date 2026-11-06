@@ -5,6 +5,13 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 3
+    ignore:
+      - dependency-name: '@types/node'
+        versions: ['>=25']
+      # 0.63 re-renders the fixture images, which breaks the byte-pinned manifests and replay recordings
+      - dependency-name: satori
+      # axe-core 4.14 adds label-content-name-mismatch, which fails the serious-violation check on several screens
+      - dependency-name: '@axe-core/playwright'
     groups:
       npm-security:
         applies-to: security-updates

@@ -9,7 +9,7 @@ Resume with `skills/poteto-mode/playbooks/session-pickup.md`, then Autopilot-ful
 
 Briefs are in `~/.claude/orchestrate/esta/briefs/`. The root's todo is `~/.claude/orchestrate/esta/todo.md`. Media is in `~/.claude/orchestrate/esta/media/<PR code>/`. The redesign's design system copy is in `~/.claude/orchestrate/esta/design/2026-11/`.
 
-## Where the run is (written 2026-11-01 21:45 +07)
+## Where the run is (written 2026-11-01 21:45 +07; open items refreshed 2026-11-06 15:45)
 
 Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/8USdYGBumJc9AuaMsQfZKg --> i redesigned Esta, please implement the UI revamp" and "also check current progress, please help continue the work".
 
@@ -18,20 +18,22 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 - The redesign is planned in `docs/plan/redesign-2026-11.md` (b2def8a7): six slices, RD-1 to RD-6, with its defaults listed under "Decisions taken as defaults".
 - #365's fix round 1 had never pushed. The previous owner stopped after merging main locally (840b881e in `/tmp/owner-data-trust-a/wt`). A fresh owner took it over.
 
-## Open items (state at 12:50 2026-11-06 +07)
+## Open items (state at 15:45 2026-11-06 +07)
 
-- **Ryan 2026-11-06:** "merge them and finish the project"; "push it through the last bit"; rated codebase review (https://claude.ai/artifact/4V3kWhP76ha26WqyMGzHso); "i want the code quality so high and pristine that follow up AI agents can pickup the practice"; "everything you find as issue, be sure to codify it in some way, and make sure every subsequent implementation efforts carry this quality forward"; "yeah" to the quality pass finishing before the first production deploy.
-- **Codify rule live:** CLAUDE.md "Codify every finding", owner-brief step 3a and 7, verification-tiers review checklist, standing orders 2026-11-06. Every PR body has `## Codified`. Root merges only with `~/.claude/orchestrate/esta/bin/merge.sh <pr> <full sha>` (refuses wrong head, ci not green at that head, or no Codified section). Review briefs start from briefs/_template-review.md. Lows go in one `[low]` issue per PR naming each check.
-- **Quality plan:** docs/plan/quality-2026-11.md: targets, finding ledger (review findings, the 8 defect classes, all 167 open issues by class), Q-01 to Q-20 in waves. Wave 0b: 28 open issues the ledger found are real money, legal, data or security defects; retitling them `[pre-deploy]` was blocked by permissions and waits on Ryan.
-- **Merged today (this stretch):** #438 security bump (714aa773), #434 P5-10a (55d15b9c), #444 Q-01 quality gates (low #445).
-- **#446 Q-16 defect-class checks:** review CLEAN at 67aaa82b; conflicted after #444; root merged main as 56e40942 (check script keeps migration-order and classes:check). Tiny reader running (briefs/pr446-merge-reader.md). Next: on CLEAN plus green ci, `merge.sh 446 <head>`; then add to owner-brief one sentence each for why classes 4 (waits for Q-08) and 8 (no mechanical check) stay prose. Lows #447.
-- **#439 P5-15b what-if:** fix round 1 at 926f9f63, ci green. B1 now refuses a monthly rate instead of converting. Sonnet lane plus reader running (briefs/pr439-lane.md, slot 14), reverting each fix to prove its test. Next: on CLEAN merge via merge.sh; file one `[low]` issue for L2 (English units), L3 (seed numbers in follow-ups), L4 (typed values for portfolio, collections, tax), L11 (prose label) with the audit's checks; Ryan ruled "Yes, convert it": round 2 converts a monthly rate (x12) with its own Cách tính line.
-- **P5-10b live run, last:** brief ready (briefs/p5-10b.md, slot 3). Spawn after #439 merges; check the week first. It must default `--mode` to replay, exit 1 on required FAIL or not-run rows, wire T5 to T7, measure first-sentence times.
-- **x3 wave (Ryan 2026-11-06 13:15, "at least x3 the throughput ... spawn parallel agents and really rigorously complete the job"):** owners running from briefs q-19a (slot 7), q-19b (slot 9), q-20a (slot 14), q-19c (slot 3), q-17 (no slot), deps (no slot), all reading briefs/_common-quality-owner.md. Guard raised to stop spawns at 96%, pause owners at 98%. Tripwire cleared. Q-02 formatter runs last, when no PR is open. Next waves: Q-03/04/05 writes onto ops, Q-06 errors, Q-07 components, Q-08 access, Q-09/10, Q-11 to Q-14 infra, Q-15 docs, Q-18 layout, Q-20 rest.
-- **Rulings today (Ryan may overrule):** preview gets its own Supabase project; restore drill local, cloud restore #428; ESTA_E2E_SERVER=build; denied WebSearch never stores input; search-guard terms; negative half rounds away from zero; "ngày 7 tháng 10 năm 2026" is one date; standard review for #438, #434, #446 (no product code).
-- **Not ours:** pid 56207 is Ryan's slot 5 worker in /private/tmp/ryan-test; leave it.
-- **Go-live list (Ryan's):** Dependabot alerts on, main protection, release order, worker clone, cron visibility, SMTP required, offsite backup, #428.
-- **Tripwire set** 2026-11-05 22:57; clear with `rm /tmp/ci-local/one-at-a-time` when the flake is understood.
+- **Ryan 2026-11-06:** "merge them and finish the project"; "push it through the last bit"; "i want the code quality so high and pristine that follow up AI agents can pickup the practice"; "everything you find as issue, be sure to codify it in some way"; "yeah" to finishing the quality pass before the first production deploy; "Yes, convert it" (monthly rate to yearly); "we need to at least x3 the throughput to go through the usage before tmr reset, so spawn parallel agents and really rigorously complete the job". Guard: stop spawns at 96% of the week, pause owners at 98%; week resets 2026-11-07 11:00 +07.
+- **Codify rule live:** CLAUDE.md "Codify every finding", owner-brief steps 3a, 6 and 7, verification-tiers checklist, standing orders 2026-11-06. Merge only with `~/.claude/orchestrate/esta/bin/merge.sh <pr> <full sha>`. Agents wait for CI with `~/.claude/orchestrate/esta/bin/wait-ci.sh [--after-rerun] <pr> <sha>` in the foreground (exit 3 = run again). On every hand-back whose notification says "waiting on its own background work", TaskStop the agent.
+- **Merged today:** #438, #434, #444 Q-01, #446 Q-16, #439 P5-15b (low #457), #448 deps (low #463). Lows also filed: #459, #461 (connector folder test red on main, connector integration not in CI).
+- **#449 Q-19c (expenses, ended term, kind notice):** lane CLEAN; Opus audit B1 (upsert fires BEFORE INSERT) and B2 (sentinels showed network error) fixed at 230dccae, ci green, PR body Codified updated by root. Scoped reader running on slot 3 (briefs/pr449-ff1-reader.md). Next: merge.sh 449 230dccae4544cdbeb88e87619932114ad24d6efd on CLEAN; file a low for ESTA_FROZEN_NOW TS-only fallback, get_property raw 'valid' for an ended certificate, sticky nav over the Kho radio at 390. Migration 641000: merge after #453 (638000) and #455 (639000) or renumber.
+- **#450 Q-17 parser corpus:** Opus audit ISSUES (joiner lists for term range and national ID, issue date saved as term end, four untested wiring changes). Fix round running (briefs/q-17-ff1.md, no slot; it files the 17-low issue). Next: scoped reader, then a lane on a free slot (PDF preview with the pdf.js legacy build at 390, bank CSV with quoted separators), merge. Then Q-17b owner with a slot: SQL `holds_national_id` parity through NATIONAL_ID_VECTORS, #204 (refuse grouped lengths), #364 (leading Vietnamese imperative decides the language), #151, #425.
+- **#451 Q-20a security:** Opus audit running on slot 14 (briefs/pr451-audit.md). Overlaps #456 on scripts/web-integration.ts and lanes.ts; second to land re-merges.
+- **#453 Q-19a leases and invoices:** Opus audit running on slot 7 (briefs/pr453-audit.md). Open question for Ryan if main lets Mẹ re-bill a voided period: the new exclusion constraint would stop that (blocking) — audit decides.
+- **#455 Q-19b statement import undo:** Opus audit running on slot 9 (briefs/pr455-audit.md).
+- **#456 Q-11 CI on merge ref, job scripts, tools/heavy.sh:** Sonnet review running (briefs/pr456-review.md). After merge, switch briefs from ~/.claude/orchestrate/esta/bin/heavy.sh to tools/heavy.sh.
+- **#460 Q-09a one fake, Stryker floor 92:** Sonnet review running (briefs/pr460-review.md). Lockfile conflicts with main after #448; owner of a fix round re-merges.
+- **Q-16b (no PR yet):** owner running (briefs/q-16b.md): `esta/no-self-sourced-property` lint, owner-brief class 9, unit-list.test.tsx timeout root cause, typed.ts property counterexample "nam෇a" (seed -1581416164) with a Unicode word boundary.
+- **P5-10b Phase 5 live run:** owner running on slot 8 (briefs/p5-10b.md). Pre-deploy: one live smoke on merged main, since #448 moved the agent SDK to 0.3.317 after the live run started.
+- **Queue when slots free:** #450 lane; #453 lane (back-to-back leases, void and re-bill, approve a lease plan); Q-17b; Q-12 flaky clock tests (#208, retries 0); Q-09b allocation CSV vectors in pgTAP + C19 golden cases; C12 (#82, #128, #131). Later waves: Q-03/04/05, Q-06 (after #449 and #455 merge; they touch actions), Q-07, Q-08, Q-10, Q-13, Q-14 squash, Q-18, rest of Q-20, Q-15 docs, Q-02 formatter last.
+- **Slots:** usable 3, 7, 8, 9, 14; never 1, 2, 4, 5, 6. pid 56207 is Ryan's slot 5 worker; leave it. Tripwire cleared for throughput; set `/tmp/ci-local/one-at-a-time` again on a beside-only failure.
 
 ## Waiting for Ryan (defaults apply)
 
@@ -42,6 +44,10 @@ Ryan restarted the run with two asks on 2026-11-01: "https://claude.ai/artifact/
 5. P5-13 chips come from open notes of any day, an [app rule].
 6. Redesign questions with defaults: keep Inter Display on /sign-in despite ~150 ms LCP; logo twice on desktop sign-in (#379); "Cần chú ý" = rent overdue or due today on any property (alternatives: Tổng quan's list, or the design set with expiring contracts and overdue tax); Tài sản chip rows stay open on desktop (or fold behind "Bộ lọc").
 7. The redesign defaults in `docs/plan/redesign-2026-11.md`: Esta blue, role-name codemod, Thoáng/Gọn, wordmark, icon-and-word status, the new shell. Ryan can overrule any in a sentence.
+
+8. Retitle the 28 not-low issues in the quality ledger to `[pre-deploy]`? Root's `gh issue edit` is blocked by permissions; default: the ledger table in quality-2026-11.md is the list.
+9. A bare percent with no period ("lãi 9%"): today Hỏi asks for the yearly rate. Default stays; Ryan can say "treat a bare percent as yearly".
+10. Defaults adopted from the #450 audit for the Q-17b follow-up: #204 refuse a length written with dot or space grouping (ask to retype "4,5"); #364 a leading Vietnamese imperative (Gửi, Nhắc, Xem) decides the reply language and record names do not count.
 
 Ruled 2026-11-02: Thu tiền "Đã thu" counts payments toward this month's rent, as Tổng quan does (Ryan: "Yes, match Tổng quan").
 
