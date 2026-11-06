@@ -3959,6 +3959,10 @@ export type Database = {
       }
       undo_change_batch: { Args: { p_batch_id: string }; Returns: Json }
       undo_payment: { Args: { p_payment_id: string }; Returns: undefined }
+      undo_statement_import: {
+        Args: { p_import_id: string; p_row_ids?: string[] }
+        Returns: number
+      }
       update_my_display_settings: {
         Args: { p_density: string; p_locale: string; p_text_scale: number }
         Returns: undefined

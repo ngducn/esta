@@ -54,3 +54,10 @@ describe('the reason a recommendation gives (#354)', () => {
     expect(prompt).toContain('A tenant who paid most bills late does not pay regularly');
   });
 });
+
+describe('advice on a general question carries no household figure (T2, P5-10c)', () => {
+  it('tells the model to call no tool and write no number for a question of principle', () => {
+    const prompt = askPrompt({ ...CONTEXT, question: 'Có nên cho thuê theo năm thay vì theo tháng không?' });
+    expect(prompt).toContain('A question of principle, such as renting by the year or by the month, is answered from general knowledge: call no tool, and write no number, date or count');
+  });
+});

@@ -4,7 +4,7 @@ import type { IsoDate } from '@esta/core/date';
 import { formatDate, type Locale } from '@esta/core/format';
 import { checkNote, type FactSheet, type FilledNote } from '@esta/core/guard';
 import { datesInText, publishedDates } from '@esta/core/parse/page-dates';
-import { keepRule, normalizeUrl, type DropReason } from '@esta/core/research';
+import { keepRule, normalizeUrl, storedSourceLink, type DropReason } from '@esta/core/research';
 import type { AgentDb } from '../supabase';
 import { guardedWriter } from './create-item';
 import { daysAgo } from './recent-items';
@@ -119,7 +119,7 @@ export function researchItemWriter(binding: ResearchBinding) {
         {
           household_id: binding.householdId,
           url_normalized: key,
-          source_url: page.link,
+          source_url: storedSourceLink(page.link, draft.source_url),
           source_name: sourceName,
           published_on: draft.published_on,
           effective_on: effectiveOn,

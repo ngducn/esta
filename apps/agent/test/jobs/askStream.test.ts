@@ -161,6 +161,16 @@ describe('handle links in an answer', () => {
   it('leave a handle this run never returned, or a record without a link, as a bare word', () => {
     expect(resolveLinks('Xem [sổ](f99) và [tài sản](f1).', sheet)).toEqual({ text: 'Xem [sổ](f99) và [tài sản](f1).', refs: [] });
   });
+
+  it.each([
+    ['a record without a page', 'Xem [Đất Bảo Lộc]({{f1}}).', 'Xem Đất Bảo Lộc.'],
+    ['a handle of no run', 'Xem [sổ]({{f99.handle}}).', 'Xem sổ.'],
+    ['two in a row, one resolved', 'Xem [A]({{f1}}) và [B]({{f2}}).', `Xem A và [B](${LEDGER}).`],
+  ])('drop the link of a placeholder handle with %s and keep its text, so no braces reach the stored answer', (_name, text, resolved) => {
+    const out = resolveLinks(text, sheet);
+    expect(out.text).toBe(resolved);
+    expect(out.text).not.toMatch(/[{}]/u);
+  });
 });
 
 describe('calcRefs', () => {

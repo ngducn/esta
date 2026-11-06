@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { firstPhone, formatPhone, normalizePhone, phoneForZaloLink, phoneText, zaloChatUrl, type Phone } from './index';
+import { firstMobile, firstPhone, formatPhone, normalizePhone, phoneForZaloLink, phoneText, zaloChatUrl, type Phone } from './index';
 
 function phone(text: string): Phone {
   const result = normalizePhone(text);
@@ -62,8 +62,15 @@ describe('phoneForZaloLink', () => {
 
 describe('zaloChatUrl', () => {
   it('opens the chat with the local number (LSE-11)', () => {
-    expect(zaloChatUrl(phone('+84 901 111 005'))).toBe('https://zalo.me/0901111005');
-    expect(zaloChatUrl(phone('0283 812 3456'))).toBe('https://zalo.me/02838123456');
+    const [mobile] = [firstMobile(['+84 901 111 005'])];
+    if (mobile === null || mobile === undefined) throw new Error('a mobile reads as a mobile');
+    expect(zaloChatUrl(mobile)).toBe('https://zalo.me/0901111005');
+  });
+
+  it('takes no landline: only a number that passed isMobile compiles (LSE-11)', () => {
+    // @ts-expect-error -- a plain Phone, which may be a landline, is not a MobilePhone
+    expect(() => zaloChatUrl(phone('0283 812 3456'))).not.toThrow();
+    expect(firstMobile(['0283 812 3456', null])).toBeNull();
   });
 });
 

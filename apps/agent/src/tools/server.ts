@@ -43,7 +43,7 @@ const CATALOG = {
   },
   ledger: {
     description:
-      'Return the income received and the expenses paid in one month or one year: {"property": a handle from list_properties, or none for the whole household, "year", "month": 1 to 12, or none for the whole year}. It answers the totals as one record (period_date_display, income_display, expenses_display, net_display), one record per expense category with spending, and for a year one record per month.',
+      'Return the income received and the expenses paid in one month or one year, by the day the money arrived or left, which answers how much was received in a month: {"property": a handle from list_properties, or none for the whole household, "year", "month": 1 to 12, or none for the whole year}. It answers the totals as one record (period_date_display, income_display, expenses_display, net_display), one record per expense category with spending, and for a year one record per month.',
     input: { property: z.string().optional(), year: z.number().int(), month: z.number().int().optional() },
   },
   portfolio_overview: {
@@ -67,7 +67,7 @@ const CATALOG = {
   },
   collections: {
     description:
-      'Return the collections board for one month: {"year", "month": 1 to 12, "property": a handle from list_properties, optional}. Each bill due that month, and each earlier bill still owed (carried_over), has its unit, tenant, status (overdue, due, notDue or paid), days overdue, due date and amount; one record per status gives its count and, except for paid, its total; month_collected is the board\'s Đã thu X / Y and the only figure for what was collected.',
+      'Return the collections board for one month: {"year", "month": 1 to 12, "property": a handle from list_properties, optional}. Each bill due that month, and each earlier bill still owed (carried_over), has its unit, tenant, status (overdue, due, notDue or paid), days overdue, due date and amount; one record per status gives its count and, except for paid, its total; month_collected is the board\'s Đã thu X / Y: the payments made on the bills due that month, whichever day they arrived. It is not the money received in the month (a payment on an earlier bill is missing from it); for how much came in during a month use ledger.',
     input: { year: z.number().int(), month: z.number().int(), property: z.string().optional() },
   },
   tax_position: {

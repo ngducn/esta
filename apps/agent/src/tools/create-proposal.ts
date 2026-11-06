@@ -30,6 +30,7 @@ function subjects({ params }: Proposal): string[] {
 /** What `public.proposal_refusal` answers, as the line the model reads to fix its call. */
 const REFUSALS: Readonly<Record<string, string>> = {
   ESTA_PROPOSAL_PARAMS: 'params: do not match the type',
+  ESTA_PROPOSAL_DUE_PAST: 'params.due_on: before today',
   ESTA_PROPOSAL_SUBJECT: 'property_id, lease_id: not a record of this household, archived, or a lease of another property. Use the handles or ids a tool returned in this run.',
   ESTA_LEASE_NOT_ACTIVE: 'lease_id: the lease is not active',
   ESTA_REMINDER_NOTHING_OWED: 'lease_id: no bill of this lease is due this month or overdue',

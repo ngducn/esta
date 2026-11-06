@@ -3,16 +3,29 @@ import { findMemoCodes, normalizeDescription } from './memo';
 
 const issued = new Set(['7K2QX9MP', 'Q4N8R2TV']);
 
+/** The cases supabase/tests/statement_import_invariants.test.sql replays through `private.statement_text_key`: no comma or quote in any. */
+const TEXT_KEYS: readonly (readonly [string, string, string])[] = [
+  ['bank memo with dots', 'MBVCB.1234567.ESTA7K2QX9MP.CT TU 0903', 'MBVCB1234567ESTA7K2QX9MPCTTU0903'],
+  ['lower case memo', 'esta 7k2qx9mp', 'ESTA7K2QX9MP'],
+  ['spaced and underscored memo', 'E S T A - 7K2Q_X9MP', 'ESTA7K2QX9MP'],
+  ['vietnamese sentence', 'Thanh toán tiền phòng ESTA 7K2QX9MP', 'THANHTOANTIENPHONGESTA7K2QX9MP'],
+  ['capital d with stroke', 'Đặt cọc Phòng 5', 'DATCOCPHONG5'],
+  ['accented ESTA', 'ÉSTA AAAAP2TT', 'ESTAAAAAP2TT'],
+  ['breve and horn', 'ESTĂ B7C3D9EF Nguyễn Thị Ơn', 'ESTAB7C3D9EFNGUYENTHION'],
+  ['eth', 'Ðỗ Văn ð', 'DOVAND'],
+  ['other latin letters are dropped', 'æ ø ł Ƒ', ''],
+  ['stacked marks', 'Ệ Ệ', 'EE'],
+  ['empty', '', ''],
+];
+
 describe('normalizeDescription', () => {
-  it.each([
-    ['MBVCB.1234567.ESTA7K2QX9MP.CT TU 0903', 'MBVCB1234567ESTA7K2QX9MPCTTU0903'],
-    ['esta 7k2qx9mp', 'ESTA7K2QX9MP'],
-    ['E S T A - 7K2Q_X9MP', 'ESTA7K2QX9MP'],
-    ['Thanh toán tiền phòng ESTA 7K2QX9MP', 'THANHTOANTIENPHONGESTA7K2QX9MP'],
-    ['Đặt cọc Phòng 5', 'DATCOCPHONG5'],
-    ['', ''],
-  ])('reduces %j to %j', (text, normalized) => {
+  it.each(TEXT_KEYS)('reduces %s', (_, text, normalized) => {
     expect(normalizeDescription(text)).toBe(normalized);
+  });
+
+  it('exports every case as the vectors the statement import parity test replays', async () => {
+    const rows = TEXT_KEYS.map(([name, text, key]) => `${name},${text},${key}`);
+    await expect(`case,text,key\n${rows.join('\n')}\n`).toMatchFileSnapshot('../../../../supabase/tests/fixtures/statement_text.csv');
   });
 });
 
