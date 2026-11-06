@@ -59,3 +59,24 @@ A legal article number and a law's year (digits in `Điều 118`, `Luật Nhà �
 Checks: the 17 live sentences are fixed cases (`fixtures/live-rejects.ts`; the `vi-transfer-procedure` row is gone, since no committed file holds that prompt's live answer). The properties in `live-rejects.test.ts` write their contexts, counted nouns (`người`, `căn`, `phòng`, `con`, `chủ`, `thuê`, `cái`, `chiếc`, `mảnh`, `lô`...) and leading words (none, `Có`, `Còn`) in the test, apart from the table: a context passes among ordinary words, a counted noun after the whole of it is rejected with each leading word, `Có` or `Còn` before it is rejected, a number word before `phần trăm` is rejected, and a real number word beside a context is rejected. The first fix's property drew from a hand copy of the table, so it could not find the eight; `esta/no-self-sourced-property` now fails a property that draws from a `*.cases.ts` table the same file asserts equal to a production export.
 
 P5-12's fixed set in `apps/agent/test/golden/open-prose.test.ts` loses `vi-repair-first` (its first pass now passes) and drops the `hai` line from the `vi-raise-rent` repair, through `rekey-ask.ts` (`DROPPED_REPAIR_LINES`). It gains the source rejects of `vi-bank-letter` and `vi-notarize-lease`. `vi-transfer-procedure` is again rejected for `Hai bên mang giấy tờ`, as P5-12 had it.
+
+## Live measurement after the fix round (P5-10d)
+
+One live run on slot 14's `full` seed at 2026-10-07 07:00 +07, `claude-sonnet-5-5`, subscription auth. The probe's recordings were discarded, not kept as the replay set.
+
+| Run | First pass rejected | False among them | Repair rejected | In `error` | Source |
+| --- | --- | --- | --- | --- | --- |
+| P5-12 | 8 | 1 | 0 | 0 | `p5-12-guard-probe.md` |
+| Phase 5 live run | 13 of 26 | 3 prompts (`vi-notarize-lease`, `vi-property-manager`, `vi-inheritance`) | 3 | 0 | `phase-5/guard-probe.json` |
+| After this fix round | 11 of 25 | 2 | 0 | 0 | `phase-5/guard-probe-p5-10d.json` |
+
+Two of the 27 prompts were not probed: their recordings were refused for a 12-digit run (below). The 11 first-pass rejects: 5 typed figures (`vi-rent-by-year` `Q7` and `1`, `vi-choose-tenant` "hai phòng" and "hai ứng viên", `vi-inheritance` "Có hai cách", `en-rent-by-year` `Q7:`, `vi-savings-rate` `10` and `12`), 1 placeholder the sheet does not hold (`en-second-opinion`), 3 sent back for an official page, not the number guard (`vi-bank-letter`, `vi-notarize-lease`, `vi-red-pink-book`), and **2 false rejects the fix round did not remove**:
+
+- `vi-end-lease-letter`: "sau khi hai bên kiểm tra phòng" (both parties inspect). `kiểm` is not in the acts of two parties, so `hai` is rejected; adding it would be tuning to this probe and needs a second live run, so the list is unchanged. Decision for Ryan.
+- `vi-raise-rent`: "không tăng đồng loạt" ("all at once"). `đồng` is a currency word, outside the contexts of this PR; filed as a `[low]` issue.
+
+Every reject now names its text (the three source rejects print `official source`).
+
+**q5.** Passed live once: the answer states 386.899.628 ₫ and 482.658.469 ₫, 15.2 s, one run costing 0.0196 USD (`phase-5-p5-10d/table-rerun.md`, `phase-5-p5-10d/runs.json`, `phase-5-p5-10d/ask.json`). The live run's failure kept no answer text, so which words the guard rejected then is not known; this answer holds none of the three classes. Not classified further.
+
+**The ID capture (SPEC D11).** `vi-transfer-procedure` and `vi-rent-tax` were refused, each by a 12-digit run in the `toolCalls` field, last four digits 3920 and 5786. The masked context is a news-article URL the model passed to a web tool: `.../sang-ten-so-do-nam-############-article.html` and `...ue-cho-thue-tai-san-############.html`. The digits are in neither the question nor a tool result the probe read: they are article numbers from the model's own web search. No seed or tool source holds them, so D11 is not broken, but the guard's ID reducer treats a URL's article number as a national ID and refuses the recording. Decision for Ryan: leave it (those two prompts stay unprobed live) or make the reducer skip digits inside a URL.

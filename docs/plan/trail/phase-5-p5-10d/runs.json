@@ -1,0 +1,14 @@
+[
+  {
+    "job_id": "892d208c-a2ab-41c1-8344-34ff4dbdcc10",
+    "auth_mode": "subscription",
+    "agent_mode": "live",
+    "model": "claude-sonnet-5-5",
+    "num_turns": 2,
+    "cost_estimate_usd": 0.019626,
+    "started_at": "2026-10-07T00:00:00+00:00",
+    "finished_at": "2026-10-07T00:00:00+00:00",
+    "kind": "ask",
+    "wall_s": 0
+  }
+]

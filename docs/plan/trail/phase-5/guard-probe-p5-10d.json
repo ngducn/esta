@@ -1,0 +1,261 @@
+{
+  "summary": {
+    "prompts": 25,
+    "firstPassRejected": 11,
+    "repairRejected": 0,
+    "error": 0
+  },
+  "rows": [
+    {
+      "id": "en-double-check-deposit",
+      "firstPass": "passed",
+      "rejectedBy": [],
+      "repairRejectedBy": [],
+      "repair": null,
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "en-notarized-lease",
+      "firstPass": "passed",
+      "rejectedBy": [],
+      "repairRejectedBy": [],
+      "repair": null,
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "en-reminder",
+      "firstPass": "passed",
+      "rejectedBy": [],
+      "repairRejectedBy": [],
+      "repair": null,
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "en-rent-by-year",
+      "firstPass": "rejected",
+      "rejectedBy": [
+        "Q7:"
+      ],
+      "repairRejectedBy": [],
+      "repair": "passed",
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "en-second-opinion",
+      "firstPass": "rejected",
+      "rejectedBy": [
+        "{{f9.mortgage_organization_placeholder}}"
+      ],
+      "repairRejectedBy": [],
+      "repair": "passed",
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "vi-bank-letter",
+      "firstPass": "rejected",
+      "rejectedBy": [
+        "official source"
+      ],
+      "repairRejectedBy": [],
+      "repair": "passed",
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "vi-choose-tenant",
+      "firstPass": "rejected",
+      "rejectedBy": [
+        "Hai",
+        "hai"
+      ],
+      "repairRejectedBy": [],
+      "repair": "passed",
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "vi-deposit",
+      "firstPass": "passed",
+      "rejectedBy": [],
+      "repairRejectedBy": [],
+      "repair": null,
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "vi-electrician",
+      "firstPass": "passed",
+      "rejectedBy": [],
+      "repairRejectedBy": [],
+      "repair": null,
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "vi-end-lease-letter",
+      "firstPass": "rejected",
+      "rejectedBy": [
+        "hai"
+      ],
+      "repairRejectedBy": [],
+      "repair": "passed",
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "vi-inheritance",
+      "firstPass": "rejected",
+      "rejectedBy": [
+        "hai"
+      ],
+      "repairRejectedBy": [],
+      "repair": "passed",
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "vi-insurance",
+      "firstPass": "passed",
+      "rejectedBy": [],
+      "repairRejectedBy": [],
+      "repair": null,
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "vi-invest",
+      "firstPass": "passed",
+      "rejectedBy": [],
+      "repairRejectedBy": [],
+      "repair": null,
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "vi-late-tenant",
+      "firstPass": "passed",
+      "rejectedBy": [],
+      "repairRejectedBy": [],
+      "repair": null,
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "vi-notarize-lease",
+      "firstPass": "rejected",
+      "rejectedBy": [
+        "official source"
+      ],
+      "repairRejectedBy": [],
+      "repair": "passed",
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "vi-property-manager",
+      "firstPass": "passed",
+      "rejectedBy": [],
+      "repairRejectedBy": [],
+      "repair": null,
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "vi-raise-rent",
+      "firstPass": "rejected",
+      "rejectedBy": [
+        "đồng"
+      ],
+      "repairRejectedBy": [],
+      "repair": "passed",
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "vi-red-pink-book",
+      "firstPass": "rejected",
+      "rejectedBy": [
+        "official source"
+      ],
+      "repairRejectedBy": [],
+      "repair": "passed",
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "vi-rent-by-year",
+      "firstPass": "rejected",
+      "rejectedBy": [
+        "Q7",
+        "1"
+      ],
+      "repairRejectedBy": [],
+      "repair": "passed",
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "vi-repair-first",
+      "firstPass": "passed",
+      "rejectedBy": [],
+      "repairRejectedBy": [],
+      "repair": null,
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "vi-savings-rate",
+      "firstPass": "rejected",
+      "rejectedBy": [
+        "10",
+        "10.",
+        "12"
+      ],
+      "repairRejectedBy": [],
+      "repair": "passed",
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "vi-zalo-price-change",
+      "firstPass": "passed",
+      "rejectedBy": [],
+      "repairRejectedBy": [],
+      "repair": null,
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "vi-zalo-reminder",
+      "firstPass": "passed",
+      "rejectedBy": [],
+      "repairRejectedBy": [],
+      "repair": null,
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "vi-zalo-thanks",
+      "firstPass": "passed",
+      "rejectedBy": [],
+      "repairRejectedBy": [],
+      "repair": null,
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    },
+    {
+      "id": "vi-zalo-welcome",
+      "firstPass": "passed",
+      "rejectedBy": [],
+      "repairRejectedBy": [],
+      "repair": null,
+      "status": "done",
+      "model": "claude-sonnet-5-5"
+    }
+  ]
+}
