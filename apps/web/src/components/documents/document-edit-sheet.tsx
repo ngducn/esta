@@ -116,7 +116,7 @@ export default function DocumentEditSheet({
           </p>
         ) : null}
         {dropsReadText ? (
-          <p data-testid="edit-drops-text" className="text-body-sm text-text-secondary">
+          <p className="text-body-sm text-text-secondary">
             {t('dropsReadText')}
           </p>
         ) : null}

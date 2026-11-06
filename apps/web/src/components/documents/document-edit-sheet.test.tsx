@@ -87,16 +87,17 @@ describe('Sửa thông tin', () => {
 
   it('says that search inside the document stops, only when a document with read text becomes sensitive (#151)', () => {
     open({ ...insurance, hasReadText: true });
-    expect(screen.queryByTestId('edit-drops-text')).toBeNull();
-    fireEvent.change(screen.getByTestId('edit-category'), { target: { value: 'id_card' } });
-    expect(screen.getByTestId('edit-drops-text').textContent).toMatch(/không giữ chữ đã đọc/u);
-    fireEvent.change(screen.getByTestId('edit-category'), { target: { value: 'invoice_receipt' } });
-    expect(screen.queryByTestId('edit-drops-text')).toBeNull();
+    const category = screen.getByLabelText('Loại tài liệu');
+    expect(screen.queryByText(/không giữ chữ đã đọc/u)).toBeNull();
+    fireEvent.change(category, { target: { value: 'id_card' } });
+    expect(screen.getByText(/không giữ chữ đã đọc/u)).toBeTruthy();
+    fireEvent.change(category, { target: { value: 'invoice_receipt' } });
+    expect(screen.queryByText(/không giữ chữ đã đọc/u)).toBeNull();
   });
 
   it('says nothing about read text when the document has none (#151)', () => {
     open();
-    fireEvent.change(screen.getByTestId('edit-category'), { target: { value: 'id_card' } });
-    expect(screen.queryByTestId('edit-drops-text')).toBeNull();
+    fireEvent.change(screen.getByLabelText('Loại tài liệu'), { target: { value: 'id_card' } });
+    expect(screen.queryByText(/không giữ chữ đã đọc/u)).toBeNull();
   });
 });
