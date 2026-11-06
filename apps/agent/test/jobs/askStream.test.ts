@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { answerStream, FLUSH_MS, resolveLinks } from '../../src/jobs/askStream';
+import { CALC_OPERANDS } from '../../src/tools/fact-sheet';
+import { answerStream, calcRefs, FLUSH_MS, resolveLinks } from '../../src/jobs/askStream';
 
 const LEDGER = 'esta://ledger/93cc970b-f9c2-52f5-bc34-1f1edb76742c';
 const sheet = new Map<string, Record<string, unknown>>([
@@ -169,5 +170,26 @@ describe('handle links in an answer', () => {
     const out = resolveLinks(text, sheet);
     expect(out.text).toBe(resolved);
     expect(out.text).not.toMatch(/[{}]/u);
+  });
+});
+
+describe('calcRefs', () => {
+  const chain = new Map<string, Record<string, unknown>>([
+    ['f1', { handle: 'f1', rent_display: '2.500.000 ₫' }],
+    ['f2', { handle: 'f2', value_display: '4.000.000 ₫' }],
+    ['f3', { handle: 'f3', result_display: '1.500.000 ₫', working_display: '4.000.000 ₫ − 2.500.000 ₫ = 1.500.000 ₫', [CALC_OPERANDS]: ['f2', 'f1'] }],
+    ['f4', { handle: 'f4', result_display: '18.000.000 ₫', working_display: '1.500.000 ₫ × 12 = 18.000.000 ₫', [CALC_OPERANDS]: ['f3'] }],
+    ['f5', { handle: 'f5', result_display: '9 ₫', working_display: 'other', [CALC_OPERANDS]: ['f2'] }],
+  ]);
+  const workings = ['4.000.000 ₫ − 2.500.000 ₫ = 1.500.000 ₫', '1.500.000 ₫ × 12 = 18.000.000 ₫'];
+
+  it('B2 gives every step of the chain, in run order, when only the last is cited', () => {
+    expect(calcRefs('Mỗi năm thu thêm {{f4.result_display}}.', chain)).toEqual(workings.map((working) => ({ kind: 'calc', working })));
+  });
+  it('B2 gives the same list whatever order the reply cites the results in', () => {
+    expect(calcRefs('{{f4.result_display}} rồi {{f3.result_display}}.', chain)).toEqual(workings.map((working) => ({ kind: 'calc', working })));
+  });
+  it('B2 leaves out a calculation the reply does not rest on', () => {
+    expect(calcRefs('{{f3.result_display}}.', chain)).toEqual([{ kind: 'calc', working: workings[0] }]);
   });
 });
