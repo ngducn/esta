@@ -58,7 +58,7 @@ const EXCEPTIONS: Readonly<Record<string, WordRow>> = {
   nhật: { kind: 'date', bannedOnlyAfter: ['chủ'] },
   linh: { kind: 'number', passesBefore: ['hoạt', 'kiện', 'tinh'] },
   ba: { kind: 'number', passesAfterPhrase: ['bên thứ'] },
-  chín: { kind: 'number', passesBefore: ['chắn'] },
+    chín: { kind: 'number', passesBefore: ['chắn'] },
   second: { kind: 'number', passesBefore: ['opinion', 'opinions'] },
   double: { kind: 'number', passesBefore: ['check', 'checks', 'checked', 'checking'] },
   lẻ: { kind: 'number', passesAfter: ['bán'] },
