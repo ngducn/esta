@@ -22,6 +22,7 @@ export const INTEGRATION_LANES: Readonly<Record<string, LaneClaim>> = {
   'src/server/cron/cron.integration.test.ts': 'every-household',
   'src/server/expenses/actions.integration.test.ts': { serial: [6] },
   'src/server/properties/wizard.integration.test.ts': { serial: [7] },
+  'src/server/properties/room-lease-race.integration.test.ts': { serial: [7] },
   'src/server/documents/actions.integration.test.ts': { serial: [9] },
   'src/server/extraction/actions.integration.test.ts': { serial: [9] },
 };

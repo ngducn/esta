@@ -1,7 +1,7 @@
 {
   "metrics": {
     "clones": {
-      "value": 104,
+      "value": 103,
       "files": {
         "apps/web/src/app/(app)/documents/[documentId]/review/page.tsx": 1,
         "apps/web/src/app/(app)/properties/[id]/documents/page.tsx": 1,
@@ -19,7 +19,7 @@
         "apps/web/src/components/rental/unit-list.test.tsx": 1,
         "apps/web/src/server/documents/actions.integration.test.ts": 3,
         "apps/web/src/server/expenses/actions.integration.test.ts": 1,
-        "apps/web/src/server/extraction/actions.integration.test.ts": 2,
+        "apps/web/src/server/extraction/actions.integration.test.ts": 1,
         "apps/web/src/server/properties/form.ts": 1,
         "apps/web/src/server/properties/wizard.ts": 1,
         "e2e/assistant-status.spec.ts": 5,
@@ -52,7 +52,7 @@
       }
     },
     "duplicated-lines": {
-      "value": 1069,
+      "value": 1061,
       "files": {
         "apps/web/src/app/(app)/documents/[documentId]/review/page.tsx": 15,
         "apps/web/src/app/(app)/properties/[id]/documents/page.tsx": 6,
@@ -70,7 +70,7 @@
         "apps/web/src/components/rental/unit-list.test.tsx": 7,
         "apps/web/src/server/documents/actions.integration.test.ts": 27,
         "apps/web/src/server/expenses/actions.integration.test.ts": 7,
-        "apps/web/src/server/extraction/actions.integration.test.ts": 15,
+        "apps/web/src/server/extraction/actions.integration.test.ts": 7,
         "apps/web/src/server/properties/form.ts": 6,
         "apps/web/src/server/properties/wizard.ts": 8,
         "e2e/assistant-status.spec.ts": 33,

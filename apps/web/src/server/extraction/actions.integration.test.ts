@@ -11,7 +11,7 @@ import truthFile from '../../../../../fixtures/certificates/gcn_2024-photo/truth
 import { seedId } from '../../../../../supabase/seed/generator/ids';
 import { integrationLane, outsiderEmail, withCapabilities } from '@/test/lanes';
 import { service, signedInAs, stackName, stackUp } from '@/test/stack';
-import { acceptBill, BILL_TEXT, ocrText, waitingBill } from './test/utility-bill';
+import { acceptBill, BILL_TEXT, billTruth, ocrText, waitingBill } from './test/utility-bill';
 
 const session = vi.hoisted(() => ({
   client: null as unknown,
@@ -30,7 +30,6 @@ const propertyId = seedId(`seed:property:lane-${lane}:bao-loc`);
 // Ryan's emails, so a sign-in code never races the documents test, which signs in Mẹ of lanes 8 and 9.
 const memberUser = seedId(`seed:user:ryan-lane-${lane}`);
 const documents: string[] = [];
-const billLane = { household, propertyId, documents };
 const acceptAllOf = (result: unknown) => Object.fromEntries(reviewFields('certificate_v1', result).map((field) => [field.path, { kind: 'accepted' }]));
 const acceptAll = acceptAllOf(truthFile.certificate);
 const saveConfirmed = (extractionId: string, decisions: unknown) => saveExtractionReview(extractionId, decisions, null, true);
@@ -42,6 +41,7 @@ const truths = readdirSync(FIXTURES, { withFileTypes: true })
 
 
 const rest = <T>(path: string, init?: RequestInit) => service<T>(`/rest/v1/${path}`, init);
+const billLane = { household, propertyId, documents, rest };
 const patch = (path: string, body: unknown) => rest(path, { method: 'PATCH', body: JSON.stringify(body) });
 
 /** A certificate document whose extraction the worker has read and left waiting, written as the worker writes it. */
@@ -300,33 +300,34 @@ describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
     asMember();
     const { documentId, extractionId } = await waitingBill(billLane, 'normal');
     expect(await saveConfirmed(extractionId, acceptBill)).toEqual({ ok: true, propertyId });
-    expect(await ocrText(documentId)).toBe(BILL_TEXT);
+    expect(await ocrText(billLane, documentId)).toBe(BILL_TEXT);
   });
 
   test('a bill for an account that is in the trash creates a new account, as before the trash existed (Q-03)', async () => {
     asMember();
     const first = await waitingBill(billLane, 'normal');
     expect(await saveConfirmed(first.extractionId, acceptBill)).toEqual({ ok: true, propertyId });
-    const trashed = rowId(first.extractionId, 'utility_account');
-    await patch(`utility_accounts?id=eq.${trashed}`, { deleted_at: new Date().toISOString() });
+    const code = billTruth.bill.customer_code.value;
+    const holding = `utility_accounts?property_id=eq.${propertyId}&customer_code=eq.${encodeURIComponent(code)}`;
+    await patch(`${holding}&deleted_at=is.null`, { deleted_at: new Date().toISOString() });
     const second = await waitingBill(billLane, 'normal');
     expect(await saveConfirmed(second.extractionId, acceptBill)).toEqual({ ok: true, propertyId });
-    const live = await rest<{ id: string }[]>(`utility_accounts?property_id=eq.${propertyId}&deleted_at=is.null&select=id`);
-    expect(live.map((row) => row.id)).toContain(rowId(second.extractionId, 'utility_account'));
+    const live = await rest<{ id: string }[]>(`${holding}&deleted_at=is.null&select=id`);
+    expect(live.map((row) => row.id)).toEqual([rowId(second.extractionId, 'utility_account')]);
   });
 
   test('the same bill marked sensitive keeps ocr_text null', async () => {
     asMember();
     const { documentId, extractionId } = await waitingBill(billLane, 'sensitive');
     expect(await saveConfirmed(extractionId, acceptBill)).toEqual({ ok: true, propertyId });
-    expect(await ocrText(documentId)).toBeNull();
+    expect(await ocrText(billLane, documentId)).toBeNull();
   });
 
   test('accepting a certificate leaves ocr_text null', async () => {
     asMember();
     const { documentId, extractionId } = await waitingExtraction();
     expect(await saveConfirmed(extractionId, acceptAll)).toEqual({ ok: true, propertyId });
-    expect(await ocrText(documentId)).toBeNull();
+    expect(await ocrText(billLane, documentId)).toBeNull();
   });
 
   test('a certificate from another province with none of the owners stops before any write, a chosen property included, until Mẹ confirms it (#356)', async () => {
