@@ -1,6 +1,6 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { NATIONAL_ID_CASES, NATIONAL_ID_JOINERS, NATIONAL_ID_LABELLED_JOINERS, NATIONAL_ID_SURROUNDS } from './national-id.cases';
+import { NATIONAL_ID_CASES, NATIONAL_ID_KEPT, NATIONAL_ID_SURROUNDS } from './national-id.cases';
 import { DATE, reduceNationalIds } from './reduce-national-ids';
 
 const leaf = (value: unknown) => ({ value, confidence: 0.95, page: 1 });
@@ -13,9 +13,23 @@ describe('the national ID reducer on its case table', () => {
   });
 });
 
+describe('the national ID reducer on numbers that are no ID', () => {
+  it.each(NATIONAL_ID_KEPT)('%s', (_name, text) => {
+    expect(reduce(text)).toBe(text);
+  });
+});
+
+/** A symbol that NFKD turns into letters or digits, such as the square `㏖` that reads `mol`, is a word between the groups, not a mark. */
+const bmp = Array.from({ length: 0xffff }, (_, code) => String.fromCharCode(code)).filter((char) => !/[\p{L}\p{N}]/u.test(char.normalize('NFKD')) || /^[\p{L}\p{N}]$/u.test(char));
+/** Every mark a person or an OCR pass may put between two groups, drawn from Unicode's classes and not from the reducer's pattern. */
+const MARKS = bmp.filter((char) => /^[\p{Pd}\p{Pc}\p{Po}\p{S}]$/u.test(char));
+const SLASHES = new Set(['/', '\u2044', '\u2215', '\u29f8', '\uff0f']);
+const NOT_LETTER_OR_DIGIT = bmp.filter((char) => /^[^\p{L}\p{N}\p{C}\p{M}\s]$/u.test(char));
+const UNLABELLED = ['', ' ', '\u00a0', '\u200b', ...MARKS.filter((char) => !SLASHES.has(char))];
+
 const digits = fc.array(fc.integer({ min: 0, max: 9 }), { minLength: 12, maxLength: 12 });
-const joiners = fc.array(fc.constantFrom(...NATIONAL_ID_JOINERS), { minLength: 11, maxLength: 11 });
-const labelledJoiners = fc.array(fc.constantFrom(...NATIONAL_ID_JOINERS, ...NATIONAL_ID_LABELLED_JOINERS), { minLength: 11, maxLength: 11 });
+const joiners = fc.array(fc.constantFrom(...UNLABELLED), { minLength: 11, maxLength: 11 });
+const labelledJoiners = fc.array(fc.constantFrom(...UNLABELLED, ...NOT_LETTER_OR_DIGIT), { minLength: 11, maxLength: 11 });
 const surround = fc.constantFrom(...NATIONAL_ID_SURROUNDS);
 const digitsOf = (text: string) => text.replace(/\D/gu, '');
 

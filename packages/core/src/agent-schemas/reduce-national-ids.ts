@@ -28,12 +28,14 @@ const CODE_PREFIXES: ReadonlySet<string> = new Set(['PA', 'PB', 'PC', 'PD', 'PE'
 const FOLDED = /[\u00AD\u200B-\u200F\u2060-\u2064\uFEFF]|[\u0300-\u036F]|[\u1AB0-\u1AFF]|[\u1DC0-\u1DFF]|[\u20D0-\u20FF]|[\uFE20-\uFE2F]/gu;
 
 /**
- * Between two digit groups of one number: up to three spaces of any kind on one line, one newline, or one or two dots,
- * middle dots, dashes, commas, underscores or bars, with a space on either side.
+ * Between two digit groups of one number, as a class of characters and not a list of the ones seen so far: up to three
+ * spaces of any kind on one line, one newline, or up to four dashes, punctuation marks, symbols, bullets or combining
+ * marks of any script (NFKD spells one symbol, such as `⁗`, with up to four), with a space on either side. Unlabelled,
+ * a slash of any width is left out, because `123456/789012` is a document number.
  */
-const JOIN = /^(?:[^\S\n\r]{1,3}|\r?\n|[^\S\n\r]?[.,_\-\u00B7\u2010-\u2015\u2212|]{1,2}[^\S\n\r]?)$/u;
-/** After a label the number may also break across lines or use slashes. */
-const JOIN_AFTER_LABEL = /^(?:\s{1,3}|\s?[./,_\-\u00B7\u2010-\u2015\u2212|\u2044\u2215\u29F8]{1,2}\s?)$/u;
+const JOIN = /^(?:[^\S\n\r]{1,3}|\r?\n|[^\S\n\r]?(?:(?![/\u2044\u2215\u29F8\uFF0F])[\p{Pd}\p{Pc}\p{Po}\p{S}\p{M}]){1,4}[^\S\n\r]?)$/u;
+/** After a label the number may also break across lines, and any mark that is no letter or digit may join the groups. */
+const JOIN_AFTER_LABEL = /^(?:\s{1,3}|\s?[^\p{L}\p{N}\s]{1,4}\s?)$/u;
 /**
  * A date such as 12/03/2021, 12/03/21, 2021-03-12 or 20210312. It never belongs to an ID, so the last four digits of a
  * reduced ID never join one.

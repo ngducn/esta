@@ -1,4 +1,5 @@
 import { isoDate } from '@esta/core';
+import { MAX_SOURCE_LINK } from '@esta/core/research';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -226,6 +227,16 @@ describe('what the model types is checked before Mẹ reads it (#323)', () => {
     prepared.observe?.({ name: 'WebFetch', input: { url: PAGE, prompt: 'x' }, result: { code: 200, codeText: 'OK', result: PAGE_TEXT, url: `${landed}?utm_source=zalo`, bytes: 1, durationMs: 1 } });
     expect(await call('add_research_item', item({ source_url: `${PAGE}?utm_source=zalo#top` }))).toEqual({ text: '{"saved":true}', isError: false });
     expect(items()).toMatchObject([{ source_url: landed, url_normalized: PAGE }]);
+  });
+});
+
+describe('add_research_item with a redirect that lands on a link too long to store', () => {
+  it('stores the link the model cited, cleaned, and not the landed one the column cannot hold', async () => {
+    const { prepared, call, items } = await scan({ pages: {} });
+    const landed = `${PAGE}?bai=${'a'.repeat(MAX_SOURCE_LINK)}`;
+    prepared.observe?.({ name: 'WebFetch', input: { url: PAGE, prompt: 'x' }, result: { code: 200, codeText: 'OK', result: PAGE_TEXT, url: landed, bytes: 1, durationMs: 1 } });
+    expect(await call('add_research_item', item({ source_url: `${PAGE}?utm_source=zalo#top` }))).toEqual({ text: '{"saved":true}', isError: false });
+    expect(items()).toMatchObject([{ source_url: PAGE }]);
   });
 });
 

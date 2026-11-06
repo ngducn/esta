@@ -39,31 +39,42 @@ const choice = <T extends string>(options: readonly T[]) => ({
   },
 });
 
-const TERM_DATE = /(\d{1,2}[./-]\d{1,2}[./-]\d{4}|\d{4}-\d{2}-\d{2})/u;
-const TERM_JOIN = /(?<!\p{L})(?:đến|den|tới|toi)(?!\p{L})|\s[-\u2010-\u2015\u2212]\s|(?<=\d)[\u2010-\u2015\u2212]|(?<=[./-]\d{4})-(?=\d{1,2}[./-]\d)/iu;
-const TERM_EXPIRY = /(?<!\p{L})(?:hạn|han)(?!\p{L})/iu;
-const TERM_START = /(?<!\p{L})(?:từ|tu)(?!\p{L})/iu;
-
-/**
- * The part of a term that names its end. A range ends after its joiner (`đến`, `den`, `tới` or a dash of any kind), a
- * certificate that prints an issue date then `hạn` ends after `hạn`, and a term that names only its start, such as
- * `50 năm kể từ ngày 15/10/1993`, has no end to read.
- */
-function termEnd(text: string): string | null {
-  const join = TERM_JOIN.exec(text);
-  if (join !== null) return text.slice(join.index + join[0].length);
-  const expiry = TERM_EXPIRY.exec(text);
-  const after = expiry === null ? text : text.slice(expiry.index + expiry[0].length);
-  return TERM_START.test(after) ? null : after;
-}
-const TERM_MONTH = /(?<![\d./-])(\d{1,2})[./-](\d{4})(?!\d)/u;
+const TERM_TOKEN = /(\d{1,2}[./-]\d{1,2}[./-]\d{4}|\d{4}-\d{2}-\d{2})|(?<![\d./])(\d{1,2})[./-](\d{4})(?!\d)/gu;
+const TERM_START = /(?<!\p{L})(?:từ|tu)(?!\p{L})/giu;
+const TERM_END_WORD = /(?<!\p{L})(?:hạn|han|đến|den|tới|toi)(?!\p{L})/giu;
+/** A label that makes the date after it an issue date: `cấp ngày`, `ngày cấp`, `cấp`, and their unaccented forms. */
+const TERM_ISSUED = /(?<!\p{L})(?:(?:ngày|ngay)\s+(?:cấp|cap)|(?:cấp|cap)(?:\s+(?:ngày|ngay))?)(?!\p{L})[\s:.,-]*$/iu;
 
 /** [app rule] A term printed to the month, as pre-2009 certificates print `Đến tháng 10/2043`, runs to its last day. */
-function readMonthEnd(text: string): IsoDate | null {
-  const [, month, year] = TERM_MONTH.exec(text) ?? [];
-  if (month === undefined || year === undefined) return null;
+function readMonthEnd(month: string, year: string): IsoDate | null {
   const parsed = isoFromParts(year, month, String(daysInMonth(Number(year), Number(month))));
   return parsed.ok ? parsed.value : null;
+}
+
+/**
+ * The end of a land use term. Every date in the text is read except one labelled as an issue date; when two or more
+ * remain the term ends at the last one, whatever stands between them, and they must not run backwards. A single date
+ * that `từ` leads, with no `hạn` or `đến` after it, is a start, so a term that names only its start, such as
+ * `50 năm kể từ ngày 15/10/1993`, has no end. A date that cannot be read refuses the whole text.
+ */
+function readTermEnd(text: string): IsoDate | null {
+  const dates: IsoDate[] = [];
+  let last = 0;
+  for (const m of text.matchAll(TERM_TOKEN)) {
+    if (TERM_ISSUED.test(text.slice(0, m.index))) continue;
+    const [, full, month, year] = m;
+    const date = full !== undefined ? readDate(full) : month !== undefined && year !== undefined ? readMonthEnd(month, year) : null;
+    if (date === null) return null;
+    dates.push(date);
+    last = m.index;
+  }
+  const end = dates.at(-1);
+  if (end === undefined || dates.some((date, at) => date > (dates[at + 1] ?? date))) return null;
+  if (dates.length > 1) return end;
+  const before = text.slice(0, last);
+  const startedAt = [...before.matchAll(TERM_START)].at(-1)?.index ?? -1;
+  const endedAt = [...before.matchAll(TERM_END_WORD)].at(-1)?.index ?? -1;
+  return startedAt > endedAt ? null : end;
 }
 
 function readDate(text: string): IsoDate | null {
@@ -160,11 +171,8 @@ export const INPUT_KINDS = {
       const text = asText(raw);
       if (text === null) return nothing;
       if (text === LONG_TERM || text.toLocaleLowerCase('vi').includes('lâu dài')) return accept(LONG_TERM);
-      const end = termEnd(text);
-      if (end === null) return refused;
-      const found = TERM_DATE.exec(end)?.[1];
-      const date = found === undefined ? readMonthEnd(end) : readDate(found);
-      return date === null ? refused : accept(date);
+      const end = readTermEnd(text);
+      return end === null ? refused : accept(end);
     },
   },
   /** SPEC D11: whatever is typed keeps only its last four digits. */

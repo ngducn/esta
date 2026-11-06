@@ -12,7 +12,11 @@ describe('the term parser on its case table', () => {
 });
 
 const day = fc.date({ min: new Date('1950-01-01T00:00:00Z'), max: new Date('2099-12-31T00:00:00Z'), noInvalidDate: true });
-const joiner = fc.constantFrom(' - ', ' – ', ' — ', '–', ' đến ', ' den ', ' tới ', ' ĐẾN ');
+const NOT_DIGIT = Array.from({ length: 0xffff }, (_, code) => String.fromCharCode(code)).filter((char) => /^[\p{P}\p{S}\p{Zs}]$/u.test(char));
+const joiner = fc.oneof(
+  fc.string({ unit: fc.constantFrom(...NOT_DIGIT), minLength: 0, maxLength: 4 }),
+  fc.constantFrom(' đến ', ' den ', ' tới ', ' ĐẾN ', ' to ', ' until ', ' and ', ' - '),
+);
 const style = fc.constantFrom<'/' | '.' | '-'>('/', '.', '-');
 const printed = (date: Date, sep: string) => {
   const [y = '', m = '', d = ''] = date.toISOString().slice(0, 10).split('-');
@@ -23,9 +27,19 @@ describe('the term parser on generated ranges', () => {
   it('keeps the end of a range, never the start', () => {
     fc.assert(
       fc.property(day, day, joiner, style, fc.constantFrom('', 'Từ ', 'Tu ', 'Cấp '), (a, b, sep, dateSep, lead) => {
-        fc.pre(a.toISOString() !== b.toISOString());
+        fc.pre(a.toISOString().slice(0, 10) < b.toISOString().slice(0, 10));
         const out = INPUT_KINDS.term.parse(`${lead}${printed(a, dateSep)}${sep}${printed(b, dateSep)}`);
         expect(out).toEqual({ ok: true, value: b.toISOString().slice(0, 10) });
+      }),
+      params,
+    );
+  });
+
+  it('refuses a duration followed by an issue date', () => {
+    fc.assert(
+      fc.property(day, fc.constantFrom('cấp ngày ', 'Cấp ngày ', 'ngày cấp: ', 'cap ngay ', 'ngay cap '), fc.constantFrom('50 năm', '30 năm', 'lâu dài đến hết'), (issued, label, duration) => {
+        fc.pre(!duration.includes('lâu dài'));
+        expect(INPUT_KINDS.term.parse(`Thời hạn sử dụng: ${duration}, ${label}${printed(issued, '/')}`).ok).toBe(false);
       }),
       params,
     );

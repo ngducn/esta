@@ -28,3 +28,13 @@ export const REFUSED_SPELLINGS: readonly (readonly [source: string, note: string
   ['#407', 'The millionth guest.'],
   ['#407', 'Phòng Ø còn trống.'],
 ];
+
+/** A note the guard must pass: `May` is a name when a name follows it, whichever of these words stands before it. */
+export const PASSED_SPELLINGS: readonly (readonly [source: string, note: string])[] = [
+  ['#399', 'Send the reminder to May Demo.'],
+  ['#399', 'Reminder sent by May Demo.'],
+  ['#399', 'The reply came from May Demo.'],
+  ['#399', 'Ask for May Demo at the desk.'],
+  ['#399', 'Nhắc từ May Demo.'],
+  ['#399', 'Gửi đến May Demo.'],
+];
