@@ -53,6 +53,11 @@ describe('the specs that set a date', () => {
     }
   });
 
+  test('thaws the lanes a dated spec froze when it ends, so the next spec in the serial clock project meets no lane row', () => {
+    const leaking = dated.filter((file) => /\bsetClock\(/.test(source(file)) && !/\b(?:thawAfterAll|frozenAtStart)\(/.test(source(file)));
+    expect(leaking).toEqual([]);
+  });
+
   test('keeps a spec that uses the global row, a worker or a cron route in the clock project', () => {
     const users = specs.filter((file) => /\b(?:globalClock|workerAt|startAgentWorker)\b|api\/cron/.test(source(file)));
     expect(users.filter((file) => !shared.includes(file)).sort()).toEqual([]);

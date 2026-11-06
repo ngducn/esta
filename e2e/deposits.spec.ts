@@ -5,7 +5,7 @@ import { parseSlot, slotWorkdir } from '../scripts/slot.ts';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { memberCall, memberRest } from './helpers/auth-api';
 import { laneHousehold, laneLease, laneLeasePath, laneProperty } from './helpers/seed';
-import { setClock, lanes } from './helpers/test-clock';
+import { setClock, lanes, thawAfterAll } from './helpers/test-clock';
 import { DESKTOP, noSidewaysScroll, open, PHONE, seriousAxeViolations, settled, START, toast, vnd } from './helpers/wizard';
 
 const CLOCK_LANES = lanes(3, 7, 8, 9, 10);
@@ -20,6 +20,7 @@ const holdForRecording = (page: Page) => (recording ? page.waitForTimeout(2500) 
 test.beforeEach(async ({ request }) => {
   await setClock(request, CLOCK_LANES, START);
 });
+thawAfterAll(CLOCK_LANES);
 
 const ledger = (page: Page) => page.getByTestId('deposit-ledger');
 const held = (page: Page) => ledger(page).getByTestId('deposit-held').locator('data');

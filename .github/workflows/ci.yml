@@ -88,10 +88,10 @@ jobs:
         include:
           - { id: viewports-1, projects: --project=mobile --project=desktop, shard: 1/2 }
           - { id: viewports-2, projects: --project=mobile --project=desktop, shard: 2/2 }
-          - { id: clock-1, projects: --project=clock, shard: 1/4 }
-          - { id: clock-2, projects: --project=clock, shard: 2/4 }
-          - { id: clock-3, projects: --project=clock, shard: 3/4 }
-          - { id: clock-4, projects: --project=clock, shard: 4/4 }
+          - { id: clock-1, projects: --project=clock, shard: 1/4, weights: '64:76:86:92' }
+          - { id: clock-2, projects: --project=clock, shard: 2/4, weights: '64:76:86:92' }
+          - { id: clock-3, projects: --project=clock, shard: 3/4, weights: '64:76:86:92' }
+          - { id: clock-4, projects: --project=clock, shard: 4/4, weights: '64:76:86:92' }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -114,6 +114,8 @@ jobs:
         env:
           PROJECTS: ${{ matrix.projects }}
           SHARD: ${{ matrix.shard }}
+          # Playwright's weights for the shards, by test count: the first clock specs cost about twice what the last ones do.
+          PWTEST_SHARD_WEIGHTS: ${{ matrix.weights }}
           PLAYWRIGHT_BLOB_OUTPUT_NAME: ${{ matrix.id }}.zip
       - id: strip
         if: ${{ !cancelled() }}

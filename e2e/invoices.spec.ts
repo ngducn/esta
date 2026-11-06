@@ -10,7 +10,7 @@ import { memberRest } from './helpers/auth-api';
 import { boardRow, storedInvoice } from './helpers/board';
 import { freshLease } from './helpers/leases';
 import { laneHousehold, laneInvoice as invoiceId, laneLeasePath } from './helpers/seed';
-import { setClock, lanes } from './helpers/test-clock';
+import { setClock, lanes, thawAfterAll } from './helpers/test-clock';
 import { DESKTOP, noSidewaysScroll, open, PHONE, recordForPr, seriousAxeViolations, settled, START, toast, vnd } from './helpers/wizard';
 
 const CLOCK_LANES = lanes(1, 2, 3, 4, 5, 6, 8);
@@ -21,6 +21,7 @@ const holdForRecording = recordForPr();
 test.beforeEach(async ({ request }) => {
   await setClock(request, CLOCK_LANES, START);
 });
+thawAfterAll(CLOCK_LANES);
 
 const workdir = slotWorkdir(join(import.meta.dirname, '..'), parseSlot(process.env.ESTA_SLOT));
 const invoicePath = (id: string) => `/collections/invoices/${id}`;

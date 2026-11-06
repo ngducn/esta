@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { inEnglishAt130, memberRest } from './helpers/auth-api';
 import { laneHousehold, laneLease, laneLeasePath } from './helpers/seed';
-import { setClock, everyLane } from './helpers/test-clock';
+import { setClock, everyLane, thawAfterAll } from './helpers/test-clock';
 import { clippedText } from './helpers/text-scale';
 import { cardVnd, expectedTaxPosition, printedVnd } from './helpers/tax';
 import { DESKTOP, noSidewaysScroll, open, openNewHousehold, PHONE, recordForPr, seriousAxeViolations, shot, START } from './helpers/wizard';
@@ -12,6 +12,7 @@ const pause = recordForPr();
 test.beforeEach(async ({ request }) => {
   await setClock(request, everyLane, START);
 });
+thawAfterAll(everyLane);
 
 const ME = 'Nguyễn Thị Demo';
 const RYAN = 'Trần Minh Demo';

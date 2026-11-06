@@ -30,15 +30,21 @@ export async function setClock(request: APIRequestContext, scope: ClockScope, fr
   expect(response.ok()).toBe(true);
 }
 
+/**
+ * Clears the scope's lane rows when the spec ends. A lane row beats the global one on every page, and a spec in the
+ * serial clock project that meets a lane an earlier spec left frozen reads the wrong day (a worker banner that never
+ * shows, a job that runs early), so every spec that freezes lanes ends by thawing them (e2e/routes.test.ts).
+ */
+export function thawAfterAll(scope: ClockScope) {
+  test.afterAll(async ({ request }) => {
+    if (scope.kind === 'lanes') await setClock(request, scope, null);
+  });
+}
+
 /** Runs each test of the spec on SPEC §9.3's day, 2026-10-07 09:00 in Hà Nội. */
 export function frozenAtStart(scope: ClockScope) {
   test.beforeEach(async ({ request }) => {
     await setClock(request, scope, START);
   });
-  // The next spec in the serial clock project must not meet lanes this one left frozen on SPEC §9.3's day.
-  if (scope.kind === 'lanes') {
-    test.afterEach(async ({ request }) => {
-      await setClock(request, scope, null);
-    });
-  }
+  thawAfterAll(scope);
 }

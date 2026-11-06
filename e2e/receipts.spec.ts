@@ -9,7 +9,7 @@ import { pdfText } from '../scripts/receipt-text.ts';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { inEnglishAt130, memberRest } from './helpers/auth-api';
 import { laneInvoice } from './helpers/seed';
-import { setClock, lanes } from './helpers/test-clock';
+import { setClock, lanes, thawAfterAll } from './helpers/test-clock';
 import { DESKTOP, noSidewaysScroll, open, PHONE, seriousAxeViolations, START } from './helpers/wizard';
 
 const CLOCK_LANES = lanes(2, 8, 10);
@@ -18,6 +18,7 @@ const CLOCK_LANES = lanes(2, 8, 10);
 test.beforeEach(async ({ request }) => {
   await setClock(request, CLOCK_LANES, START);
 });
+thawAfterAll(CLOCK_LANES);
 
 const A5 = { width: 419.528, height: 595.276 };
 const receiptPath = (id: string, format: 'pdf' | 'png') => `/api/invoices/${id}/receipt?format=${format}`;

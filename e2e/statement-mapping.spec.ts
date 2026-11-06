@@ -4,7 +4,7 @@ import { isoDate } from '../packages/core/src/date/iso-date.ts';
 import { UNRECOGNIZED_COLUMNS, UNRECOGNIZED_LAYOUT } from '../packages/core/src/matching/statement-scenario.ts';
 import { inEnglishAt130, memberRest } from './helpers/auth-api';
 import { chooseFile, chooseFromBoard, expectGolden, openBills, secondAccount, statementHousehold, statementPayments, upload } from './helpers/statements';
-import { setClock, everyLane } from './helpers/test-clock';
+import { setClock, everyLane, thawAfterAll } from './helpers/test-clock';
 import { DESKTOP, noSidewaysScroll, openNewHousehold, PHONE, recordForPr, seriousAxeViolations, settled, shot, START } from './helpers/wizard';
 
 const holdForRecording = recordForPr();
@@ -16,6 +16,7 @@ const holdForRecording = recordForPr();
 test.beforeEach(async ({ request }) => {
   await setClock(request, everyLane, START);
 });
+thawAfterAll(everyLane);
 
 const mapping = (page: Page) => page.getByTestId('column-mapping');
 const money = (amount: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);

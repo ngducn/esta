@@ -6,7 +6,7 @@ import { seedId } from '../supabase/seed/generator/ids.ts';
 import { signIn } from './helpers/inbucket';
 import { accessToken } from './helpers/session';
 import { seriousAxeViolations } from './helpers/wizard';
-import { setClock, everyLane } from './helpers/test-clock';
+import { setClock, everyLane, thawAfterAll } from './helpers/test-clock';
 import { START } from './helpers/wizard';
 
 const env = slotEnv(join(import.meta.dirname, '..'), parseSlot(process.env.ESTA_SLOT));
@@ -31,6 +31,7 @@ test.use(recording ? { video: { mode: 'on', size: PHONE }, launchOptions: { slow
 test.beforeAll(async ({ request }) => {
   await setClock(request, everyLane, START);
 });
+thawAfterAll(everyLane);
 
 async function open(page: Page, email: string, theme: 'light' | 'dark', viewport: { width: number; height: number }) {
   await page.setViewportSize(viewport);
