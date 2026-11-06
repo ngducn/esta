@@ -42,7 +42,7 @@ export default async function AppLayout({ children }: Readonly<{ children: React
   // A phone's five tabs share 390 px, and the English section names need 490 at 130% text, so the tabs take short ones (FND-8).
   const tabs = primarySections.map(({ key, href }): NavItem => ({ key, href, label: nav(`${key}Tab`) }));
   const more = accountSections.map(toItem);
-  const menu = member.isOperator ? [...more, ...operatorSections.map(toItem)] : more;
+  const menu = member.can('operate') ? [...more, ...operatorSections.map(toItem)] : more;
   const name = member.displayName ?? shell('account');
   const initial = givenInitial(member.displayName);
   const role = onboarding(`roles.${member.role}`);

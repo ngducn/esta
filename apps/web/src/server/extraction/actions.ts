@@ -131,7 +131,7 @@ export async function saveExtractionReview(extractionId: unknown, decisions: unk
   const chosen = propertyId === null ? { success: true as const, data: null } : uuid.safeParse(propertyId);
   if (!id.success || !parsed.success || !chosen.success) return { ok: false, reason: 'not_reviewable' };
   const member = await requireMember();
-  if (member.role === 'viewer') return { ok: false, reason: 'forbidden' };
+  if (!member.can('edit')) return { ok: false, reason: 'forbidden' };
   const supabase = await createSessionClient();
   const target = await reviewTarget(supabase, member.household.id, id.data);
   if (target === null || !isSchemaName(target.schemaName)) return { ok: false, reason: 'not_reviewable' };
@@ -211,7 +211,7 @@ export async function rejectExtraction(extractionId: unknown): Promise<boolean> 
   const id = uuid.safeParse(extractionId);
   if (!id.success) return false;
   const member = await requireMember();
-  if (member.role === 'viewer') return false;
+  if (!member.can('edit')) return false;
   const supabase = await createSessionClient();
   const { data, error } = await supabase
     .from('document_extractions')

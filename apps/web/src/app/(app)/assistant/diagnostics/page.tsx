@@ -15,12 +15,12 @@ import { requireMember } from '@/server/member';
 
 export async function generateMetadata() {
   const [member, t] = await Promise.all([requireMember(), getTranslations('assistant.diagnostics')]);
-  return { title: t(member.isOperator ? 'title' : 'notFoundTitle') };
+  return { title: t(member.can('operate') ? 'title' : 'notFoundTitle') };
 }
 
 export default async function DiagnosticsPage({ searchParams }: { searchParams: Promise<{ check?: string; watch?: string }> }) {
   const member = await requireMember();
-  if (!member.isOperator) notFound();
+  if (!member.can('operate')) notFound();
   const clock = await getClock();
   const [t, assistant, locale, status, diagnostics, { check, watch }] = await Promise.all([
     getTranslations('assistant.diagnostics'),

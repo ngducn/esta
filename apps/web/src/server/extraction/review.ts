@@ -83,7 +83,7 @@ export async function loadReview(documentId: string): Promise<ReviewData | null>
     fileUrl,
     ...previews,
     statuses: statuses ?? { statuses: {}, workerOffline: false, offlineSince: null },
-    canEdit: member.role !== 'viewer',
+    canEdit: member.can('edit'),
     properties: document.property_id === null ? (properties.data ?? []).map(({ id, nickname }) => ({ id, nickname })) : [],
     certificateAddresses: Object.fromEntries((properties.data ?? []).map((row) => [row.id, row.certificate_address_text])),
   };

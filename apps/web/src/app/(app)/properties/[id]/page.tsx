@@ -50,7 +50,7 @@ export default async function PropertyOverviewPage({ params }: { params: Promise
     property.hasBoundary ? readBoundary(id) : null,
     getClock(),
     loadPropertyValuations(member.household.id, id),
-    member.role === 'viewer' ? null : valuationIslandIntl(),
+    !member.can('edit') ? null : valuationIslandIntl(),
   ]);
 
   const format: Record<DetailFormat, (value: unknown) => string | null> = {
@@ -109,7 +109,7 @@ export default async function PropertyOverviewPage({ params }: { params: Promise
           }}
         />
         <LocationCard
-          locateHref={member.role === 'viewer' ? null : `/properties?view=map&locate=${property.id}`}
+          locateHref={!member.can('edit') ? null : `/properties?view=map&locate=${property.id}`}
           labels={{ title: t('locationTitle'), edit: t('editLocation'), set: t('setLocation'), none: t('noLocation'), noneBody: t('noLocationBody') }}
           map={
             property.location === null

@@ -31,7 +31,7 @@ export default async function OnboardingPage() {
     getSessionUser(),
   ]);
   if (member === null && (await claimLateInvites())) redirect('/');
-  if (member !== null && member.role !== 'admin') redirect('/');
+  if (member !== null && !member.can('household')) redirect('/');
 
   const creating = member === null;
   return (

@@ -21,8 +21,8 @@ export async function AssistantSection({ member }: { member: Member }) {
     getTranslations('settings'),
     assistantStatus(now),
     loadResearchTopics(member.household.id),
-    member.isOperator ? loadDiagnostics(member.household.id, now) : null,
-    member.isOperator ? loadCronHealth(member.household.id, now) : null,
+    member.can('operate') ? loadDiagnostics(member.household.id, now) : null,
+    member.can('operate') ? loadCronHealth(member.household.id, now) : null,
   ]);
   return (
     <SettingsSection id="assistant" title={t('assistant')} intro={t('assistantIntro')}>
