@@ -35,18 +35,18 @@ select tests.create_household('a') as a \gset
 select set_config('esta.actor', 'system:test', true);
 insert into public.properties (id, household_id, nickname, code, kind, use_mode) values
   ('00000000-0000-4000-8000-0000000000a1', :'a', 'Dãy trọ Dĩ An', 'DIAN', 'rooming_house', 'rental');
-insert into public.units (id, household_id, property_id, label, kind) values
-  ('00000000-0000-4000-8000-000000000a17', :'a', '00000000-0000-4000-8000-0000000000a1', 'Phòng 7', 'room');
 insert into public.parties (id, household_id, kind, full_name, tags) values
   ('00000000-0000-4000-8000-00000000a0a7', :'a', 'individual', 'Bùi Văn Hùng Demo', array['tenant']);
 
--- One ended lease per case. Entries of one case share created_at, so ids that follow the fixture's entry order keep
+-- One ended lease per case, each on its own room, since a room holds one lease on any day. Entries of one case share created_at, so ids that follow the fixture's entry order keep
 -- same-day entries in the order deriveDepositLedger reads them.
 create temporary table cases on commit drop as
 select name, n, format('00000000-0000-4000-8000-%s', lpad(n::text, 12, '0'))::uuid as lease_id
 from (select name, row_number() over (order by name) as n from (select distinct name from expected) named) numbered;
+insert into public.units (id, household_id, property_id, label, kind)
+select c.lease_id, :'a', '00000000-0000-4000-8000-0000000000a1', 'Phòng ' || c.n, 'room' from cases c;
 insert into public.leases (id, household_id, property_id, unit_id, tenant_party_id, start_date, end_date, rent_vnd, status)
-select c.lease_id, :'a', '00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-000000000a17',
+select c.lease_id, :'a', '00000000-0000-4000-8000-0000000000a1', c.lease_id,
   '00000000-0000-4000-8000-00000000a0a7', '2025-01-01', '2025-12-31', 2800000, 'ended'
 from cases c;
 create temporary table rows_in on commit drop as

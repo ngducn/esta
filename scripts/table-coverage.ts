@@ -24,6 +24,13 @@ export function hiddenRowProblems(privateTables: readonly string[], files: reado
     .map((name) => `public.${name} limits who may read its rows, and no pgTAP file calls tests.hidden_everywhere('${name}', ...)`);
 }
 
+/** An exclusion constraint is a rule the database keeps (#198): a pgTAP `throws_ok` must try the write it forbids, expect 23P01 and name the constraint in the same call. */
+export function exclusionProblems(constraints: readonly string[], files: readonly TestFile[]): string[] {
+  return constraints
+    .filter((name) => !files.some(({ text }) => [...stripSqlComments(text).matchAll(/throws_ok\(([\s\S]*?)\)\s*;/g)].some(([, call = '']) => call.includes('23P01') && call.includes(`"${name}"`))))
+    .map((name) => `the exclusion constraint ${name} has no pgTAP file that names it and expects 23P01 from the write it forbids`);
+}
+
 const HOUSEHOLD_WIDE = ["private.is_member(household_id, 'viewer'::member_role)", "private.is_member(id, 'viewer'::member_role)", 'true'];
 
 /** The public tables whose select policies are narrower than household-wide (or reference data open to all), as `tests.private_tables()` reads them. */
@@ -39,6 +46,13 @@ export function privateTables(workdir: string): string[] {
      where n.nspname = 'public' and c.relkind in ('r', 'p') and c.relname <> 'audit_log'
        and ((${policy(true, true)} and not ${policy(true, false)}) or ${policy(false, true)})
      order by 1`,
+  ).map(({ name }) => name);
+}
+
+export function exclusionConstraints(workdir: string): string[] {
+  return query<{ name: string }>(
+    workdir,
+    `select c.conname as name from pg_constraint c join pg_namespace n on n.oid = c.connamespace where n.nspname = 'public' and c.contype = 'x' order by 1`,
   ).map(({ name }) => name);
 }
 
@@ -61,7 +75,8 @@ export function publicTables(workdir: string): PublicTable[] {
 export function reportTableCoverage(repoRoot: string, slot: number): boolean {
   const tables = publicTables(slotWorkdir(repoRoot, slot));
   const files = readTestFiles(join(repoRoot, 'supabase', 'tests'));
-  const problems = [...coverageProblems(tables, files), ...hiddenRowProblems(privateTables(slotWorkdir(repoRoot, slot)), files)];
+  const workdir = slotWorkdir(repoRoot, slot);
+  const problems = [...coverageProblems(tables, files), ...hiddenRowProblems(privateTables(workdir), files), ...exclusionProblems(exclusionConstraints(workdir), files)];
   for (const problem of problems) console.error(problem);
   if (problems.length === 0) console.log(`Table coverage: all ${tables.length} public tables have row level security and a pgTAP file.`);
   return problems.length === 0;
