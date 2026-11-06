@@ -115,7 +115,7 @@ export function UnitList({
         router.refresh();
         showUndo(t('deleted', { label: unit.label }), () => {
           restoreUnit(result.deleted)
-            .then((restored) => (restored.ok ? router.refresh() : showNotice(t('restoreFailed'))))
+            .then((restored) => (restored.ok ? router.refresh() : showNotice(t(restored.reason === 'duplicate' ? 'restoreLabelTaken' : 'restoreFailed'))))
             .catch(() => showNotice(t('restoreFailed')));
         });
       },

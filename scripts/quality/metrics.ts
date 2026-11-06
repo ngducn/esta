@@ -16,7 +16,7 @@ import {
   testIdQueries,
   viewports,
 } from './smells.ts';
-import { directWrites, literalRoleChecks, longFunctions, MAX_FUNCTION_LINES, memberRoles, notKebabCase } from './structure.ts';
+import { directWrites, literalRoleChecks, longFunctions, MAX_FUNCTION_LINES, memberRoles, notKebabCase, SOFT_DELETE_READ, unfilteredTrashReads } from './structure.ts';
 import { classLists, comments, elements, imported, importsModule, uses, type Finder } from './syntax.ts';
 
 const REPO_ROOT = join(import.meta.dirname, '..', '..');
@@ -155,6 +155,7 @@ export const METRICS: readonly Metric[] = [
     scope: without(PRODUCT_CODE, /^packages\/ops\/src\/kit\.ts$/),
     find: sqlstateReads,
   }),
+  syntax({ id: 'soft-delete-read', ...SOFT_DELETE_READ, section: 'undo', scope: PRODUCT_CODE, find: unfilteredTrashReads }),
   syntax({
     id: 'toast-provider-mount',
     message: 'A page or component mounts its own `UndoToastProvider`.',

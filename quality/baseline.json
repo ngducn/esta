@@ -52,7 +52,7 @@
       }
     },
     "duplicated-lines": {
-      "value": 1072,
+      "value": 1069,
       "files": {
         "apps/web/src/app/(app)/documents/[documentId]/review/page.tsx": 15,
         "apps/web/src/app/(app)/properties/[id]/documents/page.tsx": 6,
@@ -70,7 +70,7 @@
         "apps/web/src/components/rental/unit-list.test.tsx": 7,
         "apps/web/src/server/documents/actions.integration.test.ts": 27,
         "apps/web/src/server/expenses/actions.integration.test.ts": 7,
-        "apps/web/src/server/extraction/actions.integration.test.ts": 18,
+        "apps/web/src/server/extraction/actions.integration.test.ts": 15,
         "apps/web/src/server/properties/form.ts": 6,
         "apps/web/src/server/properties/wizard.ts": 8,
         "e2e/assistant-status.spec.ts": 33,
@@ -157,6 +157,10 @@
         "apps/web/src/app/onboarding/actions.ts": 1,
         "apps/web/src/server/properties/wizard.ts": 1
       }
+    },
+    "soft-delete-read": {
+      "value": 0,
+      "files": {}
     },
     "toast-provider-mount": {
       "value": 5,

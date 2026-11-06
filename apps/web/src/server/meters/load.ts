@@ -32,7 +32,11 @@ const HISTORY_MONTHS = 12;
 /** Every room with an active meter, in room order, with what the screen shows beside each input for `month`. */
 export async function loadMeterEntry(propertyId: string, month: IsoDate): Promise<readonly MeterRoom[]> {
   const [member, supabase, rental] = await Promise.all([requireMember(), createSessionClient(), loadPropertyRental(propertyId)]);
-  const meters = await supabase.from('meters').select('id, unit_id, kind').match({ household_id: member.household.id, property_id: propertyId, active: true });
+  const meters = await supabase
+    .from('meters')
+    .select('id, unit_id, kind, unit:units!inner(deleted_at)')
+    .match({ household_id: member.household.id, property_id: propertyId, active: true })
+    .is('unit.deleted_at', null);
   if (meters.error) throw new Error(`Reading meters failed: ${meters.error.message}`);
   const active = z.array(meterSchema).parse(meters.data);
   const usage = await supabase
@@ -69,7 +73,7 @@ export async function loadMeterEntry(propertyId: string, month: IsoDate): Promis
 export async function propertyHasMeters(propertyId: string): Promise<boolean> {
   const [member, supabase] = await Promise.all([requireMember(), createSessionClient()]);
   const scope = { household_id: member.household.id, property_id: propertyId, active: true };
-  const { count, error } = await supabase.from('meters').select('id', { count: 'exact', head: true }).match(scope);
+  const { count, error } = await supabase.from('meters').select('id, unit:units!inner(deleted_at)', { count: 'exact', head: true }).match(scope).is('unit.deleted_at', null);
   if (error) throw new Error(`Counting meters failed: ${error.message}`);
   return (count ?? 0) > 0;
 }

@@ -55,7 +55,7 @@ export async function readLeaseNames(db: Db, householdId: string, leases: readon
   if (leases.length === 0) return { units: new Map(), properties: new Map(), held: new Map() };
   const ids = (key: 'id' | 'unit_id' | 'property_id') => [...new Set(leases.map((lease) => lease[key]))];
   const [units, properties, held] = await Promise.all([
-    db.from('units').select('id, label, kind').eq('household_id', householdId).in('id', ids('unit_id')),
+    db.from('units').select('id, label, kind').eq('household_id', householdId).in('id', ids('unit_id')).is('deleted_at', null),
     db.from('properties').select('id, nickname').eq('household_id', householdId).in('id', ids('property_id')),
     readHeldDeposits(db, householdId, ids('id')),
   ]);

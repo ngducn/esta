@@ -725,6 +725,7 @@
     "deleted": "Đã xóa {label}.",
     "deleteFailed": "Chưa xóa được. Thử lại.",
     "restoreFailed": "Chưa khôi phục được. Tải lại trang rồi thử lại.",
+    "restoreLabelTaken": "Tên phòng này đã được dùng. Đổi tên phòng mới rồi thử lại.",
     "unitSheetNew": "Thêm đơn vị",
     "unitSheetEdit": "Sửa {label}",
     "unitSheetBody": "Tên, loại, diện tích, giá niêm yết và ngày có thể cho thuê.",

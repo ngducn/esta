@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(38);
+select plan(44);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 
@@ -13,7 +13,8 @@ insert into public.properties (id, household_id, nickname, code, kind, use_mode)
 insert into public.units (id, household_id, property_id, label, kind, list_rent_vnd, sort_order) values
   ('00000000-0000-4000-8000-000000000a11', :'a', '00000000-0000-4000-8000-0000000000a1', 'Phòng 1', 'room', 3000000, 0),
   ('00000000-0000-4000-8000-000000000a12', :'a', '00000000-0000-4000-8000-0000000000a1', 'Phòng 2', 'room', 3000000, 1),
-  ('00000000-0000-4000-8000-000000000a13', :'a', '00000000-0000-4000-8000-0000000000a1', 'Phòng 3', 'room', 3000000, 2);
+  ('00000000-0000-4000-8000-000000000a13', :'a', '00000000-0000-4000-8000-0000000000a1', 'Phòng 3', 'room', 3000000, 2),
+  ('00000000-0000-4000-8000-000000000b11', :'b', '00000000-0000-4000-8000-0000000000b1', 'Phòng B', 'room', 3000000, 0);
 insert into public.meters (id, household_id, property_id, unit_id, kind, pricing) values
   ('00000000-0000-4000-8000-00000000d12e', :'a', '00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-000000000a12', 'electricity', '{"kind": "flat", "unit_price_vnd": 3500}');
 insert into public.utility_accounts (id, household_id, property_id, unit_id, kind, provider) values
@@ -132,6 +133,24 @@ select throws_ok(
   $$ select public.reorder_units('00000000-0000-4000-8000-0000000000a1', '[{"id": "00000000-0000-4000-8000-000000000a14", "sort_order": 1}]') $$,
   'P0002', 'ESTA_UNITS_CHANGED', 'a room in the trash cannot be reordered');
 
+-- Household B's property and room are no business of a member of A.
+select throws_ok(
+  $$ select public.reorder_units('00000000-0000-4000-8000-0000000000b1', '[{"id": "00000000-0000-4000-8000-000000000b11", "sort_order": 1}]') $$,
+  'P0002', 'ESTA_PROPERTY_NOT_FOUND', 'a member cannot reorder the rooms of another household''s property');
+select throws_ok(
+  $$ select public.reorder_units('00000000-0000-4000-8000-0000000000a1', '[{"id": "00000000-0000-4000-8000-000000000a11", "sort_order": 1}, {"id": "00000000-0000-4000-8000-000000000b11", "sort_order": 2}]') $$,
+  'P0002', 'ESTA_UNITS_CHANGED', 'a room of another household refuses the whole reorder');
+
+-- The completeness fact counts live accounts: trashing the last one makes "has a utility account" fail again.
+select is(
+  (select utility_account_count from public.property_completeness_facts where property_id = '00000000-0000-4000-8000-0000000000a1'),
+  (select count(*)::integer from public.utility_accounts where property_id = '00000000-0000-4000-8000-0000000000a1' and deleted_at is null),
+  'the completeness fact counts the live accounts');
+update public.utility_accounts set deleted_at = now() where property_id = '00000000-0000-4000-8000-0000000000a1' and deleted_at is null;
+select is(
+  (select utility_account_count from public.property_completeness_facts where property_id = '00000000-0000-4000-8000-0000000000a1'), 0,
+  'with every account in the trash the completeness fact is 0');
+
 -- Other households and viewers.
 select tests.cannot_write('public.units', :'b', format($$ insert into public.units (household_id, property_id, label, kind) values (%L, '00000000-0000-4000-8000-0000000000b1', 'Phòng 1', 'room') $$, :'b'));
 select is_empty($$ update public.units set deleted_at = now() where household_id = (select household_id from public.properties where id = '00000000-0000-4000-8000-0000000000b1') returning 1 $$,
@@ -146,8 +165,21 @@ select is_empty(
   $$ select c.relname from pg_catalog.pg_class c
      join pg_catalog.pg_attribute a on a.attrelid = c.oid and a.attname = 'deleted_at' and not a.attisdropped
      where c.relnamespace = 'public'::regnamespace and c.relkind = 'r'
-       and exists (select 1 from pg_catalog.pg_policies p where p.schemaname = 'public' and p.tablename = c.relname and p.policyname = c.relname || '_delete') $$,
+       and exists (select 1 from pg_catalog.pg_policies p where p.schemaname = 'public' and p.tablename = c.relname and p.cmd in ('DELETE', 'ALL')) $$,
   'every public table with deleted_at calls enable_soft_delete');
+
+-- The class behind the completeness and wizard defects: a view that reads rooms or accounts must hide the trash.
+select is_empty(
+  $$ select v.viewname from pg_catalog.pg_views v,
+       lateral regexp_matches(v.definition, '\m(units|utility_accounts)\M\s+(?:AS\s+)?([a-z_]\w*)', 'gi') as m
+     where v.schemaname = 'public'
+       and v.definition !~ ('\m' || m[1] || '\s+(?:AS\s+)?' || m[2] || '(?:(?!\mON\s+\(?true)[\s\S])*?\m' || m[2] || '\.deleted_at') $$,
+  'every public view that reads units or utility_accounts filters its own deleted_at');
+
+-- A lease and the trashing of its room take turns on the room's row lock; room-lease-race.integration.test.ts runs the two sessions.
+select matches(
+  pg_get_functiondef('private.refuse_trashed_unit_lease()'::regprocedure), 'for no key update',
+  'creating a lease locks its room, so it cannot interleave with the room going to the trash');
 
 select * from finish();
 rollback;

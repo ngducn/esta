@@ -4,8 +4,10 @@ import { change, defineOp, refuse, unchanged, type OpContext } from './op';
 
 /**
  * The one undo model (Q-03): a row the user deletes stays, with `deleted_at` set, and `Hoàn tác` clears it on the same
- * row. A table joins by calling `private.enable_soft_delete` in its migration and by being listed here;
- * `soft-delete.test.ts` fails when the two disagree.
+ * row. A table joins by calling `private.enable_soft_delete` in its migration and by being listed here.
+ * `soft-delete.test.ts` fails when a table listed here has no `enable_soft_delete` call; `rental_soft_delete.test.sql`
+ * fails when any public table with a `deleted_at` column keeps a DELETE or ALL policy. Neither fails a table that is
+ * soft deleted but missing from this list.
  */
 export const SOFT_DELETE_TABLES = ['units', 'utility_accounts'] as const;
 export type SoftDeleteTable = (typeof SOFT_DELETE_TABLES)[number];

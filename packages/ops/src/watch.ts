@@ -41,7 +41,7 @@ async function readWaitingExtractions(db: Db, householdId: string, timezone: str
 
 async function readMeters(db: Db, householdId: string, asOf: IsoDate) {
   const [meters, readings] = await Promise.all([
-    readAll('meters', (from, to) => db.from('meters').select('id, unit_id').eq('household_id', householdId).eq('active', true).order('id').range(from, to)),
+    readAll('meters', (from, to) => db.from('meters').select('id, unit_id, unit:units!inner(deleted_at)').eq('household_id', householdId).eq('active', true).is('unit.deleted_at', null).order('id').range(from, to)),
     readAll('meter readings', (from, to) =>
       db.from('meter_readings').select('id, meter_id, read_on').eq('household_id', householdId).gte('read_on', addMonths(firstOfMonth(asOf), -1)).lte('read_on', asOf).order('id').range(from, to),
     ),

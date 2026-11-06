@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { getLocale, getMessages, getTranslations } from 'next-intl/server';
 import { notFound } from 'next/navigation';
-import { z } from 'zod';
 import { BackLink } from '@/components/properties/back-link';
 import { PropertyIntl } from '@/components/properties/property-intl';
 import { FinishChecklist } from '@/components/property-wizard/finish-checklist';
@@ -10,46 +9,16 @@ import { StepDetails } from '@/components/property-wizard/step-details';
 import { StepOwners } from '@/components/property-wizard/step-owners';
 import { StepPhoto } from '@/components/property-wizard/step-photo';
 import { StepReview } from '@/components/property-wizard/step-review';
-import { readWizard, wizardHref, wizardMachine, wizardPath, type WizardEvent, type WizardIds } from '@/components/property-wizard/wizard-machine';
+import { readWizard, wizardHref, wizardMachine, wizardPath, type WizardEvent } from '@/components/property-wizard/wizard-machine';
 import { cn } from '@/lib/utils';
 import { readDocumentStatuses } from '@/server/documents/status';
 import { requireMember } from '@/server/member';
 import { loadPropertyCodes } from '@/server/properties/form';
-import { PROPERTY_KINDS, USE_MODES } from '@esta/core/properties/form';
-import { createSessionClient } from '@/server/supabase/server';
+import { loadWizardProperty } from '@/server/properties/wizard-load';
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('propertyForm');
   return { title: t('newTitle') };
-}
-
-const propertyRow = z.object({
-  nickname: z.string(),
-  kind: z.enum(PROPERTY_KINDS),
-  use_mode: z.enum(USE_MODES),
-  kind_details: z.object({ room_count: z.number().int().optional() }).loose(),
-  units: z.array(z.object({ kind: z.string() })),
-});
-
-type WizardProperty = z.output<typeof propertyRow> & { readonly documentId: string | null };
-
-/** The wizard's property under RLS, and its certificate only when that document is this property's. */
-async function loadWizardProperty(householdId: string, ids: WizardIds): Promise<WizardProperty | null> {
-  const supabase = await createSessionClient();
-  const [property, document] = await Promise.all([
-    supabase
-      .from('properties')
-      .select('nickname, kind, use_mode, kind_details, units(kind)')
-      .eq('household_id', householdId)
-      .eq('id', ids.propertyId)
-      .is('deleted_at', null)
-      .maybeSingle(),
-    ids.documentId === null
-      ? Promise.resolve({ data: null })
-      : supabase.from('documents').select('id').eq('household_id', householdId).eq('property_id', ids.propertyId).eq('id', ids.documentId).is('deleted_at', null).maybeSingle(),
-  ]);
-  const parsed = propertyRow.safeParse(property.data);
-  return parsed.success ? { ...parsed.data, documentId: document.data?.id ?? null } : null;
 }
 
 /**

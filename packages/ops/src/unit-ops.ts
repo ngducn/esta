@@ -42,6 +42,7 @@ export const unitCreate = defineOp<z.output<typeof unitInputSchema>, NewUnit, Un
       .select('sort_order')
       .eq('household_id', ctx.householdId)
       .eq('property_id', property_id)
+      .is('deleted_at', null)
       .order('sort_order', { ascending: false })
       .limit(1)
       .maybeSingle();

@@ -97,8 +97,13 @@ returns trigger
 language plpgsql
 set search_path = ''
 as $$
+declare
+  v_trashed timestamptz;
 begin
-  if exists (select 1 from public.units u where u.id = new.unit_id and u.deleted_at is not null) then
+  -- The same lock the activation trigger takes (never FOR SHARE, which two sessions could not upgrade). It conflicts with
+  -- the trashing UPDATE, so a lease and the trashing of its room take turns.
+  select u.deleted_at into v_trashed from public.units u where u.id = new.unit_id for no key update;
+  if v_trashed is not null then
     raise exception 'ESTA_UNIT_DELETED' using errcode = '23503';
   end if;
   return new;
@@ -293,3 +298,57 @@ begin
   return jsonb_build_object('undone', true, 'archived', v_archived);
 end;
 $$;
+
+-- A trashed utility account no longer counts toward "has a utility account" (it did while the delete was hard).
+create or replace view public.property_completeness_facts with (security_invoker = true) as
+select
+  p.id as property_id,
+  p.household_id,
+  p.kind,
+  coalesce(p.current_address ->> 'commune_code', '') <> ''
+    and coalesce(btrim(p.current_address ->> 'street'), '') <> '' as has_current_address,
+  p.location is not null as has_location,
+  p.acquired_on is not null and p.acquisition_kind is not null as has_acquisition,
+  coalesce(parcel.total, 0)::integer as parcel_count,
+  parcel.without_number_id as parcel_without_number_id,
+  parcel.without_area_id as parcel_without_area_id,
+  coalesce(structure.total, 0)::integer as structure_count,
+  structure.without_floor_area_id as structure_without_floor_area_id,
+  coalesce(share.total_bp, 0)::integer as share_total_bp,
+  coalesce(account.total, 0)::integer as utility_account_count,
+  coalesce(document.certificates, 0)::integer as certificate_document_count,
+  (coalesce(document.photos, 0) + (p.cover_photo_path is not null)::integer)::integer as photo_count
+from public.properties p
+left join lateral (
+  select
+    count(*) as total,
+    (array_agg(x.id order by x.created_at, x.id) filter (where x.parcel_no is null or x.map_sheet_no is null))[1] as without_number_id,
+    (array_agg(x.id order by x.created_at, x.id) filter (where x.area_m2 is null))[1] as without_area_id
+  from public.parcels x
+  where x.household_id = p.household_id and x.property_id = p.id
+) parcel on true
+left join lateral (
+  select
+    count(*) as total,
+    (array_agg(x.id order by x.created_at, x.id) filter (where x.floor_area_m2 is null))[1] as without_floor_area_id
+  from public.structures x
+  where x.household_id = p.household_id and x.property_id = p.id
+) structure on true
+left join lateral (
+  select sum(x.share_bp) as total_bp
+  from public.ownership_shares x
+  where x.household_id = p.household_id and x.property_id = p.id
+) share on true
+left join lateral (
+  select count(*) as total
+  from public.utility_accounts x
+  where x.household_id = p.household_id and x.property_id = p.id and x.deleted_at is null
+) account on true
+left join lateral (
+  select
+    count(*) filter (where x.category = 'certificate') as certificates,
+    count(*) filter (where x.category = 'photo') as photos
+  from public.documents x
+  where x.household_id = p.household_id and x.property_id = p.id and x.deleted_at is null
+) document on true
+where p.deleted_at is null;

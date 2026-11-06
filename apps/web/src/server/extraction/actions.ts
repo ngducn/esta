@@ -141,7 +141,7 @@ export async function saveExtractionReview(extractionId: unknown, decisions: unk
 
   const [parties, accounts] = await Promise.all([
     supabase.from('parties').select('id, full_name, id_last4').eq('household_id', target.householdId),
-    supabase.from('utility_accounts').select('id, property_id, kind, customer_code').eq('household_id', target.householdId).eq('property_id', property),
+    supabase.from('utility_accounts').select('id, property_id, kind, customer_code').eq('household_id', target.householdId).eq('property_id', property).is('deleted_at', null),
   ]);
   if (parties.error || accounts.error) return { ok: false, reason: 'failed' };
   const extraction = { id: target.id, householdId: target.householdId, propertyId: property, documentId: target.documentId, result: target.result };
