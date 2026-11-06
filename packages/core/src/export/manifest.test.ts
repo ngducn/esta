@@ -43,13 +43,13 @@ describe('buildManifest', () => {
   });
 
   it('lists what an admin who is not the operator cannot read', () => {
-    expect(manifest.withheld.map((entry) => entry.table)).toEqual(['agent_jobs', 'agent_items', 'agent_runs', 'audit_log', 'conversations', 'messages']);
+    expect(manifest.withheld.map((entry) => entry.table)).toEqual(['agent_jobs', 'agent_items', 'agent_runs', 'audit_log', 'conversations', 'notifications', 'messages']);
     expect(manifest.withheld.every((entry) => entry.rule.length > 20)).toBe(true);
   });
 
   it('lists only the private chats and their audit rows for the operator', () => {
     const operator = buildManifest({ clock, householdId: 'h', counts: [], files: 0, parts: ['a.zip'], exporter: { role: 'admin', isOperator: true } });
-    expect(operator.withheld.map((entry) => entry.table)).toEqual(['audit_log', 'conversations', 'messages']);
+    expect(operator.withheld.map((entry) => entry.table)).toEqual(['audit_log', 'conversations', 'notifications', 'messages']);
   });
 
   it('says complete and withholds nothing for the backup, which reads every row with the service role', () => {

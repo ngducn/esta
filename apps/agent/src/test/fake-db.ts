@@ -82,6 +82,10 @@ export function fakeDb(
         filters.push((row) => at(row[column]) >= at(value));
         return builder;
       },
+      lt(column: string, value: number | string) {
+        filters.push((row) => Number(row[column]) < Number(value));
+        return builder;
+      },
       lte(column: string, value: number | string) {
         const at = (v: unknown) => (typeof v === 'string' && typeof value === 'string' ? Date.parse(v) : Number(v));
         filters.push((row) => at(row[column]) <= at(value));

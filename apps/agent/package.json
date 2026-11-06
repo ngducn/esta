@@ -22,6 +22,10 @@
     "@esta/ops": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.32.1",
     "@supabase/supabase-js": "^2.117.2",
+    "nodemailer": "^10.3.1",
     "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/nodemailer": "^8.0.2"
   }
 }

@@ -1,8 +1,10 @@
 import 'server-only';
 import type { Password } from '@esta/core/auth';
 import type { AuthError } from '@supabase/supabase-js';
+import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { carryCookieLocaleToMember } from '@/server/locale';
+import { RETURN_COOKIE, safeReturnPath } from '@/server/return-path';
 import { createCodeSender, createSessionClient } from '@/server/supabase/server';
 
 export type SendFailure = 'send-failed' | 'rate-limited';
@@ -62,12 +64,22 @@ export async function savePassword(password: Password): Promise<boolean> {
   return false;
 }
 
-export async function finishSignIn(): Promise<'/' | '/onboarding'> {
+/** Where a signed-out visit to a page, such as a notice's link, asked to go; read once, so the next sign-in starts at Home. */
+async function takeReturnPath(): Promise<string | null> {
+  const jar = await cookies();
+  const path = safeReturnPath(jar.get(RETURN_COOKIE)?.value);
+  jar.delete(RETURN_COOKIE);
+  return path;
+}
+
+export async function finishSignIn(): Promise<string> {
   const supabase = await createSessionClient();
   const { error } = await supabase.rpc('claim_pending_invites');
   if (error) throw new Error(`claim_pending_invites failed: ${error.message}`);
   await carryCookieLocaleToMember();
-  return (await hasMembership()) ? '/' : '/onboarding';
+  const returnTo = await takeReturnPath();
+  if (!(await hasMembership())) return '/onboarding';
+  return returnTo ?? '/';
 }
 
 async function hasMembership(): Promise<boolean> {

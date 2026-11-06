@@ -19,6 +19,7 @@ const base = z.object({
   EMAIL_TRANSPORT: z.enum(['smtp']).default('smtp'),
   SMTP_URL: z.url().optional(),
   ESTA_EMAIL_FROM: z.email().optional(),
+  ESTA_APP_URL: z.url().optional(),
   ESTA_SIGNED_URL_TTL_SECONDS: z.coerce.number().int().positive().default(300),
   ESTA_EXPORT_PART_MB: z.coerce.number().positive().default(45),
   ESTA_GOOGLE_AUTH: z.enum(['on', 'off']).default('off'),

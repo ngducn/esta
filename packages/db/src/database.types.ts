@@ -1922,6 +1922,69 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          agent_item_id: string
+          attempts: number
+          channel: string
+          created_at: string
+          created_by: string | null
+          error: string | null
+          household_id: string
+          id: string
+          last_attempt_at: string | null
+          sent_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          agent_item_id: string
+          attempts?: number
+          channel: string
+          created_at?: string
+          created_by?: string | null
+          error?: string | null
+          household_id: string
+          id?: string
+          last_attempt_at?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          agent_item_id?: string
+          attempts?: number
+          channel?: string
+          created_at?: string
+          created_by?: string | null
+          error?: string | null
+          household_id?: string
+          id?: string
+          last_attempt_at?: string | null
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_household_id_agent_item_id_fkey"
+            columns: ["household_id", "agent_item_id"]
+            isOneToOne: false
+            referencedRelation: "agent_items"
+            referencedColumns: ["household_id", "id"]
+          },
+          {
+            foreignKeyName: "notifications_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       owner_tax_inputs: {
         Row: {
           created_at: string

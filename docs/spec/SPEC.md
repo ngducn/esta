@@ -324,6 +324,7 @@ Environment variables (names are part of the contract; `.env.example` lists them
 | `ESTA_REPLAY_DIR` | agent | Replay recordings root; default `fixtures/agent-replay` |
 | `ESTA_BACKUP_DIR` | agent | Nightly backup target |
 | `EMAIL_TRANSPORT`, `SMTP_URL`, `ESTA_EMAIL_FROM` | web, agent | `smtp` to Inbucket in dev; production sender set at the Phase 6 gate |
+| `ESTA_APP_URL` | web, agent | The origin a notice email links to (`ESTA_APP_URL/assistant?note={id}`); the worker sends nothing when `SMTP_URL` is set without it |
 | `ESTA_SIGNED_URL_TTL_SECONDS` | web | Default 300 |
 | `ESTA_EXPORT_PART_MB` | web | Default 45; an export past it continues in a second ZIP |
 | `ESTA_GOOGLE_AUTH` | web | `off` until the Phase 6 gate |

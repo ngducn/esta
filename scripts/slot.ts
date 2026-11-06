@@ -8,6 +8,7 @@ export type SlotPorts = {
   db: number;
   studio: number;
   inbucket: number;
+  smtp: number;
   webLan: number;
   apiLan: number;
   inbucketLan: number;
@@ -20,6 +21,7 @@ const BASE_PORTS: SlotPorts = {
   db: 54322,
   studio: 54323,
   inbucket: 54324,
+  smtp: 54325,
   webLan: 3443,
   apiLan: 8443,
   inbucketLan: 9443,
@@ -47,6 +49,7 @@ export function slotPorts(slot: number): SlotPorts {
     db: BASE_PORTS.db + offset,
     studio: BASE_PORTS.studio + offset,
     inbucket: BASE_PORTS.inbucket + offset,
+    smtp: BASE_PORTS.smtp + offset,
     webLan: BASE_PORTS.webLan + offset,
     apiLan: BASE_PORTS.apiLan + offset,
     inbucketLan: BASE_PORTS.inbucketLan + offset,

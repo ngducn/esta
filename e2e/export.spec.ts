@@ -213,7 +213,7 @@ test('a partial export says so: each manifest and each screen names what that ad
   await withPrivateRows(page, async (ids) => {
     const ryan = await exportAll(page);
     expect(ryan.manifest).toMatchObject({ exporter: { role: 'admin', isOperator: true }, complete: false });
-    expect(ryan.manifest.withheld.map((entry) => entry.table)).toEqual(['audit_log', 'conversations', 'messages']);
+    expect(ryan.manifest.withheld.map((entry) => entry.table)).toEqual(['audit_log', 'conversations', 'notifications', 'messages']);
     expect(rowIds(ryan.entries, 'agent_items'), 'the operator reads the operator-only item').toContain(ids.item);
     expect(rowIds(ryan.entries, 'conversations'), "Ryan's file lacks Mẹ's chat").not.toContain(ids.chat);
     await page.goto('/settings');
@@ -230,7 +230,7 @@ test('a partial export says so: each manifest and each screen names what that ad
       await open(mother, `me.lane${LANE}@demo.esta.test`, 'light', DESKTOP);
       const me = await exportAll(mother);
       expect(me.manifest).toMatchObject({ exporter: { role: 'admin', isOperator: false }, complete: false });
-      expect(me.manifest.withheld.map((entry) => entry.table)).toEqual(['agent_jobs', 'agent_items', 'agent_runs', 'audit_log', 'conversations', 'messages']);
+      expect(me.manifest.withheld.map((entry) => entry.table)).toEqual(['agent_jobs', 'agent_items', 'agent_runs', 'audit_log', 'conversations', 'notifications', 'messages']);
       expect(rowIds(me.entries, 'agent_items'), "Mẹ's file lacks the operator-only item").not.toContain(ids.item);
       expect(rowIds(me.entries, 'conversations'), 'Mẹ reads her own chat').toContain(ids.chat);
       await mother.goto('/settings');
