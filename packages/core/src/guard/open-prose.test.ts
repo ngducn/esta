@@ -49,8 +49,8 @@ describe('the compounds the open-prose probe added (P5-12)', () => {
     }
   });
 
-  it('passes phần trăm as a noun and a third party', () => {
-    for (const note of ['Tính theo phần trăm tiền thu được.', 'Bảo hiểm cho bên thứ ba.']) expect(rules(note), note).toEqual([]);
+  it('passes a third party', () => {
+    expect(rules('Bảo hiểm cho bên thứ ba.')).toEqual([]);
   });
 
   it('reads a hyphen as the space it stands for, so a date word joined by one is still rejected', () => {

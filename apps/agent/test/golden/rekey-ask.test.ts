@@ -1,13 +1,22 @@
-import { cpSync, existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { repairMessage } from '@esta/core/guard';
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_REPLAY_DIR, writeRecording } from '../../src/replay/store';
-import { askRecordingFiles, currentHead, currentOffer, dayOf, hashOf, headOf, readAskRecording, rekeyAsk, withCurrentRepairTail } from './rekey-ask';
+import { askRecordingDirs, askRecordingFiles, currentHead, currentOffer, dayOf, hashOf, headOf, readAskRecording, rekeyAsk, withCurrentRepairTail } from './rekey-ask';
 
 describe('ask recordings are keyed to the current prompt (re-keyed only by script)', () => {
   const files = askRecordingFiles();
+
+  it('walks the main folder and each case folder that holds ask recordings, and no other', () => {
+    const root = mkdtempSync(join(tmpdir(), 'esta-dirs-'));
+    const cases = join(root, 'cases');
+    mkdirSync(join(cases, 'with', 'ask'), { recursive: true });
+    mkdirSync(join(cases, 'without'), { recursive: true });
+    expect(askRecordingDirs(join(root, 'main'), cases)).toEqual([join(root, 'main'), join(cases, 'with')]);
+    rmSync(root, { recursive: true });
+  });
 
   it('finds the hand-written, probe and north-star recordings', () => {
     expect(files.some((file) => file.includes(`${join('northstar', 'ask')}`))).toBe(true);

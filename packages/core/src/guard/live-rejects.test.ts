@@ -38,11 +38,11 @@ describe('phần trăm in the number guard (P5-10d)', () => {
     );
   });
 
-  it('passes phần trăm as a noun', () => {
+  it('rejects trăm as main does, noun or not, whatever stands before it', () => {
     fc.assert(
       fc.property(filler, fc.constantFrom('theo', 'tính', 'một khoản', 'hay'), filler, (before, word, after) => {
         const note = sentence([...before, word, 'phần trăm', ...after]);
-        expect(named(note), note).not.toContain('trăm');
+        expect(named(note), note).toContain('trăm');
       }),
       params,
     );

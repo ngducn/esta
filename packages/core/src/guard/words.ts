@@ -18,11 +18,6 @@ export type WordRow = {
   /** A capitalized word after it reads as a person (`from May Demo`), since a month name holds no figure. */
   readonly passesBeforeName?: readonly string[];
   readonly bannedOnlyNearNumber?: true;
-  /**
-   * With `passesAfter`: the word two before it (any gap, any punctuation) that makes it a quantity (`một phần trăm`);
-   * a number, amount or currency word there counts as well.
-   */
-  readonly bannedAfterThat?: readonly string[];
 };
 
 const plain = (kind: WordKind, words: string): Array<[string, WordRow]> => words.split(' ').map((word) => [word, { kind }]);
@@ -63,8 +58,7 @@ const EXCEPTIONS: Readonly<Record<string, WordRow>> = {
   nhật: { kind: 'date', bannedOnlyAfter: ['chủ'] },
   linh: { kind: 'number', passesBefore: ['hoạt', 'kiện', 'tinh'] },
   ba: { kind: 'number', passesAfterPhrase: ['bên thứ'] },
-  trăm: { kind: 'amount', passesAfter: ['phần'], bannedAfterThat: ['không', 'dăm', 'một', 'vài'] },
-  chín: { kind: 'number', passesBefore: ['chắn'] },
+    chín: { kind: 'number', passesBefore: ['chắn'] },
   second: { kind: 'number', passesBefore: ['opinion', 'opinions'] },
   double: { kind: 'number', passesBefore: ['check', 'checks', 'checked', 'checking'] },
   lẻ: { kind: 'number', passesAfter: ['bán'] },

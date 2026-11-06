@@ -106,11 +106,13 @@ export async function rekeyAsk(dir: string = DEFAULT_REPLAY_DIR): Promise<{ writ
   return { written, removed };
 }
 
+/** The folders to re-key: the main set and each case folder beside it (`agent-replay-cases/<case>`) that holds ask recordings. */
+export function askRecordingDirs(main: string = DEFAULT_REPLAY_DIR, cases: string = join(main, '..', 'agent-replay-cases')): string[] {
+  return [main, ...readdirSync(cases).map((name) => join(cases, name)).filter((dir) => existsSync(join(dir, 'ask')))];
+}
+
 if (import.meta.main) {
-  // The ask cases that live beside the main set (`fixtures/agent-replay-cases/<case>/ask`) carry the same rules and repair line.
-  const cases = join(DEFAULT_REPLAY_DIR, '..', 'agent-replay-cases');
-  const dirs = [DEFAULT_REPLAY_DIR, ...readdirSync(cases).map((name) => join(cases, name)).filter((dir) => existsSync(join(dir, 'ask')))];
   const results = [];
-  for (const dir of dirs) results.push(await rekeyAsk(dir));
+  for (const dir of askRecordingDirs()) results.push(await rekeyAsk(dir));
   console.log(`Re-keyed ${results.flatMap((r) => r.written).length} ask recordings, removed ${results.flatMap((r) => r.removed).length} old keys`);
 }

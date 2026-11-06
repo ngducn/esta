@@ -25,7 +25,7 @@ export const LIVE_REJECTS: readonly LiveReject[] = [
   { id: 'vi-inheritance', pass: 'first', kind: 'steered', sentence: 'Tài sản nào đứng tên riêng của ba hoặc mẹ, tài sản nào là chung của cả hai.', text: 'hai' },
   { id: 'vi-late-tenant', pass: 'first', kind: 'true', sentence: 'Khách phòng 5 là {{f17.tenant_name}}, thuê {{f17.property_label}}.', text: '5' },
   { id: 'vi-notarize-lease', pass: 'first', kind: 'steered', sentence: 'Nếu bạn muốn có thêm bảo đảm khi có tranh chấp, cả hai bên có thể cùng đi công chứng.', text: 'hai' },
-  { id: 'vi-property-manager', pass: 'first', kind: 'false', sentence: '- Cách tính phí: theo phần trăm tiền thu được hay một khoản cố định.', text: 'trăm' },
+  { id: 'vi-property-manager', pass: 'first', kind: 'steered', sentence: '- Cách tính phí: theo phần trăm tiền thu được hay một khoản cố định.', text: 'trăm' },
   { id: 'vi-raise-rent', pass: 'first', kind: 'true', sentence: '- **[Nhà phố Q7](f6):** hợp đồng của {{f15.tenant_name}} sắp đến hạn.', text: 'Q7' },
   { id: 'vi-red-pink-book', pass: 'first', kind: 'true', sentence: '**Sổ đỏ** và **sổ hồng** là hai tên gọi dân gian của hai loại giấy chứng nhận trước đây:', text: 'hai' },
   { id: 'vi-rent-tax', pass: 'first', kind: 'true', sentence: 'Hiện cả hai chủ sở hữu chưa vượt ngưỡng.', text: 'hai' },
