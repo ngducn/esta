@@ -109,7 +109,7 @@ as $$
     ('member.a@test.esta.test', 'notifications');
 $$;
 
-select plan((select count(*)::int * 2 + 2 from tests.private_tables()) + (select count(*)::int from tests.readers_of_history()));
+select plan((select count(*)::int * 2 + 2 from tests.private_tables()) + (select count(*)::int from tests.readers_of_history()) + 36);
 
 select tests.create_household('a') as a \gset
 select set_config('esta.actor', 'system:test', true);
@@ -171,6 +171,15 @@ from tests.private_tables() t, tests.audit_privacy(t);
 
 select is(leaks, '{}'::text[], format('%s: a member who cannot read a row cannot read its history either', t))
 from tests.private_tables() t, tests.audit_privacy(t);
+
+select * from tests.hidden_everywhere('conversations', (select id from public.conversations where household_id = :'a'), 'admin.a@test.esta.test');
+select * from tests.hidden_everywhere('messages', (select id from public.messages where household_id = :'a' order by created_at, id limit 1), 'admin.a@test.esta.test');
+select * from tests.hidden_everywhere('agent_items', (select id from public.agent_items where household_id = :'a' and audience = 'operator'), 'member.a@test.esta.test');
+select * from tests.hidden_everywhere('agent_jobs', (select id from public.agent_jobs where household_id = :'a' order by id limit 1), 'member.a@test.esta.test');
+select * from tests.hidden_everywhere('agent_runs', (select id from public.agent_runs where household_id = :'a' order by id limit 1), 'member.a@test.esta.test');
+select * from tests.hidden_everywhere('notifications', (select id from public.notifications where household_id = :'a' and user_id = tests.user_id('admin.a@test.esta.test')), 'member.a@test.esta.test');
+select * from tests.hidden_everywhere('statement_imports', '00000000-0000-4000-8000-00000000a5c1', 'member.a@test.esta.test');
+select * from tests.hidden_everywhere('statement_rows', (select id from public.statement_rows where household_id = :'a' limit 1), 'member.a@test.esta.test');
 
 select * from finish();
 rollback;

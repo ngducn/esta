@@ -135,13 +135,13 @@ A finding is closed only when a check would catch it next time. The check is, in
 
 | Class | Check | Fully mechanical |
 | --- | --- | --- |
-| 1. A private row with a public copy | pgTAP helper `tests.hidden_everywhere(table, row, reader)` that also reads `audit_log` and known copies; `db:test` fails when a table with a creator-only or operator-only policy has no test calling it | yes |
-| 2. Count, then write | integration helper `twoAtOnce(fn)`; `db:test` flags a definer function that counts and inserts without `pg_advisory_xact_lock` | partly: the SQL flag is a ratchet, the helper needs a caller |
-| 3. Clock edges | helper `clockEdges()` yielding 23:59 and 00:01 +07, Sunday to Monday and month end, used by every keyed-by-period test | partly: review checks the helper is used |
-| 4. Hidden pages | the access table (Q-08) generates a test that every guarded route answers 404 with the not-found body for a member without access | yes |
-| 5. The number guard | property test over every compound in `words.ts` that a real number word beside it is still rejected | yes |
-| 6. Copied fixtures | `copied-fixtures` metric (exists) | yes |
-| 7. A class with no token | lint rule: every Tailwind class in a `className` exists in `tokens.css` or Tailwind's defaults | yes |
+| 1. A private row with a public copy | pgTAP helper `tests.hidden_everywhere(table, row, reader)` that also reads `audit_log` and known copies; `db:test` fails when a table with a creator-only or operator-only policy has no test calling it | yes. Done (Q-16) |
+| 2. Count, then write | integration helper `twoAtOnce(fn)`; `db:test` flags a definer function that counts and inserts without `pg_advisory_xact_lock` | partly: the SQL flag is a ratchet, the helper needs a caller. Done (Q-16): `twoAtOnce` in `apps/web/src/test/two-at-once.ts`, baseline `quality/count-then-write.json` |
+| 3. Clock edges | helper `clockEdges()` yielding 23:59 and 00:01 +07, Sunday to Monday and month end, used by every keyed-by-period test | partly: review checks the helper is used. Done (Q-16): `packages/core/src/clock/edges.ts` |
+| 4. Hidden pages | the access table (Q-08) generates a test that every guarded route answers 404 with the not-found body for a member without access | yes. Waits for Q-08 |
+| 5. The number guard | property test over every compound in `words.ts` that a real number word beside it is still rejected | yes. Done (Q-16): `compounds.property.test.ts` |
+| 6. Copied fixtures | `copied-fixtures` metric (exists) | yes. Done (Q-01) |
+| 7. A class with no token | check: every Tailwind class in a `className` exists in `tokens.css` or Tailwind's defaults. A script in `pnpm check`, because a lint rule cannot ask Tailwind's compiler | yes. Done (Q-16): `pnpm classes:check` |
 | 8. A figure with two definitions | no general check: only a reader knows two figures mean the same thing. The review checklist names it, and a test compares the figure with SQL ground truth | no |
 
 ## Issue ledger, 2026-11-06 (167 open issues)

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { clockEdges } from '../clock/edges';
 import { parseInstant } from '../clock/resolve';
+import { isoWeek, weekday } from '../date/calendar';
 import { firstRunKey, planScheduledJobs, scheduledPeriod, scheduledWeek, type ScheduledJob } from './plan-jobs';
 
 const SCHEDULE: ScheduledJob[] = [
@@ -62,6 +64,15 @@ describe('planScheduledJobs', () => {
     expect(weekly('2026-10-12T09:00:00+07:00'), 'Monday after a missed Sunday').toEqual([]);
     expect(weekly('2026-10-11T23:00:00+07:00', ['weekly_review:h1:2026-W41'])).toEqual([]);
     expect(weekly('2026-10-18T08:00:00+07:00', ['weekly_review:h1:2026-W41'])).toEqual(['weekly_review:h1:2026-W42']);
+  });
+});
+
+describe('planScheduledJobs at every clock edge', () => {
+  it.each(clockEdges())('keys a daily job by the business date and a weekly job by its ISO week at $name', ({ now, businessDate }) => {
+    const daily = planScheduledJobs([{ kind: 'morning_brief', at: '00:00' }], { householdIds: ['h1'], now, timezone: TZ, existingKeys: new Set() });
+    expect(daily.map((job) => job.idempotencyKey)).toEqual([`morning_brief:h1:${businessDate}`]);
+    const sunday = planScheduledJobs([{ kind: 'weekly_review', at: '00:00', weekday: 0 }], { householdIds: ['h1'], now, timezone: TZ, existingKeys: new Set() });
+    expect(sunday.map((job) => job.idempotencyKey)).toEqual(weekday(businessDate) === 0 ? [`weekly_review:h1:${isoWeek(businessDate)}`] : []);
   });
 });
 
