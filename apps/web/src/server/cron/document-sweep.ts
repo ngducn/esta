@@ -83,4 +83,4 @@ export async function sweepDocumentFiles(client: CronClient, clock: Clock): Prom
   return { ok: true, as_of: clock.today(), strays: swept.removed, erased: erased.removed, settled: settled.data };
 }
 
-export const documentSweepCron = cronHandler(sweepDocumentFiles);
+export const documentSweepCron = cronHandler('document_sweep', sweepDocumentFiles);
