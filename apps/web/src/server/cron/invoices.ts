@@ -22,4 +22,4 @@ export async function runInvoices(client: CronClient, clock: Clock): Promise<Inv
   return { ok: true, as_of: asOf, drafted, issued, households: households.length };
 }
 
-export const invoicesCron = cronHandler(runInvoices);
+export const invoicesCron = cronHandler('invoices', runInvoices);
