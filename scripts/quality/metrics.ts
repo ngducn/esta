@@ -11,6 +11,7 @@ import {
   localIdSchemas,
   pageScrollWidths,
   putFetches,
+  slowTestSettings,
   sqlstateReads,
   testIdQueries,
   viewports,
@@ -336,6 +337,16 @@ export const METRICS: readonly Metric[] = [
     section: 'tests',
     scope: { include: TEST_FILE },
     find: testIdQueries,
+  }),
+  syntax({
+    id: 'slow-test-setting',
+    message: 'A unit test raises `testTimeout` or `hookTimeout`, sets `retry`, or gives one test a timeout above 15 s with no `-- reason` comment.',
+    home: {
+      use: 'Fix what is slow: warm a cold render or import in beforeAll, use fake timers, shrink the fixture. For work that is inherently heavy (a real PDF render, a real browser), give that one test a timeout of at most 15 s, or a longer one with a comment of the form "-- measured reason" on its line or the line above.',
+    },
+    section: 'unit-tests-that-wait',
+    scope: { include: /^(apps\/web|packages\/[^/]+|scripts)\/(.*\/)?([^/]+\.test\.[cm]?[jt]sx?|vitest\.config\.[cm]?[jt]s)$/, exclude: /\.(live|integration)\.test\./ },
+    find: slowTestSettings,
   }),
   syntax({
     id: 'long-function',

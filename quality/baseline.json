@@ -469,6 +469,10 @@
         "scripts/quality/smells.test.ts": 1
       }
     },
+    "slow-test-setting": {
+      "value": 0,
+      "files": {}
+    },
     "long-function": {
       "value": 13,
       "files": {

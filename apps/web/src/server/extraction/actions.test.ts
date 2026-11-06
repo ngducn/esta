@@ -255,7 +255,7 @@ describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
       const { extractionId } = await waitingExtraction('needs_review', certificate);
       expect(await saveConfirmed(extractionId, acceptAllOf(certificate)), id).toEqual({ ok: true, propertyId });
     }
-  }, 60_000);
+  }, 60_000); // -- loops over cases, each a few database round trips against the local stack (no stack here to time it)
 
   test('an ID that reads as one only once its spaces are squeezed is stored by its last four digits when read, and as typed when typed (D11)', async () => {
     asMember();
@@ -299,7 +299,7 @@ describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
       expect(await written(extractionId), value).toEqual({ certificates: 0, parcels: 0, structures: 0, parties });
       expect(await rest(`document_extractions?id=eq.${extractionId}&select=status`), value).toEqual([{ status: 'needs_review' }]);
     }
-  }, 30_000);
+  }, 30_000); // -- loops over cases, each a few database round trips against the local stack (no stack here to time it)
 
   test('a term typed as a range saves its end, month or full date', async () => {
     asMember();
@@ -309,7 +309,7 @@ describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
       const [parcel] = await rest<{ purposes: { term: string }[] }[]>(`parcels?id=eq.${rowId(extractionId, 'parcels[0]')}&select=purposes`);
       expect(parcel?.purposes.map((purpose) => purpose.term), typed).toEqual([term]);
     }
-  }, 30_000);
+  }, 30_000); // -- loops over cases, each a few database round trips against the local stack (no stack here to time it)
 
   test('a full ID Mẹ types on the review screen is saved as typed, in the rows, the review record and its history (D11)', async () => {
     asMember();
@@ -329,7 +329,7 @@ describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
       const row = path === 'issued_by' ? await rest(`certificates?id=eq.${rowId(extractionId, 'certificate')}&select=issued_by`) : await rest(`parcels?id=eq.${rowId(extractionId, 'parcels[0]')}&select=origin_text`);
       expect(row, name).toEqual([path === 'issued_by' ? { issued_by: typed } : { origin_text: typed }]);
     }
-  }, 60_000);
+  }, 60_000); // -- loops over cases, each a few database round trips against the local stack (no stack here to time it)
 
   test('accepting a normal utility bill copies its printed text into ocr_text for search (DOC-3)', async () => {
     asMember();

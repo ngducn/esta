@@ -6,17 +6,16 @@ import ts from 'typescript';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const webSrc = join(root, 'apps/web/src');
-const stylesheet = join(webSrc, 'app/globals.css');
 const CLASS_CALLS = new Set(['cn', 'clsx']);
 const MARKERS = /^(?:group|peer)(?:\/[\w-]+)?$/u;
 
 type Use = { readonly file: string; readonly line: number; readonly name: string };
 
-function* sourceFiles(dir: string, pattern = /\.(tsx|ts)$/u): Generator<string> {
+function* sourceFiles(dir: string, pattern = /\.(tsx|ts)$/u, src = webSrc): Generator<string> {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const path = join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (path !== join(webSrc, 'app/dev')) yield* sourceFiles(path, pattern);
+      if (path !== join(src, 'app/dev')) yield* sourceFiles(path, pattern, src);
     }
     else if (pattern.test(entry.name) && !/\.(test|spec|stories)\.tsx?$/u.test(entry.name)) yield path;
   }
@@ -72,7 +71,8 @@ function handWrittenClasses(css: string): Set<string> {
   return new Set([...css.matchAll(/\.([a-zA-Z_][\w-]*)/gu)].map((match) => match[1] ?? ''));
 }
 
-export async function unknownClasses(): Promise<Use[]> {
+/** `src` is the source folder to read, so a test can point it at a small tree instead of the whole app. */
+export async function unknownClasses(src = webSrc): Promise<Use[]> {
   const require = createRequire(join(root, 'apps/web/package.json'));
   const tailwind = require('tailwindcss') as {
     __unstable__loadDesignSystem: (
@@ -85,10 +85,11 @@ export async function unknownClasses(): Promise<Use[]> {
     const path = id === 'tailwindcss' ? join(tailwindDir, 'index.css') : id.startsWith('tailwindcss/') ? join(tailwindDir, `${id.slice('tailwindcss/'.length)}.css`) : resolve(base, id);
     return { path, base: dirname(path), content: readFileSync(path, 'utf8') };
   };
-  const css = readFileSync(stylesheet, 'utf8');
-  const design = await tailwind.__unstable__loadDesignSystem(css, { base: dirname(stylesheet), loadStylesheet });
-  const byHand = handWrittenClasses([...sourceFiles(webSrc, /\.css$/u)].map((file) => readFileSync(file, 'utf8')).join('\n'));
-  const uses = [...sourceFiles(webSrc)].flatMap((file) => classUses(relative(root, file), readFileSync(file, 'utf8')));
+  const sheet = join(src, 'app/globals.css');
+  const css = readFileSync(sheet, 'utf8');
+  const design = await tailwind.__unstable__loadDesignSystem(css, { base: dirname(sheet), loadStylesheet });
+  const byHand = handWrittenClasses([...sourceFiles(src, /\.css$/u, src)].map((file) => readFileSync(file, 'utf8')).join('\n'));
+  const uses = [...sourceFiles(src, undefined, src)].flatMap((file) => classUses(relative(root, file), readFileSync(file, 'utf8')));
   const names = [...new Set(uses.map((use) => use.name))];
   const produced = design.candidatesToCss(names);
   const unknown = new Set(names.filter((name, i) => produced[i] === null && !byHand.has(name)));
