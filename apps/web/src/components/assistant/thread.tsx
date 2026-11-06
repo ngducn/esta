@@ -147,7 +147,7 @@ function Question({ message, time, t, ask }: { message: ConversationMessage; tim
 }
 
 function Answer({ message, time, t, ask }: { message: ConversationMessage; time: string; t: Translate; ask: AskTranslate }) {
-  const labels = { streaming: ask('answering'), deferred: ask('deferred'), error: ask('answerFailed'), stalled: ask('stalled'), searching: ask('searching'), citation: t('citationLabel', { index: '{index}', source: '{source}' }), dated: t('market.source', { name: '{name}', date: '{date}' }), };
+  const labels = { streaming: ask('answering'), deferred: ask('deferred'), error: ask('answerFailed'), stalled: ask('stalled'), searching: ask('searching'), citation: t('citationLabel', { index: '{index}', source: '{source}' }), dated: t('market.source', { name: '{name}', date: '{date}' }), working: t('working', { working: '{working}' }) };
   const shownAnswer =
     message.status === 'streaming' ? (
       <AnswerStream id={message.id} conversationId={message.conversationId} initial={{ content: message.content, status: message.status, refs: message.refs, activity: message.activity ?? null }} labels={labels} />

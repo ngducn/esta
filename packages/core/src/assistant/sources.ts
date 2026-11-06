@@ -5,7 +5,12 @@ import { isOfficialHost } from '../research/official-sources';
 /** A page an answer quotes, as `messages.refs` holds it and the thread shows it as a numbered chip (P5-14). */
 export type SourceRef = { readonly kind: 'source'; readonly n: number; readonly url: string; readonly source_name: string; readonly published_on: IsoDate | null };
 
-export type AnswerRef = string | SourceRef;
+/** The working of a calculation the answer cites, which the thread shows as a `Cách tính` line under the text. */
+export type CalcRef = { readonly kind: 'calc'; readonly working: string };
+
+export type AnswerRef = string | SourceRef | CalcRef;
+
+export const isCalcRef = (ref: unknown): ref is CalcRef => typeof ref === 'object' && ref !== null && (ref as { kind?: unknown }).kind === 'calc' && typeof (ref as { working?: unknown }).working === 'string';
 
 export const isSourceRef = (ref: unknown): ref is SourceRef =>
   typeof ref === 'object' && ref !== null && (ref as { kind?: unknown }).kind === 'source' && typeof (ref as { url?: unknown }).url === 'string' && typeof (ref as { n?: unknown }).n === 'number' && typeof (ref as { source_name?: unknown }).source_name === 'string';

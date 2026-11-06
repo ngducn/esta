@@ -1259,6 +1259,7 @@
     },
     "sources": "Nguồn",
     "citationLabel": "Nguồn {index}: {source}. Mở trong thẻ mới",
+    "working": "Cách tính: {working}",
     "linkNotFoundTitle": "Không tìm thấy hồ sơ này",
     "linkNotFoundBody": "Đường dẫn có thể đã cũ, hoặc hồ sơ này không thuộc gia đình của bạn.",
     "linkNotFoundAction": "Về Trợ lý",

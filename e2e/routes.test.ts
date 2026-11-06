@@ -1,4 +1,4 @@
-import { globSync } from 'node:fs';
+import { globSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { describe, expect, test } from 'vitest';
 import { APP_ROUTES } from './routes.ts';
@@ -21,5 +21,22 @@ describe('APP_ROUTES', () => {
 
   test('opens each dynamic page on a concrete id', () => {
     for (const entry of APP_ROUTES) if (entry.path !== null) expect(entry.path, entry.id).not.toMatch(/\[|undefined/);
+  });
+});
+
+describe('the clock project', () => {
+  const root = join(import.meta.dirname, '..');
+  const config = readFileSync(join(root, 'playwright.config.ts'), 'utf8');
+  const listed = [...(/const sharedClock = \[([^\]]*)\]/.exec(config)?.[1] ?? '').matchAll(/'([^']+)'/g)].map(([, name = '']) => name);
+
+  test('lists every spec that moves the test clock or starts a worker at a date, so it runs one at a time', () => {
+    const users = globSync('*.spec.ts', { cwd: join(root, 'e2e') }).filter((file) => /\b(?:workerAt|setClock)\b/.test(readFileSync(join(root, 'e2e', file), 'utf8')));
+    expect(users.length).toBeGreaterThan(0);
+    expect(users.filter((file) => !listed.includes(file)).sort()).toEqual([]);
+  });
+
+  test('lists only specs that exist', () => {
+    expect(listed.length).toBeGreaterThan(0);
+    expect(listed.filter((file) => globSync(file, { cwd: join(root, 'e2e') }).length === 0)).toEqual([]);
   });
 });

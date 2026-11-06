@@ -111,6 +111,7 @@ const LOAN_LABELS: Record<Locale, { perYear: string; perMonth: string }> = {
 
 const loanPayment: Runner = ([principal, rate, months], locale) => {
   const n = numberOf(months);
+  if (rate?.kind === 'bp' && rate.per === 'month') return invalid('the rate is monthly: turn it into a yearly rate with monthly_rate_to_yearly first');
   if (amount(principal) <= 0n) return invalid('principal must be above zero');
   if (bpOf(rate) < 0n) return invalid('rate must not be negative');
   if (n < 1n || n > BigInt(MAX_LOAN_MONTHS)) return invalid(`months must be 1 to ${MAX_LOAN_MONTHS}`);
@@ -120,6 +121,15 @@ const loanPayment: Runner = ([principal, rate, months], locale) => {
     (r) => `${shown(principal, locale)}, ${shown(rate, locale)}${labels.perYear}, ${shown(months, locale)} → ${r}${labels.perMonth}`,
     locale,
   );
+};
+
+/** `[app rule]` A monthly rate is read as twelve times itself a year, the nominal rate a monthly annuity uses. */
+const monthlyRateToYearly: Runner = ([rate], locale) => {
+  if (rate?.kind !== 'bp' || rate.per !== 'month') return invalid('a rate written per month required');
+  if (rate.value < 0) return invalid('rate must not be negative');
+  const made = toBp(BigInt(rate.value) * 12n);
+  if (!made.ok) return made;
+  return { ok: true, value: { value: made.value, working: `${shown(rate, locale)} × 12 = ${displayTyped(made.value, locale)}${LOAN_LABELS[locale].perYear}` } };
 };
 
 const daysBetweenOp: Runner = ([from, to], locale) => {
@@ -142,5 +152,6 @@ export const CALC_OPS: readonly CalcOp[] = [
   entry('apply_bp', ['vnd', 'bp'], 'vnd', applyBp),
   entry('change_bp', ['vnd', 'vnd'], 'bp', changeBp),
   entry('loan_payment', ['vnd', 'bp', 'months'], 'vnd', loanPayment),
+  entry('monthly_rate_to_yearly', ['bp'], 'bp', monthlyRateToYearly),
   entry('days_between', ['date', 'date'], 'count', daysBetweenOp),
 ];

@@ -2,6 +2,7 @@ import { officialSourcesText } from '@esta/core/research';
 import { repairMessage, type NoteViolation } from '@esta/core/guard';
 import type { IsoDate } from '@esta/core/date';
 import type { Locale } from '@esta/core/format';
+import type { TypedRecord } from '../tools/typed-numbers';
 import type { LoadedTopic } from '../tools/topic-reads';
 import { PUBLISHED_LABEL } from '@esta/core/parse/page-dates';
 import { replyLanguage } from './language';
@@ -29,6 +30,24 @@ function conversationSoFar(turns: readonly AskedTurn[]): string[] {
   ];
 }
 
+const OTHER_PERIOD_RATE =
+  'Her message has a rate for a period other than a year or a month. Esta reads loan rates per year, so do not call a number missing and do not convert it: say that Esta reads loan rates per year and ask her for the yearly rate.';
+const MONTHLY_RATE =
+  'A rate she wrote per month is listed with /tháng. Never use it as a loan rate directly: first call calculate monthly_rate_to_yearly on it, then use that result as the rate of loan_payment, so both workings show.';
+const isMonthly = ({ value_typed }: TypedRecord): boolean => typeof value_typed === 'object' && value_typed !== null && (value_typed as { per?: unknown }).per === 'month';
+
+function typedSection(typed: readonly TypedRecord[] | undefined, otherPeriodRate = false): string[] {
+  const note = otherPeriodRate ? ['', OTHER_PERIOD_RATE] : [];
+  if (typed === undefined || typed.length === 0) return note;
+  return [
+    ...note,
+    '',
+    `Numbers the family member wrote in this conversation, each a record of this turn. Take one as an operand of calculate, such as "${typed[0]?.handle}.value_display", or cite it as {{${typed[0]?.handle}.value_display}}; never write one yourself:`,
+    ...typed.map(({ handle, value_display, typed_text }) => `${handle}: ${value_display} (written "${typed_text}")`),
+    ...(typed.some(isMonthly) ? [MONTHLY_RATE] : []),
+  ];
+}
+
 function topicSection(topic: LoadedTopic | null | undefined): string[] {
   if (topic == null) return [];
   const intro =
@@ -48,7 +67,7 @@ function topicSection(topic: LoadedTopic | null | undefined): string[] {
 }
 
 export function askPrompt(
-  context: Omit<Parameters<typeof systemPrompt>[0], 'language' | 'scope'> & { readonly question: string; readonly labels: readonly string[]; readonly earlier?: readonly AskedTurn[]; readonly topic?: LoadedTopic | null },
+  context: Omit<Parameters<typeof systemPrompt>[0], 'language' | 'scope'> & { readonly question: string; readonly labels: readonly string[]; readonly earlier?: readonly AskedTurn[]; readonly topic?: LoadedTopic | null; readonly typed?: readonly TypedRecord[]; readonly otherPeriodRate?: boolean },
 ): string {
   return [
     systemPrompt({ ...context, language: 'question', scope: 'open' }),
@@ -59,6 +78,7 @@ export function askPrompt(
     '- For advice or an explanation, such as renting by the year or how a procedure works: answer in plain words. Use no number unless a tool field holds it.',
     '- When you recommend something about their records, such as renewing a lease: give as the reason only what the tool fields show, and never a reason that a field you cite contradicts. A tenant who paid most bills late does not pay regularly, even with nothing overdue now.',
     `- When they need a figure no tool returns, such as a market price or a rate, or ask about law, tax or procedure: look it up. Search with WebSearch in general words, never a name, nickname, street, phone or amount of the family and no number but a year; this turn may make 4 searches and 4 fetches. Fetch one page a search returned with WebFetch; in its prompt ask for the article's own date line copied exactly on one line that starts "${PUBLISHED_LABEL}:", and for every figure copied word for word. Then call quote_page with the page's url and each figure with the words around it, at least three words, copied exactly. Write a figure from a page only as {{fN.quote_n_label}} of that record, and name the page as {{fN.source_name}}. For law, tax or procedure use an official page (${officialSourcesText()}). Esta lists each page you quote as a numbered source under the reply. If you find no page, say plainly that you found no source; never estimate.`,
+    `- When they ask what a change would bring, or for a total, a share, a percent change, a loan payment or the days between two dates: never work it out yourself. Call calculate with operands that are fields of records, such as "f3.rent_display" or a number they wrote (listed below), and write the figure as {{fN.result_display}} of its result; Esta shows the working under your reply. A rate from a page you quoted is "fN.quote_n_value_display". If a number the question needs is in no tool and they did not write it, say which number is missing and ask them to type it; write no figure.`,
     '',
     'Rules for the reply:',
     '1. Write Markdown: one to four short sentences, a short list, or a table when the reply lists several records with the same fields. Use paragraphs, lists, tables, bold and links only.',
@@ -69,6 +89,7 @@ export function askPrompt(
     '6. Reply in the language the message is written in, whatever the language of these rules: an English message gets an English reply.',
     ...conversationSoFar(context.earlier ?? []),
     ...topicSection(context.topic),
+    ...typedSection(context.typed, context.otherPeriodRate),
     '',
     ...replyLanguageLine(context.question, context.locale, context.labels),
     'Message:',
@@ -77,10 +98,11 @@ export function askPrompt(
 }
 
 /** A follow-up continues the session of the conversation's last answer, so its rules and context already hold. */
-export function askFollowUpPrompt({ locale, today, timezone, question, labels, firstHandle }: { readonly locale: Locale; readonly today: IsoDate; readonly timezone: string; readonly question: string; readonly labels: readonly string[]; readonly firstHandle: number }): string {
+export function askFollowUpPrompt({ locale, today, timezone, question, labels, firstHandle, typed, otherPeriodRate }: { readonly locale: Locale; readonly today: IsoDate; readonly timezone: string; readonly question: string; readonly labels: readonly string[]; readonly firstHandle: number; readonly typed?: readonly TypedRecord[]; readonly otherPeriodRate?: boolean }): string {
   return [
     `Today is ${today} in ${timezone}. The family member writes again in the conversation so far. Reply with the rules of your first task.`,
-    `The handles and placeholders of your earlier replies no longer hold. Call the tools again for every record and figure this reply writes, and fetch a web page again and quote it again with quote_page, since no page from an earlier turn holds; this turn's handles start at f${firstHandle}.`,
+    `The handles and placeholders of your earlier replies no longer hold. Call the tools, and calculate, again for every record and figure this reply writes, and fetch a web page again and quote it again with quote_page, since no page from an earlier turn holds; this turn's handles start at f${firstHandle}.`,
+    ...typedSection(typed, otherPeriodRate),
     '',
     ...replyLanguageLine(question, locale, labels),
     'Message:',
