@@ -115,6 +115,46 @@ begin
 end;
 $$;
 
+-- A row some members must not read is hidden from them everywhere its content shows up (Q-16). A table that stores a
+-- copy of another table's rows, such as the messages of a conversation, is listed here with the column that points back;
+-- a new copy is added here so every test that proves a hidden row covers it.
+create function tests.content_copies()
+returns table (source_table text, copy_table text, copy_column text)
+language sql
+immutable
+as $$
+  values
+    ('conversations', 'messages', 'conversation_id'),
+    ('agent_items', 'notifications', 'agent_item_id'),
+    ('agent_jobs', 'agent_runs', 'job_id'),
+    ('statement_imports', 'statement_rows', 'import_id');
+$$;
+
+-- Proves a row exists and has history, then acts as the reader and proves the row, its audit_log history and every
+-- registered copy are invisible. Call it as the owner (after reset role); it returns 4 results plus one per copy.
+create function tests.hidden_everywhere(p_table regclass, p_row_id uuid, p_reader text)
+returns setof text
+language plpgsql
+as $$
+declare
+  v_name text := (select relname::text from pg_class where oid = p_table);
+  v_copy record;
+begin
+  return next isnt_empty(format('select 1 from %s where id = %L', p_table, p_row_id), format('%s: the row exists', v_name));
+  return next isnt_empty(format('select 1 from public.audit_log where table_name = %L and row_id = %L', v_name, p_row_id), format('%s: the row has history', v_name));
+  perform tests.act_as(p_reader);
+  return next is_empty(format('select 1 from %s where id = %L', p_table, p_row_id), format('%s: %s cannot read the row', v_name, p_reader));
+  return next is_empty(format('select 1 from public.audit_log where table_name = %L and row_id = %L', v_name, p_row_id), format('%s: %s cannot read its audit_log history', v_name, p_reader));
+  for v_copy in select * from tests.content_copies() c where c.source_table = v_name loop
+    return next is_empty(
+      format('select 1 from public.%I where %I = %L', v_copy.copy_table, v_copy.copy_column, p_row_id),
+      format('%s: %s cannot read the copy in %s', v_name, p_reader, v_copy.copy_table));
+  end loop;
+  reset role;
+  perform tests.clear_request();
+end;
+$$;
+
 -- ask_question is the inner step of ask_in_thread, which picks the conversation and the date. A test that needs its own
 -- conversation id or date calls it as the member, the way ask_in_thread does.
 create function tests.ask_question(p_household_id uuid, p_conversation_id uuid, p_question_id uuid, p_question text, p_deep boolean, p_as_of timestamptz)

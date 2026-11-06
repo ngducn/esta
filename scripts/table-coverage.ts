@@ -14,6 +14,31 @@ export function coverageProblems(tables: readonly PublicTable[], files: readonly
   ]);
 }
 
+/** A table some members cannot read must have a test that proves its rows, history and copies are hidden from them (Q-16). */
+export function hiddenRowProblems(privateTables: readonly string[], files: readonly TestFile[]): string[] {
+  return privateTables
+    .filter((name) => !files.some(({ text }) => new RegExp(`hidden_everywhere\\(\\s*'(?:public\\.)?${name}'`).test(text)))
+    .map((name) => `public.${name} limits who may read its rows, and no pgTAP file calls tests.hidden_everywhere('${name}', ...)`);
+}
+
+const HOUSEHOLD_WIDE = ["private.is_member(household_id, 'viewer'::member_role)", "private.is_member(id, 'viewer'::member_role)", 'true'];
+
+/** The public tables whose select policies are narrower than household-wide (or reference data open to all), as `tests.private_tables()` reads them. */
+export function privateTables(workdir: string): string[] {
+  const wide = HOUSEHOLD_WIDE.map((expr) => `'${expr.replaceAll("'", "''")}'`).join(', ');
+  const policy = (permissive: boolean, narrow: boolean) =>
+    `exists (select 1 from pg_policy p where p.polrelid = c.oid and p.polcmd in ('r', '*') and ${permissive ? 'p.polpermissive' : 'not p.polpermissive'}
+       and pg_get_expr(p.polqual, p.polrelid) ${narrow ? 'not in' : 'in'} (${wide}))`;
+  return query<{ name: string }>(
+    workdir,
+    `select c.relname as name
+     from pg_class c join pg_namespace n on n.oid = c.relnamespace
+     where n.nspname = 'public' and c.relkind in ('r', 'p') and c.relname <> 'audit_log'
+       and ((${policy(true, true)} and not ${policy(true, false)}) or ${policy(false, true)})
+     order by 1`,
+  ).map(({ name }) => name);
+}
+
 export function readTestFiles(dir: string): TestFile[] {
   return readdirSync(dir)
     .filter((name) => name.endsWith('.sql'))
@@ -32,7 +57,8 @@ export function publicTables(workdir: string): PublicTable[] {
 
 export function reportTableCoverage(repoRoot: string, slot: number): boolean {
   const tables = publicTables(slotWorkdir(repoRoot, slot));
-  const problems = coverageProblems(tables, readTestFiles(join(repoRoot, 'supabase', 'tests')));
+  const files = readTestFiles(join(repoRoot, 'supabase', 'tests'));
+  const problems = [...coverageProblems(tables, files), ...hiddenRowProblems(privateTables(slotWorkdir(repoRoot, slot)), files)];
   for (const problem of problems) console.error(problem);
   if (problems.length === 0) console.log(`Table coverage: all ${tables.length} public tables have row level security and a pgTAP file.`);
   return problems.length === 0;
