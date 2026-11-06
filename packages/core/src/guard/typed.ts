@@ -26,10 +26,22 @@ const DATE_IN_WORDS = new RegExp(
   String.raw`${NOT_WORD_BEFORE}ngày\s+(\d{1,2})\s+tháng\s+(\d{1,2})\s+năm\s+(\d{4})${NOT_WORD_AFTER}`,
   'giu',
 );
+/** The only words that make a percent a yearly rate; any other word, before or after, or none, leaves it unread [app rule]. */
+const YEAR_AFTER = String.raw`(?:(?:\s*\/\s*|\s+)(?:(?:mỗi|moi|một|mot|hàng|hang|hằng|trên|tren|theo|a|per)\s+)?(?:năm|nam|year)|\s*\/\s*year|\s+p\.a\.)`;
 const PERCENT = new RegExp(
-  String.raw`${NOT_WORD_BEFORE}(\d{1,3}(?:[.,]\d{1,2})?)\s*(?:%|phần trăm)(?:(?:\s*\/\s*|\s+(?:mỗi|moi|một|mot)\s+|\s+)(năm|nam|tháng|thang))?${NOT_WORD_AFTER}`,
+  String.raw`${NOT_WORD_BEFORE}(\d{1,3}(?:[.,]\d{1,2})?)\s*(?:%|phần trăm)(${YEAR_AFTER})?${NOT_WORD_AFTER}`,
   'giu',
 );
+const YEAR_BEFORE = /(?<![\p{L}])(?:năm|nam|year|yearly|annual)\s*(?:là|:|=)?\s*$/iu;
+const LETTER_NEXT = /^\s*\p{L}/u;
+const TERM_NEXT = /^\s+trong\s+\d+\s+(?:năm|nam)(?![\p{L}\p{N}])/iu;
+
+/** A percent is a yearly rate only beside a year marker: after it, before it with no word after it, or before a loan term of years. */
+function isYearlyRate(m: RegExpExecArray): boolean {
+  const after = m.input.slice(m.index + m[0].length);
+  if (m[2] !== undefined || TERM_NEXT.test(after)) return true;
+  return !LETTER_NEXT.test(after) && YEAR_BEFORE.test(m.input.slice(0, m.index));
+}
 const MONEY_CHAIN = new RegExp(
   String.raw`${NOT_WORD_BEFORE}${NUMBER}\s*${MONEY_UNIT}${UNIT_END}(?:\s*${NUMBER}\s*${MONEY_UNIT}${UNIT_END})*(?:\s*\d{1,3}(?![\p{L}\p{N}]|[.,]\d)(?!\s*${NOT_MONEY_UNIT}(?!\p{L})|\s*${COUNT_UNITS}${NOT_WORD_AFTER})|\s+rưỡi${NOT_WORD_AFTER})?`,
   'giu',
@@ -68,6 +80,13 @@ function isLabel(before: string): boolean {
   return found !== null && found[1] === undefined;
 }
 
+const RATE_WORD = /(?<![\p{L}])(?:lãi|interest|rate|vay|loan)(?![\p{L}])/iu;
+
+/** True when the message talks of a rate and writes a percent that is not a yearly one (`0,8% một tháng`), which Esta cannot take as a loan rate. */
+export function hasOtherPeriodRate(text: string): boolean {
+  return RATE_WORD.test(text) && [...text.matchAll(PERCENT)].some((m) => !isYearlyRate(m as RegExpExecArray));
+}
+
 const vndOf = (text: string): TypedValue | null => {
   const parsed = parseVndInput(text);
   return parsed.ok && parsed.value > 0 ? { kind: 'vnd', value: parsed.value } : null;
@@ -83,7 +102,7 @@ export function extractTypedNumbers(text: string, locale: Locale = 'vi'): TypedN
   const passes: Array<[RegExp, (m: RegExpExecArray) => TypedValue | null]> = [
     [DATE, (m) => { const d = parseDateInput(m[0]); return d.ok ? { kind: 'date', value: d.value } : null; }],
     [PERCENT, (m) => {
-      if (m[2] !== undefined && /^th/i.test(m[2])) return null;
+      if (!isYearlyRate(m)) return null;
       const bp = parsePercentBps(m[1] ?? '');
       return bp.ok ? { kind: 'bp', value: bp.value } : null;
     }],

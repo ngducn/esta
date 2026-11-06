@@ -33,6 +33,7 @@ describe('isAnswerState', () => {
 describe('the guards mirrored from core (L7)', () => {
   const samples: unknown[] = [
     { kind: 'calc', working: '1.500.000 ₫ × 12 = 18.000.000 ₫' },
+    { kind: 'calc', working: '' },
     { kind: 'calc', working: 3 },
     { kind: 'calc' },
     { kind: 'source', n: 1, url: 'https://demo.example/a', source_name: 'demo.example', published_on: null },

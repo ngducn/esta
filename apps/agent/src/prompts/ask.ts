@@ -30,9 +30,14 @@ function conversationSoFar(turns: readonly AskedTurn[]): string[] {
   ];
 }
 
-function typedSection(typed: readonly TypedRecord[] | undefined): string[] {
-  if (typed === undefined || typed.length === 0) return [];
+const OTHER_PERIOD_RATE =
+  'Her message has a rate for a period other than a year. Esta reads loan rates per year, so do not call a number missing and do not convert it: say that Esta reads loan rates per year and ask her for the yearly rate.';
+
+function typedSection(typed: readonly TypedRecord[] | undefined, otherPeriodRate = false): string[] {
+  const note = otherPeriodRate ? ['', OTHER_PERIOD_RATE] : [];
+  if (typed === undefined || typed.length === 0) return note;
   return [
+    ...note,
     '',
     `Numbers the family member wrote in this conversation, each a record of this turn. Take one as an operand of calculate, such as "${typed[0]?.handle}.value_display", or cite it as {{${typed[0]?.handle}.value_display}}; never write one yourself:`,
     ...typed.map(({ handle, value_display, typed_text }) => `${handle}: ${value_display} (written "${typed_text}")`),
@@ -58,7 +63,7 @@ function topicSection(topic: LoadedTopic | null | undefined): string[] {
 }
 
 export function askPrompt(
-  context: Omit<Parameters<typeof systemPrompt>[0], 'language' | 'scope'> & { readonly question: string; readonly labels: readonly string[]; readonly earlier?: readonly AskedTurn[]; readonly topic?: LoadedTopic | null; readonly typed?: readonly TypedRecord[] },
+  context: Omit<Parameters<typeof systemPrompt>[0], 'language' | 'scope'> & { readonly question: string; readonly labels: readonly string[]; readonly earlier?: readonly AskedTurn[]; readonly topic?: LoadedTopic | null; readonly typed?: readonly TypedRecord[]; readonly otherPeriodRate?: boolean },
 ): string {
   return [
     systemPrompt({ ...context, language: 'question', scope: 'open' }),
@@ -80,7 +85,7 @@ export function askPrompt(
     '6. Reply in the language the message is written in, whatever the language of these rules: an English message gets an English reply.',
     ...conversationSoFar(context.earlier ?? []),
     ...topicSection(context.topic),
-    ...typedSection(context.typed),
+    ...typedSection(context.typed, context.otherPeriodRate),
     '',
     ...replyLanguageLine(context.question, context.locale, context.labels),
     'Message:',
@@ -89,11 +94,11 @@ export function askPrompt(
 }
 
 /** A follow-up continues the session of the conversation's last answer, so its rules and context already hold. */
-export function askFollowUpPrompt({ locale, today, timezone, question, labels, firstHandle, typed }: { readonly locale: Locale; readonly today: IsoDate; readonly timezone: string; readonly question: string; readonly labels: readonly string[]; readonly firstHandle: number; readonly typed?: readonly TypedRecord[] }): string {
+export function askFollowUpPrompt({ locale, today, timezone, question, labels, firstHandle, typed, otherPeriodRate }: { readonly locale: Locale; readonly today: IsoDate; readonly timezone: string; readonly question: string; readonly labels: readonly string[]; readonly firstHandle: number; readonly typed?: readonly TypedRecord[]; readonly otherPeriodRate?: boolean }): string {
   return [
     `Today is ${today} in ${timezone}. The family member writes again in the conversation so far. Reply with the rules of your first task.`,
     `The handles and placeholders of your earlier replies no longer hold. Call the tools, and calculate, again for every record and figure this reply writes, and fetch a web page again and quote it again with quote_page, since no page from an earlier turn holds; this turn's handles start at f${firstHandle}.`,
-    ...typedSection(typed),
+    ...typedSection(typed, otherPeriodRate),
     '',
     ...replyLanguageLine(question, locale, labels),
     'Message:',
