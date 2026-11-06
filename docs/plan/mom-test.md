@@ -7,7 +7,7 @@ SPEC §10.1, the human gate after Phase 3 (P3-17), repeated on the final build i
 ## Before you hand over the phone
 
 1. On the Mac, in the repo: `pnpm db:reset` for the full seed, then `pnpm clock:set 2026-10-07T09:00:00+07:00` so the app's today is SPEC §9.3's day (Phòng 5 of Dãy trọ Dĩ An is 12 days overdue and Phòng 3's October bill is not due yet).
-2. Start `pnpm dev:lan` and open the printed `https://<lan>:3443` address on your phone. Trust the dev CA first if you have not (the steps are in `docs/plan/STATUS.md`, Waiting for Ryan).
+2. Start `pnpm dev:lan` (for the final build, `pnpm dev:lan --prod`, which builds the app with the LAN address and serves the build) and open the printed `https://<lan>:3443` address on your phone. Trust the dev CA first if you have not (the steps are in `docs/plan/STATUS.md`, Waiting for Ryan).
 3. Sign in as Mẹ yourself: `me@demo.esta.test` with the seed's password `Esta.Demo.2026`, or the 6-digit code from the slot's Inbucket mailbox. Leave the phone on Tổng quan, in Vietnamese at the default text size.
 4. Have a stopwatch ready. Start it when you finish reading a task aloud; stop it when she shows you the result. Do not point, hint or touch the screen. If she asks, say "Mẹ cứ làm như bình thường".
 

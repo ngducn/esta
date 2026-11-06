@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-for (const method of ['post', 'delete'] as const) {
+for (const method of ['get', 'post', 'delete'] as const) {
   test(`${method.toUpperCase()} /api/test/clock is 404 with the secret when ESTA_ENV=production`, async ({ request }) => {
     const response = await request[method]('/api/test/clock', {
       headers: { authorization: 'Bearer e2e-cron-secret' },
