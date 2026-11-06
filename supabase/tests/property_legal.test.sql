@@ -27,7 +27,7 @@ create temporary view legal_audit as
   select * from public.audit_log where table_name in ('certificates', 'parcels', 'structures') order by id;
 grant select on legal_audit to authenticated;
 
-delete from public.test_clock;
+delete from public.test_clock where for_household is null;
 insert into public.test_clock (frozen_now) values ('2026-10-07T09:00:00+07:00');
 insert into private.local_stack default values on conflict do nothing;
 
