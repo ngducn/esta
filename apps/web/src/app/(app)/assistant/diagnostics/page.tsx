@@ -76,7 +76,7 @@ export default async function DiagnosticsPage({ searchParams }: { searchParams: 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3">
-        <Link href="/assistant" className="w-fit text-body font-medium text-text-secondary underline underline-offset-4 hover:decoration-2">
+        <Link href="/assistant" className="inline-flex min-h-touch w-fit items-center text-body font-medium text-text-secondary underline underline-offset-4 hover:decoration-2">
           {t('back')}
         </Link>
         <h1 className="text-title-2 break-words lg:text-title-1">{t('title')}</h1>

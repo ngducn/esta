@@ -65,7 +65,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
           />
         )}
       </div>
-      <section aria-labelledby="report-title" data-testid="report" data-report={kind} className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
+      <section data-testid="report" data-report={kind} className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5 shadow-xs sm:p-6">
         <div className="flex flex-col gap-1">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <h2 id="report-title" className="text-title-3 text-text">

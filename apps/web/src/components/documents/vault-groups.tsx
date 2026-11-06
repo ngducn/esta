@@ -52,7 +52,7 @@ export function GroupByToggle({ by, onChange }: { by: GroupBy; onChange: (by: Gr
           data-testid={`group-by-${option}`}
           onClick={() => onChange(option)}
           className={cn(
-            'inline-flex min-h-9 items-center rounded-sm px-3 text-label font-medium whitespace-nowrap transition-colors duration-(--duration-fast) ease-standard pointer-coarse:min-h-touch',
+            'inline-flex min-h-9 items-center rounded-sm max-md:min-h-touch px-3 text-label font-medium whitespace-nowrap transition-colors duration-(--duration-fast) ease-standard pointer-coarse:min-h-touch',
             by === option ? 'bg-segment-selected text-text shadow-xs ring-1 ring-border' : 'text-text-secondary hover:text-text',
           )}
         >

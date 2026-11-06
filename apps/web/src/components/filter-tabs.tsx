@@ -15,7 +15,7 @@ export function FilterTabs({ label, tabs, testId, ariaCurrent = 'true' }: { labe
           aria-current={tab.current ? ariaCurrent : undefined}
           data-tab={tab.key}
           className={cn(
-            'inline-flex min-h-9 items-center gap-1.5 rounded-sm px-3 text-label font-medium whitespace-nowrap transition-colors duration-(--duration-fast) ease-standard pointer-coarse:min-h-touch',
+            'inline-flex min-h-9 items-center gap-1.5 rounded-sm max-md:min-h-touch px-3 text-label font-medium whitespace-nowrap transition-colors duration-(--duration-fast) ease-standard pointer-coarse:min-h-touch',
             tab.current ? 'bg-segment-selected text-text shadow-xs ring-1 ring-border' : 'text-text-secondary hover:text-text',
           )}
         >
