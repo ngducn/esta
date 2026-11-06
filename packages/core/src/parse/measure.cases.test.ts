@@ -18,6 +18,7 @@ describe('the measure parser on generated text', () => {
         const text = `0${String(head).padStart(2, '0').slice(1)}${mark}${String(tail).padStart(3, '0')}`;
         const read = parseMeasureInput(text, 'area');
         if (read.ok) expect(read.value).toBeLessThan(1);
+        if (mark !== ',') expect(read).toEqual({ ok: false, reason: 'leading_zero' });
       }),
       { seed: 20261007 },
     );

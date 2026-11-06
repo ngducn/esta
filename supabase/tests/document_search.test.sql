@@ -1,7 +1,7 @@
 begin;
 \ir _harness.psql
 
-select plan(38);
+select plan(45);
 
 select tests.create_household('a') as a, tests.create_household('b') as b \gset
 
@@ -20,6 +20,9 @@ from (values
   ('00000000-0000-4000-8000-00000000d0a4', :'a', '00000000-0000-4000-8000-0000000000a2', 'utility_bill', 'Hóa đơn điện tháng 9', 'normal', '{}',
    'TỔNG CÔNG TY ĐIỆN LỰC MIỀN NAM. Mã khách hàng PE0123456789. Tiền điện 1.234.000 đ', null),
   ('00000000-0000-4000-8000-00000000d0a5', :'a', '00000000-0000-4000-8000-0000000000a1', 'other', 'Hợp đồng đặt cọc Bảo Lộc', 'normal', '{}', null, '2026-10-01T09:00:00+07:00'),
+  ('00000000-0000-4000-8000-00000000d0a6', :'a', '00000000-0000-4000-8000-0000000000a2', 'other', 'HĐ-12/2024', 'normal', '{}', null, null),
+  ('00000000-0000-4000-8000-00000000d0a7', :'a', '00000000-0000-4000-8000-0000000000a2', 'other', 'so.do.pdf', 'normal', '{}',
+   'Địa chỉ Q.7, TP.HCM, ngày 07/10/2026, phí 1.234.000 đồng', null),
   ('00000000-0000-4000-8000-00000000d0b1', :'b', '00000000-0000-4000-8000-0000000000b1', 'certificate', 'Sổ hồng Bảo Lộc B', 'sensitive', '{}', null, null)
 ) as seed (id, household, property, category, title, sensitivity, tags, ocr_text, deleted_at);
 
@@ -46,6 +49,21 @@ select is((select count(*)::int from public.search_documents('ho')), 3,
   'a short word matches as a prefix (hồng, hợp, hóa)');
 select is_empty($$ select 1 from public.search_documents('') $$, 'an empty query returns nothing');
 select is_empty($$ select 1 from public.search_documents(' ,;- ') $$, 'punctuation alone returns nothing');
+
+select results_eq($$ select title from public.search_documents('HĐ-12/2024') $$, $$ values ('HĐ-12/2024') $$,
+  'a title typed as it is written, with a dash and a slash, finds its document (#151)');
+select results_eq($$ select title from public.search_documents('12/2024') $$, $$ values ('HĐ-12/2024') $$,
+  'the number and year of a title with a slash find it (#151)');
+select results_eq($$ select title from public.search_documents('so.do.pdf') $$, $$ values ('so.do.pdf') $$,
+  'a file name with dots finds its document (#151)');
+select results_eq($$ select title from public.search_documents('Q.7') $$, $$ values ('so.do.pdf') $$,
+  'Q.7 finds the document whose read text holds Q.7 (#151)');
+select results_eq($$ select title from public.search_documents('TP.HCM') $$, $$ values ('so.do.pdf') $$,
+  'TP.HCM finds the document whose read text holds it (#151)');
+select results_eq($$ select title from public.search_documents('07/10/2026') $$, $$ values ('so.do.pdf') $$,
+  'a date typed with slashes finds the document whose read text holds it (#151)');
+select set_eq($$ select title from public.search_documents('1.234.000') $$, $$ values ('so.do.pdf'), ('Hóa đơn điện tháng 9') $$,
+  'an amount typed with dots finds the documents whose read text holds it (#151)');
 
 reset role;
 select tests.act_as('member.b@test.esta.test');

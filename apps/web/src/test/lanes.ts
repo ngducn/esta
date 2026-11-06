@@ -14,6 +14,7 @@ export const INTEGRATION_LANES: Readonly<Record<string, readonly number[] | 'eve
   'src/server/actions/statements.integration.test.ts': [8],
   'src/server/actions/meters.integration.test.ts': [9],
   'src/server/cron/cron.integration.test.ts': 'every-household',
+  'src/server/documents/documents.integration.test.ts': 'every-household',
 };
 
 export const runsAlone = Object.keys(INTEGRATION_LANES).filter((file) => INTEGRATION_LANES[file] === 'every-household');

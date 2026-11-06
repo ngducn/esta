@@ -1,6 +1,6 @@
 'use client';
 
-import { acceptsMime, DOCUMENT_CATEGORY_IDS, isDocumentCategory, type DocumentCategory } from '@esta/core/documents';
+import { acceptsMime, DOCUMENT_CATEGORIES, DOCUMENT_CATEGORY_IDS, isDocumentCategory, type DocumentCategory } from '@esta/core/documents';
 import { formatDate } from '@esta/core/format';
 import { parseOptionalDateInput } from '@esta/core/parse/date-input';
 import { useLocale, useTranslations } from 'next-intl';
@@ -46,6 +46,7 @@ export default function DocumentEditSheet({
   const { pending, run } = useAction();
   const titleMissing = title.trim() === '';
   const wrongCategory = !acceptsMime(category, document.mime);
+  const dropsReadText = document.hasReadText && DOCUMENT_CATEGORIES[category].sensitivity === 'sensitive';
 
   const save = () => {
     if (titleMissing || wrongCategory) return;
@@ -112,6 +113,11 @@ export default function DocumentEditSheet({
         {wrongCategory ? (
           <p role="alert" className="text-body-sm text-danger-text">
             {t('categoryMismatch')}
+          </p>
+        ) : null}
+        {dropsReadText ? (
+          <p data-testid="edit-drops-text" className="text-body-sm text-text-secondary">
+            {t('dropsReadText')}
           </p>
         ) : null}
       </div>
