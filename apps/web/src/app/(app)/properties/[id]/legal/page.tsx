@@ -14,6 +14,7 @@ import { StructureList } from '@/components/legal/structure-list';
 import { PropertyIntl } from '@/components/properties/property-intl';
 import { SummaryStrip, type Figure } from '@/components/summary-strip';
 import { buttonVariants } from '@/components/ui/button-variants';
+import { readRequestClock } from '@/server/clock';
 import { requireMember } from '@/server/member';
 import { loadPropertyDetail } from '@/server/properties/detail';
 import type { LegalKind } from '@esta/ops';
@@ -64,8 +65,9 @@ export default async function PropertyLegalPage({ params }: { params: Promise<{ 
   const { id } = await params;
   const property = await loadPropertyDetail(id);
   if (property === null) notFound();
-  const [member, legal, shares, parties, codes, t, owners, locale, messages] = await Promise.all([
+  const [member, clock, legal, shares, parties, codes, t, owners, locale, messages] = await Promise.all([
     requireMember(),
+    readRequestClock(),
     loadPropertyLegal(id),
     loadOwnership(id),
     loadParties(),
@@ -116,7 +118,15 @@ export default async function PropertyLegalPage({ params }: { params: Promise<{ 
             ) : (
               <ul className="flex flex-col gap-3">
                 {legal.certificates.map((certificate) => (
-                  <CertificateCard key={certificate.id} propertyId={id} certificate={certificate} parties={partyById} canEdit={canEdit} />
+                  <CertificateCard
+                    key={certificate.id}
+                    propertyId={id}
+                    certificate={certificate}
+                    parcels={legal.parcels}
+                    today={clock.today()}
+                    parties={partyById}
+                    canEdit={canEdit}
+                  />
                 ))}
               </ul>
             )}
@@ -147,7 +157,7 @@ export default async function PropertyLegalPage({ params }: { params: Promise<{ 
               {legal.parcels.length === 0 ? (
                 <RegistryEmptyState surface="propertyLegalParcels" ctx={{ canWrite: canEdit, propertyId: id }} icon={LandPlot} />
               ) : (
-                <ParcelList propertyId={id} parcels={legal.parcels} codes={codeByCode} canEdit={canEdit} />
+                <ParcelList propertyId={id} parcels={legal.parcels} codes={codeByCode} today={clock.today()} canEdit={canEdit} />
               )}
             </Section>
             <Section id="legal-structures" title={t('structuresTitle')} action={legal.structures.length === 0 ? null : addStructure}>
