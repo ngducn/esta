@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { isoDate as d } from '../date/iso-date';
 import { vnd } from '../money/vnd';
 import { schedulePeriods } from '../schedule/fixtures';
-import { amendmentStarts, renewalRent, renewalStart } from './changes';
+import { amendmentStarts, billedThrough, renewalRent, renewalStart } from './changes';
 
 describe('renewalRent (SPEC §9.4 seed 7)', () => {
   it('raises the Thủ Đức rent of 9.000.000 ₫ by 5%: 9.450.000 ₫ rounds half up to 9.500.000 ₫', () => {
@@ -39,5 +39,17 @@ describe('amendmentStarts (LSE-2)', () => {
   it('offers nothing before a paid-through date in the future', () => {
     const q7 = schedulePeriods('q7', '2025-01-01', 15_000_000, 12, 3);
     expect(amendmentStarts(q7, [], { asOf: d('2026-10-07'), billedThrough: null, paidThrough: d('2026-12-31') })).toEqual(['2027-01-01', '2027-04-01', '2027-07-01', '2027-10-01']);
+  });
+});
+
+describe('billedThrough (#468)', () => {
+  it('counts a voided bill beside an issued one and ignores a draft', () => {
+    const bills = [
+      { status: 'issued', periodEnd: d('2026-10-31') },
+      { status: 'void', periodEnd: d('2026-11-30') },
+      { status: 'draft', periodEnd: d('2026-12-31') },
+    ];
+    expect(billedThrough(bills)).toBe('2026-11-30');
+    expect(billedThrough(bills.slice(2))).toBeNull();
   });
 });

@@ -1,3 +1,4 @@
+import { isoDate } from '@esta/core/date';
 import { describe, expect, it } from 'vitest';
 import { memoryDb } from '@esta/ops/test/memory-db';
 import { runSheet } from '../../src/tools/fact-sheet';
@@ -15,7 +16,7 @@ async function ledgerFor(householdId: string, tables = askTables('')) {
   const { sheet, cite } = runSheet();
   const properties = listPropertiesTool(db, householdId, cite);
   await properties.run();
-  return { sheet, ledger: ledgerTool(db, householdId, 'vi', properties.records, cite) };
+  return { sheet, ledger: ledgerTool(db, householdId, 'vi', properties.records, cite, isoDate('2026-10-07')) };
 }
 
 const Q7 = 'f6';
@@ -29,14 +30,14 @@ describe('ledger (AGENT.md §4)', () => {
     expect(await ledger({ property: 'f3', year: 2026, month: 10 })).toBe(first);
   });
 
-  it('answers a whole year with its spending by category and one record per month', async () => {
+  it('answers a whole year with its spending by category and one record per month up to the current one, as Thu chi and Báo cáo stop there (#338)', async () => {
     const { ledger } = await ledgerFor(HOUSEHOLD);
     const year = await ledger({ property: Q7, year: 2026 });
     expect(year.ledger).toMatchObject({ property_label: 'Nhà phố Q7', period_date_display: '2026' });
     expect(year.expenses_by_category).toEqual(
       expect.arrayContaining([expect.objectContaining({ category: 'repair', amount_display: '8.650.000 ₫' }), expect.objectContaining({ category: 'maintenance', amount_display: '1.200.000 ₫' })]),
     );
-    expect(year.by_month?.map((month) => month.month_date_display)).toEqual(Array.from({ length: 12 }, (_, i) => `${i + 1}/2026`));
+    expect(year.by_month?.map((month) => month.month_date_display)).toEqual(Array.from({ length: 10 }, (_, i) => `${i + 1}/2026`));
   });
 
   it('answers the whole household with no property and no link', async () => {

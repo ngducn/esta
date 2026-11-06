@@ -155,7 +155,7 @@ describe('readReportSnapshot as leases end and properties go (FIN-4, SPEC §5.4)
     const october = isoDate('2026-10-01');
     const askHouseholdYear = async () => {
       const { cite } = runSheet();
-      const answer = await ledgerTool(client, HOUSEHOLD, 'vi', new Map(), cite)({ year: 2026 });
+      const answer = await ledgerTool(client, HOUSEHOLD, 'vi', new Map(), cite, isoDate('2026-10-07'))({ year: 2026 });
       return [answer.ledger.income_display, answer.ledger.expenses_display, answer.ledger.net_display];
     };
     const read = async () => {
