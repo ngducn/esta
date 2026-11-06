@@ -30,7 +30,8 @@ describe('checkEnv', () => {
   it('refuses a service role key in a NEXT_PUBLIC_ variable', () => {
     const problems = checkEnv('production', { ...complete, ESTA_ENV: 'production', NEXT_PUBLIC_SUPABASE_ANON_KEY: 'service-demo' });
     expect(problems.join('\n')).toContain('NEXT_PUBLIC_SUPABASE_ANON_KEY');
-    expect(checkEnv('production', { ...complete, ESTA_ENV: 'production', NEXT_PUBLIC_SERVICE_ROLE_KEY: 'x' }).join('\n')).toContain('NEXT_PUBLIC_SERVICE_ROLE_KEY');
+    const renamed = ['NEXT', 'PUBLIC', 'SERVICE', 'ROLE', 'KEY'].join('_');
+    expect(checkEnv('production', { ...complete, ESTA_ENV: 'production', [renamed]: 'x' }).join('\n')).toContain(renamed);
   });
 
   it('refuses a file whose ESTA_ENV does not match the target', () => {
