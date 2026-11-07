@@ -9,7 +9,7 @@ type Fault = 'header' | 'dev' | 'clock' | 'signin' | 'cron' | 'csp' | undefined;
 let server: Server | undefined;
 afterEach(() => new Promise<void>((done) => (server ? server.close(() => done()) : done())));
 
-async function stub(fault: Fault): Promise<string> {
+async function stub(fault: Fault, vercelId?: string): Promise<string> {
   server = createServer((request, response) => {
     const path = request.url ?? '/';
     if (path === '/sign-in') {
@@ -18,6 +18,7 @@ async function stub(fault: Fault): Promise<string> {
       if (fault !== 'header') response.setHeader('x-content-type-options', 'nosniff');
       response.setHeader('referrer-policy', 'strict-origin-when-cross-origin');
       response.setHeader('permissions-policy', 'camera=(self)');
+      if (vercelId !== undefined) response.setHeader('x-vercel-id', vercelId);
       response.end(fault === 'signin' ? '<h1>Welcome</h1>' : '<h1>Đăng nhập</h1>');
       return;
     }
@@ -56,8 +57,22 @@ describe('runSmoke', () => {
     expect(results.find((result) => result.name === '/dev is hidden')).toBeUndefined();
   });
 
+  it('checks the function region only when Vercel answered', async () => {
+    const local = await runSmoke(await stub(undefined), 'production');
+    expect(local.find((result) => result.name === 'function region')).toBeUndefined();
+  });
+
+  it.each([
+    ['hkg1::sin1::abc-1', true],
+    ['hkg1::iad1::abc-1', false],
+    ['hkg1::abc-1', false],
+  ] as const)('reads x-vercel-id %s as a function region pass: %s', async (vercelId, ok) => {
+    const results = await runSmoke(await stub(undefined, vercelId), 'production');
+    expect(results.find((result) => result.name === 'function region')?.ok).toBe(ok);
+  });
+
   it('checks every cron route vercel.json schedules', () => {
-    const paths = (JSON.parse(readFileSync('vercel.json', 'utf8')) as { crons: { path: string }[] }).crons.map((cron) => cron.path);
+    const paths = (JSON.parse(readFileSync('apps/web/vercel.json', 'utf8')) as { crons: { path: string }[] }).crons.map((cron) => cron.path);
     expect([...CRON_PATHS].sort()).toEqual([...paths].sort());
   });
 

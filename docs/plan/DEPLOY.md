@@ -38,7 +38,9 @@ export ESTA_PREVIEW_CALLBACK_URL='https://<preview host pattern>/sign-in/callbac
 
 ## 4. Vercel project (Ryan)
 
-1. Import the repository. `vercel.json` already sets the function region (`"regions": ["sin1"]`) and holds the crons (`lease-status` 17:20 UTC, `invoices` 17:30, `document-sweep` 21:00, `keep-alive` 01:00); change nothing there. After the import, confirm in Settings, Functions that the region reads Singapore (`sin1`) and in Settings, Cron Jobs that all four jobs are listed.
+1. Import the repository and set the project's Root Directory to `apps/web` (Settings, Build and Deployment). Vercel reads `vercel.json` only from the Root Directory, so the file lives at `apps/web/vercel.json`; a copy at the top of the repository is ignored, which would lose the region, the crons and the switch that keeps `main` from deploying itself (measured with `vercel build` on 2026-11-07; `scripts/vercel-config.test.ts` fails on a top-level copy). `apps/web/vercel.json` already sets the function region (`"regions": ["sin1"]`) and holds the crons (`lease-status` 17:20 UTC, `invoices` 17:30, `document-sweep` 21:00, `keep-alive` 01:00); change nothing there. After the import, confirm in Settings, Functions that the region reads Singapore (`sin1`) and in Settings, Cron Jobs that all four jobs are listed.
+   Then set Settings, Functions, Function Regions to Singapore (`sin1`). A CLI deploy ran its functions in Washington (`iad1`) although `apps/web/vercel.json` says `sin1`, until this project setting changed (measured 2026-11-07 from the `x-vercel-id` header). `pnpm smoke` now fails when the sign-in function runs outside the `vercel.json` region.
+   Deploy a preview from the CLI with `vercel deploy --environment preview`, never a bare `vercel deploy`: on CLI 65.12.1 a bare deploy of this project, which has no Git connection, created a production deployment (2026-11-07; its build stopped at the environment check because production had no variables yet). No check in the repository can see which flags a CLI run used, so this sentence is the guard.
 2. Set each variable below in the Vercel `production` environment from `esta-prod` and in the `preview` environment from `esta-preview`. The two environments hold different Supabase values and a different `CRON_SECRET`. `scripts/check-env.ts` checks a file holding one environment's values.
 
 | Variable | Where the value comes from |
@@ -53,7 +55,7 @@ export ESTA_PREVIEW_CALLBACK_URL='https://<preview host pattern>/sign-in/callbac
 | `ESTA_FROZEN_NOW` | Never set in production; the build and `check-env` refuse it. |
 
 3. Before deploying, run `pnpm check:env --target production --app web <file>` on a file holding the production values (kept outside the repo), and `--target preview --app web` on one holding the preview values. It fails on a missing variable, a frozen clock, a service role key in a `NEXT_PUBLIC_` variable (by name, by value, or swapped with the anon key) or `ESTA_ENV` not matching the target.
-4. Deploy, after the preflight probes in section 12 have passed against `esta-preview` (the denied-function probe is a deploy blocker). Then run `pnpm smoke https://<production host>`; it sends GET requests only and must print `smoke ok` with every check listed (security headers, CSP, `/dev` and `/api/test/clock` hidden with `404`, the sign-in page answering `200` without a redirect, and every cron route in `vercel.json` refusing a call without the secret with `401`).
+4. Deploy, after the preflight probes in section 12 have passed against `esta-preview` (the denied-function probe is a deploy blocker). Then run `pnpm smoke https://<production host>`; it sends GET requests only and must print `smoke ok` with every check listed (security headers, CSP, `/dev` and `/api/test/clock` hidden with `404`, the sign-in page answering `200` without a redirect, and every cron route in `apps/web/vercel.json` refusing a call without the secret with `401`).
 5. In the Vercel dashboard, run each cron once from Settings, Cron Jobs and check the response is 200.
 
 ## 5. Email sender (Ryan)
@@ -117,7 +119,7 @@ Move `esta-prod` to a paid Supabase plan (daily backups and point-in-time recove
 
 Run the Mom test on the final build (`docs/plan/mom-test.md`), starting `pnpm dev:lan --prod` for seeded data on a phone. Record each task's time there; a failure becomes a fix.
 
-Steps still to add when P5-09, P5-10, P5-14 and P5-15 merge: any new environment variable, cron route or worker job they bring. Add it to the table in section 4 (a cron route needs nothing else: `smoke` reads `vercel.json`), and rerun the dry run.
+Steps still to add when P5-09, P5-10, P5-14 and P5-15 merge: any new environment variable, cron route or worker job they bring. Add it to the table in section 4 (a cron route needs nothing else: `smoke` reads `apps/web/vercel.json`), and rerun the dry run.
 
 ## 11. Live lanes on the preview deploy (Agent, after Ryan has deployed preview)
 
@@ -136,7 +138,7 @@ Run these against `esta-preview` before the first production deploy. None of the
 
 ## 13. Releasing (Ryan)
 
-A release is a tag on `main`, and the three parts move in this order. Vercel does not deploy `main` by itself (`vercel.json` sets `git.deploymentEnabled.main` to `false`; other branches still get preview builds), so the web build never runs ahead of its migrations.
+A release is a tag on `main`, and the three parts move in this order. Vercel does not deploy `main` by itself (`apps/web/vercel.json` sets `git.deploymentEnabled.main` to `false`; other branches still get preview builds), so the web build never runs ahead of its migrations.
 
 1. Tag the commit that passed `ci`: `git tag v<date>-<n> && git push origin v<date>-<n>`. Run section 12's probes against `esta-preview` first when the release changes the database.
 2. Migrations first, against the target project: `supabase link --project-ref <ref>`, then `supabase db push`. Run both from a clean checkout of the release tag (`git checkout v<date>-<n>`), because `db push` applies every pending migration in the working tree on one yes. A migration is written to be safe for the web build that is still live, because the old build serves until step 3.

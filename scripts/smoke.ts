@@ -1,10 +1,21 @@
 import { readFileSync } from 'node:fs';
 import { z } from 'zod';
 
-const vercelConfig = z.object({ crons: z.array(z.object({ path: z.string() })) });
+const vercelConfig = z
+  .object({ regions: z.array(z.string()).min(1), crons: z.array(z.object({ path: z.string() })) })
+  .parse(JSON.parse(readFileSync(new URL('../apps/web/vercel.json', import.meta.url), 'utf8')));
 
-/** The routes Vercel schedules, read from vercel.json so a new cron cannot be left out of the check. */
-export const CRON_PATHS: readonly string[] = vercelConfig.parse(JSON.parse(readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'))).crons.map((cron) => cron.path);
+/** The routes Vercel schedules, read from apps/web/vercel.json so a new cron cannot be left out of the check. */
+export const CRON_PATHS: readonly string[] = vercelConfig.crons.map((cron) => cron.path);
+
+/**
+ * `x-vercel-id` reads `<edge>::<function region>::<id>` when a function answered. A CLI deploy on 2026-11-07 ran in
+ * iad1 although vercel.json said sin1, until the project's own function region was set (DEPLOY.md section 4).
+ */
+function functionRegion(vercelId: string): string | undefined {
+  const parts = vercelId.split('::');
+  return parts.length >= 3 ? parts.at(-2) : undefined;
+}
 
 const REQUIRED_HEADERS = ['strict-transport-security', 'x-content-type-options', 'referrer-policy', 'permissions-policy'];
 
@@ -27,6 +38,11 @@ export async function runSmoke(base: string, buildEnv: BuildEnv): Promise<SmokeR
     { name: 'content security policy', ok: csp.includes("frame-ancestors 'none'"), detail: csp === '' ? 'no header' : "frame-ancestors 'none'" },
     { name: 'sign-in page', ok: signIn.status === 200 && html.includes('Đăng nhập'), detail: `${signIn.status}, Đăng nhập ${html.includes('Đăng nhập') ? 'shown' : 'not found'}` },
   ];
+  const vercelId = signIn.headers.get('x-vercel-id');
+  if (vercelId !== null) {
+    const region = functionRegion(vercelId);
+    results.push({ name: 'function region', ok: region !== undefined && vercelConfig.regions.includes(region), detail: `ran in ${region ?? 'no function'}, expected ${vercelConfig.regions.join(' or ')}` });
+  }
   if (buildEnv === 'production') {
     const dev = await status(base, '/dev');
     const clock = await status(base, '/api/test/clock');

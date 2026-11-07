@@ -19,3 +19,4 @@ supabase/.temp/
 .stryker-tmp/
 /packages/core/reports/
 stryker-setup-*.js
+.vercel/

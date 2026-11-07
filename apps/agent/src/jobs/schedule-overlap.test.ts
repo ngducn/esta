@@ -11,7 +11,7 @@ type Window = { readonly name: string; readonly start: number; readonly minutes:
 
 const { crons } = z
   .object({ crons: z.array(z.object({ path: z.string(), schedule: z.string() })) })
-  .parse(JSON.parse(readFileSync(join(import.meta.dirname, '../../../../vercel.json'), 'utf8')));
+  .parse(JSON.parse(readFileSync(join(import.meta.dirname, '../../../web/vercel.json'), 'utf8')));
 
 /** The keep-alive reads one row and writes nothing, so it may run beside any job. */
 const KEEP_ALIVE = '/api/cron/keep-alive';
