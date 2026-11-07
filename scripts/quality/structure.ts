@@ -105,3 +105,63 @@ export const notKebabCase = (fileName: string) => {
   const stem = fileName.slice(fileName.lastIndexOf('/') + 1).replace(/\.(d\.)?[cm]?[jt]sx?$/, '');
   return !stem.split('.').every((part) => KEBAB.test(part));
 };
+
+/** Tables whose rows hide when a room is trashed: `units` and `utility_accounts` carry `deleted_at`; `meters` hang off a unit and need that unit's. */
+const TRASHABLE = new Set(['units', 'utility_accounts', 'meters']);
+/** `units(` or `utility_accounts(` as a bare embed under a property; an aliased or hinted embed from a lease (`unit:units!fk(`) is a room that has a lease, which cannot be in the trash. */
+const BARE_EMBED = /(?<![\w:!])(units|utility_accounts)\(/;
+/** A write (its returning select is no listing) or a probe of one row by id, which asks whether the row exists at all, trashed or not. */
+const WRITE_OR_PROBE = /\.(insert|upsert|update|delete)\(|\.eq\('id',/;
+const NESTED_FILTER = /['"`][\w]+\.deleted_at['"`]/;
+
+/** Readers that must see trashed rows, each named with the reason: an id-to-label lookup or a privacy search must still know a trashed room's words. */
+const TRASH_READERS: readonly { readonly file: string; readonly fn?: string; readonly why: string }[] = [
+  { file: 'packages/ops/src/watch.ts', fn: 'readNameLabels', why: 'the labels the guard and the privacy search must still know after a room is trashed' },
+  { file: 'apps/agent/src/tools/household-labels.ts', fn: 'familySearchTerms', why: 'privacy: a trashed holder name is still a family word to keep out of searches' },
+  { file: 'apps/web/src/server/agent/open-link.ts', why: 'an old esta:// link to a trashed room still resolves to its property' },
+  { file: 'apps/web/src/server/agent/suggestions.ts', why: 'id to label for a suggestion that names a room, trashed or not' },
+];
+
+const chainTop = (start: ts.Node): ts.Node => {
+  let node = start;
+  for (;;) {
+    const access = node.parent;
+    const call = access?.parent;
+    if (access !== undefined && ts.isPropertyAccessExpression(access) && access.expression === node && call !== undefined && ts.isCallExpression(call) && call.expression === access) node = call;
+    else return node;
+  }
+};
+
+const enclosingName = (node: ts.Node): string | undefined => {
+  for (let current: ts.Node | undefined = node; current !== undefined; current = current.parent) {
+    if (ts.isFunctionDeclaration(current) && current.name !== undefined) return current.name.text;
+    if (ts.isVariableDeclaration(current) && ts.isIdentifier(current.name) && current.initializer !== undefined && ts.isFunctionLike(current.initializer)) return current.name.text;
+  }
+  return undefined;
+};
+
+/** A read of a room, a utility account or a meter (`.from('units')`, or a bare `units(…)` embed) whose query never filters `deleted_at`, so trashed rows come back. */
+export const unfilteredTrashReads: Finder = (source) => {
+  const allowed = (node: ts.Node) => TRASH_READERS.some(({ file, fn }) => source.fileName.endsWith(file) && (fn === undefined || fn === enclosingName(node)));
+  const fromReads = calls(source).filter((call) => {
+    const [table] = call.arguments;
+    if (!ts.isPropertyAccessExpression(call.expression) || call.expression.name.text !== 'from' || table === undefined || !ts.isStringLiteralLike(table) || !TRASHABLE.has(table.text)) return false;
+    const chain = chainTop(call).getText(source);
+    if (WRITE_OR_PROBE.test(chain)) return false;
+    return table.text === 'meters' ? !NESTED_FILTER.test(chain) : !chain.includes('deleted_at');
+  });
+  const embeds = [...nodes(source, ts.SyntaxKind.StringLiteral), ...nodes(source, ts.SyntaxKind.NoSubstitutionTemplateLiteral), ...nodes(source, ts.SyntaxKind.TemplateExpression)].filter((node) => {
+    if (!BARE_EMBED.test(node.getText(source)) || ts.isTemplateSpan(node.parent)) return false;
+    let call: ts.Node | undefined = node;
+    while (call !== undefined && !ts.isCallExpression(call)) call = call.parent;
+    return call === undefined || !(NESTED_FILTER.test(chainTop(call).getText(source)) || /deleted_at/.test(node.getText(source)));
+  });
+  return [...fromReads, ...embeds].filter((node) => !allowed(node));
+};
+
+export const SOFT_DELETE_READ = {
+  message: 'A read of `units`, `utility_accounts` or `meters` (a `.from(…)` or a bare `units(…)` embed) that never filters `deleted_at`, so a trashed room or account comes back.',
+  home: {
+    use: "`.is('deleted_at', null)` on the query, or `.is('unit.deleted_at', null)` on a unit:units!inner(deleted_at) embed for meters; a reader that must see the trash is listed with its reason in the trash-readers allow-list in scripts/quality/structure.ts.",
+  },
+} as const;

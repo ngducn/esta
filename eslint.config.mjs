@@ -6,6 +6,7 @@ import { defineConfig, globalIgnores } from 'eslint/config';
 import tseslint from 'typescript-eslint';
 import noAddressEquality from './eslint-rules/no-address-equality.mjs';
 import noBrowserSupabaseClient from './eslint-rules/no-browser-supabase-client.mjs';
+import noUntypedActionParams from './eslint-rules/no-untyped-action-params.mjs';
 import noGuardDisable from './eslint-rules/no-guard-disable.mjs';
 import noJsxLiterals from './eslint-rules/no-jsx-literals.mjs';
 import noSelfSourcedProperty from './eslint-rules/no-self-sourced-property.mjs';
@@ -63,6 +64,7 @@ export default defineConfig(
           'no-address-equality': noAddressEquality,
           'no-guard-disable': noGuardDisable,
           'no-self-sourced-property': noSelfSourcedProperty,
+          'no-untyped-action-params': noUntypedActionParams,
         },
       },
     },
@@ -71,6 +73,13 @@ export default defineConfig(
   {
     files: ['apps/web/**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}'],
     rules: { 'esta/no-browser-supabase-client': 'error' },
+  },
+  {
+    files: ['apps/web/**/*.{ts,tsx}'],
+    ignores: [
+      'apps/web/src/app/(app)/properties/*/legal/actions.ts', // still ships the deleted row to the client; Q-04 moves it onto softDeleteOps
+    ],
+    rules: { 'esta/no-untyped-action-params': 'error' },
   },
   {
     // Two addresses are the same by `sameAddress` alone (Q-10); the screens that compared them by hand disagreed.

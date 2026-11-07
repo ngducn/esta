@@ -24,6 +24,7 @@ async function readRentalUnits(db: Db, householdId: string): Promise<ReportUnit[
       .from('units')
       .select('id, property_id, label, kind, available_from, property:properties!inner(nickname)')
       .eq('household_id', householdId)
+      .is('deleted_at', null)
       .is('property.deleted_at', null)
       .eq('property.use_mode', 'rental')
       .order('id')

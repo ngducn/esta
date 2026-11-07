@@ -8,10 +8,10 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import truthFile from '../../../../../fixtures/certificates/gcn_2024-photo/truth.json';
-import billTruth from '../../../../../fixtures/utility-bills/electricity-q7-scan/truth.json';
 import { seedId } from '../../../../../supabase/seed/generator/ids';
 import { integrationLane, outsiderEmail, withCapabilities } from '@/test/lanes';
 import { service, signedInAs, stackName, stackUp } from '@/test/stack';
+import { acceptBill, BILL_TEXT, billTruth, ocrText, waitingBill } from './test/utility-bill';
 import { acceptCutOnce, addressLookupFails, holdFirstLastWrite } from '@/test/session-faults';
 import { twoAtOnce } from '@/test/two-at-once';
 
@@ -43,6 +43,7 @@ const truths = readdirSync(FIXTURES, { withFileTypes: true })
   .map((entry) => ({ id: entry.name, certificate: (JSON.parse(readFileSync(join(FIXTURES, entry.name, 'truth.json'), 'utf8')) as { certificate: unknown }).certificate }));
 
 const rest = <T>(path: string, init?: RequestInit) => service<T>(`/rest/v1/${path}`, init);
+const billLane = { household, propertyId, documents, rest };
 const patch = (path: string, body: unknown) => rest(path, { method: 'PATCH', body: JSON.stringify(body) });
 
 /** A certificate document whose extraction the worker has read and left waiting, written as the worker writes it. */
@@ -79,41 +80,6 @@ async function waitingExtraction(status: 'needs_review' | 'failed' = 'needs_revi
 }
 
 const count = async (path: string) => (await rest<unknown[]>(path)).length;
-
-const BILL_TEXT = 'ĐIỆN LỰC DEMO TÂN THUẬN. HÓA ĐƠN TIỀN ĐIỆN tháng 9/2026. Tổng cộng 1.234.764 đ';
-const billResult = (fullText: string) => ({ ...billTruth.bill, full_text: fullText });
-const acceptBill = Object.fromEntries(reviewFields('utility_bill_v1', billTruth.bill).map((field) => [field.path, { kind: 'accepted' }]));
-
-/** A utility bill whose read waits for review, with the printed text the worker keeps beside the fields. */
-async function waitingBill(sensitivity: 'normal' | 'sensitive', fullText = BILL_TEXT): Promise<{ documentId: string; extractionId: string }> {
-  const documentId = randomUUID();
-  const extractionId = randomUUID();
-  documents.push(documentId);
-  await rest('documents', {
-    method: 'POST',
-    body: JSON.stringify({
-      id: documentId,
-      household_id: household,
-      property_id: propertyId,
-      category: 'utility_bill',
-      title: 'Hóa đơn điện Demo',
-      storage_path: `${household}/${documentId}/hoa-don.pdf`,
-      mime: 'application/pdf',
-      size_bytes: 1000,
-      sha256: randomBytes(32).toString('hex'),
-      sensitivity,
-    }),
-  });
-  await rest('document_extractions', {
-    method: 'POST',
-    body: JSON.stringify({ id: extractionId, household_id: household, document_id: documentId, schema_name: 'utility_bill_v1', schema_version: 1 }),
-  });
-  await patch(`document_extractions?id=eq.${extractionId}`, { status: 'running' });
-  await patch(`document_extractions?id=eq.${extractionId}`, { status: 'needs_review', result: billResult(fullText), model: 'replay' });
-  return { documentId, extractionId };
-}
-
-const ocrText = async (documentId: string) => (await rest<{ ocr_text: string | null }[]>(`documents?id=eq.${documentId}&select=ocr_text`))[0]?.ocr_text;
 
 /** Counts what one extraction wrote: its certificate, the parcels and structures under it, and the household's parties. */
 async function written(extractionId: string) {
@@ -331,23 +297,36 @@ describe.skipIf(!stackUp)(`saveExtractionReview against ${stackName}`, () => {
 
   test('accepting a normal utility bill copies its printed text into ocr_text for search (DOC-3)', async () => {
     asMember();
-    const { documentId, extractionId } = await waitingBill('normal');
+    const { documentId, extractionId } = await waitingBill(billLane, 'normal');
     expect(await saveConfirmed(extractionId, acceptBill)).toEqual({ ok: true, propertyId });
-    expect(await ocrText(documentId)).toBe(BILL_TEXT);
+    expect(await ocrText(billLane, documentId)).toBe(BILL_TEXT);
+  });
+
+  test('a bill for an account that is in the trash creates a new account, as before the trash existed (Q-03)', async () => {
+    asMember();
+    const first = await waitingBill(billLane, 'normal');
+    expect(await saveConfirmed(first.extractionId, acceptBill)).toEqual({ ok: true, propertyId });
+    const code = billTruth.bill.customer_code.value;
+    const holding = `utility_accounts?property_id=eq.${propertyId}&customer_code=eq.${encodeURIComponent(code)}`;
+    await patch(`${holding}&deleted_at=is.null`, { deleted_at: new Date().toISOString() });
+    const second = await waitingBill(billLane, 'normal');
+    expect(await saveConfirmed(second.extractionId, acceptBill)).toEqual({ ok: true, propertyId });
+    const live = await rest<{ id: string }[]>(`${holding}&deleted_at=is.null&select=id`);
+    expect(live.map((row) => row.id)).toEqual([rowId(second.extractionId, 'utility_account')]);
   });
 
   test('the same bill marked sensitive keeps ocr_text null', async () => {
     asMember();
-    const { documentId, extractionId } = await waitingBill('sensitive');
+    const { documentId, extractionId } = await waitingBill(billLane, 'sensitive');
     expect(await saveConfirmed(extractionId, acceptBill)).toEqual({ ok: true, propertyId });
-    expect(await ocrText(documentId)).toBeNull();
+    expect(await ocrText(billLane, documentId)).toBeNull();
   });
 
   test('accepting a certificate leaves ocr_text null', async () => {
     asMember();
     const { documentId, extractionId } = await waitingExtraction();
     expect(await saveConfirmed(extractionId, acceptAll)).toEqual({ ok: true, propertyId });
-    expect(await ocrText(documentId)).toBeNull();
+    expect(await ocrText(billLane, documentId)).toBeNull();
   });
 
   test('a certificate from another province with none of the owners stops before any write, a chosen property included, until Mẹ confirms it (#356)', async () => {

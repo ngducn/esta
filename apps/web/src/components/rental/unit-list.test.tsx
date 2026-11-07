@@ -15,6 +15,7 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 const room = (id: string, label: string, sort_order: number): Unit => ({ id, label, kind: 'room', area_m2: null, list_rent_vnd: null, available_from: null, sort_order });
 const rooms = [room('u1', 'Phòng 101', 1), room('u2', 'Phòng 102', 2)];
 const restoreFailed = viMessages.propertyRental.restoreFailed;
+const restoreLabelTaken = viMessages.propertyRental.restoreLabelTaken;
 
 function Rooms() {
   const [units, setUnits] = useState(rooms);
@@ -50,7 +51,7 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
-  actions.deleteUnit.mockReset().mockResolvedValue({ ok: true, deleted: { propertyId: 'p1' } });
+  actions.deleteUnit.mockReset().mockResolvedValue({ ok: true, deleted: { id: 'u1' } });
   actions.restoreUnit.mockReset();
 });
 
@@ -71,6 +72,13 @@ describe('UnitList', () => {
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
+  it('undoes a delete by sending the id and nothing else', async () => {
+    actions.restoreUnit.mockResolvedValue({ ok: true, id: 'u1' });
+    await undoDelete();
+    expect(actions.deleteUnit).toHaveBeenCalledWith(expect.any(String));
+    expect(actions.restoreUnit).toHaveBeenCalledWith({ id: 'u1' });
+  });
+
   it('shows a Hoàn tác the server refused in the toast', async () => {
     actions.restoreUnit.mockResolvedValue({ ok: false, reason: 'invalid' });
     await undoDelete();
@@ -78,6 +86,15 @@ describe('UnitList', () => {
     const region = screen.getByRole('region', { name: 'Thông báo' });
     expect((await screen.findByText(restoreFailed)).closest('[role="region"]')).toBe(region);
     expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('says the room name is taken when a new room holds the label the undo needs', async () => {
+    actions.restoreUnit.mockResolvedValue({ ok: false, reason: 'duplicate' });
+    await undoDelete();
+    fireEvent.click(screen.getByRole('button', { name: 'row gone' }));
+    const region = screen.getByRole('region', { name: 'Thông báo' });
+    expect((await screen.findByText(restoreLabelTaken)).closest('[role="region"]')).toBe(region);
+    expect(screen.queryByText(restoreFailed)).toBeNull();
   });
 });
 

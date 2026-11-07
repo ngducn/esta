@@ -129,8 +129,8 @@ Name the data shape before writing code. These tables live in Supabase Postgres.
 - `structures` (tài sản gắn liền với đất): property_id, certificate_id, kind, footprint_m2, floor_area_m2, floors, structure_text, completed_year, ownership_term.
 - `certificates` (GCN): property_id, form (DOMAIN-VN §2), serial_no, book_entry_no, issued_on, issued_by, holder_party_ids, status (`valid | mortgaged | replaced | lost`), mortgage (jsonb: bank party, amount, registered_on, released_on), annotations (jsonb list), document_id, extraction_id, verified_by, verified_at.
 - `ownership_shares`: property_id, party_id, share_bp, named_on_certificate boolean, since. Invariant: shares of a property sum to 10000 bp or the property shows an ownership warning.
-- `utility_accounts`: property_id, unit_id (nullable), kind (`electricity | water | internet | other`), provider, customer_code, holder_name, note.
-- `units`: property_id, label ("Phòng 2", "Tầng trệt", "Toàn bộ"), kind (`whole | room | floor | shop | lot`), area_m2, list_rent_vnd, available_from (date the unit could first be let; vacancy for never-leased units counts from here), sort_order. A property with no subdivision has one `whole` unit, created automatically.
+- `utility_accounts`: property_id, unit_id (nullable), kind (`electricity | water | internet | other`), provider, customer_code, holder_name, note. Soft delete: an account whose room is in the trash reads as property level until the room comes back.
+- `units`: property_id, label ("Phòng 2", "Tầng trệt", "Toàn bộ"), kind (`whole | room | floor | shop | lot`), area_m2, list_rent_vnd, available_from (date the unit could first be let; vacancy for never-leased units counts from here), sort_order. A property with no subdivision has one `whole` unit, created automatically. Soft delete: a room with leases, and the `whole` unit, cannot be deleted; the label of a room in the trash can be used again.
 - `valuations`: property_id, as_of, value_vnd, method (`owner_estimate | broker_quote | state_price_reference | comparables`), source_url, note. Always displayed as an estimate with its date and method.
 
 ### 5.4 Leasing and money

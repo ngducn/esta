@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 import { cloneOccurrences, DEV_ROUTES, duplicateExports, filesOver, matchPositions, TEST_FILE, type Clone, type Corpus, type Occurrence, type Scope } from './measure.ts';
 import { alwaysOpenPopups, asyncTransitions, catchToFailure, doubleCasts, failureArms, handBuiltQueryBuilders, isoDateRefines, localIdSchemas, pageScrollWidths, pageSizeLiterals, putFetches, slowTestSettings, sqlstateReads, testIdQueries, viewports, webCapLiterals } from './smells.ts';
-import { directWrites, literalRoleChecks, longFunctions, MAX_FUNCTION_LINES, memberRoles, notKebabCase } from './structure.ts';
+import { directWrites, literalRoleChecks, longFunctions, MAX_FUNCTION_LINES, memberRoles, notKebabCase, SOFT_DELETE_READ, unfilteredTrashReads } from './structure.ts';
 import { classLists, comments, elements, imported, importsModule, uses, type Finder } from './syntax.ts';
 
 const REPO_ROOT = join(import.meta.dirname, '..', '..');
@@ -137,6 +137,7 @@ export const METRICS: readonly Metric[] = [
     scope: without(PRODUCT_CODE, /^packages\/ops\/src\/kit\.ts$/),
     find: sqlstateReads,
   }),
+  syntax({ id: 'soft-delete-read', ...SOFT_DELETE_READ, section: 'undo', scope: PRODUCT_CODE, find: unfilteredTrashReads }),
   syntax({
     id: 'postgrest-page-literal',
     message: 'A number is spelled out inside `.range(`, so the page size is written again outside the one constant.',

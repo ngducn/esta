@@ -3045,6 +3045,7 @@ export type Database = {
           available_from: string | null
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           household_id: string
           id: string
           kind: string
@@ -3059,6 +3060,7 @@ export type Database = {
           available_from?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           household_id: string
           id?: string
           kind: string
@@ -3073,6 +3075,7 @@ export type Database = {
           available_from?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           household_id?: string
           id?: string
           kind?: string
@@ -3118,6 +3121,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           customer_code: string | null
+          deleted_at: string | null
           holder_name: string | null
           household_id: string
           id: string
@@ -3132,6 +3136,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           customer_code?: string | null
+          deleted_at?: string | null
           holder_name?: string | null
           household_id: string
           id?: string
@@ -3146,6 +3151,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           customer_code?: string | null
+          deleted_at?: string | null
           holder_name?: string | null
           household_id?: string
           id?: string
@@ -3556,6 +3562,14 @@ export type Database = {
           status: string
         }[]
       }
+      add_rooms: {
+        Args: {
+          p_labels: string[]
+          p_list_rent_vnd?: number
+          p_property_id: string
+        }
+        Returns: number
+      }
       admin_name_fold: { Args: { p_text: string }; Returns: string }
       admin_name_key: { Args: { p_text: string }; Returns: string }
       amend_lease: {
@@ -3891,6 +3905,10 @@ export type Database = {
           p_paid_through?: string
         }
         Returns: string
+      }
+      reorder_units: {
+        Args: { p_changes: Json; p_property_id: string }
+        Returns: number
       }
       research_title_similar: {
         Args: { p_household_id: string; p_since: string; p_title: string }

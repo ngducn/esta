@@ -40,7 +40,7 @@ export const loadTenantPage = cache(async (rawId: string): Promise<TenantPage | 
   const pending = party.data.full_name === REDACTED_NAME ? await db.rpc('party_pending_files', { p_party_id: id.data }) : null;
   if (pending?.error) throw new Error(`Reading the person's pending files failed: ${pending.error.message}`);
   const [units, properties] = await Promise.all([
-    db.from('units').select('id, label').in('id', leases.data.map((lease) => lease.unit_id)),
+    db.from('units').select('id, label').in('id', leases.data.map((lease) => lease.unit_id)).is('deleted_at', null),
     db.from('properties').select('id, nickname').in('id', leases.data.map((lease) => lease.property_id)),
   ]);
   if (units.error || properties.error) throw new Error(`Reading the person's rooms failed: ${units.error?.message ?? properties.error?.message}`);

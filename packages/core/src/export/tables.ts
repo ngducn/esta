@@ -57,7 +57,7 @@ export const EXPORT_TABLES: readonly HouseholdTable[] = [
   table('research_items', ['agent_jobs'], 'created_at created_by effective_on household_id id job_id kind province_codes published_on related_property_ids relevance source_name source_url summary_vi title_vi updated_at url_normalized why_it_matters_vi'),
   table('research_topics', [], 'active created_at created_by household_id id label property_ids province_codes query_templates source topic_key updated_at'),
   table('statement_imports', ['bank_accounts'], 'bank_account_id column_mapping committed_at created_at created_by file_name household_id id rejected status updated_at'),
-  table('units', ['properties'], 'area_m2 available_from created_at created_by household_id id kind label list_rent_vnd property_id sort_order updated_at'),
+  table('units', ['properties'], 'area_m2 available_from created_at created_by deleted_at household_id id kind label list_rent_vnd property_id sort_order updated_at'),
   table('leases', ['agent_items', 'parties', 'units'], 'agent_item_id billing_cycle_months created_at created_by declaring_party_id deposit_vnd due_offset_days end_date escalation first_period_proration household_id id notes notice_days paid_through_date period_anchor property_id renewal_of_lease_id rent_vnd start_date status tax_payer tenant_party_id terminated_on termination_reason unit_id updated_at utilities_mode'),
   table('documents', ['leases', 'parties', 'properties'], 'category created_at created_by deleted_at expires_on household_id id lease_id mime ocr_text page_count party_id property_id sensitivity sha256 size_bytes storage_path tags title updated_at'),
   table('document_access_log', ['documents'], 'action at document_id household_id id user_id'),
@@ -76,7 +76,7 @@ export const EXPORT_TABLES: readonly HouseholdTable[] = [
   table('payment_allocations', ['invoices', 'payments'], 'amount_vnd created_at created_by household_id id invoice_id payment_id updated_at'),
   table('structures', ['certificates', 'properties'], 'certificate_id completed_year created_at created_by floor_area_m2 floors footprint_m2 household_id id kind ownership_term property_id structure_text updated_at'),
   table('tasks', ['agent_items', 'household_members', 'leases', 'properties'], 'agent_item_id assignee_member_id created_at created_by due_on household_id id lease_id property_id source status title updated_at'),
-  table('utility_accounts', ['properties', 'units'], 'created_at created_by customer_code holder_name household_id id kind note property_id provider unit_id updated_at'),
+  table('utility_accounts', ['properties', 'units'], 'created_at created_by customer_code deleted_at holder_name household_id id kind note property_id provider unit_id updated_at'),
   table('valuations', ['properties'], 'as_of created_at created_by household_id id method note property_id source_url updated_at value_vnd'),
 ];
 

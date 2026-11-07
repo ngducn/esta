@@ -717,6 +717,7 @@
     "deleted": "Deleted {label}.",
     "deleteFailed": "Could not delete. Try again.",
     "restoreFailed": "Could not restore. Reload the page and try again.",
+    "restoreLabelTaken": "This room name is already in use. Rename the new room and try again.",
     "unitSheetNew": "Add a unit",
     "unitSheetEdit": "Edit {label}",
     "unitSheetBody": "Name, kind, area, listed rent and the date it can be let.",

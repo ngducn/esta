@@ -1,11 +1,11 @@
 {
   "metrics": {
     "clones": {
-      "value": 105,
+      "value": 103,
       "files": {
         "apps/web/src/app/(app)/documents/[documentId]/review/page.tsx": 1,
         "apps/web/src/app/(app)/properties/[id]/documents/page.tsx": 1,
-        "apps/web/src/app/(app)/properties/[id]/rental/actions.ts": 2,
+        "apps/web/src/app/(app)/properties/[id]/rental/actions.test.ts": 1,
         "apps/web/src/app/dev/core/sections.ts": 1,
         "apps/web/src/app/dev/core/sections/ScheduleSection.tsx": 1,
         "apps/web/src/app/forgot-password/actions.ts": 2,
@@ -19,7 +19,7 @@
         "apps/web/src/components/rental/unit-list.test.tsx": 1,
         "apps/web/src/server/documents/actions.integration.test.ts": 3,
         "apps/web/src/server/expenses/actions.integration.test.ts": 1,
-        "apps/web/src/server/extraction/actions.integration.test.ts": 2,
+        "apps/web/src/server/extraction/actions.integration.test.ts": 1,
         "apps/web/src/server/properties/form.ts": 1,
         "apps/web/src/server/properties/wizard.ts": 1,
         "e2e/assistant-status.spec.ts": 5,
@@ -52,11 +52,11 @@
       }
     },
     "duplicated-lines": {
-      "value": 1083,
+      "value": 1060,
       "files": {
         "apps/web/src/app/(app)/documents/[documentId]/review/page.tsx": 15,
         "apps/web/src/app/(app)/properties/[id]/documents/page.tsx": 6,
-        "apps/web/src/app/(app)/properties/[id]/rental/actions.ts": 18,
+        "apps/web/src/app/(app)/properties/[id]/rental/actions.test.ts": 6,
         "apps/web/src/app/dev/core/sections.ts": 9,
         "apps/web/src/app/dev/core/sections/ScheduleSection.tsx": 13,
         "apps/web/src/app/forgot-password/actions.ts": 29,
@@ -70,7 +70,7 @@
         "apps/web/src/components/rental/unit-list.test.tsx": 7,
         "apps/web/src/server/documents/actions.integration.test.ts": 27,
         "apps/web/src/server/expenses/actions.integration.test.ts": 7,
-        "apps/web/src/server/extraction/actions.integration.test.ts": 17,
+        "apps/web/src/server/extraction/actions.integration.test.ts": 6,
         "apps/web/src/server/properties/form.ts": 6,
         "apps/web/src/server/properties/wizard.ts": 8,
         "e2e/assistant-status.spec.ts": 33,
@@ -130,10 +130,9 @@
       }
     },
     "local-id-schema": {
-      "value": 15,
+      "value": 14,
       "files": {
         "apps/web/src/app/(app)/properties/[id]/legal/actions.ts": 1,
-        "apps/web/src/app/(app)/properties/[id]/rental/actions.ts": 1,
         "apps/web/src/app/(app)/properties/location-actions.ts": 1,
         "apps/web/src/app/(app)/properties/page.tsx": 1,
         "apps/web/src/proxy.ts": 1,
@@ -150,14 +149,17 @@
       }
     },
     "sqlstate-literal": {
-      "value": 11,
+      "value": 6,
       "files": {
         "apps/web/src/app/(app)/properties/[id]/legal/actions.ts": 3,
-        "apps/web/src/app/(app)/properties/[id]/rental/actions.ts": 5,
         "apps/web/src/app/(app)/properties/location-actions.ts": 1,
         "apps/web/src/app/onboarding/actions.ts": 1,
         "apps/web/src/server/properties/wizard.ts": 1
       }
+    },
+    "soft-delete-read": {
+      "value": 0,
+      "files": {}
     },
     "postgrest-page-literal": {
       "value": 0,
@@ -498,11 +500,10 @@
       }
     },
     "direct-write": {
-      "value": 55,
+      "value": 45,
       "files": {
         "apps/web/src/app/(app)/assistant/actions.ts": 1,
         "apps/web/src/app/(app)/properties/[id]/legal/actions.ts": 4,
-        "apps/web/src/app/(app)/properties/[id]/rental/actions.ts": 10,
         "apps/web/src/app/(app)/properties/actions.ts": 2,
         "apps/web/src/app/(app)/properties/location-actions.ts": 2,
         "apps/web/src/app/(app)/settings/actions.ts": 1,

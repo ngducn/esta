@@ -127,7 +127,7 @@ export const extractionAccept = defineOp<AcceptInput, Acceptance, ExtractionAcce
     if (document === null) return refuse({ kind: 'no_property' });
     const [parties, accounts] = await Promise.all([
       ctx.db.from('parties').select('id, full_name, id_last4').eq('household_id', ctx.householdId),
-      ctx.db.from('utility_accounts').select('id, property_id, kind, customer_code').eq('household_id', ctx.householdId).eq('property_id', document.propertyId),
+      ctx.db.from('utility_accounts').select('id, property_id, kind, customer_code').eq('household_id', ctx.householdId).eq('property_id', document.propertyId).is('deleted_at', null),
     ]);
     if (parties.error || accounts.error) return refuse({ kind: 'failed' });
     const extraction = { id: target.id, householdId: ctx.householdId, propertyId: document.propertyId, documentId: target.documentId, result: target.result };

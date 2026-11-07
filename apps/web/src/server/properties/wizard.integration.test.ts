@@ -15,6 +15,7 @@ vi.mock('@/server/supabase/server', () => ({ createSessionClient: async () => se
 
 const { createDocumentUpload } = await import('@/server/documents/actions');
 const { startPropertyWizard } = await import('./wizard');
+const { loadWizardProperty } = await import('./wizard-load');
 
 const { household, me } = integrationLane(import.meta.url);
 const bytes = randomBytes(4096);
@@ -79,6 +80,18 @@ describe.skipIf(!stackUp)(`startPropertyWizard (PRP-7) against ${stackName}`, ()
     const result = await startPropertyWizard({ propertyId, nickname: 'Trùng mã Demo', code: taken?.code, kind: 'townhouse', document: null });
     expect(result).toEqual({ ok: false, reason: 'code_taken', code: taken?.code, takenBy: taken?.nickname });
     expect(await service<unknown[]>(`/rest/v1/properties?id=eq.${propertyId}&select=id`)).toEqual([]);
+  });
+
+  test('the use step counts the rooms that are not in the trash (Q-03)', async () => {
+    const propertyId = randomUUID();
+    propertyIds.push(propertyId);
+    await startPropertyWizard({ propertyId, nickname: 'Nhà có phòng Demo', code: code(), kind: 'rooming_house', document: null });
+    const rooms = [randomUUID(), randomUUID()];
+    const label = (index: number) => `Phòng ${index + 1}`;
+    await service('/rest/v1/units', { method: 'POST', body: JSON.stringify(rooms.map((id, index) => ({ id, household_id: household, property_id: propertyId, label: label(index), kind: 'room', sort_order: index }))) });
+    await service(`/rest/v1/units?id=eq.${rooms[1]}`, { method: 'PATCH', body: JSON.stringify({ deleted_at: '2026-10-07T00:00:00Z' }) });
+    const loaded = await loadWizardProperty(household, { propertyId, documentId: null });
+    expect(loaded?.units.filter((unit) => unit.kind === 'room')).toHaveLength(1);
   });
 
   test('a viewer cannot start the wizard', async () => {
