@@ -1,9 +1,8 @@
 import 'server-only';
+import { PROPERTY_PHOTOS_BUCKET } from '@esta/ops';
 import { sameOrigin } from '@/server/supabase/same-origin';
 import { createSessionClient } from '@/server/supabase/server';
 import { coverUrlCache } from './cover-url-cache';
-
-export const PROPERTY_PHOTOS_BUCKET = 'property-photos';
 
 /**
  * Covers sign for a day rather than `ESTA_SIGNED_URL_TTL_SECONDS`, which DOC-4 sets for documents: a cover is a

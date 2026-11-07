@@ -1,15 +1,14 @@
 'use server';
 
-import { coverPhotoPath, parseCoverPhotoPath, stalePhotos, type StoredPhoto } from '@esta/core/properties';
+import { coverPhotoPath, parseCoverPhotoPath } from '@esta/core/properties';
 import type { Result } from '@esta/core/result';
-import { idSchema, propertyCreate, propertyEdit, runOp, type CodeTaken, type CommonRefusal, type CurrentUnitSuggestion, type PropertySaved } from '@esta/ops';
+import { idSchema, listPhotos, propertyCreate, propertyEdit, PROPERTY_PHOTOS_BUCKET, readCover, runOp, sweepPhotos, type CodeTaken, type CommonRefusal, type CurrentUnitSuggestion, type PropertySaved } from '@esta/ops';
 import { revalidatePath } from 'next/cache';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { listCommunes, suggestCurrentUnits, type AdminUnitOption } from '@/server/address/suggest';
 import { requireMember } from '@/server/member';
 import { webOpContext } from '@/server/ops';
-import { PROPERTY_PHOTOS_BUCKET } from '@/server/properties/photos';
 import { setDeletedAt } from '@/server/soft-delete';
 import { createSessionClient } from '@/server/supabase/server';
 
@@ -75,35 +74,6 @@ export async function suggestAddress(text: unknown): Promise<CurrentUnitSuggesti
   return parsed.success ? suggestCurrentUnits(parsed.data) : [];
 }
 
-async function photoObjects(householdId: string, propertyId: string): Promise<StoredPhoto[] | null> {
-  const supabase = await createSessionClient();
-  const { data, error } = await supabase.storage.from(PROPERTY_PHOTOS_BUCKET).list(`${householdId}/${propertyId}`, { limit: 100 });
-  return error ? null : data.flatMap((object) => (object.created_at === null ? [] : [{ path: `${householdId}/${propertyId}/${object.name}`, createdAt: object.created_at }]));
-}
-
-async function coverPath(householdId: string, propertyId: string): Promise<{ path: string | null } | null> {
-  const supabase = await createSessionClient();
-  const { data, error } = await supabase
-    .from('properties')
-    .select('cover_photo_path')
-    .eq('household_id', householdId)
-    .eq('id', propertyId)
-    .is('deleted_at', null)
-    .maybeSingle();
-  return error || data === null ? null : { path: data.cover_photo_path };
-}
-
-/** Lists the folder before re-reading the row, so a cover another editor saved meanwhile is the `current` that stays. */
-async function sweepPhotos(householdId: string, propertyId: string, anchor: string, inclusive: boolean): Promise<void> {
-  const objects = await photoObjects(householdId, propertyId);
-  const cover = await coverPath(householdId, propertyId);
-  if (objects === null || cover === null) return;
-  const stale = stalePhotos(objects, { anchor, inclusive, current: cover.path });
-  if (stale.length === 0) return;
-  const supabase = await createSessionClient();
-  await supabase.storage.from(PROPERTY_PHOTOS_BUCKET).remove(stale);
-}
-
 /**
  * The browser sends the bytes straight to Storage with the URL this returns; no file passes through a server
  * function. The session client signs it, so the storage insert policy decides. Every upload gets a new object name,
@@ -129,10 +99,10 @@ export async function setCoverPhoto(propertyId: unknown, path: unknown): Promise
   if (!parsedId.success || parts === null || parts.householdId !== member.household.id || parts.propertyId !== parsedId.data) {
     return { ok: false };
   }
-  const uploaded = await photoObjects(parts.householdId, parts.propertyId);
+  const supabase = await createSessionClient();
+  const uploaded = await listPhotos(supabase, parts.householdId, parts.propertyId);
   const next = `${parts.householdId}/${parts.propertyId}/${parts.name}`;
   if (uploaded === null || !uploaded.some((object) => object.path === next)) return { ok: false };
-  const supabase = await createSessionClient();
   const { data, error } = await supabase
     .from('properties')
     .update({ cover_photo_path: next })
@@ -142,7 +112,7 @@ export async function setCoverPhoto(propertyId: unknown, path: unknown): Promise
     .select('id')
     .maybeSingle();
   if (error || data === null) return { ok: false };
-  await sweepPhotos(parts.householdId, parts.propertyId, next, false);
+  await sweepPhotos(supabase, parts.householdId, parts.propertyId, { path: next, inclusive: false });
   revalidateProperty(parts.propertyId);
   return { ok: true };
 }
@@ -151,7 +121,7 @@ export async function removeCoverPhoto(propertyId: unknown): Promise<PhotoWrite>
   const parsedId = idSchema.safeParse(propertyId);
   if (!parsedId.success) return { ok: false };
   const [member, supabase] = await Promise.all([requireMember(), createSessionClient()]);
-  const previous = await coverPath(member.household.id, parsedId.data);
+  const previous = await readCover(supabase, member.household.id, parsedId.data);
   if (previous === null) return { ok: false };
   const { data, error } = await supabase
     .from('properties')
@@ -162,7 +132,7 @@ export async function removeCoverPhoto(propertyId: unknown): Promise<PhotoWrite>
     .select('id')
     .maybeSingle();
   if (error || data === null) return { ok: false };
-  if (previous.path !== null) await sweepPhotos(member.household.id, parsedId.data, previous.path, true);
+  if (previous.path !== null) await sweepPhotos(supabase, member.household.id, parsedId.data, { path: previous.path, inclusive: true });
   revalidateProperty(parsedId.data);
   return { ok: true };
 }
