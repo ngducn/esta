@@ -16,6 +16,7 @@ import { personCreate } from './person-ops';
 import { propertyCreate, propertyEdit } from './property-ops';
 import { addLabel, blockedBy, refLabelSchema, resolveRefs, type Label } from './refs';
 import { unitCreate } from './unit-ops';
+import { valuationRecord } from './valuation-ops';
 import { NO_PENDING, withWrites, type Pending, type Write } from './view';
 
 export const PLAN_TTL_MINUTES = 30;
@@ -84,7 +85,7 @@ function batchStep<I, C, O, R extends Refusal>(op: Op<I, C, O, R, LocalContext>)
   };
 }
 
-export const OP_KINDS = ['property.create', 'property.edit', 'document.attach', 'unit.create', 'person.create', 'lease.create', 'lease.edit', 'lease.activate', 'deposit.record'] as const;
+export const OP_KINDS = ['property.create', 'property.edit', 'document.attach', 'unit.create', 'person.create', 'lease.create', 'lease.edit', 'lease.activate', 'deposit.record', 'valuation.record'] as const;
 export type OpKind = (typeof OP_KINDS)[number];
 
 /** The one list of what a batch can hold; `satisfies` fails the build when it and `OP_KINDS` disagree. */
@@ -98,6 +99,7 @@ const OPS = {
   'lease.edit': batchStep(leaseEdit),
   'lease.activate': batchStep(leaseActivate),
   'deposit.record': batchStep(depositRecord),
+  'valuation.record': batchStep(valuationRecord),
 } as const satisfies Record<OpKind, Step>;
 
 export const planRequestSchema = z.strictObject({

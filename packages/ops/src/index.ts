@@ -63,7 +63,7 @@ export { taxInputSave, type TaxInputSaved } from './tax-ops';
 export { SOFT_DELETE_TABLES, type SoftDeleteTable, type Trashed } from './soft-delete';
 export { unitAddRooms, unitCreate, unitDelete, unitRestore, unitsReorder, unitUpdate, type RoomsAdded, type UnitRefusal, type UnitSaved, type UnitsMoved } from './unit-ops';
 export { utilityAccountCreate, utilityAccountDelete, utilityAccountRestore, utilityAccountUpdate, type AccountSaved } from './utility-account-ops';
-export { valuationCreate, valuationDelete, type ValuationSaved } from './valuation-ops';
+export { valuationCreate, valuationDelete, valuationRecord, type ValuationSaved } from './valuation-ops';
 export { readLivePropertyIds, readValuations } from './valuations';
 export { existingLinks } from './links';
 export { readNameLabels, readWatchLabels, readWatchSnapshot } from './watch';
