@@ -1,0 +1,104 @@
+{
+  "version": 1,
+  "kind": "research_scan",
+  "inputHash": "9884d4f6a0ef26df0aa2d910f84f7709c3e07f14bd16c02f0f3f3e1ab6d246f9",
+  "input": {
+    "version": 1,
+    "kind": "research_scan",
+    "prompt": "Bạn là Trợ lý của ứng dụng Esta, giúp một gia đình quản lý bất động sản ở Việt Nam.\nYou may only use the tools provided. Never type a digit, an amount or currency word, or a number word.\nFor every number, date, amount, percent and numbered label (Phòng 5), write the placeholder of the tool field that holds it, such as {{f3.outstanding_display}}.\nWrite every person's name or nickname and every place name through its _name or _label placeholder, such as {{f2.tenant_name}}, because names like chú Ba or Hai Bà Trưng hold number words.\nDo not calculate totals, differences or ratios yourself; call the tool that returns them.\nNever invent amounts, dates, names or sources. If information is missing, say so plainly.\nYou cannot change business records.\nWrite in Vietnamese. Use the household's terms: sổ, thửa đất, hợp đồng thuê, tiền cọc, kỳ thanh toán.\nTone: calm, polite, concise, like a careful family accountant. No exclamation marks, no emoji.\nToday is 2026-10-08 in Asia/Ho_Chi_Minh.\n\nTask: the morning market scan. Find news that matters to the family's properties: land price tables, planning and zoning, infrastructure such as ring roads, metro lines, expressways, airports and bridges, the rental market for the kinds of property held, and the national rules on land, rental tax and mortgage rates.\nKeep only news published on or after 2026-10-01, or news of a rule that takes effect from 2026-10-08 to 2026-12-07. Esta drops any other article, so reading one spends a fetch for nothing.\n1. Call research_topics, list_properties and recent_items once each. recent_items lists the research items already stored; never add those again.\n2. Search with WebSearch using the topics' query_templates, Vietnamese first and English where useful. Ask for recent news: add the year 2026 or words such as mới nhất to a query; it may hold no other number. Skip a result whose date is before 2026-10-01 without fetching it, unless it is about a rule that takes effect by 2026-12-07. This run may make 12 searches and 8 fetches; calls past that are refused.\n3. Prefer official sources (*.gov.vn, chinhphu.vn, baochinhphu.vn, provincial portals, thuvienphapluat.vn, luatvietnam.vn) and established press. Never use forums or listing sites. Fetch single articles with WebFetch; do not crawl. In its prompt, ask for the article's own date line, the one by its headline or byline that says when it was posted and never the site header's date or clock, copied exactly as printed on one line that starts \"Publication date:\", and for every figure, road and law number copied word for word from the article.\n4. For each fetched article that is in that window and material, call add_research_item once. title_vi, summary_vi and why_it_matters_vi are your own words in plain text on one line: summary_vi at most sixty words, why_it_matters_vi naming the properties or provinces it touches through their _label or _name placeholders. topics and properties are the handles the item concerns.\n5. The number rule holds for those three texts and for source_name, the outlet as plain text; when its name holds a digit, write {{f0.host_label}}. A figure, a road or a law number from the article, such as the name of a ring road, goes into quotes copied exactly from the page WebFetch returned, with the words around it, at least three words, and the text cites it as {{f0.quote_1_label}}; the publication date is {{f0.published_display}}. published_on is the date on that Publication date line, effective_on a date the page shows, and with relevance they are data fields, not text.\n6. If add_research_item answers dropped, move on. If it names an error, fix exactly that and call it again for that item.\n7. Never pad: if nothing is new and material, add nothing. Esta writes the note that says so.\nWhen you are done, reply with the single word: xong.",
+    "builtInTools": [
+      "WebSearch",
+      "WebFetch"
+    ],
+    "mcpTools": [
+      "research_topics",
+      "list_properties",
+      "recent_items",
+      "add_research_item"
+    ],
+    "maxTurns": 40
+  },
+  "label": "Hand-written for the northstar seed at 2026-10-08 07:05 after steps 1 to 6 (P5-10a): one infrastructure item with its source, the one the brief shows under Thị trường; the live recording waits for the P5-10b live run. Re-keyed for the prompt that states the keep window (#523); the calls are unchanged.",
+  "model": "hand-written",
+  "numTurns": 8,
+  "toolCalls": [
+    {
+      "name": "mcp__esta__research_topics",
+      "input": {}
+    },
+    {
+      "name": "mcp__esta__list_properties",
+      "input": {}
+    },
+    {
+      "name": "mcp__esta__recent_items",
+      "input": {}
+    },
+    {
+      "name": "WebSearch",
+      "input": {
+        "query": "hạ tầng giao thông Bình Dương vành đai metro cao tốc"
+      },
+      "result": {
+        "query": "hạ tầng giao thông Bình Dương vành đai metro cao tốc",
+        "results": [
+          {
+            "tool_use_id": "srvtoolu_demo",
+            "content": [
+              {
+                "title": "Vành đai 3 đoạn qua Dĩ An sắp khởi công (Demo)",
+                "url": "https://tintuc.example.vn/ha-tang/vanh-dai-3-doan-qua-di-an-sap-khoi-cong"
+              },
+              {
+                "title": "Metro Bình Dương vẫn đang nghiên cứu (Demo)",
+                "url": "https://tintuc.example.vn/ha-tang/metro-binh-duong-nghien-cuu"
+              }
+            ]
+          }
+        ],
+        "durationSeconds": 1.2
+      }
+    },
+    {
+      "name": "WebFetch",
+      "input": {
+        "url": "https://tintuc.example.vn/ha-tang/vanh-dai-3-doan-qua-di-an-sap-khoi-cong",
+        "prompt": "Chép nguyên văn dòng ngày đăng của bài, dòng cạnh tiêu đề hoặc tên tác giả chứ không phải ngày ở đầu trang, trên một dòng bắt đầu bằng \"Publication date:\"; tóm tắt nội dung chính và chép nguyên văn mọi con số, tên đường và số hiệu văn bản trong bài."
+      },
+      "result": {
+        "bytes": 248,
+        "code": 200,
+        "codeText": "OK",
+        "result": "Publication date: 05/10/2026\nBài Demo. Thành phố đã duyệt kế hoạch thi công Vành đai 3 đoạn qua phường Dĩ An, dự kiến khởi công tháng 12/2026. Việc giải phóng mặt bằng đang được thành phố chủ trì.",
+        "durationMs": 900,
+        "url": "https://tintuc.example.vn/ha-tang/vanh-dai-3-doan-qua-di-an-sap-khoi-cong"
+      }
+    },
+    {
+      "name": "mcp__esta__add_research_item",
+      "input": {
+        "source_url": "https://tintuc.example.vn/ha-tang/vanh-dai-3-doan-qua-di-an-sap-khoi-cong",
+        "source_name": "Tin tức Demo",
+        "published_on": "2026-10-05",
+        "effective_on": null,
+        "kind": "infrastructure",
+        "relevance": 0.9,
+        "title_vi": "Sắp khởi công {{f0.quote_1_label}} đoạn qua {{f18.commune_name}}",
+        "summary_vi": "Theo bài đăng ngày {{f0.published_display}}, thành phố đã duyệt kế hoạch thi công {{f0.quote_1_label}} đoạn qua {{f18.commune_name}}, dự kiến {{f0.quote_2_label}}. Việc giải phóng mặt bằng do thành phố chủ trì.",
+        "why_it_matters_vi": "{{f18.property_label}} nằm gần tuyến đường, nên giá thuê phòng có thể tăng khi đường thông xe.",
+        "topics": [
+          "f2",
+          "f14"
+        ],
+        "properties": [
+          "f18"
+        ],
+        "quotes": [
+          "Vành đai 3",
+          "khởi công tháng 12/2026"
+        ]
+      }
+    }
+  ],
+  "reply": "xong"
+}
