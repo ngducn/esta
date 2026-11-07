@@ -7,7 +7,7 @@ import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 import { JOBS } from '../../src/jobs/registry';
 import { pollOnce } from '../../src/runner';
 import { canonicalizer, inputHash } from '../../src/replay/canonicalize';
-import { writeRecording } from '../../src/replay/store';
+import { DEFAULT_REPLAY_DIR, readRecording, writeRecording } from '../../src/replay/store';
 import { decideToolUse, rememberSearchHits, toolCaps } from '../../src/sdk/path-policy';
 import { canonicalInput, replaySession } from '../../src/sdk/session';
 import { memoryDb } from '@esta/ops/test/memory-db';
@@ -16,8 +16,8 @@ import { listPropertiesTool } from '../../src/tools/list-properties';
 import { syncResearchTopics } from '../../src/tools/research-topics';
 import { runSheet } from '../../src/tools/fact-sheet';
 import { clockOn } from '../full-seed';
-import { replayWorker, toolCaller } from '../replay-worker';
-import { RESEARCH_HOUSEHOLD, researchTables, scanRequest, withTitleCheck } from '../research-seed';
+import { replayWorker } from '../replay-worker';
+import { item, PAGE, PAGE_TEXT, RESEARCH_HOUSEHOLD, researchTables, scan, scanRequest, withTitleCheck } from '../research-seed';
 
 type Row = Record<string, unknown>;
 
@@ -25,37 +25,6 @@ const jobsDir = mkdtempSync(join(tmpdir(), 'esta-research-jobs-'));
 const jobDir = jobsDir;
 afterAll(() => rmSync(jobsDir, { recursive: true, force: true }));
 afterEach(() => vi.restoreAllMocks());
-
-const PAGE = 'https://tintuc.example.vn/vanh-dai-3';
-const PAGE_TEXT = 'Bài Demo đăng ngày 05/10/2026: Vành đai 3 đoạn qua Dĩ An sẽ khởi công tháng 12/2026, theo quy định có hiệu lực từ 15/11/2026.';
-
-const item = (patch: Row = {}): Row => ({
-  source_url: PAGE,
-  source_name: 'Tin tức Demo',
-  published_on: '2026-10-05',
-  effective_on: null,
-  kind: 'infrastructure',
-  relevance: 0.9,
-  title_vi: 'Sắp khởi công {{f0.quote_1_label}} qua {{f18.commune_name}}',
-  summary_vi: 'Theo bài ngày {{f0.published_display}}, {{f0.quote_1_label}} sẽ khởi công.',
-  why_it_matters_vi: '{{f18.property_label}} ở gần tuyến đường.',
-  topics: ['f2'],
-  properties: ['f18'],
-  quotes: ['Vành đai 3'],
-  ...patch,
-});
-
-async function scan(options: { pages?: Record<string, string>; similarity?: number; overrides?: Parameters<typeof scanRequest>[1] } = {}) {
-  const tables = researchTables();
-  const db = withTitleCheck(memoryDb(tables), tables);
-  if (options.similarity !== undefined) Object.assign(db, { rpc: async () => ({ data: options.similarity, error: null }) });
-  const prepared = scanRequest(db, options.overrides);
-  for (const [url, result] of Object.entries(options.pages ?? { [PAGE]: PAGE_TEXT })) prepared.observe?.({ name: 'WebFetch', input: { url, prompt: 'x' }, result: { code: 200, codeText: 'OK', result, url, bytes: 1, durationMs: 1 } });
-  const call = toolCaller(prepared);
-  await call('research_topics');
-  await call('list_properties');
-  return { tables, prepared, call, items: () => tables.research_items ?? [] };
-}
 
 describe('the web caps in the PreToolUse policy (AGENT.md §5.2)', () => {
   it('allows each web tool up to its cap, then denies it, and refuses a fetch that is not one https page', () => {
@@ -328,7 +297,14 @@ describe('research_scan job', () => {
     const job = (id: string): Row => ({ id, household_id: RESEARCH_HOUSEHOLD, kind: 'research_scan', status: 'queued', run_after: '2026-10-06T23:00:00.000Z', attempts: 0, max_attempts: 4, payload: {}, idempotency_key: `research_scan:${RESEARCH_HOUSEHOLD}:2026-10-07:${id}` });
     tables.agent_jobs = [job('job-1')];
     tables.agent_runs = [];
-    const worker = replayWorker(memoryDb(tables), tables.agent_jobs, jobsDir, clockOn('2026-10-07T06:00:00+07:00'));
+    // The rerun's window starts today (#523), so its prompt differs: it replays the morning's calls under that prompt.
+    const replayDir = mkdtempSync(join(jobsDir, 'replay-'));
+    const input = (lastSuccessOn: ReturnType<typeof isoDate> | null) => canonicalInput({ spec: JOBS.research_scan, prompt: scanRequest(memoryDb(researchTables()), { lastSuccessOn }).prompt, canon: canonicalizer({ householdName: 'Gia đình Demo' }) });
+    const morning = readRecording(DEFAULT_REPLAY_DIR, input(null));
+    const rerun = input(isoDate('2026-10-07'));
+    writeRecording(replayDir, morning);
+    writeRecording(replayDir, { ...morning, input: rerun, inputHash: inputHash(rerun) });
+    const worker = replayWorker(memoryDb(tables), tables.agent_jobs, jobsDir, clockOn('2026-10-07T06:00:00+07:00'), replayDir);
     withTitleCheck(worker.db, tables);
     vi.spyOn(console, 'log').mockImplementation(() => undefined);
     vi.spyOn(console, 'warn').mockImplementation(() => undefined);
@@ -341,7 +317,9 @@ describe('research_scan job', () => {
     tables.agent_jobs.push(job('job-2'));
     expect(await pollOnce(worker)).toBe(true);
     expect(tables.agent_jobs[1]).toMatchObject({ status: 'done', result: expect.objectContaining({ empty: false }) });
-    expect(tables.research_items, 'every link is stored already').toHaveLength(4);
+    const dropped = (tables.agent_jobs[1]?.result as { dropped: Array<{ reason: string }> }).dropped.map(({ reason }) => reason);
+    expect(dropped, 'news from before today drops; the rule taking effect soon is stored already').toEqual(['seen_before', 'not_fetched', 'seen_before', 'seen_before', 'duplicate_url', 'seen_before', 'seen_before']);
+    expect(tables.research_items).toHaveLength(4);
     expect(tables.agent_items, 'no empty note on a day that has news').toEqual([]);
   });
 });

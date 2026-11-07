@@ -2,6 +2,7 @@ import { WEB_CAPS } from '@esta/core/agent-limits';
 import { capsLeftForJob } from './web-spent';
 import { businessDate, parseInstant } from '@esta/core';
 import type { IsoDate } from '@esta/core/date';
+import { scanWindow } from '@esta/core/research';
 import type { Locale } from '@esta/core/format';
 import { z } from 'zod';
 import { researchScanPrompt, type ScanCaps } from '../prompts/research-scan';
@@ -25,16 +26,17 @@ const EMPTY_NOTE: Readonly<Record<Locale, string>> = {
 /** AGENT.md §5.2 maximums, which `household_settings.agent` may lower; maxTurns 40 is sized for them. */
 const capsSchema = z.object({ research_searches: z.int().min(0).max(WEB_CAPS.research_scan.WebSearch).catch(WEB_CAPS.research_scan.WebSearch), research_fetches: z.int().min(0).max(WEB_CAPS.research_scan.WebFetch).catch(WEB_CAPS.research_scan.WebFetch) });
 
-export type ScanRequestInput = Omit<ResearchBinding, 'sheet' | 'topics' | 'properties' | 'fetched'> & { readonly timezone: string; readonly caps: ScanCaps };
+export type ScanRequestInput = Omit<ResearchBinding, 'sheet' | 'topics' | 'properties' | 'fetched' | 'window'> & { readonly timezone: string; readonly caps: ScanCaps; readonly lastSuccessOn: IsoDate | null };
 
 export function researchScanRequest(input: ScanRequestInput): PreparedJob {
   const { sheet, cite } = runSheet();
   const topics = researchTopicsTool(input.db, input.householdId, cite);
   const properties = listPropertiesTool(input.db, input.householdId, cite);
   const fetched = new Map<string, FetchedPage>();
-  const items = researchItemWriter({ ...input, sheet, topics: topics.records, properties: properties.records, fetched });
+  const window = scanWindow({ today: input.asOf, lastSuccessOn: input.lastSuccessOn });
+  const items = researchItemWriter({ ...input, sheet, topics: topics.records, properties: properties.records, fetched, window });
   return {
-    prompt: researchScanPrompt({ locale: input.locale, today: input.asOf, timezone: input.timezone, caps: input.caps }),
+    prompt: researchScanPrompt({ locale: input.locale, timezone: input.timezone, caps: input.caps, window }),
     tools: new Map([
       estaTool('research_topics', topics.run),
       estaTool('list_properties', properties.run),

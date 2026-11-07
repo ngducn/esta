@@ -4,7 +4,7 @@ import type { IsoDate } from '@esta/core/date';
 import { formatDate, type Locale } from '@esta/core/format';
 import { checkNote, type FactSheet, type FilledNote } from '@esta/core/guard';
 import { datesInText, publishedDates } from '@esta/core/parse/page-dates';
-import { keepRule, normalizeUrl, storedSourceLink, type DropReason } from '@esta/core/research';
+import { keepRule, normalizeUrl, storedSourceLink, type DropReason, type ScanWindow } from '@esta/core/research';
 import type { AgentDb } from '../supabase';
 import { guardedWriter } from './create-item';
 import { daysAgo } from './recent-items';
@@ -17,7 +17,7 @@ export type ResearchBinding = {
   readonly jobId: string;
   readonly locale: Locale;
   readonly asOf: IsoDate;
-  readonly lastSuccessOn: IsoDate | null;
+  readonly window: ScanWindow;
   readonly sheet: FactSheet;
   readonly topics: ReadonlyMap<string, { readonly province_codes: readonly string[] }>;
   readonly properties: ReadonlyMap<string, { readonly id: string }>;
@@ -85,7 +85,7 @@ export function researchItemWriter(binding: ResearchBinding) {
     if (!publishedDates(page.text).has(draft.published_on)) return drop(draft.source_url, 'date_unconfirmed');
     const onPage = datesInText(page.text);
     const effectiveOn = draft.effective_on !== null && onPage.has(draft.effective_on) ? draft.effective_on : null;
-    const keep = keepRule({ publishedOn: draft.published_on, effectiveOn }, { today: binding.asOf, lastSuccessOn: binding.lastSuccessOn });
+    const keep = keepRule({ publishedOn: draft.published_on, effectiveOn }, binding.window);
     if (!keep.ok) return drop(draft.source_url, keep.reason);
     const stored = await binding.db.from('research_items').select('id').eq('household_id', binding.householdId).in('url_normalized', page.urls).limit(1);
     if (stored.error) throw new Error(`add_research_item failed: ${stored.error.message}`);
