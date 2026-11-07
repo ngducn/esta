@@ -1,7 +1,7 @@
 # Resume notes for the Esta v1 run
 
 Resume with `skills/poteto-mode/playbooks/session-pickup.md`, then Autopilot-full. Read the 2026-10-30 retro rules in standing-orders.md first. Read:
-- `docs/plan/trail/standing-orders.md` (newest at the bottom: 2026-10-30 retro, 2026-10-27 merge-and-stop);
+- `docs/plan/trail/standing-orders.md` (newest at the bottom);
 - `docs/plan/redesign-2026-11.md` (the redesign plan, RD-1 to RD-6);
 - `verification-tiers.md`, `owner-brief.md`, `lane-brief.md`;
 - the tail of `decisions.tsv`;
@@ -9,32 +9,36 @@ Resume with `skills/poteto-mode/playbooks/session-pickup.md`, then Autopilot-ful
 
 Briefs are in `~/.claude/orchestrate/esta/briefs/`. The root's todo is `~/.claude/orchestrate/esta/todo.md`. Media is in `~/.claude/orchestrate/esta/media/<PR code>/`. The redesign's design system copy is in `~/.claude/orchestrate/esta/design/2026-11/`.
 
-## Where the run is (written 2026-11-07 08:30 +07)
+## Where the run is (written 2026-11-07 16:40 +07)
 
-**Production is live** at https://esta-five.vercel.app (Ryan: "Yes, go live", 2026-11-07, which deferred the quality pass to later releases). Ryan is signed in; his household exists (he is admin and operator; one pending invite as `member`). Week 97%, resets 2026-11-07 11:00 +07: no agents until then.
+**Production is live** at https://esta-five.vercel.app and in real use. Ryan is signed in (admin and operator); Mẹ's invite is still pending as `member`, and Ryan has not answered whether it should be admin. Email codes work: Gmail SMTP is saved in esta-prod and the otp and recovery templates are pushed (decisions.tsv `go-live-email-codes`).
 
-**Cloud state.** Vercel project `esta` (ngducns-projects, Hobby): Root Directory `apps/web`, Node 24.x, function region `sin1` (project setting `resourceConfig.functionDefaultRegions`), no Git connection yet, 4 crons registered. Production deployment `dpl_ACas94xq9dxuBFTzAVJtRCN4CEcA` built from #517's head `0bc09766` (app code = main 21bd7dc8); `pnpm smoke https://esta-five.vercel.app` ok. Preview env holds esta-preview values; production env holds esta-prod values; both secrets typed by Ryan through scratch scripts. Supabase: `esta-preview` `qqrhsuhatxlabgansyhu` and `esta-prod` `labtkrcyedhavcwguotl` (both ap-southeast-1, free, 98 migrations each). esta-prod auth: site_url and callback for esta-five, otp 6, password 8, secure_password_change, MFA off; no email templates and no session timebox (free tier refuses both). esta-preview: no auth config push, no seed. One failed production deployment record `dpl_GCiHEXBAFWGSZKoAag2FAnCf46e4` from a bare `vercel deploy` (never served; deleting it is Ryan's call).
+**Family portfolio is loaded** through the esta-prod connector with Ryan's yes on each plan: properties, one owner_estimate valuation each as of 2026-11-07, and area cover photos (Wikimedia Commons, credit in each note) on all but a few. Real family data lives only in the session scratchpad and `~/.claude/orchestrate/esta/briefs/portfolio-load-prod.md`; never in the repo, the trail or a PR.
 
-**Found while deploying (codify in a follow-up PR):** (1) Supabase CLI 2.90 does not expand `env(...)` in `[remotes.*] project_id`, so the remote blocks never match and the push shows 127.0.0.1; pushed from a scratch copy with literal refs. (2) A free project with the default sender rejects email templates (400) and `[auth.sessions]` (402); without templates every email carries a link and no code, and the app signs in, signs up and recovers only by code, so nobody can sign in by email until custom SMTP exists. Ryan's password was set through the SQL editor. (3) CLI deploys from the repo root ignored `vercel.json` `regions` until the project setting changed (in #517: smoke now checks the function region). (4) A bare `vercel deploy` targeted production (in #517: DEPLOY.md rule).
+**Trợ lý runs on Ryan's Mac.** launchd job `vn.esta.agent`, clone `~/esta-worker` detached at tag `v2026-11-07-1` (a59c103a, #524), live mode, subscription auth, routine claude-sonnet-5-5, deep claude-opus-5-5, backups `~/Esta-backups`, log `~/Library/Logs/esta-agent.log`, heartbeat in `public.worker_heartbeats`. The worker moves only by `pnpm worker:update <tag>` in that clone, a production release that needs Ryan's yes (DEPLOY.md section 13). The 2026-11-08 06:00 scan is the first with the #524 window: check it kept news (research items dated 2026-11-08, no `research_scan_empty:2026-11-08`). The 07:00 brief is the first to cover the whole portfolio.
 
-**Not working yet:** email codes (needs a sender: Gmail app password, Resend or Postmark, Ryan's choice; then push the templates), Trợ lý and nightly backups (the worker on Ryan's Mac, DEPLOY.md section 6, needs `claude setup-token`), the denied-function probe (section 12), each cron run once from the dashboard. Ryan asked why legacy JWT keys: switch both projects to `sb_publishable_`/`sb_secret_` keys, preview first, then disable legacy keys.
+**Cloud state.** Vercel project `esta` (Hobby): Root Directory `apps/web`, region `sin1`, no Git connection, 4 crons. Web production is still `dpl_ACas94xq9dxuBFTzAVJtRCN4CEcA` from #517's head 0bc09766 (app code = 21bd7dc8). It lacks #518 and #520 (connector ops moved into `packages/ops`, no user-visible change) and #524 (agent only). Next web release after #517 merges. Supabase `esta-prod` `labtkrcyedhavcwguotl` and `esta-preview` `qqrhsuhatxlabgansyhu` (ap-southeast-1, free, 98 migrations; none since). `v2026-11-07-1` is the first release tag (worker only).
 
-**Local app for Ryan:** slot 0, `pnpm dev` in Terminal tab c1 (localhost:3000), live worker in tab c3 (`ESTA_SLOT=0 ESTA_ENV=development ESTA_AGENT_SCHEDULE=off ESTA_MODEL_ROUTINE=claude-sonnet-5-5 ESTA_MODEL_DEEP=claude-opus-5-5 pnpm agent:dev`). Ryan's own pid 56207 is a 12-day-old replay worker on slot 5; leave it.
+**Slowness check (11:35).** Ryan asked if free Supabase makes the app slow. Measured: no; page data loads in about 0.15 to 0.25 s from Singapore, and his connection was saturated by a game download. Signed-in page timing not done; offer it again if he raises speed.
 
-## Open items (state at 08:30 2026-11-07 +07)
+**Found while deploying, still to codify (one follow-up PR):** (1) Supabase CLI 2.90 does not expand `env(...)` in `[remotes.*] project_id`, so config pushes need a scratch copy with literal refs. (2) A free project rejects email templates and `[auth.sessions]` without custom SMTP; DEPLOY.md must say SMTP comes before any sign-in. (3) and (4) are in #517.
 
-- **#517 Vercel config** draft at 0bc09766 (moves vercel.json to apps/web, smoke checks the function region, DEPLOY.md rules); production runs this head. After the reset: independent reader, `gh pr ready 517`, wait-ci, merge.sh, then tag main and record the release. Then connect GitHub to the Vercel project (`git.deploymentEnabled.main` false keeps main from deploying itself).
-- **Follow-up PR for the config-push findings** above: a script that renders the remote blocks with literal refs (or another fix), DEPLOY.md: custom SMTP before any sign-in on a free project, sessions need Pro.
-- **#499 Q-03** draft at ff9cda93 (round 1 + root's two merges of main: filter moved to extraction-ops.ts:130 red/green on slot 8, migration renamed 20261007651200, TRASH_READERS un-exported). After the reset: scoped reader over round 1 and both merges, then `gh pr ready 499`, wait-ci, merge.sh.
-- **#481 Q-17b** ready at 06818f33, ci green including db (root fixed #515 on its branch: cron test reads only CALLED_JOBS, red/green on slot 9). After the reset: scoped reader, update-branch, wait-ci, merge.sh.
-- **#482 Q-12b** draft at e789d9e2 (r2: 6 e2e jobs, weighted shards, slowest 605 s; root merged main and re-recorded the direct-write raise 55->56). After the reset: Opus audit + lane (must explain the account-menu desktop flake on retry), ready, merge.
+## Open items (state at 16:40 2026-11-07 +07)
+
+- **#517 Vercel config** draft at 0bc09766; production web runs this head. Next: independent reader, `gh pr ready 517`, `ci`, merge.sh, tag, web release with Ryan's yes, then connect GitHub to the Vercel project.
+- **Config-push follow-up PR** for findings (1) and (2) above.
+- **Keys:** move both Supabase projects to `sb_publishable_`/`sb_secret_` keys, preview first, then disable the legacy JWT keys (Ryan asked).
+- **DEPLOY section 12** denied-function probe against esta-preview, and each cron run once from the dashboard.
+- **#499 Q-03** draft at a7a23670 (conflict with #518's ops exports resolved). Next: scoped reader over round 1 and the merges, ready, `ci`, merge.sh.
+- **#481 Q-17b** ready at 06818f33. Next: scoped reader, update-branch, `ci`, merge.sh.
+- **#482 Q-12b** draft at e789d9e2. Next: Opus audit plus lane (explain the account-menu desktop flake), ready, merge.
 - **#464** Dependabot, unreviewed.
-- **Flakes to fix first after the reset:** #513 (lease race 4-hex labels) and #508 (payments integration) both hit #500's db job.
-- **Queue after the reset:** Q-04 legal tab (#202, #398, #189), Q-10b and lows #488-#516, Q-06, Q-07, Q-18, rest of Q-20, Q-14 squash, Q-15 docs, Q-02 formatter; [low] "no hint when no worker serves the slot" (Trợ lý waits forever). Then a live smoke on main, then production deploy with Ryan.
-- **Merge path, slots, migrations:** merge.sh only; slots 3, 7, 8, 9, 14; next migration from bin/next-migration.sh (651200 taken by #499). `bin/ci-state.jq` reports PENDING while a ready run has not created its ci yet.
+- **Lows:** flakes #513 and #508 first, then #519, #521, #522; then the queue (Q-04 legal tab, Q-10b, Q-06, Q-07, Q-18, Q-20, Q-14, Q-15, Q-02).
+- **Merge path, slots, migrations:** merge.sh only (third argument is the squash subject; it appends the PR number); slots 3, 7, 8, 9, 14; next migration from `bin/next-migration.sh`.
 
 ## Waiting for Ryan (defaults apply)
 
+0. Mẹ's role: her invite is `member`; CLAUDE.md lists her as admin. Default: leave it until Ryan says.
 1. Thread per person (default) or one shared family thread.
 2. One email per brief and per urgent note, per PLT-4 (default). The planner recommends one combined email a morning instead.
 3. D9 wording stays (the thread counts as the in-app inbox).
@@ -60,7 +64,7 @@ Ruled 2026-11-02: Thu tiền "Đã thu" counts payments toward this month's rent
 
 - Briefs say "Spawn no subagents, except the comment-sicko that /no-comments runs". Three owners skipped or hand-ran /no-comments because the blanket ban covered the skill's own subagent.
 
-- The root merges on a clean independent verdict plus green ci at the exact head. Call `gh pr merge` directly. At most 2 reviewed PRs wait above main.
+- The root merges on a clean independent verdict plus green ci at the exact head. Merge only through `~/.claude/orchestrate/esta/bin/merge.sh`. At most 2 reviewed PRs wait above main.
 - Prototype first, live checks for each assistant slice, and Mẹ's session before more assistant features. Repeat findings become checks (owner-brief "Known defect classes"). The redesign's prototype is Ryan's artifact.
 - Fix rounds are capped at 2. A language-rule change needs live English and Vietnamese probes that name real seed records.
 - No force-push. Restack with commit-tree merge commits plus a patch-id check. When a 3-way merge conflicts on adjacent edits, apply the PR's own diff (`git diff prev head | git apply --cached` on a temp index) instead.
@@ -69,17 +73,21 @@ Ruled 2026-11-02: Thu tiền "Đã thu" counts payments toward this month's rent
 
 - 2026-11-06 evening: a new check is proven by putting back main's exact replaced lines and watching it fail (#500, #503). A closing test enters where the app enters, never through a helper fed an input the real caller cannot produce (#502 #326). A security definer function derives every row it writes from stored rows; its pgTAP names another household's id for every id parameter (#497). Owners never pick a migration number; root assigns one from `bin/next-migration.sh`. Owners may not add CI jobs or shards (main's job count is the ceiling).
 - Root never pushes to a branch an agent writes. An Auto-fix conflict or CI event on such a PR goes to that agent by SendMessage.
+- 2026-11-07: a code-writing side session gets its own worktree (`use_worktree: true`). One that shared the root checkout fast-forwarded local `main` onto an unmerged branch while the prod connector ran from it.
+- 2026-11-07: a production release is a tag on `main` plus Ryan's yes; the worker moves only by `pnpm worker:update <tag>`. Merging a PR does not reach the 06:00 jobs.
+- 2026-11-07: before committing `decisions.tsv` or RESUME.md, read every new row for real family data (place names, counts, amounts, property codes) and rewrite it generically. Today's portfolio rows held all four and were scrubbed before the commit; the handoff skill's step 5 now says so.
 
 ## Budget
 
-Week at 96% at 22:10 on 2026-11-06, resets 2026-11-07 11:00 +07. Guard (raised by Ryan's x3 request): stop spawns at 96% (reached), pause owners at 98%. Read the plan limits with the session usage tool, which matches /usage; `usage-pct.sh` reads the 5-hour window. On a 429, resume the owner with SendMessage after the reset.
+New week since 2026-11-07 11:00 +07: 2% used at 16:40, resets 2026-11-14 11:00 +07. Read it with `mcp__ccd_session_mgmt__get_usage`. The 08:43 trail row records Ryan's cap at 60% (stop spawns at 48%, pause at 55%); confirm with Ryan whether it holds this week before a large fan-out.
 
 ## Gotchas
 
-- Every PR that appends an item to the review checklist in verification-tiers.md conflicts with the next one that does (three times on 2026-11-06). Root resolves it docs-only by renumbering; whether GitHub honours `merge=union` in .gitattributes is unchecked.
-- zsh reads `$var:r` in a refspec as a modifier. Use `${var}:` or literal SHAs.
+- `agent_jobs` has `error`, not `last_error`. Supabase `execute_sql` returns only the last statement's rows.
+- The scratch MCP client (`scratchpad/esta-mcp.mjs`) needs the 10-minute request timeout; at 60 s a long `apply_plan` kept running orphaned, and re-apply answered `already_applied`.
+- A same-day rerun of a brief, digest or empty-scan note adds nothing (`agent_items` dedupe on `household_id,dedupe_key`); research_scan is capped at 2 runs a day.
+- Every PR that appends to the review checklist in verification-tiers.md conflicts with the next one that does. Root resolves it docs-only by renumbering.
+- zsh reads `$var:r` in a refspec as a modifier, and an unquoted `--include=*.ts` as a glob. Quote both.
 - A PR with a merge conflict gets no `pull_request` CI run. When "no checks" appears, look at `mergeStateStatus`.
 - Owners in git-excluded worktrees keep their `decisions.tsv` rows locally. The root merges those rows into main.
-- Slot 6 is Ryan's and slot 4 is never used. Ryan had his slot 5 test app and slot 6 stack stopped on 2026-11-01 (data kept in docker volumes).
-- e2e runs on ESTA_FROZEN_NOW=2026-11-01T10:00+07:00 (playwright.config.ts) unless the shell sets it. A local dev server started before #376 keeps the real date until restarted.
-- Artifact brand SVGs are uploads: read them one at a time with `path` set to the asset id; `paths` refuses ids.
+- Slot 6 is Ryan's and slot 4 is never used. e2e runs on ESTA_FROZEN_NOW=2026-11-01T10:00+07:00 unless the shell sets it.
