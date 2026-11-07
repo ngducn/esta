@@ -1,6 +1,7 @@
+import { formatDate, formatVnd } from '@esta/core/format';
 import { valuationSchema, type Valuation } from '@esta/core/valuations';
 import { z } from 'zod';
-import { dbRefusal, idSchema } from './kit';
+import { dbRefusal, idSchema, type CommonRefusal } from './kit';
 import { change, defineOp, refuse, unchanged, type OpContext } from './op';
 import { viewRows } from './view';
 
@@ -50,5 +51,42 @@ export const valuationDelete = defineOp<z.output<typeof deleteInputSchema>, Valu
     if (error) return refuse(dbRefusal(error));
     if (data.length === 0 && (await stored(ctx, id))) return refuse({ kind: 'forbidden' });
     return { ok: true, value: { id } };
+  },
+});
+
+const recordInputSchema = z
+  .strictObject({
+    id: idSchema,
+    property_id: idSchema,
+    as_of: valuationSchema.shape.asOf,
+    value_vnd: valuationSchema.shape.valueVnd,
+    method: valuationSchema.shape.method,
+    source_url: valuationSchema.shape.sourceUrl.default(null),
+    note: valuationSchema.shape.note.default(null),
+  })
+  .transform(({ id, property_id, as_of, value_vnd, method, source_url, note }): Valuation => ({ id, propertyId: property_id, asOf: as_of, valueVnd: value_vnd, method, sourceUrl: source_url, note }));
+
+const CLAUDE_KEYS: Readonly<Record<string, string>> = { propertyId: 'property_id', asOf: 'as_of' };
+
+/** The sheet's refusal names its fields in camelCase; Claude sends snake_case, so the refusal says what Claude sent. */
+function inClaudesKeys(refusal: CommonRefusal): CommonRefusal {
+  return refusal.kind === 'invalid' ? { kind: 'invalid', issues: refusal.issues.map((issue) => ({ ...issue, path: CLAUDE_KEYS[issue.path] ?? issue.path })) } : refusal;
+}
+
+/**
+ * VAL: an owner's estimate, a broker's quote, a state price reference or comparables for one property on one day, saved
+ * as the valuation sheet saves it. `id` is minted by the batch; a property named by `$ref` is created earlier in it.
+ */
+export const valuationRecord = defineOp<Valuation, Valuation, ValuationSaved>({
+  creates: 'valuations',
+  input: recordInputSchema,
+  async plan(ctx, valuation) {
+    const planned = await valuationCreate.plan(ctx, valuation);
+    return planned.ok ? planned : refuse(inClaudesKeys(planned.reason));
+  },
+  apply: valuationCreate.apply,
+  async preview(ctx, { propertyId, asOf, valueVnd }) {
+    const [property] = await viewRows(ctx, 'properties', { id: propertyId });
+    return { property: property?.nickname ?? null, value_display: formatVnd(valueVnd, 'vi'), as_of_display: formatDate(asOf, 'vi') };
   },
 });
