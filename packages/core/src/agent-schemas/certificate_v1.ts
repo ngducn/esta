@@ -20,13 +20,13 @@ export function leaf<T extends z.ZodType>(value: T) {
 
 /**
  * Reads printed text as every screen reads an area, so `125,5 m²` is 125.5. Text with more decimals than an area
- * keeps, such as `1,255 m²`, stays as printed for Mẹ to settle on review; other text goes back to the model.
+ * keeps, such as `1,255 m²`, or a group that starts with 0, such as `0.255 m²`, stays as printed for Mẹ to settle on review; other text goes back to the model.
  */
 function readPrintedArea(raw: unknown, context: z.RefinementCtx): unknown {
   if (typeof raw !== 'string') return raw;
   const area = parseMeasureInput(raw, 'area');
   if (area.ok) return area.value;
-  if (area.reason === 'too_precise') return raw;
+  if (area.reason === 'too_precise' || area.reason === 'leading_zero') return raw;
   context.addIssue({ code: 'custom', message: `expected an area in square metres, such as 125.5 (${area.reason})` });
   return z.NEVER;
 }

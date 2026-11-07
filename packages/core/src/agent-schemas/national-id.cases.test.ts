@@ -1,20 +1,35 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { NATIONAL_ID_CASES, NATIONAL_ID_KEPT, NATIONAL_ID_SURROUNDS } from './national-id.cases';
+import * as cases from './national-id.cases';
+import { NATIONAL_ID_SURROUNDS } from './national-id.cases';
+import { NATIONAL_ID_REPLAYED } from './national-id-vectors';
 import { DATE, reduceNationalIds } from './reduce-national-ids';
 
 const leaf = (value: unknown) => ({ value, confidence: 0.95, page: 1 });
 const reduce = (text: string): string => String(reduceNationalIds({ notes_text: leaf(text) }).notes_text.value);
 
 describe('the national ID reducer on its case table', () => {
-  it.each(NATIONAL_ID_CASES)('%s', (_name, text, reduced) => {
+  it.each(NATIONAL_ID_REPLAYED.reduced)('%s', (_name, text, reduced) => {
     expect(reduce(text)).toBe(reduced);
     expect(reduce(reduce(text))).toBe(reduced);
   });
 });
 
+/** Tables here that feed a property and are no rows of text to read. */
+const PROPERTY_INPUTS: ReadonlySet<string> = new Set(['NATIONAL_ID_SURROUNDS']);
+const isRows = (value: unknown): value is readonly (readonly unknown[])[] =>
+  Array.isArray(value) && value.length > 0 && value.every((row) => Array.isArray(row) && row.length >= 2 && row.every((cell) => typeof cell === 'string'));
+
+describe('the national ID case tables', () => {
+  it('every table of rows in the case file is in NATIONAL_ID_REPLAYED, which the pgTAP test replays through the database check', () => {
+    const replayed = new Set<unknown>([...NATIONAL_ID_REPLAYED.reduced, ...NATIONAL_ID_REPLAYED.kept]);
+    const stray = Object.entries(cases).flatMap(([name, table]) => (!PROPERTY_INPUTS.has(name) && isRows(table) && !table.every((row) => replayed.has(row)) ? [name] : []));
+    expect(stray).toEqual([]);
+  });
+});
+
 describe('the national ID reducer on numbers that are no ID', () => {
-  it.each(NATIONAL_ID_KEPT)('%s', (_name, text) => {
+  it.each(NATIONAL_ID_REPLAYED.kept)('%s', (_name, text) => {
     expect(reduce(text)).toBe(text);
   });
 });
@@ -42,6 +57,19 @@ const BEFORE = ['₫', 'đ', 'VND', 'vnđ', 'VNĐ', 'Đ', 'vnd'];
 const groupings = fc.array(fc.integer({ min: 1, max: 4 }), { minLength: 1, maxLength: 12 });
 const groupSeparators = fc.constantFrom('', ' ', '.', ',', '\u00b7', '\u00a0', '  ');
 
+/** The digits cut into groups of the given sizes, the rest in a last group. */
+function splitDigits(ds: readonly number[], sizes: readonly number[]): string[] {
+  const parts: string[] = [];
+  let at = 0;
+  for (const size of sizes) {
+    if (at >= ds.length) break;
+    parts.push(ds.slice(at, at + size).join(''));
+    at += size;
+  }
+  if (at < ds.length) parts.push(ds.slice(at).join(''));
+  return parts;
+}
+
 describe('the national ID reducer on money', () => {
   it('never cuts a figure of nine to twelve digits that a currency marker follows or leads, in any grouping', () => {
     fc.assert(
@@ -52,25 +80,62 @@ describe('the national ID reducer on money', () => {
         fc.constantFrom(...AFTER, ...BEFORE),
         fc.constantFrom('', ' '),
         fc.boolean(),
-        fc.constantFrom('Giá ', 'cccd ', ''),
+        fc.constantFrom('Giá ', ''),
         (ds, sizes, sep, marker, gap, before, lead) => {
-          const parts: string[] = [];
-          let at = 0;
-          for (const size of sizes) {
-            if (at >= ds.length) break;
-            parts.push(ds.slice(at, at + size).join(''));
-            at += size;
-          }
-          if (at < ds.length) parts.push(ds.slice(at).join(''));
+          const parts = splitDigits(ds, sizes);
           const figure = parts.join(sep);
           const leads = before && BEFORE.includes(marker);
           const text = leads ? `${lead}${marker}${gap}${figure}` : `${lead}${figure}${gap}${marker}`;
-          fc.pre(!/^0[^.,\u00b7]*$/u.test(figure));
+          fc.pre(!/^0[^.,\u00b7]*$/u.test(figure) && !/^0\d/u.test(figure));
           fc.pre(!new RegExp(DATE.source, 'u').test(text));
           expect(reduce(text)).toBe(text);
         },
       ),
       { seed: 20261007, numRuns: 1500 },
+    );
+  });
+});
+
+describe('the national ID reducer on a figure right after an ID label', () => {
+  it('cuts a figure of nine to twelve digits whatever its grouping or currency marker', () => {
+    fc.assert(
+      fc.property(
+        fc.array(fc.integer({ min: 0, max: 9 }), { minLength: 9, maxLength: 12 }),
+        fc.array(fc.integer({ min: 3, max: 4 }), { minLength: 1, maxLength: 4 }),
+        groupSeparators,
+        fc.constantFrom(...AFTER),
+        fc.constantFrom('', ' '),
+        fc.constantFrom('CCCD ', 'CMND ', 'căn cước ', 'cccd: '),
+        (ds, sizes, sep, marker, gap, label) => {
+          const parts = splitDigits(ds, sizes);
+          const text = `${label}${parts.join(sep)}${gap}${marker}`;
+          fc.pre(!new RegExp(DATE.source, 'u').test(text));
+          fc.pre(parts.every((part) => part.length >= 3) && !(parts.length > 1 && sep === ''));
+          expect(digitsOf(reduce(text)).length).toBeLessThanOrEqual(4);
+        },
+      ),
+      { seed: 20261007, numRuns: 1500 },
+    );
+  });
+});
+
+/** Names and phrases that start like a currency word but are none, and the labelled number before each. */
+const NOT_MONEY_WORDS = ['Đồng Nai', 'Đồng Tháp', 'Đông Anh', 'đồng ý', 'đồng sở hữu', 'Triệu Thị', 'Tý', 'Vnd', 'Đ.'];
+
+describe('the national ID reducer on words that only look like money', () => {
+  it('cuts a labelled number whatever name or phrase follows it, spaced or whole', () => {
+    fc.assert(
+      fc.property(
+        fc.array(fc.integer({ min: 0, max: 9 }), { minLength: 9, maxLength: 9 }),
+        fc.constantFrom('', ' '),
+        fc.constantFrom(...NOT_MONEY_WORDS, ...AFTER),
+        (ds, sep, word) => {
+          const number = ds.map((d, i) => (i === 2 || i === 5 ? sep + String(d) : String(d))).join('');
+          const out = reduce(`CMND ${number} ${word}`);
+          expect(digitsOf(out)).not.toContain(ds.join(''));
+        },
+      ),
+      { seed: 20261007, numRuns: 400 },
     );
   });
 });

@@ -31,6 +31,9 @@ const db: SupabaseClient<Database> = createClient<Database>(url, serviceRoleKey,
 
 const authorized = (path: string) => new Request(`http://localhost${path}`, { headers: { authorization: `Bearer ${SECRET}` } });
 
+/** The jobs `cron` calls; cron_runs rows of any other job belong to another file. */
+const CALLED_JOBS = ['invoices', 'lease_status'];
+
 async function cron(at: string) {
   frozenNow = at;
   const leaseStatus: unknown = await (await leaseStatusRoute.GET(authorized('/api/cron/lease-status'))).json();
@@ -129,7 +132,10 @@ describe('the nightly cron routes against local Supabase (SPEC §5.4, §7.4, LSE
     expect(added).toEqual(Array.from({ length: HOUSEHOLDS }, () => ({ period_start: '2027-01-01', period_end: '2027-03-31', status: 'draft' })));
   });
   it('leaves one cron_runs row per route call, stamped by the injected clock', async () => {
-    const runs = await rows(db.from('cron_runs').select('job, started_at, finished_at, ok, failure, households_processed, households_failed').order('started_at').order('job'));
+    // Other files run other cron jobs against the same database at the same frozen time (the document sweep, #515).
+    const runs = await rows(
+      db.from('cron_runs').select('job, started_at, finished_at, ok, failure, households_processed, households_failed').in('job', CALLED_JOBS).order('started_at').order('job'),
+    );
     const first = '2026-10-07T02:00:00+00:00';
     expect(runs.filter((run) => run.started_at === first).map((run) => ({ ...run, started_at: undefined, finished_at: undefined }))).toEqual([
       { job: 'invoices', started_at: undefined, finished_at: undefined, ok: true, failure: null, households_processed: HOUSEHOLDS, households_failed: 0 },

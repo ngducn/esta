@@ -22,9 +22,10 @@ const insurance: DocumentDetail = {
   expiryText: 'Hết hạn sau 23 ngày',
   expiringSoon: true,
   tags: [],
+  hasReadText: false,
 };
 
-const open = () => renderInLocale(<DocumentEditSheet open onOpenChange={() => undefined} finalFocus={{ current: null }} document={insurance} properties={[]} onSaved={() => undefined} />);
+const open = (document: DocumentDetail = insurance) => renderInLocale(<DocumentEditSheet open onOpenChange={() => undefined} finalFocus={{ current: null }} document={document} properties={[]} onSaved={() => undefined} />);
 
 const typeExpiry = (text: string) => {
   const field = screen.getByLabelText('Ngày hết hạn (nếu có)');
@@ -82,5 +83,21 @@ describe('Sửa thông tin', () => {
     expect(sent()).toMatchObject({ title: 'CCCD mẹ 079123456789', tags: ['demo', '079123456789'] });
     expect(sent()).not.toHaveProperty('sensitive');
     expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('says that search inside the document stops, only when a document with read text becomes sensitive (#151)', () => {
+    open({ ...insurance, hasReadText: true });
+    const category = screen.getByLabelText('Loại tài liệu');
+    expect(screen.queryByText(/không giữ chữ đã đọc/u)).toBeNull();
+    fireEvent.change(category, { target: { value: 'id_card' } });
+    expect(screen.getByText(/không giữ chữ đã đọc/u)).toBeTruthy();
+    fireEvent.change(category, { target: { value: 'invoice_receipt' } });
+    expect(screen.queryByText(/không giữ chữ đã đọc/u)).toBeNull();
+  });
+
+  it('says nothing about read text when the document has none (#151)', () => {
+    open();
+    fireEvent.change(screen.getByLabelText('Loại tài liệu'), { target: { value: 'id_card' } });
+    expect(screen.queryByText(/không giữ chữ đã đọc/u)).toBeNull();
   });
 });

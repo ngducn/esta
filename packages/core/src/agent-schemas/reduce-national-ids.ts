@@ -20,20 +20,20 @@ const LABELLED_LENGTHS = [12, 11, 10, 9] as const;
 const CODE_PREFIXES: ReadonlySet<string> = new Set(['PA', 'PB', 'PC', 'PD', 'PE']);
 
 /**
- * Dropped before either judge looks: invisible characters OCR leaves inside a number (zero-width spaces and joiners,
- * direction marks, the soft hyphen, the BOM), and combining marks, which `esta_unaccent` strips from the text the
- * search index holds, so a mark between two digit groups cannot hide an ID the index would hold whole.
- * `holds_national_id` drops the same ranges.
+ * Dropped before either judge looks: invisible characters OCR leaves inside a number (every format character, `\p{Cf}`:
+ * zero-width spaces and joiners, direction marks and isolates, the soft hyphen, the BOM; and the Hangul fillers, which
+ * print as nothing), and combining marks, which `esta_unaccent` strips from the text the search index holds, so a mark
+ * between two digit groups cannot hide an ID the index would hold whole. `holds_national_id` drops the same ranges.
  */
-const FOLDED = /[\u00AD\u200B-\u200F\u2060-\u2064\uFEFF]|[\u0300-\u036F]|[\u1AB0-\u1AFF]|[\u1DC0-\u1DFF]|[\u20D0-\u20FF]|[\uFE20-\uFE2F]/gu;
+const FOLDED = /\p{Cf}|[\u115F\u1160\u3164\uFFA0]|[\u0300-\u036F]|[\u1AB0-\u1AFF]|[\u1DC0-\u1DFF]|[\u20D0-\u20FF]|[\uFE20-\uFE2F]/gu;
 
 /**
  * Between two digit groups of one number, as a class of characters and not a list of the ones seen so far: up to three
- * spaces of any kind on one line, one newline, or up to four punctuation marks (dashes, brackets, quotes), symbols, bullets or combining
+ * spaces of any kind on one line, one newline (with up to three spaces on either side), or up to four punctuation marks (dashes, brackets, quotes), symbols, bullets or combining
  * marks of any script (NFKD spells one symbol, such as `⁗`, with up to four), with a space on either side. Unlabelled,
  * a slash of any width is left out, because `123456/789012` is a document number.
  */
-const JOIN = /^(?:[^\S\n\r]{1,3}|\r?\n|[^\S\n\r]?(?:(?![/\u2044\u2215\u29F8\uFF0F])[\p{P}\p{S}\p{M}]){1,4}[^\S\n\r]?)$/u;
+const JOIN = /^(?:[^\S\n\r]{1,3}|[^\S\n\r]{0,3}\r?\n[^\S\n\r]{0,3}|[^\S\n\r]?(?:(?![/\u2044\u2215\u29F8\uFF0F])[\p{P}\p{S}\p{M}]){1,4}[^\S\n\r]?)$/u;
 /** After a label the number may also break across lines, and any mark that is no letter or digit may join the groups. */
 const JOIN_AFTER_LABEL = /^(?:\s{1,3}|\s?[^\p{L}\p{N}\s]{1,4}\s?)$/u;
 /**
@@ -43,27 +43,47 @@ const JOIN_AFTER_LABEL = /^(?:\s{1,3}|\s?[^\p{L}\p{N}\s]{1,4}\s?)$/u;
 export const DATE =
   /(?<!\p{Nd})(?:(?:0?[1-9]|[12]\d|3[01])([./\u00B7-])(?:0?[1-9]|1[0-2])\1(?:19|20)?\d{2}|(?:19|20)\d{2}([./\u00B7-])(?:0?[1-9]|1[0-2])\2(?:0?[1-9]|[12]\d|3[01])|(?:19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])|(?<!\p{Nd}[./\u00B7-])(?:0?[1-9]|1[0-2])[./\u00B7-](?:19|20)\d{2})(?!\p{Nd})/gu;
 /**
- * A Vietnamese amount groups thousands with dots or commas, never starts with 0 (every CCCD does), names its currency
- * and, when it has no thousands group, does not continue digits before it after spaces, so the last group of
+ * A Vietnamese amount groups thousands with dots or commas, never starts with 0 in any script (every CCCD does), names
+ * its currency and, when it has no thousands group, does not continue digits before it after spaces, so the last group of
  * `079 175 001 234 đồng` stays an ID group while `1 125.000.000.000 đồng` stays an amount. A middle dot groups thousands too.
- * It is read on the folded text, where `đồng` is `đong`.
+ * It is read on `moneyText`, where the currency word is one sentinel per character.
  */
 const AMOUNT =
-  /(?<!\p{Nd}|\p{Nd}[.,\u00B7])(?![0０])(?:\p{Nd}{1,3}(?:(?:[.\u00B7]\p{Nd}{3})+|(?:,\p{Nd}{3})+)|(?<!\p{Nd}[^\S\n\r]{1,3})\p{Nd}{1,3})(?!\p{Nd}|[.,\u00B7]\p{Nd})(?=\s?(?:đ|₫|[dđ]ong|vnd|vnđ)(?![\p{L}\p{N}]))/giu;
+  /(?<!\p{Nd}|\p{Nd}[.,\u00B7])(?:\p{Nd}{1,3}(?:(?:[.\u00B7]\p{Nd}{3})+|(?:,\p{Nd}{3})+)|(?<!\p{Nd}[^\S\n\r]{1,3})\p{Nd}{1,3})(?!\p{Nd}|[.,\u00B7]\p{Nd})(?=\s?[\uE001\uE002])/gu;
 /**
- * A figure in any grouping that a currency marker follows (`₫`, `đ`, `đồng`, `VND`, `vnđ`, `tỷ`, `triệu`) or leads, with
- * a space between or none, is money whatever its first digit: `079.123.456.789 ₫` and `123 456 789 012 VND` stay whole.
- * Only a figure that starts with 0 and has no thousands dot, comma or middle dot is not taken for money, because every
- * CCCD starts with 0 and prints spaced or whole, as in `CCCD 079 175 001 234 ₫`; `MONEY_IS_ID` tests it. Only `₫`, `đ`,
- * `VND` and `vnđ` lead a figure; all of them, `tỷ` and `triệu` too, follow it. It is read on the folded text, where
- * `đồng` is `đong`, `tỷ` is `ty` and `triệu` is `trieu`.
+ * Currency words, found on the text as written and never after folding, so `đồng ý` and `đồng sở hữu` still read as the
+ * word while `Đồng Nai`, `Đông Anh`, `Triệu Thị` and `Tý` are names: `đồng`, `tỷ`, `triệu`, `đ`, `₫`, `VND` and `vnđ`, each in
+ * lower case or in capitals and with its accents, standing alone (no letter before or after; a dot after a letter is an
+ * abbreviation, as in `C.M.N.Đ`). A sign or a word can follow a figure; only `₫`, `đ`, `VND` and `vnđ` lead one, even with a digit
+ * right after them (`₫079.123`).
+ */
+const MONEY_WORD = /(?<!\p{L}\.?)(?:(?<dong>đồng|ĐỒNG)|(?<big>tỷ|TỶ|triệu|TRIỆU)|(?<sign>đ|Đ|₫|vnd|VND|vnđ|VNĐ))(?!\p{L})/gu;
+const SIGN = '\uE001';
+const DONG = '\uE002';
+const BIG = '\uE003';
+const SIGN_LEADS = '\uE004';
+/**
+ * A figure in any grouping that a currency word follows or leads, with a space between or none, is money: `1.250.000.000 ₫`
+ * and `123456789012 tỷ` stay whole. It is not money when its first group is a 0 followed by a digit (`079.123.456.789 ₫`,
+ * `0791234567.89 đ`: every CCCD starts that way, in any script), when it starts with a lone 0 and has no dot, comma or
+ * middle dot, or when it lies within an ID label's reach and has no dot or comma, so `CMND 271234567 đồng ý` and
+ * `ID 12345678901 đồng` are cut. Spaced groups after a label, as in `CCCD 079 175 001 234 ₫`, are cut for the same reason.
  */
 const MONEY_FIGURE = String.raw`\p{Nd}+(?:(?:[^\S\n\r]{1,3}|[.,\u00B7][^\S\n\r]?)\p{Nd}+)*`;
 const MONEY = new RegExp(
-  String.raw`(?<!\p{Nd})${MONEY_FIGURE}(?!\p{Nd})(?=[^\S\n\r]?(?:đ|₫|[dđ]ong|vnd|vnđ|ty|trieu)(?![\p{L}\p{N}]))|(?<=(?<!\p{L})(?:₫|đ|vnd|vnđ)[^\S\n\r]?)${MONEY_FIGURE}`,
-  'giu',
+  String.raw`(?<!\p{Nd})${MONEY_FIGURE}(?!\p{Nd})(?=[^\S\n\r]?[\uE001-\uE003]+)|(?<=[\uE001\uE004]+[^\S\n\r]?)${MONEY_FIGURE}`,
+  'gu',
 );
-const MONEY_IS_ID = /^0[^.,\u00B7]*$/u;
+const GROUPING = /[.,\u00B7]/u;
+const DIGIT = /^\p{Nd}$/u;
+
+/** The value of a decimal digit of any script: its distance from the zero its block of ten starts with. */
+function digitValue(char: string): number {
+  let value = 0;
+  for (let code = (char.codePointAt(0) ?? 0) - 1; DIGIT.test(String.fromCodePoint(code)); code--) value++;
+  return value % 10;
+}
+const isZero = (char: string) => DIGIT.test(char) && digitValue(char) === 0;
 /**
  * A number that is no ID but stands just before an ID label is left whole: a plus sign or a label for a phone, a tax
  * code or an account right before it, and a 10-digit number that starts with 0 (a phone). These are cut only after a
@@ -87,7 +107,7 @@ function fold(text: string): Folded {
     const end = at + char.length;
     const folded = char.length === 1 && char < '\u0080' ? char : char.normalize('NFKD').replace(FOLDED, '');
     for (const piece of folded) {
-      out += piece.length > 1 ? '\uE000' : piece;
+      out += piece.length > 1 ? (DIGIT.test(piece) ? String(digitValue(piece)) : '\uE000') : piece;
       from.push(at);
       to.push(end);
     }
@@ -96,13 +116,28 @@ function fold(text: string): Folded {
   return { text: out, from, to };
 }
 
+/**
+ * The text the money patterns read: `folded.text` with each currency word (`MONEY_WORD`, found on the text as written) swapped
+ * for one sentinel per character, and any sentinel the text held itself turned into a plain private-use character.
+ */
+function moneyText(original: string, folded: Folded): string {
+  const sentinelAt = new Map<number, string>();
+  for (const word of original.matchAll(MONEY_WORD)) {
+    const next = String.fromCodePoint(original.codePointAt(word.index + word[0].length) ?? 0);
+    const digitFollows = DIGIT.test(next);
+    const sentinel = word.groups?.sign !== undefined ? (digitFollows ? SIGN_LEADS : SIGN) : digitFollows ? undefined : word.groups?.dong !== undefined ? DONG : BIG;
+    if (sentinel !== undefined) for (let at = word.index; at < word.index + word[0].length; at++) sentinelAt.set(at, sentinel);
+  }
+  return folded.text.split('').map((char, at) => sentinelAt.get(folded.from[at] ?? -1) ?? (char >= SIGN && char <= SIGN_LEADS ? '' : char)).join('');
+}
+
 /** Full-width digits become ASCII; NFKC maps them and leaves every other character as NFC has it. */
 const asciiDigits = (text: string) => text.replace(/\p{Nd}/gu, (digit) => digit.normalize('NFKC'));
 
 /** The groups that start inside a match of `pattern`, such as the three groups of one date. */
-function groupsIn(text: string, groups: readonly Group[], pattern: RegExp, skip?: (match: string) => boolean): ReadonlySet<Group> {
+function groupsIn(text: string, groups: readonly Group[], pattern: RegExp, skip?: (match: RegExpExecArray) => boolean): ReadonlySet<Group> {
   const found = new Set<Group>();
-  const matches = [...text.matchAll(pattern)].filter((m) => skip?.(m[0]) !== true).values();
+  const matches = [...text.matchAll(pattern)].filter((m) => skip?.(m) !== true).values();
   let next = matches.next();
   for (const group of groups) {
     while (!next.done && next.value.index + next.value[0].length <= group.start) next = matches.next();
@@ -131,7 +166,24 @@ function idSpans(original: string, idField: boolean): Span[] {
     groups.push({ start: m.index, end: m.index + m[0].length, digits: asciiDigits(m[0]), gap });
   }
   const dates = groupsIn(text, groups, DATE);
-  const amounts = new Set([...groupsIn(text, groups, AMOUNT), ...groupsIn(text, groups, MONEY, (figure) => MONEY_IS_ID.test(figure))]);
+  const priced = moneyText(original, folded);
+  // A figure of 9 to 12 digits with only separators between it and an ID label is an ID, whatever its grouping or currency mark:
+  // no amount or price that starts inside it counts, so `CMND 097 46 1.769 đ` is one ID and not an ID and a price.
+  const idFigures = [...priced.matchAll(new RegExp(MONEY_FIGURE, 'gu'))].filter(
+    (figure) =>
+      figure[0].replace(/\P{Nd}/gu, '').length >= 9 &&
+      figure[0].replace(/\P{Nd}/gu, '').length <= 12 &&
+      labels.some((label) => label.end <= figure.index && !/[\p{L}\p{Nd}]/u.test(text.slice(label.end, figure.index))),
+  );
+  const idFigure = ([figure]: RegExpExecArray, at: number) => idFigures.some((id) => at < id.index + id[0].length && id.index < at + figure.length);
+  const startsWithZero = ([figure]: RegExpExecArray) => isZero(figure.charAt(0));
+  const notAmount = (match: RegExpExecArray) => startsWithZero(match) || idFigure(match, match.index);
+  const notMoney = (match: RegExpExecArray) => {
+    const [figure] = match;
+    const grouped = GROUPING.test(figure);
+    return idFigure(match, match.index) || (startsWithZero(match) && (DIGIT.test(figure.charAt(1)) || !grouped)) || (!grouped && (afterLabel(match.index) || beforeLabel(match.index + figure.length)));
+  };
+  const amounts = new Set([...groupsIn(priced, groups, AMOUNT, notAmount), ...groupsIn(priced, groups, MONEY, notMoney)]);
 
   const runOf = (from: number, length: number, join: RegExp): Group[] | undefined => {
     const run: Group[] = [];
@@ -165,7 +217,7 @@ function idSpans(original: string, idField: boolean): Span[] {
   const spans: Span[] = [];
   for (let from = 0; from < groups.length; from++) {
     const first = groups[from];
-    if (first === undefined || first.gap === '.') continue;
+    if (first === undefined || (first.gap === '.' && first.digits.length !== 12)) continue;
     const labelled = afterLabel(first.start);
     const attempts: readonly (readonly [length: number, join: RegExp, labelled: boolean])[] = labelled
       ? LABELLED_LENGTHS.map((length) => [length, JOIN_AFTER_LABEL, true] as const)

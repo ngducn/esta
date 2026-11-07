@@ -50,7 +50,7 @@ describe('the integration lane registry', () => {
   });
 
   it('runs alone only the files that touch every household', () => {
-    expect(runsAlone).toEqual(['src/server/cron/cron.integration.test.ts']);
+    expect(runsAlone).toEqual(['src/server/cron/cron.integration.test.ts', 'src/server/cron/document-vault.integration.test.ts']);
   });
 
   it.each(onDisk)('%s takes its lane from the registry, not a hard-coded email or household', (file) => {

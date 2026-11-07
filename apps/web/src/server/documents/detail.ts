@@ -26,6 +26,8 @@ export type DocumentDetail = {
   readonly expiryText: string | null;
   readonly expiringSoon: boolean;
   readonly tags: readonly string[];
+  /** Whether the assistant's read text is stored, which turning the document sensitive drops (DOC-5). */
+  readonly hasReadText: boolean;
 };
 
 export type DocumentPageData = PagePreviews & {
@@ -44,7 +46,7 @@ export async function loadDocumentPage(documentId: string): Promise<DocumentPage
   const supabase = await createSessionClient();
   const { data: row, error } = await supabase
     .from('documents')
-    .select('id, title, category, mime, page_count, property_id, expires_on, tags, properties(nickname)')
+    .select('id, title, category, mime, page_count, property_id, expires_on, tags, ocr_text, properties(nickname)')
     .eq('household_id', member.household.id)
     .eq('id', documentId)
     .is('deleted_at', null)
@@ -85,6 +87,7 @@ export async function loadDocumentPage(documentId: string): Promise<DocumentPage
       expiryText,
       expiringSoon: expiry.state !== 'none',
       tags: row.tags,
+      hasReadText: row.ocr_text !== null && row.ocr_text !== '',
     },
     fileUrl,
     ...previews,

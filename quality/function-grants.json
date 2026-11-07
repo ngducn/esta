@@ -22,6 +22,7 @@
     "private.lacks_claimed_admin(uuid)": "named in a row level security or storage policy, which runs as the signed-in member",
     "private.latest_extraction(uuid,uuid)": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
     "private.notification_user(uuid)": "named in a row level security or storage policy, which runs as the signed-in member",
+    "private.overlay_blanks(text,text,text)": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
     "private.payment_status(bigint,bigint)": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",
     "private.property_photo_household(text)": "named in a row level security or storage policy, which runs as the signed-in member",
     "private.read_entries(jsonb)": "called by a check constraint, generated column, view or invoker trigger, which runs as the signed-in member",

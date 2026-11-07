@@ -1,3 +1,5 @@
+import { NATIONAL_ID_CASES, NATIONAL_ID_KEPT } from './national-id.cases';
+
 /**
  * Shared test vectors for SPEC D11. The reducer test checks each one against `reduceNationalIds`, and
  * `scripts/national-id-vectors.ts` writes them into `supabase/tests/national_id.test.sql`, where the CHECK on
@@ -189,10 +191,18 @@ export const NATIONAL_ID_VECTORS: {
     ['four tabs inside an unlabelled ID', 'số 079123\t\t\t\t456789', 'số 6789'],
   ],
   refused: [
-    ['an ID after a date and a dot', 'Ngày 12/03/2021.079123456789'],
     ['a labelled ID before a dot and a date', 'CCCD 079123456789.12/03/2021'],
     ['an ID before a dot and a date', 'Số 079123456789.12/03/2021 cấp'],
     ['a next-line character inside a labelled ID', 'Sở Demo, CCCD 079123\u0085456789'],
     ['a unit separator inside a labelled ID', 'CCCD 079123\u001F456789'],
   ],
+};
+
+/** Every reduced and kept row of the vectors above and of `national-id.cases.ts`: the rows core's tests and the pgTAP test both replay. */
+export const NATIONAL_ID_REPLAYED: {
+  readonly reduced: readonly (readonly [name: string, text: string, reduced: string])[];
+  readonly kept: readonly (readonly [name: string, text: string])[];
+} = {
+  reduced: [...NATIONAL_ID_VECTORS.reduced, ...NATIONAL_ID_CASES],
+  kept: [...NATIONAL_ID_VECTORS.kept, ...NATIONAL_ID_KEPT],
 };
