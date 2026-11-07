@@ -57,7 +57,7 @@ describe('runSmoke', () => {
   });
 
   it('checks every cron route vercel.json schedules', () => {
-    const paths = (JSON.parse(readFileSync('vercel.json', 'utf8')) as { crons: { path: string }[] }).crons.map((cron) => cron.path);
+    const paths = (JSON.parse(readFileSync('apps/web/vercel.json', 'utf8')) as { crons: { path: string }[] }).crons.map((cron) => cron.path);
     expect([...CRON_PATHS].sort()).toEqual([...paths].sort());
   });
 

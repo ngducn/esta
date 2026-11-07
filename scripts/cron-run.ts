@@ -11,10 +11,10 @@ if (!env.CRON_SECRET) {
   process.exit(1);
 }
 
-// vercel.json lists the jobs in the order they run each night, so a local run follows production.
+// apps/web/vercel.json lists the jobs in the order they run each night, so a local run follows production.
 const { crons } = z
   .object({ crons: z.array(z.object({ path: z.string().startsWith('/api/cron/') })) })
-  .parse(JSON.parse(readFileSync(join(repoRoot, 'vercel.json'), 'utf8')));
+  .parse(JSON.parse(readFileSync(join(repoRoot, 'apps/web/vercel.json'), 'utf8')));
 
 /** `{"ok":true,"drafted":0}` prints as `drafted=0`; any other body prints as it came. */
 function summary(body: string): string {

@@ -3,8 +3,8 @@ import { z } from 'zod';
 
 const vercelConfig = z.object({ crons: z.array(z.object({ path: z.string() })) });
 
-/** The routes Vercel schedules, read from vercel.json so a new cron cannot be left out of the check. */
-export const CRON_PATHS: readonly string[] = vercelConfig.parse(JSON.parse(readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'))).crons.map((cron) => cron.path);
+/** The routes Vercel schedules, read from apps/web/vercel.json so a new cron cannot be left out of the check. */
+export const CRON_PATHS: readonly string[] = vercelConfig.parse(JSON.parse(readFileSync(new URL('../apps/web/vercel.json', import.meta.url), 'utf8'))).crons.map((cron) => cron.path);
 
 const REQUIRED_HEADERS = ['strict-transport-security', 'x-content-type-options', 'referrer-policy', 'permissions-policy'];
 
