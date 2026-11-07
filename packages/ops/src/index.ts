@@ -61,7 +61,7 @@ export { readOtherBusinessRevenue, readOtherBusinessRevenues, readOwners, readTa
 export { taskSetStatus, type TaskSaved } from './task-ops';
 export { taxInputSave, type TaxInputSaved } from './tax-ops';
 export { unitCreate, type UnitRefusal, type UnitSaved } from './unit-ops';
-export { valuationCreate, valuationDelete, type ValuationSaved } from './valuation-ops';
+export { valuationCreate, valuationDelete, valuationRecord, type ValuationSaved } from './valuation-ops';
 export { readLivePropertyIds, readValuations } from './valuations';
 export { existingLinks } from './links';
 export { readNameLabels, readWatchLabels, readWatchSnapshot } from './watch';
