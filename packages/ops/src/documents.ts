@@ -47,6 +47,12 @@ export async function sendDocumentUpload(upload: SignedUpload, bytes: Uint8Array
   return response?.ok === true;
 }
 
+/** One object into a bucket on the member's session, signed with upsert so a retry rewrites it; false when Storage refuses either step. */
+export async function uploadObject(db: Db, bucket: string, path: string, bytes: Uint8Array, contentType: string): Promise<boolean> {
+  const { data, error } = await db.storage.from(bucket).createSignedUploadUrl(path, { upsert: true });
+  return !error && (await sendDocumentUpload({ path: data.path, url: data.signedUrl }, bytes, contentType));
+}
+
 /** The household's live documents with these bytes, oldest first, for the duplicate question; null when the read failed. */
 export async function documentsWithHash(db: Db, householdId: string, sha256: string): Promise<readonly DocumentSaved[] | null> {
   const { data, error } = await db.from('documents').select('id, title').eq('household_id', householdId).eq('sha256', sha256).is('deleted_at', null).order('created_at');

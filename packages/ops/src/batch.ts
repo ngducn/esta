@@ -6,6 +6,7 @@ import { isDeepStrictEqual } from 'node:util';
 import { z } from 'zod';
 import type { Db } from './db';
 import { leaseActivate } from './activation-op';
+import { propertyCover } from './cover-ops';
 import { depositRecord } from './deposit-ops';
 import { documentAttach } from './document-attach';
 import type { LocalContext } from './files';
@@ -85,7 +86,7 @@ function batchStep<I, C, O, R extends Refusal>(op: Op<I, C, O, R, LocalContext>)
   };
 }
 
-export const OP_KINDS = ['property.create', 'property.edit', 'document.attach', 'unit.create', 'person.create', 'lease.create', 'lease.edit', 'lease.activate', 'deposit.record', 'valuation.record'] as const;
+export const OP_KINDS = ['property.create', 'property.edit', 'document.attach', 'unit.create', 'person.create', 'lease.create', 'lease.edit', 'lease.activate', 'deposit.record', 'valuation.record', 'property.cover'] as const;
 export type OpKind = (typeof OP_KINDS)[number];
 
 /** The one list of what a batch can hold; `satisfies` fails the build when it and `OP_KINDS` disagree. */
@@ -100,6 +101,7 @@ const OPS = {
   'lease.activate': batchStep(leaseActivate),
   'deposit.record': batchStep(depositRecord),
   'valuation.record': batchStep(valuationRecord),
+  'property.cover': batchStep(propertyCover),
 } as const satisfies Record<OpKind, Step>;
 
 export const planRequestSchema = z.strictObject({

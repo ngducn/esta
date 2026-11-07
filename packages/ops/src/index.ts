@@ -25,6 +25,8 @@ export { bankAccountCreate, bankAccountDelete, bankAccountEdit, bankAccountSetDe
 export { readClock, type ClockEnv } from './clock';
 export { readCollectionRows, readMonthCollected, type CollectionRow } from './collections';
 export { readCompleteness, type PropertyCompleteness } from './completeness';
+export { propertyCover, type CoverRefusal, type CoverSet } from './cover-ops';
+export { listPhotos, MAX_COVER_BYTES, PROPERTY_PHOTOS_BUCKET, readCover, sweepPhotos } from './cover-photo';
 export { depositRecord, type DepositRecorded, type DepositRefusal } from './deposit-ops';
 export { documentAttach, type AttachRefusal } from './document-attach';
 export { extractionAccept, extractionReject, type ExtractionAccepted, type ExtractionRefusal, type ExtractionRejected, type ReviewHold } from './extraction-ops';

@@ -17,6 +17,7 @@ import {
   idSchema,
   listLeases,
   listProperties,
+  MAX_COVER_BYTES,
   MAX_ITEMS,
   OP_KINDS,
   personQuerySchema,
@@ -94,6 +95,7 @@ const PLAN_DESCRIPTION = `Plan changes to Esta for Ryan to approve; nothing is w
 - lease.activate: input { lease_id, paid_through } starts a draft lease and issues the bills it owes today. paid_through is the last day the tenant has already paid for, or null: "đã thu đến 30/9" means paid_through "2026-09-30", and nothing up to that day is billed. Its preview lists the bills activation will write, issues_now marking those issued today; that preview is what Ryan approves, so show it to him with the change.
 - deposit.record: input { lease_id, kind, amount_vnd, on_date, note } records a deposit received, deducted (note says what for) or refunded on a lease that is active, so plan it after the lease's activation. on_date is the day the money changed hands, no later than today. Its preview shows the amount, the day and what the lease holds after it.
 - valuation.record: input { property_id, as_of, value_vnd, method, source_url?, note? } saves a market estimate of a property, as the valuation sheet does, so the portfolio value shows it. property_id names a property Esta has, or one planned earlier in the batch by $ref; one Esta does not have is refused as invalid. as_of is the day the estimate holds for, no later than today. value_vnd is whole đồng. method is owner_estimate (Ryan's own figure), broker_quote, state_price_reference or comparables. source_url must be https. Esta mints the valuation's id; never send one. Its preview shows the property, the value and the day.
+- property.cover: input { property_id, path } sets a property's cover photo from a JPEG, PNG or WebP of at most ${MAX_COVER_BYTES / 1024 / 1024} MB in the import folders, as the property page does. property_id names a property Esta has, or one planned earlier in the batch by $ref. Anything that is not such a picture is refused as file / unsupported_type, a larger one as too_large. The change holds the picture's size and SHA-256 and the cover it replaces; apply sends the file only if it is still the same and the cover is still that one. Its preview shows the property, the file name and its size. Undo points the property back at the earlier cover. ${ID_IN_NAME}
 LEASE_DEFAULTS by unit kind (a whole unit of an apartment takes the apartment terms): ${leaseDefaults}.
 Refs: an item that creates a row may carry ref, a label you choose (a letter, then up to 39 letters, digits, - or _), and a later item writes { "$ref": "<label>" } wherever that row's id belongs, such as a unit's property_id. Only creates carry ref, and a $ref names only an earlier item. When an item is refused, at plan or at apply, every item that names it is refused as blocked and nothing of it is written.
 property is this JSON Schema: ${propertySchema}
