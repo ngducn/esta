@@ -6,7 +6,9 @@ import { clearTestClock, setTestClock } from '@/server/cron/test-clock';
 import { isDevSurfaceEnabled } from '@/server/dev-guard';
 import { env } from '@/server/env';
 
-const body = z.object({ frozen_now: z.string() });
+const households = z.array(z.uuid()).min(1).nullable();
+const setBody = z.object({ frozen_now: z.string(), households });
+const clearBody = z.object({ households });
 
 function guard(request: Request): Response | null {
   if (!isDevSurfaceEnabled(env)) return new Response(null, { status: 404 });
@@ -22,18 +24,23 @@ export async function POST(request: Request): Promise<Response> {
   const denied = guard(request);
   if (denied) return denied;
   let frozenNow: Instant;
+  let scope: readonly string[] | null;
   try {
-    frozenNow = parseInstant(body.parse(await request.json()).frozen_now);
+    const body = setBody.parse(await request.json());
+    frozenNow = parseInstant(body.frozen_now);
+    scope = body.households;
   } catch {
-    return Response.json({ ok: false, error: 'expected {"frozen_now":"<ISO date-time with offset>"}' }, { status: 400 });
+    return Response.json({ ok: false, error: 'expected {"frozen_now":"<ISO date-time with offset>","households":[<uuid>...] | null}' }, { status: 400 });
   }
-  await setTestClock(cronClient(), frozenNow);
-  return Response.json({ ok: true, frozen_now: frozenNow, as_of: businessDate(frozenNow, env.ESTA_TIMEZONE) });
+  await setTestClock(cronClient(), frozenNow, scope);
+  return Response.json({ ok: true, frozen_now: frozenNow, households: scope, as_of: businessDate(frozenNow, env.ESTA_TIMEZONE) });
 }
 
 export async function DELETE(request: Request): Promise<Response> {
   const denied = guard(request);
   if (denied) return denied;
-  await clearTestClock(cronClient());
-  return Response.json({ ok: true, frozen_now: null });
+  const parsed = clearBody.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) return Response.json({ ok: false, error: 'expected {"households":[<uuid>...] | null}' }, { status: 400 });
+  await clearTestClock(cronClient(), parsed.data.households);
+  return Response.json({ ok: true, frozen_now: null, households: parsed.data.households });
 }

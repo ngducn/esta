@@ -32,8 +32,8 @@ from (values
 ) as room (k, start_date, end_date, status);
 
 insert into private.local_stack default values on conflict do nothing;
-insert into public.test_clock (id, frozen_now) values (true, '2026-10-07T09:00:00+07:00')
-  on conflict (id) do update set frozen_now = excluded.frozen_now;
+delete from public.test_clock where for_household is null;
+insert into public.test_clock (frozen_now) values ('2026-10-07T09:00:00+07:00');
 
 -- Every invoice of the lease that renewed one lease, with its rent line, in period order.
 create temporary view renewal_billed as

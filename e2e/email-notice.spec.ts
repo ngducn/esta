@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/agent-worker';
 import { clearMail, listMail } from './helpers/inbucket';
 import { laneHousehold } from './helpers/seed';
-import { setClock } from './helpers/test-clock';
+import { setClock, globalClock } from './helpers/test-clock';
 import { open, PHONE, serviceGet } from './helpers/wizard';
 
 test.describe.configure({ mode: 'serial' });
@@ -18,7 +18,7 @@ let worker: AgentWorker | undefined;
 
 test.afterAll(async ({ request }) => {
   await stopAndForget(worker);
-  await setClock(request, null);
+  await setClock(request, globalClock, null);
 });
 
 const subjects = async () => (await listMail(ME)).map((mail) => mail.Subject);
@@ -26,7 +26,7 @@ const count = (all: string[], subject: string) => all.filter((value) => value ==
 
 test('after the 07:00 run Mẹ has one brief notice and one notice per action note, with no note text in them', async ({ page, request }) => {
   await clearMail(ME);
-  await setClock(request, `${TODAY}T07:00:00+07:00`);
+  await setClock(request, globalClock, `${TODAY}T07:00:00+07:00`);
   worker = await startAgentWorker({ schedule: true, notify: true });
   await expect
     .poll(async () => (await serviceGet<unknown[]>(page, `agent_jobs?kind=in.(morning_brief,portfolio_watch)&status=eq.done&household_id=eq.${laneHousehold(LANE)}&select=id`)).length, { timeout: 90_000 })
@@ -51,7 +51,7 @@ test('restarting the worker sends no second copy', async () => {
 });
 
 test('a signed-out tap on the link signs in and opens the thread at that note', async ({ page, request }) => {
-  await setClock(request, `${TODAY}T07:05:00+07:00`);
+  await setClock(request, globalClock, `${TODAY}T07:05:00+07:00`);
   const notice = (await listMail(ME)).find((mail) => mail.Subject === BRIEF_SUBJECT);
   const link = /http\S+\/assistant\?note=[0-9a-f-]{36}/.exec(notice?.Text ?? '')?.[0];
   expect(link).toBeDefined();

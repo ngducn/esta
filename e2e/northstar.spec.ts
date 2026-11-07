@@ -14,7 +14,7 @@ import { signIn } from './helpers/inbucket';
 import { expectCollected, expectMorningBrief, expectMorningHome, NORTHSTAR_REPLAY, waitForMorningJobs } from './helpers/morning';
 import { chooseFromBoard, commitLines, confirmSuggestion, expectFilters, line, openPreview } from './helpers/statements';
 import { cardVnd, expectedTaxPosition } from './helpers/tax';
-import { setClock } from './helpers/test-clock';
+import { setClock, globalClock } from './helpers/test-clock';
 import { answer, sendInThread } from './helpers/thread';
 import { acceptEvery, DESKTOP, editField, fixture, followReadyNotice, open, PHONE, recordForPr, seriousAxeViolations, serviceGet, shot, START, startWizard, step, toast, vnd } from './helpers/wizard';
 
@@ -52,11 +52,11 @@ let october: Bill[] = [];
 
 test.afterAll(async ({ request }) => {
   await stopAndForget(worker);
-  await setClock(request, null);
+  await setClock(request, globalClock, null);
 });
 
 test('steps 1 and 2: Mẹ signs in with the emailed code and adds Dãy trọ Dĩ An from its sổ hồng (FND-1, PRP-7, DOC-6)', async ({ page, request }) => {
-  await setClock(request, START);
+  await setClock(request, globalClock, START);
   worker = await startAgentWorker();
   const started = Date.now();
   const truth = fixture('northstar-di-an').truth as Truth;
@@ -181,7 +181,7 @@ async function addLease(page: Page, room: (typeof ROOMS)[number]) {
 }
 
 test('step 3: 8 rooms and 6 active monthly leases with deposits, paid through 30/09/2026, one ending 07/11/2026 (LSE-1, LSE-2)', async ({ page, request }) => {
-  await setClock(request, START);
+  await setClock(request, globalClock, START);
   const started = Date.now();
   await open(page, ME, 'light', PHONE);
   await page.goto(rental());
@@ -223,7 +223,7 @@ test('step 3: 8 rooms and 6 active monthly leases with deposits, paid through 30
 });
 
 test('step 4: October bills for 01/10 to 31/10, due 01/10/2026, are issued for the 6 leases, each with a VietQR code and a receipt image (LSE-3, LSE-5, LSE-6)', async ({ page, request }) => {
-  await setClock(request, START);
+  await setClock(request, globalClock, START);
   const started = Date.now();
   await open(page, ME, 'light', PHONE);
   const leases = await memberRest<{ id: string }[]>(page, 'GET', `leases?property_id=eq.${diAn}&select=id`);
@@ -265,7 +265,7 @@ test('step 4: October bills for 01/10 to 31/10, due 01/10/2026, are issued for t
 });
 
 test('step 5: Ryan imports the October statement, three lines post by memo code, he confirms the suggestion, and Mẹ records one cash payment (LSE-7, LSE-8)', async ({ page, request }) => {
-  await setClock(request, START);
+  await setClock(request, globalClock, START);
   const started = Date.now();
   await open(page, RYAN, 'light', PHONE);
   const csv = statementFromTemplate(
@@ -311,7 +311,7 @@ test('step 5: Ryan imports the October statement, three lines post by memo code,
 });
 
 test('step 6: the October board shows Phòng 6 overdue 6 days and Mẹ copies its polite Vietnamese reminder for Zalo (LSE-10, LSE-11)', async ({ page, request }) => {
-  await setClock(request, START);
+  await setClock(request, globalClock, START);
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
   await open(page, ME, 'light', PHONE);
   await page.goto('/collections');
@@ -349,7 +349,7 @@ test('step 6: the October board shows Phòng 6 overdue 6 days and Mẹ copies it
 
 test('step 7: the 2026-10-08 morning brief lists the unpaid room overdue 7 days, the lease ending in 30 days and one market item with its source (AGT-3, AGT-4, AGT-5)', async ({ page, request }) => {
   await stopAndForget(worker);
-  await setClock(request, MORNING);
+  await setClock(request, globalClock, MORNING);
   worker = await startAgentWorker({ replayDir: NORTHSTAR_REPLAY, schedule: true });
   const started = Date.now();
   await waitForMorningJobs(page);
@@ -365,7 +365,7 @@ test('step 7: the 2026-10-08 morning brief lists the unpaid room overdue 7 days,
 });
 
 test('step 8: the next morning Mẹ opens her tax card and reads her 2026 rent, with the six new leases, against 500 million VND (FIN-3)', async ({ page, request }) => {
-  await setClock(request, '2026-10-08T07:05:00+07:00');
+  await setClock(request, globalClock, '2026-10-08T07:05:00+07:00');
   await open(page, ME, 'light', PHONE);
   await page.goto('/reports/tax');
   const expected = await expectedTaxPosition(page, 'Nguyễn Thị Demo', 2026, '2026-10-08');
@@ -383,7 +383,7 @@ test('step 8: the next morning Mẹ opens her tax card and reads her 2026 rent, 
   await holdForRecording(page);
 });
 test('step 9: Ryan asks how much Dĩ An collected this month and gets the exact amount with a link to its ledger (AGT-7)', async ({ page, request }) => {
-  await setClock(request, MORNING);
+  await setClock(request, globalClock, MORNING);
   if (worker?.running() !== true) worker = await startAgentWorker({ replayDir: NORTHSTAR_REPLAY });
   const started = Date.now();
   await open(page, RYAN, 'light', DESKTOP);

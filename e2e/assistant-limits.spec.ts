@@ -1,8 +1,8 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 import { join } from 'node:path';
 import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/agent-worker';
 import { laneHousehold } from './helpers/seed';
-import { setClock } from './helpers/test-clock';
+import { globalClock, lanes, setClock, type ClockScope } from './helpers/test-clock';
 import { freshThread, sendInThread } from './helpers/thread';
 import { DESKTOP, open, PHONE, serviceGet, servicePatch, seriousAxeViolations, shot, toast } from './helpers/wizard';
 
@@ -23,6 +23,15 @@ type Settings = { readonly agent: Record<string, unknown> };
 
 let worker: AgentWorker | undefined;
 
+/**
+ * A household's own clock row wins over the global one the worker beats on, so a row an earlier spec left on lane 3, 4
+ * or 5 would put the page's "now" before the worker's beat and Home would say the worker never ran. Move both.
+ */
+const SIGNED_IN: readonly ClockScope[] = [globalClock, lanes(3, 4, 5)];
+async function freeze(request: APIRequestContext, frozenNow: string | null) {
+  for (const scope of SIGNED_IN) await setClock(request, scope, frozenNow);
+}
+
 /** Each start is a new worker id, and under a frozen clock its beat ties the stopped worker's, so that row goes first. */
 async function restartWorker(replayDir?: string) {
   await stopAndForget(worker);
@@ -31,7 +40,7 @@ async function restartWorker(replayDir?: string) {
 
 test.afterAll(async ({ request }) => {
   await stopAndForget(worker);
-  await setClock(request, null);
+  await freeze(request, null);
 });
 
 const JOB = 'select=id,status,attempts,run_after,idempotency_key';
@@ -64,7 +73,7 @@ async function runWatch(page: Page, lane: number): Promise<string> {
 }
 
 test('with the ask cap two answers away, Mẹ’s third question today waits for tomorrow and says so in Esta’s words', async ({ page, request }) => {
-  await setClock(request, at('07:00'));
+  await freeze(request, at('07:00'));
   await restartWorker();
   const household = laneHousehold(3);
   const [settings] = await serviceGet<Settings[]>(page, `household_settings?household_id=eq.${household}&select=agent`);
@@ -97,7 +106,7 @@ test('with the ask cap two answers away, Mẹ’s third question today waits for
 });
 
 test('a usage limit pauses the assistant: Mẹ’s Home says so, the watch waits one minute, and it runs once the limit lifts', async ({ page, browser, request }) => {
-  await setClock(request, at('07:00'));
+  await freeze(request, at('07:00'));
   await restartWorker(join(CASES, 'usage-limit'));
   await open(page, 'ryan.lane4@demo.esta.test', 'light', DESKTOP);
   const watch = await runWatch(page, 4);
@@ -116,7 +125,7 @@ test('a usage limit pauses the assistant: Mẹ’s Home says so, the watch waits
   await shot(mother, 'p5-08-usage-limit-390x844-dark');
 
   await restartWorker();
-  await setClock(request, at('07:02'));
+  await freeze(request, at('07:02'));
   const ran = await jobAfter(page, watch, 2);
   expect(ran.status).toBe('done');
   await expect(async () => {
@@ -129,7 +138,7 @@ test('a usage limit pauses the assistant: Mẹ’s Home says so, the watch waits
 });
 
 test('a watch that fails four times leaves Ryan a Thử lại, and one tap runs it again under the :retry:1 key', async ({ page, request }) => {
-  await setClock(request, at('07:00'));
+  await freeze(request, at('07:00'));
   await restartWorker(join(CASES, 'always-fail'));
   await open(page, 'ryan.lane5@demo.esta.test', 'dark', DESKTOP);
   const watch = await runWatch(page, 5);
@@ -141,7 +150,7 @@ test('a watch that fails four times leaves Ryan a Thử lại, and one tap runs 
     const waiting = await jobAfter(page, watch, attempts);
     expect(waiting.status, `attempt ${attempts} waits`).toBe('queued');
     sameInstant(waiting.run_after, at(next));
-    await setClock(request, at(next));
+    await freeze(request, at(next));
   }
   const failed = await jobAfter(page, watch, 4);
   expect(failed.status).toBe('failed');

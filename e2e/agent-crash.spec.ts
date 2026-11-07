@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/agent-worker';
 import { laneHousehold } from './helpers/seed';
-import { setClock } from './helpers/test-clock';
+import { setClock, globalClock } from './helpers/test-clock';
 import { DESKTOP, open, serviceDelete, serviceGet, servicePatch, seriousAxeViolations, shot } from './helpers/wizard';
 
 // The worker and the test clock are one per slot, so the spec runs in the `clock` project.
@@ -18,7 +18,7 @@ let worker: AgentWorker | undefined;
 
 test.afterAll(async ({ request }) => {
   await stopAndForget(worker);
-  await setClock(request, null);
+  await setClock(request, globalClock, null);
 });
 
 type Job = { readonly id: string; readonly status: string; readonly attempts: number };
@@ -27,7 +27,7 @@ const watchItems = (page: Page) =>
   serviceGet<{ dedupe_key: string; job_id: string | null }[]>(page, `agent_items?household_id=eq.${household}&dedupe_key=like.watch*&created_at=gte.${today}&select=dedupe_key,job_id`);
 
 test('a worker killed after the watch’s first note re-runs the job once, and every note and run exists exactly once (AGT-1)', async ({ page, request }) => {
-  await setClock(request, started);
+  await setClock(request, globalClock, started);
   await servicePatch(page, `agent_jobs?household_id=eq.${household}&kind=eq.portfolio_watch&status=in.(queued,running)`, { status: 'cancelled' });
   await serviceDelete(page, `agent_items?household_id=eq.${household}&dedupe_key=like.watch*&created_at=gte.${today}`);
   worker = await startAgentWorker({ crashOn: /\[agent\] create_item ok /m });
@@ -42,7 +42,7 @@ test('a worker killed after the watch’s first note re-runs the job once, and e
   expect(held).toMatchObject({ status: 'running', attempts: 1 });
   expect(await watchItems(page), 'the kill landed after one note').toHaveLength(1);
 
-  await setClock(request, restarted);
+  await setClock(request, globalClock, restarted);
   worker = await startAgentWorker();
   await expect
     .poll(async () => (await serviceGet<Job[]>(page, `agent_jobs?id=eq.${held.id}&select=id,status,attempts`))[0], { timeout: 60_000 })

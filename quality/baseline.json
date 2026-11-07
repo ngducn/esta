@@ -1,7 +1,7 @@
 {
   "metrics": {
     "clones": {
-      "value": 105,
+      "value": 104,
       "files": {
         "apps/web/src/app/(app)/documents/[documentId]/review/page.tsx": 1,
         "apps/web/src/app/(app)/properties/[id]/documents/page.tsx": 1,
@@ -25,7 +25,6 @@
         "e2e/assistant-status.spec.ts": 5,
         "e2e/auth-password.spec.ts": 5,
         "e2e/collections.spec.ts": 12,
-        "e2e/deposits.spec.ts": 1,
         "e2e/documents-extract.spec.ts": 9,
         "e2e/documents-multipage.spec.ts": 2,
         "e2e/documents-upload.spec.ts": 4,
@@ -52,7 +51,7 @@
       }
     },
     "duplicated-lines": {
-      "value": 1083,
+      "value": 1070,
       "files": {
         "apps/web/src/app/(app)/documents/[documentId]/review/page.tsx": 15,
         "apps/web/src/app/(app)/properties/[id]/documents/page.tsx": 6,
@@ -75,16 +74,15 @@
         "apps/web/src/server/properties/wizard.ts": 8,
         "e2e/assistant-status.spec.ts": 33,
         "e2e/auth-password.spec.ts": 31,
-        "e2e/collections.spec.ts": 138,
-        "e2e/deposits.spec.ts": 7,
+        "e2e/collections.spec.ts": 137,
         "e2e/documents-extract.spec.ts": 167,
         "e2e/documents-multipage.spec.ts": 13,
         "e2e/documents-upload.spec.ts": 35,
         "e2e/expenses.spec.ts": 12,
         "e2e/extraction-review.spec.ts": 29,
         "e2e/helpers/session.ts": 6,
-        "e2e/lease-detail.spec.ts": 9,
-        "e2e/leases.spec.ts": 30,
+        "e2e/lease-detail.spec.ts": 10,
+        "e2e/leases.spec.ts": 24,
         "e2e/properties-list.spec.ts": 30,
         "e2e/properties-map.spec.ts": 40,
         "e2e/property-completeness.spec.ts": 62,
@@ -300,10 +298,9 @@
       "files": {}
     },
     "e2e-slot-env-in-spec": {
-      "value": 20,
+      "value": 18,
       "files": {
         "e2e/assistant-status.spec.ts": 1,
-        "e2e/clock.spec.ts": 1,
         "e2e/collections.spec.ts": 1,
         "e2e/documents-extract.spec.ts": 1,
         "e2e/documents-multipage.spec.ts": 1,
@@ -311,7 +308,7 @@
         "e2e/documents-vault.spec.ts": 1,
         "e2e/extraction-review.spec.ts": 1,
         "e2e/fnd9-integration.spec.ts": 1,
-        "e2e/leases.spec.ts": 2,
+        "e2e/leases.spec.ts": 1,
         "e2e/properties-list.spec.ts": 1,
         "e2e/properties-map.spec.ts": 1,
         "e2e/property-completeness.spec.ts": 1,
@@ -409,7 +406,7 @@
         "e2e/assistant-topics.spec.ts": 19,
         "e2e/assistant-watch.spec.ts": 15,
         "e2e/assistant-weekly.spec.ts": 5,
-        "e2e/clock.spec.ts": 2,
+        "e2e/clock.spec.ts": 1,
         "e2e/collections.spec.ts": 52,
         "e2e/connector-documents.spec.ts": 9,
         "e2e/connector-history.spec.ts": 7,
@@ -498,7 +495,7 @@
       }
     },
     "direct-write": {
-      "value": 55,
+      "value": 56,
       "files": {
         "apps/web/src/app/(app)/assistant/actions.ts": 1,
         "apps/web/src/app/(app)/properties/[id]/legal/actions.ts": 4,
@@ -516,7 +513,7 @@
         "apps/web/src/server/cron/document-sweep.ts": 3,
         "apps/web/src/server/cron/invoices.ts": 1,
         "apps/web/src/server/cron/leaseStatus.ts": 1,
-        "apps/web/src/server/cron/test-clock.ts": 2,
+        "apps/web/src/server/cron/test-clock.ts": 3,
         "apps/web/src/server/documents/actions.ts": 2,
         "apps/web/src/server/documents/search.ts": 1,
         "apps/web/src/server/expenses/actions.ts": 1,
@@ -751,6 +748,12 @@
       "from": 0,
       "to": 2124,
       "reason": "new metrics test-db-fake and testid-query record their first counts (Q-09a)"
+    },
+    {
+      "metric": "direct-write",
+      "from": 55,
+      "to": 56,
+      "reason": "the global test clock row is updated in place: a delete then insert left a gap the agent worker read as no row"
     }
   ]
 }

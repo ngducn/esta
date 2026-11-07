@@ -4,7 +4,7 @@ import { VALUATION_SEEDS } from '../supabase/seed/generator/valuations.ts';
 import { inEnglishAt130, memberRest as rest, signedIn } from './helpers/auth-api';
 import { stubTiles } from './helpers/map-tiles';
 import { laneHousehold, laneProperty } from './helpers/seed';
-import { setClock } from './helpers/test-clock';
+import { setClock, everyLane, thawAfterAll } from './helpers/test-clock';
 import { DESKTOP, noSidewaysScroll, open, PHONE, recordForPr, seriousAxeViolations, START, toast } from './helpers/wizard';
 
 const hold = recordForPr();
@@ -15,8 +15,9 @@ const SEEDED = (Object.keys(VALUATION_SEEDS) as (keyof typeof VALUATION_SEEDS)[]
 const FULL_PORTFOLIO = 45_250_000_000;
 
 test.beforeEach(async ({ request }) => {
-  await setClock(request, START);
+  await setClock(request, everyLane, START);
 });
+thawAfterAll(everyLane);
 
 test.afterEach(async ({ page }) => {
   if (!(await signedIn(page))) return;

@@ -3,8 +3,10 @@ import { seedId } from '../supabase/seed/generator/ids.ts';
 import { memberCall, memberRest } from './helpers/auth-api';
 import { freshLease } from './helpers/leases';
 import { laneLease, laneLeasePath, laneProperty } from './helpers/seed';
-import { setClock } from './helpers/test-clock';
+import { setClock, lanes, thawAfterAll } from './helpers/test-clock';
 import { DESKTOP, noSidewaysScroll, open, PHONE, seriousAxeViolations, settled, START, toast, vnd } from './helpers/wizard';
+
+const CLOCK_LANES = lanes(2, 3, 4, 5, 7, 8, 9, 10);
 
 // `ESTA_E2E_VIDEO=1` records each rule at its own size, for the PR's review video.
 const recording = process.env.ESTA_E2E_VIDEO === '1';
@@ -13,8 +15,9 @@ test.use(recording ? { video: { mode: 'on', size: PHONE }, launchOptions: { slow
 // Marks and amendable starts count from the Clock, so the spec runs in the `clock` project on SPEC §9.3's day. Each rule
 // uses its own lane household, and the rules that change a lease make a fresh one, so the spec passes again without a reset.
 test.beforeAll(async ({ request }) => {
-  await setClock(request, START);
+  await setClock(request, CLOCK_LANES, START);
 });
+thawAfterAll(CLOCK_LANES);
 
 const holdForRecording = (page: Page) => (recording ? page.waitForTimeout(2500) : Promise.resolve());
 const period = (page: Page, start: string) => page.getByTestId('lease-timeline').locator(`li[data-period-start="${start}"]`);

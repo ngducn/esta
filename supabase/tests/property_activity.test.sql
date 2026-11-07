@@ -14,7 +14,7 @@ values (:'a', 'Đất vườn Demo', 'LONGAN', 'agricultural_land', 'held') retu
 insert into public.properties (household_id, nickname, code, kind, use_mode)
 values (:'b', 'Nhà B Demo', 'Q7', 'townhouse', 'rental') returning id as property_b \gset
 
-delete from public.test_clock;
+delete from public.test_clock where for_household is null;
 insert into public.test_clock (frozen_now) values ('2026-10-07T09:00:00+07:00');
 
 delete from private.local_stack;
@@ -59,7 +59,7 @@ select is_empty(format('select 1 from public.property_activity(%L)', :'property_
   'a member of another household reads no row of it');
 
 reset role;
-delete from public.test_clock;
+delete from public.test_clock where for_household is null;
 select tests.act_as('member.a@test.esta.test');
 update public.properties set nickname = 'Đất vườn Demo' where id = :'property_a';
 reset role;

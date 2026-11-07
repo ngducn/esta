@@ -6,7 +6,7 @@ import { slotEnv } from '../scripts/slot-env.ts';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { signIn } from './helpers/inbucket';
 import { stubTiles } from './helpers/map-tiles';
-import { setClock } from './helpers/test-clock';
+import { setClock, globalClock } from './helpers/test-clock';
 import { accessToken } from './helpers/session';
 import { seriousAxeViolations } from './helpers/wizard';
 
@@ -114,7 +114,7 @@ test('rule 3: Mẹ sets the Đất vườn Long An pin from its card and Hoạt 
   await open(page, 'me.lane3@demo.esta.test', 'dark');
   await setLocation(page, id, null);
   try {
-    await setClock(request, '2026-10-07T09:00:00+07:00');
+    await setClock(request, globalClock, '2026-10-07T09:00:00+07:00');
     await tapCard(page, 'Đất vườn Long An');
     const card = page.getByTestId('location-card');
     await expect(card).toContainText('Chưa có vị trí');
@@ -138,7 +138,7 @@ test('rule 3: Mẹ sets the Đất vườn Long An pin from its card and Hoạt 
     await expect(page.getByTestId('activity-entry').first()).toHaveAttribute('data-event', 'location');
     expect(await seriousAxeViolations(page, { exclude: ['.maplibregl-canvas'] })).toEqual([]);
   } finally {
-    await setClock(request, null);
+    await setClock(request, globalClock, null);
     await setLocation(page, id, null);
   }
 });

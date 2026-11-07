@@ -7,8 +7,8 @@ select tests.create_household('a') as a, tests.create_household('b') as b \gset
 
 select set_config('esta.actor', 'system:test', true);
 insert into private.local_stack default values on conflict do nothing;
-insert into public.test_clock (id, frozen_now) values (true, '2026-10-07T09:00:00+07:00')
-  on conflict (id) do update set frozen_now = excluded.frozen_now;
+delete from public.test_clock where for_household is null;
+insert into public.test_clock (frozen_now) values ('2026-10-07T09:00:00+07:00');
 
 insert into public.properties (id, household_id, nickname, code, kind, use_mode) values
   ('00000000-0000-4000-8000-0000000000a1', :'a', 'Dãy trọ Dĩ An', 'DIAN', 'rooming_house', 'rental'),

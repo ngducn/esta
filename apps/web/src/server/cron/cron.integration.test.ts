@@ -17,7 +17,7 @@ process.env.SUPABASE_SERVICE_ROLE_KEY = serviceRoleKey;
 vi.mock('server-only', () => ({}));
 vi.mock('@/server/env', () => ({ env: { CRON_SECRET: SECRET, NEXT_PUBLIC_SUPABASE_URL: url } }));
 vi.mock('@/server/clock', () => ({
-  readRequestClock: async () => clockAt({ kind: 'table', now: parseInstant(frozenNow) }, 'Asia/Ho_Chi_Minh'),
+  readGlobalClock: async () => clockAt({ kind: 'table', now: parseInstant(frozenNow) }, 'Asia/Ho_Chi_Minh'),
 }));
 
 const invoicesRoute = await import('@/app/api/cron/invoices/route');

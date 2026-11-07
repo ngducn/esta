@@ -8,17 +8,20 @@ import { inEnglishAt130, memberRest } from './helpers/auth-api';
 import { boardRow, storedInvoice } from './helpers/board';
 import { freshLease } from './helpers/leases';
 import { laneHousehold, laneInvoice } from './helpers/seed';
-import { setClock } from './helpers/test-clock';
+import { setClock, lanes, thawAfterAll } from './helpers/test-clock';
 import { DESKTOP, noSidewaysScroll, open, PHONE, recordForPr, seriousAxeViolations, START } from './helpers/wizard';
+
+const CLOCK_LANES = lanes(6, 9);
 
 const holdForRecording = recordForPr();
 
 // Overdue days and the board's month come from the Clock, so the spec runs in the `clock` project on SPEC §9.3's day.
 // Lanes 6 and 9 keep Phòng 5 overdue and Phòng 3 not yet due through every earlier clock spec.
 test.beforeEach(async ({ page, request }) => {
-  await setClock(request, START);
+  await setClock(request, CLOCK_LANES, START);
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
 });
+thawAfterAll(CLOCK_LANES);
 
 async function stored(page: Page, invoiceId: string): Promise<{ token: string; memoCode: string }> {
   const invoice = await storedInvoice(page, invoiceId);

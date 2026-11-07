@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { join } from 'node:path';
 import { seedId } from '../supabase/seed/generator/ids.ts';
-import { setClock } from './helpers/test-clock';
+import { globalClock, setClock } from './helpers/test-clock';
 import { memberRest as rest, signedIn } from './helpers/auth-api';
 import { DESKTOP, noSidewaysScroll, open, PHONE, seriousAxeViolations } from './helpers/wizard';
 
@@ -42,7 +42,7 @@ const shot = async (page: Page, slug: string, focus?: Locator) => {
 // reads its own lane household, and every expense, vendor and receipt a rule adds is removed after it.
 test.beforeEach(async ({ request }) => {
   test.slow(recording, 'slow motion for the video triples each step');
-  await setClock(request, SPEC_TODAY);
+  await setClock(request, globalClock, SPEC_TODAY);
 });
 
 test.afterEach(async ({ page }) => {

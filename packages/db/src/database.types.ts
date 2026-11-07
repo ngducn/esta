@@ -3026,18 +3026,29 @@ export type Database = {
       }
       test_clock: {
         Row: {
+          for_household: string | null
           frozen_now: string
           id: boolean
         }
         Insert: {
+          for_household?: string | null
           frozen_now: string
           id?: boolean
         }
         Update: {
+          for_household?: string | null
           frozen_now?: string
           id?: boolean
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "test_clock_for_household_fkey"
+            columns: ["for_household"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       units: {
         Row: {

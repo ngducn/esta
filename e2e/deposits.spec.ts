@@ -5,8 +5,10 @@ import { parseSlot, slotWorkdir } from '../scripts/slot.ts';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { memberCall, memberRest } from './helpers/auth-api';
 import { laneHousehold, laneLease, laneLeasePath, laneProperty } from './helpers/seed';
-import { setClock } from './helpers/test-clock';
+import { setClock, lanes, thawAfterAll } from './helpers/test-clock';
 import { DESKTOP, noSidewaysScroll, open, PHONE, seriousAxeViolations, settled, START, toast, vnd } from './helpers/wizard';
+
+const CLOCK_LANES = lanes(3, 7, 8, 9, 10);
 
 // `ESTA_E2E_VIDEO=1` records each rule at the phone size, for the PR's video of the deposit settled after Phòng 7 left.
 const recording = process.env.ESTA_E2E_VIDEO === '1';
@@ -16,8 +18,9 @@ const holdForRecording = (page: Page) => (recording ? page.waitForTimeout(2500) 
 
 // The sheets default to the Clock's day and refuse a later one, so the spec runs in the `clock` project on SPEC §9.3's day.
 test.beforeEach(async ({ request }) => {
-  await setClock(request, START);
+  await setClock(request, CLOCK_LANES, START);
 });
+thawAfterAll(CLOCK_LANES);
 
 const ledger = (page: Page) => page.getByTestId('deposit-ledger');
 const held = (page: Page) => ledger(page).getByTestId('deposit-held').locator('data');

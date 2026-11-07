@@ -8,8 +8,8 @@ select tests.user_id('admin.a@test.esta.test') as admin_a \gset
 
 select set_config('esta.actor', 'system:test', true);
 insert into private.local_stack default values on conflict do nothing;
-insert into public.test_clock (id, frozen_now) values (true, '2026-10-07T09:00:00+07:00')
-  on conflict (id) do update set frozen_now = excluded.frozen_now;
+delete from public.test_clock where for_household is null;
+insert into public.test_clock (frozen_now) values ('2026-10-07T09:00:00+07:00');
 update public.household_members set is_operator = true where user_id in (:'admin_a', tests.user_id('admin.b@test.esta.test'));
 update public.household_members set display_name = 'Ryan Demo' where user_id = :'admin_a';
 

@@ -114,7 +114,7 @@ Name the data shape before writing code. These tables live in Supabase Postgres.
 - `admin_unit_legacy_map`: pre-July-2025 province, district and commune names and codes mapped to current codes.
 - `land_use_codes`: code, name_vi, name_en, group. Seed in DOMAIN-VN §3.
 - `bank_bins`: NAPAS BIN, bank short name, full name. Source recorded.
-- `test_clock`: at most one row (frozen_now). Read by the `Clock` only when `ESTA_ENV` is not `production` (FND-9).
+- `test_clock`: at most one row per household (`household_id`, frozen_now), and at most one global row (no household). Read by the `Clock` only when `ESTA_ENV` is not `production` (FND-9).
 - `tax_rules`: versioned rule sets. kind `vn_rental_individual`, effective_from, effective_to, params jsonb, source_citation, note. Read only by `packages/core/tax`.
 
 ### 5.3 Property
@@ -181,7 +181,7 @@ Each check is a predicate a test or a live lane can prove. IDs are referenced by
 - FND-6 Admin units imported with legacy mapping. Check: 34 province-level units; the commune-level count equals 3,321 or the plan records the official source for a different number; the five lookups in DOMAIN-VN §4 resolve to the expected provinces.
 - FND-7 Deterministic seed generator. Ids are UUIDv5 derived from stable seed keys (e.g. `seed:lease:thu-duc`), timestamps come from the frozen clock, and randomness uses a fixed RNG seed. Each phase extends the generator with its tables. Check: `pnpm db:reset` twice produces identical checksums over all business columns (excluding `created_at`, `updated_at`) for the tables that exist in that phase.
 - FND-8 Text scale and density settings applied app-wide. Check: at text_scale 130, no text overflows or truncates without an affordance on Home, Properties list, Property detail, Collections and Documents at 390 px width.
-- FND-9 Test clock. Outside production, the shared `Clock` reads the `test_clock` table if it has a row, else `ESTA_FROZEN_NOW`, else system time. Tests set and advance it through `pnpm clock:set <iso>` or a web route that exists only when `ESTA_ENV` is not `production`. Web, cron routes and the worker read it per request or per job, so it can move without restarts; SQL receives the as-of date as a parameter. Web and worker refuse to start when `ESTA_ENV=production` and a frozen clock is configured; a local production build (`NODE_ENV=production`, `ESTA_ENV=test`) is allowed. Check: an integration test sets the clock, observes it in the Home header, a cron route and a worker job, advances it one day, and observes the change without restarting anything.
+- FND-9 Test clock. Outside production, the shared `Clock` reads the `test_clock` table (the household's own row, else the global one) if it has a row, else `ESTA_FROZEN_NOW`, else system time. Tests set and advance it through `pnpm clock:set <iso>` or a web route that exists only when `ESTA_ENV` is not `production`. Web, cron routes and the worker read it per request or per job, so it can move without restarts; SQL receives the as-of date as a parameter. Web and worker refuse to start when `ESTA_ENV=production` and a frozen clock is configured; a local production build (`NODE_ENV=production`, `ESTA_ENV=test`) is allowed. Check: an integration test sets the clock, observes it in the Home header, a cron route and a worker job, advances it one day, and observes the change without restarting anything.
 
 ### 6.2 Properties (PRP)
 

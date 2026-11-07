@@ -9,7 +9,7 @@ import { seedId } from '../supabase/seed/generator/ids.ts';
 import { CRAFTED, extractionFixtures, type UploadFile } from '../fixtures/certificates/generator/uploads.tsx';
 import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/agent-worker';
 import { signIn } from './helpers/inbucket';
-import { setClock } from './helpers/test-clock';
+import { setClock, globalClock } from './helpers/test-clock';
 import { seriousAxeViolations } from './helpers/wizard';
 
 // One worker and one test clock per slot, so the rules run in order in the `clock` project.
@@ -35,12 +35,12 @@ const propertyId = (lane: number, key: string) => seedId(`seed:property:lane-${l
 let worker: AgentWorker | undefined;
 
 test.beforeEach(async ({ request }) => {
-  await setClock(request, '2026-10-07T09:00:00+07:00');
+  await setClock(request, globalClock, '2026-10-07T09:00:00+07:00');
 });
 
 test.afterAll(async ({ request }) => {
   await stopAndForget(worker);
-  await setClock(request, null);
+  await setClock(request, globalClock, null);
 });
 
 async function startWorker() {
@@ -166,7 +166,7 @@ test('rule 3: a worker killed right after save_extraction re-runs the job and le
   expect(await jobOf(), 'the worker died after save_extraction and before it finished the job').toEqual({ status: 'running', attempts: 1 });
 
   // The claim takes back a running job only after its 5 minute timeout and 2 minutes of grace.
-  await setClock(request, '2026-10-07T09:08:00+07:00');
+  await setClock(request, globalClock, '2026-10-07T09:08:00+07:00');
   await startWorker();
   await expect.poll(jobOf, { timeout: 10_000 }).toEqual({ status: 'done', attempts: 2 });
   expect((await extractions(page, documentId)).map((row) => row.status)).toEqual(['needs_review']);
@@ -230,7 +230,7 @@ test('rule 6: with the worker stopped the tile says the assistant is offline, th
   // Six minutes past the last beat of any worker, earlier rules' included, so no heartbeat is fresh.
   const [beat] = await serviceGet<{ last_seen_at: string }[]>(page, 'worker_heartbeats?select=last_seen_at&order=last_seen_at.desc&limit=1');
   const lastBeat = Math.max(Date.parse(beat?.last_seen_at ?? ''), Date.parse('2026-10-07T09:00:00+07:00'));
-  await setClock(request, new Date(lastBeat + 6 * 60_000).toISOString());
+  await setClock(request, globalClock, new Date(lastBeat + 6 * 60_000).toISOString());
   await expect(pill(page, documentId)).toHaveText('Trợ lý đang nghỉ', { timeout: 10_000 });
   await shot(page, 'p2-03-offline-1440x900-dark');
   const [queued] = await extractions(page, documentId);
@@ -255,7 +255,7 @@ test('rule 7: a blank page fails after every attempt, the tile reads Chưa đọ
     [3, '2026-10-07T09:34:00+07:00'],
   ] as const) {
     await expect.poll(jobOf, { timeout: 10_000 }).toEqual({ status: 'queued', attempts });
-    await setClock(request, next);
+    await setClock(request, globalClock, next);
   }
   await expect.poll(jobOf, { timeout: 10_000 }).toEqual({ status: 'failed', attempts: 4 });
   await page.reload();

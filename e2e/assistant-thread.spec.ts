@@ -7,7 +7,7 @@ import { inEnglishAt130, memberCall, memberRest } from './helpers/auth-api';
 import { boardRow } from './helpers/board';
 import { initialJs, INITIAL_JS_BUDGET_BYTES } from './helpers/bundle';
 import { laneHousehold, laneProperty } from './helpers/seed';
-import { setClock } from './helpers/test-clock';
+import { setClock, globalClock } from './helpers/test-clock';
 import { clippedText } from './helpers/text-scale';
 import { addOperatorNote, answer, freshThread, incomeIn, laneNotes, laneOperatorNote, latestConversation, noteCard, pinnedArea, pinnedRow, sendInThread } from './helpers/thread';
 import { DESKTOP, noSidewaysScroll, open, PHONE, recordForPr, serviceGet, servicePatch, seriousAxeViolations, settled, shot, toast, vnd } from './helpers/wizard';
@@ -365,7 +365,7 @@ test('a new business day starts a new segment, which still knows the last turns 
   await sendAndTimeFirstSentence(page, Q1);
   await sendAndTimeFirstSentence(page, SEPTEMBER);
   const today = await latestConversation(page);
-  await setClock(request, '2026-10-08T07:00:00+07:00');
+  await setClock(request, globalClock, '2026-10-08T07:00:00+07:00');
   try {
     await sendAndTimeFirstSentence(page, AUGUST);
     const august = await incomeIn(page, 6, '08');
@@ -376,6 +376,6 @@ test('a new business day starts a new segment, which still knows the last turns 
     await expect(page.getByTestId('question'), 'all three show in one thread, in order').toHaveText([/Tháng này thu được/, /Còn tháng 9/, /Còn tháng 8/]);
     await shot(page, 'p5-12-segments-390x844-light');
   } finally {
-    await setClock(request, '2026-10-07T07:00:00+07:00');
+    await setClock(request, globalClock, '2026-10-07T07:00:00+07:00');
   }
 });

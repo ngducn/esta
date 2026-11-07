@@ -114,8 +114,8 @@ select plan((select count(*)::int * 2 + 2 from tests.private_tables()) + (select
 select tests.create_household('a') as a \gset
 select set_config('esta.actor', 'system:test', true);
 insert into private.local_stack default values on conflict do nothing;
-insert into public.test_clock (id, frozen_now) values (true, '2026-10-07T09:00:00+07:00')
-  on conflict (id) do update set frozen_now = excluded.frozen_now;
+delete from public.test_clock where for_household is null;
+insert into public.test_clock (frozen_now) values ('2026-10-07T09:00:00+07:00');
 update public.household_members set is_operator = true where invited_email = 'admin.a@test.esta.test';
 
 -- One row of each private kind in household a. The member's question is hers alone (conversations, messages) and its

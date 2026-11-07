@@ -6,7 +6,7 @@ import { seedId } from '../supabase/seed/generator/ids.ts';
 import { signedIn } from './helpers/auth-api';
 import { signIn } from './helpers/inbucket';
 import { accessToken } from './helpers/session';
-import { setClock } from './helpers/test-clock';
+import { setClock, globalClock } from './helpers/test-clock';
 import { seriousAxeViolations } from './helpers/wizard';
 
 const env = slotEnv(join(import.meta.dirname, '..'), parseSlot(process.env.ESTA_SLOT));
@@ -29,7 +29,7 @@ const holdForRecording = (page: Page) => (recording ? page.waitForTimeout(2500) 
 // reads its own lane household, and every payment a rule records through the sheet is undone after it, so a retry and
 // the lanes after it start from the seed.
 test.beforeEach(async ({ request }) => {
-  await setClock(request, SPEC_TODAY);
+  await setClock(request, globalClock, SPEC_TODAY);
 });
 
 test.afterEach(async ({ page }) => {

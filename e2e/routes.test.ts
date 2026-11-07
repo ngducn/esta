@@ -24,19 +24,49 @@ describe('APP_ROUTES', () => {
   });
 });
 
-describe('the clock project', () => {
+describe('the specs that set a date', () => {
   const root = join(import.meta.dirname, '..');
   const config = readFileSync(join(root, 'playwright.config.ts'), 'utf8');
-  const listed = [...(/const sharedClock = \[([^\]]*)\]/.exec(config)?.[1] ?? '').matchAll(/'([^']+)'/g)].map(([, name = '']) => name);
+  const listOf = (name: string) =>
+    [...(new RegExp(`const ${name} = \\[([^\\]]*)\\]`).exec(config)?.[1] ?? '').replaceAll(/^\s*\/\/.*$/gm, '').matchAll(/'([^']+)'/g)].map(([, file = '']) => file);
+  const dated = listOf('dated');
+  const shared = listOf('sharedClock');
+  const specs = globSync('*.spec.ts', { cwd: join(root, 'e2e') });
+  const source = (file: string) => readFileSync(join(root, 'e2e', file), 'utf8');
 
-  test('lists every spec that moves the test clock or starts a worker at a date, so it runs one at a time', () => {
-    const users = globSync('*.spec.ts', { cwd: join(root, 'e2e') }).filter((file) => /\b(?:workerAt|setClock)\b/.test(readFileSync(join(root, 'e2e', file), 'utf8')));
-    expect(users.length).toBeGreaterThan(0);
-    expect(users.filter((file) => !listed.includes(file)).sort()).toEqual([]);
+  test('lists only specs that exist, each in one project', () => {
+    expect(dated.length).toBeGreaterThan(0);
+    expect([...dated, ...shared].filter((file) => !specs.includes(file))).toEqual([]);
+    expect(dated.filter((file) => shared.includes(file))).toEqual([]);
   });
 
-  test('lists only specs that exist', () => {
-    expect(listed.length).toBeGreaterThan(0);
-    expect(listed.filter((file) => globSync(file, { cwd: join(root, 'e2e') }).length === 0)).toEqual([]);
+  test('puts every spec that moves a test clock row or starts a worker at a date in the dated or clock project', () => {
+    const users = specs.filter((file) => /\b(?:workerAt|setClock|frozenAtStart)\b/.test(source(file)));
+    expect(users.length).toBeGreaterThan(0);
+    expect(users.filter((file) => !dated.includes(file) && !shared.includes(file)).sort()).toEqual([]);
+  });
+
+  test('keeps a spec in the dated project off the global row, the agent worker and the cron routes, and from clearing a date another spec relies on', () => {
+    for (const file of dated) {
+      expect(source(file), file).not.toMatch(/\b(?:globalClock|workerAt|startAgentWorker|stopAndForget)\b|api\/cron/);
+      expect(source(file), file).not.toMatch(/setClock\([^)]*,\s*null\)/);
+    }
+  });
+
+  test('thaws the lanes a dated spec froze when it ends, so the next spec in the serial clock project meets no lane row', () => {
+    const leaking = dated.filter((file) => /\bsetClock\(/.test(source(file)) && !/\b(?:thawAfterAll|frozenAtStart)\(/.test(source(file)));
+    expect(leaking).toEqual([]);
+  });
+
+  test('keeps a spec that uses the global row, a worker or a cron route in the clock project', () => {
+    const users = specs.filter((file) => /\b(?:globalClock|workerAt|startAgentWorker)\b|api\/cron/.test(source(file)));
+    expect(users.filter((file) => !shared.includes(file)).sort()).toEqual([]);
+  });
+
+  test('writes the test clock only through the helper that takes a scope, except the spec of the route itself', () => {
+    const direct = globSync('**/*.ts', { cwd: join(root, 'e2e') }).filter(
+      (file) => !file.startsWith('prod/') && file !== 'helpers/test-clock.ts' && file !== 'clock.spec.ts' && !file.endsWith('routes.test.ts') && /api\/test\/clock/.test(source(file)),
+    );
+    expect(direct).toEqual([]);
   });
 });

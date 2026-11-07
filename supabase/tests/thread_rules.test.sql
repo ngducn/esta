@@ -6,7 +6,7 @@ select plan(16);
 select tests.create_household('a') as a \gset
 select set_config('esta.actor', 'system:test', true);
 insert into private.local_stack default values on conflict do nothing;
-delete from public.test_clock;
+delete from public.test_clock where for_household is null;
 insert into public.test_clock (frozen_now) values ('2026-10-07T09:00:00+07:00');
 
 -- Sends n questions as the member, each answered before the next, the way she would on a frozen clock.

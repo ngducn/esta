@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { proposalCard } from './helpers/proposals';
 import { laneHousehold } from './helpers/seed';
-import { setClock } from './helpers/test-clock';
+import { setClock, globalClock } from './helpers/test-clock';
 import { pinnedArea, pinnedRow } from './helpers/thread';
 import { open, PHONE, serviceGet, servicePatch, serviceUpsert, seriousAxeViolations, toast } from './helpers/wizard';
 
@@ -10,11 +10,11 @@ const LANE = 5;
 const LEASE_ENDING = 'Hợp đồng Căn hộ Thủ Đức hết hạn sau 26 ngày';
 
 test.beforeAll(async ({ request }) => {
-  await setClock(request, '2026-10-07T07:05:00+07:00');
+  await setClock(request, globalClock, '2026-10-07T07:05:00+07:00');
 });
 
 test.afterAll(async ({ request }) => {
-  await setClock(request, null);
+  await setClock(request, globalClock, null);
 });
 
 test('lane 5: Cần xử lý pins the Phòng 5 note above Việc cần làm, loses it each time Mẹ hides it and regains it on Hoàn tác', async ({ page }) => {

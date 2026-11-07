@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { e2eServiceHeaders } from '../scripts/e2e-service.ts';
 import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/agent-worker';
-import { setClock } from './helpers/test-clock';
+import { setClock, globalClock } from './helpers/test-clock';
 import {
   acceptEvery,
   DESKTOP,
@@ -38,12 +38,12 @@ async function stopWorker() {
 }
 
 test.beforeEach(async ({ request }) => {
-  await setClock(request, START);
+  await setClock(request, globalClock, START);
 });
 
 test.afterAll(async ({ request }) => {
   await stopAndForget(worker);
-  await setClock(request, null);
+  await setClock(request, globalClock, null);
 });
 
 const notice = (page: Page) => page.getByTestId('review-ready-notice');
@@ -161,7 +161,7 @@ test('rule 4: with the worker stopped and its heartbeat six minutes old, the wiz
   // Six minutes past the last beat of any worker, earlier rules' included, so no heartbeat is fresh.
   const [beat] = await serviceGet<{ last_seen_at: string }[]>(page, 'worker_heartbeats?select=last_seen_at&order=last_seen_at.desc&limit=1');
   const lastBeat = Math.max(Date.parse(beat?.last_seen_at ?? ''), Date.parse(START));
-  await setClock(request, new Date(lastBeat + 6 * 60_000).toISOString());
+  await setClock(request, globalClock, new Date(lastBeat + 6 * 60_000).toISOString());
   const { propertyId, documentId } = await startWizard(page, { nickname: 'Nhà Bình Thạnh Demo', kind: 'townhouse', photo: await fixture('gcn_2024-scan').upload() });
   await expect(notice(page)).toHaveAttribute('data-state', 'offline');
   const time = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(lastBeat);
@@ -307,7 +307,7 @@ for (const run of SHOT_RUNS) {
     await expect(page.getByTestId('wizard-photo')).toBeVisible();
     await shot(page, `p2-08-step-photo-${size}`);
     const [beat] = await serviceGet<{ last_seen_at: string }[]>(page, 'worker_heartbeats?select=last_seen_at&order=last_seen_at.desc&limit=1');
-    await setClock(request, new Date(Math.max(Date.parse(beat?.last_seen_at ?? ''), Date.parse(START)) + 6 * 60_000).toISOString());
+    await setClock(request, globalClock, new Date(Math.max(Date.parse(beat?.last_seen_at ?? ''), Date.parse(START)) + 6 * 60_000).toISOString());
     const { propertyId } = await startWizard(page, { nickname: 'Dãy trọ Dĩ An Demo', kind: 'rooming_house', photo: await fixture('northstar-di-an').upload() });
     await expect(notice(page)).toHaveAttribute('data-state', 'offline');
     await shot(page, `p2-08-offline-${size}`);

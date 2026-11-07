@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { join } from 'node:path';
 import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/agent-worker';
-import { setClock } from './helpers/test-clock';
+import { setClock, globalClock } from './helpers/test-clock';
 import { DESKTOP, open, PHONE, serviceGet, seriousAxeViolations, vnd } from './helpers/wizard';
 
 // The scheduler queues the watch for every household on the slot's one clock, so the spec runs in the `clock` project.
@@ -15,14 +15,14 @@ let worker: AgentWorker | undefined;
 
 test.afterAll(async ({ request }) => {
   await stopAndForget(worker);
-  await setClock(request, null);
+  await setClock(request, globalClock, null);
 });
 
 const watchNotes = (page: Page) => page.getByTestId('inbox-item').filter({ has: page.getByTestId('note-dedupe').getByText(new RegExp(`^watch(_digest)?:.*${TODAY}$`)) });
 const note = (page: Page, title: string) => page.getByTestId('inbox-item').filter({ has: page.getByRole('heading', { name: title, exact: true }) });
 
 test('at 06:45 the morning watch has run for every household, and Ryan sees its four notes with every link resolving', async ({ page, request }) => {
-  await setClock(request, `${TODAY}T06:45:00+07:00`);
+  await setClock(request, globalClock, `${TODAY}T06:45:00+07:00`);
   worker = await startAgentWorker({ schedule: true });
   const households = await serviceGet<unknown[]>(page, 'households?select=id');
   await expect

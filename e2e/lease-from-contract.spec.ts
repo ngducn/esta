@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/agent-worker';
 import { laneProperty } from './helpers/seed';
-import { setClock } from './helpers/test-clock';
+import { setClock, globalClock } from './helpers/test-clock';
 import { DESKTOP, PHONE, START, fixture, open, recordForPr, serviceGet, servicePatch, seriousAxeViolations, shot, toast } from './helpers/wizard';
 
 // The replay worker and the test clock are one per slot, so the rules run in order in the `clock` project.
@@ -16,8 +16,8 @@ const seededContract = seedId(`seed:document:lane-${LANE}:di-an:lease-phong-8`);
 const newLeaseFrom = (documentId: string) => `/properties/${property}/rental/leases/new?fromDocument=${documentId}`;
 
 let worker: AgentWorker | undefined;
-test.beforeEach(({ request }) => setClock(request, START));
-test.afterAll(async ({ request }) => Promise.all([stopAndForget(worker), setClock(request, null)]));
+test.beforeEach(({ request }) => setClock(request, globalClock, START));
+test.afterAll(async ({ request }) => Promise.all([stopAndForget(worker), setClock(request, globalClock, null)]));
 
 type StoredLease = { id: string; status: string; start_date: string; end_date: string; rent_vnd: number; deposit_vnd: number; billing_cycle_months: number; tenant: { full_name: string; phone: string } };
 const leasesOn = (page: Page, unitId: string) =>

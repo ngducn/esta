@@ -5,7 +5,7 @@ import type { CronClient } from './supabase';
 vi.mock('server-only', () => ({}));
 const state = vi.hoisted(() => ({ inserted: [] as Record<string, unknown>[], insertError: null as { message: string } | null }));
 vi.mock('../env', () => ({ env: { CRON_SECRET: 'secret' } }));
-vi.mock('../clock', () => ({ readRequestClock: () => Promise.resolve(clockAt({ kind: 'table', now: parseInstant('2026-11-06T17:30:00Z') }, 'Asia/Ho_Chi_Minh')) }));
+vi.mock('../clock', () => ({ readGlobalClock: () => Promise.resolve(clockAt({ kind: 'table', now: parseInstant('2026-11-06T17:30:00Z') }, 'Asia/Ho_Chi_Minh')) }));
 vi.mock('./supabase', () => ({
   cronClient: () =>
     ({

@@ -6,7 +6,7 @@ import { undoSheetPayments } from './helpers/board';
 import { initialJs, INITIAL_JS_BUDGET_BYTES } from './helpers/bundle';
 import { stubTiles, TILE_HOST } from './helpers/map-tiles';
 import { laneHousehold } from './helpers/seed';
-import { setClock } from './helpers/test-clock';
+import { setClock, globalClock } from './helpers/test-clock';
 import { DESKTOP, noSidewaysScroll, open, openNewHousehold, PHONE, recordForPr, seriousAxeViolations, START, toast } from './helpers/wizard';
 
 const hold = recordForPr();
@@ -23,7 +23,7 @@ const Q7_INSURANCE = 'Bảo hiểm cháy nổ Nhà phố Q7';
 const GROUPS = ['overdue', 'due', 'notDue', 'paid'] as const;
 
 test.beforeEach(async ({ request }) => {
-  await setClock(request, START);
+  await setClock(request, globalClock, START);
 });
 
 test.afterEach(async ({ page }) => {
@@ -172,7 +172,7 @@ test('the meter’s share collected equals payments toward October’s rent read
 });
 
 test('on 25/10 nine things are due and Home shows seven, with Xem tất cả ở Thu tiền', async ({ page, request }) => {
-  await setClock(request, '2026-10-25T09:00:00+07:00');
+  await setClock(request, globalClock, '2026-10-25T09:00:00+07:00');
   try {
     await open(page, RYAN, 'light', DESKTOP);
     await expect(page.getByTestId('today-count')).toHaveText('9 việc');
@@ -185,7 +185,7 @@ test('on 25/10 nine things are due and Home shows seven, with Xem tất cả ở
     await page.getByTestId('today-more').click();
     await expect(page).toHaveURL(/\/collections$/);
   } finally {
-    await setClock(request, START);
+    await setClock(request, globalClock, START);
   }
 });
 

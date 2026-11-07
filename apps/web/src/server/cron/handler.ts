@@ -1,7 +1,7 @@
 import 'server-only';
 import type { Clock } from '@esta/core';
 import type { CronJob } from '@esta/core/ops';
-import { readRequestClock } from '../clock';
+import { readGlobalClock } from '../clock';
 import { requireCronSecret } from './auth';
 import { recordCronRun } from '@esta/ops';
 import { describeRun, type CronResult } from './cron-runs';
@@ -13,7 +13,7 @@ export function cronHandler(name: CronJob, job: (client: CronClient, clock: Cloc
     const denied = requireCronSecret(request);
     if (denied) return denied;
     const client = cronClient();
-    const clock = await readRequestClock();
+    const clock = await readGlobalClock();
     const startedAt = clock.now();
     let result: CronResult;
     try {

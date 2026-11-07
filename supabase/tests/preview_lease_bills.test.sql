@@ -27,8 +27,8 @@ insert into public.lease_amendments (household_id, lease_id, effective_period_st
   (:'a', '00000000-0000-4000-8000-00000000e002', '2026-11-01', '{"rent_vnd": 6000000}');
 
 insert into private.local_stack default values on conflict do nothing;
-insert into public.test_clock (id, frozen_now) values (true, '2026-10-07T09:00:00+07:00')
-  on conflict (id) do update set frozen_now = excluded.frozen_now;
+delete from public.test_clock where for_household is null;
+insert into public.test_clock (frozen_now) values ('2026-10-07T09:00:00+07:00');
 
 -- The amended lease's terms as another household's member could type them, its id included.
 select jsonb_build_object(

@@ -50,8 +50,8 @@ insert into public.lease_amendments (household_id, lease_id, effective_period_st
 values (:'a', '00000000-0000-4000-8000-00000000e051', '2026-12-01', '{"rent_vnd": 4000000}');
 
 insert into private.local_stack default values on conflict do nothing;
-insert into public.test_clock (id, frozen_now) values (true, '2026-10-07T09:00:00+07:00')
-  on conflict (id) do update set frozen_now = excluded.frozen_now;
+delete from public.test_clock where for_household is null;
+insert into public.test_clock (frozen_now) values ('2026-10-07T09:00:00+07:00');
 select private.issue_invoices(l.id, '2026-10-07', now()) from public.leases l where l.household_id = :'a' and l.status = 'active';
 -- Phòng 2's November bill went out early, as Dĩ An's meter entry issues it in SPEC §9.3.
 select private.issue_invoice(i.id, '2026-10-07', now()) from public.invoices i

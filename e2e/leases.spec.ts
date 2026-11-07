@@ -6,6 +6,8 @@ import { seedId } from '../supabase/seed/generator/ids.ts';
 import { signIn } from './helpers/inbucket';
 import { accessToken } from './helpers/session';
 import { seriousAxeViolations } from './helpers/wizard';
+import { setClock, everyLane, thawAfterAll } from './helpers/test-clock';
+import { START } from './helpers/wizard';
 
 const env = slotEnv(join(import.meta.dirname, '..'), parseSlot(process.env.ESTA_SLOT));
 const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL ?? '';
@@ -24,13 +26,12 @@ const newLeasePath = (lane: number, key: string, unit: string) => `${rentalPath(
 const recording = process.env.ESTA_E2E_VIDEO === '1';
 test.use(recording ? { video: { mode: 'on', size: PHONE }, launchOptions: { slowMo: 900 } } : { video: 'off' });
 
-// Overdue days count from the Clock, so the spec runs in the `clock` project, one file at a time, on SPEC §9.3's day.
+// Overdue days count from the Clock, so the spec freezes every lane on SPEC §9.3's day.
 // Each rule writes to its own lane household and sets its own viewport.
 test.beforeAll(async ({ request }) => {
-  const headers = { authorization: `Bearer ${slotEnv(join(import.meta.dirname, '..'), parseSlot(process.env.ESTA_SLOT), { withKeys: false }).CRON_SECRET}` };
-  const response = await request.post('/api/test/clock', { headers, data: { frozen_now: '2026-10-07T09:00:00+07:00' } });
-  expect(response.ok()).toBe(true);
+  await setClock(request, everyLane, START);
 });
+thawAfterAll(everyLane);
 
 async function open(page: Page, email: string, theme: 'light' | 'dark', viewport: { width: number; height: number }) {
   await page.setViewportSize(viewport);

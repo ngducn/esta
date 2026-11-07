@@ -9,7 +9,7 @@ import { inEnglishAt130, memberRest } from './helpers/auth-api';
 import { boardRow, storedInvoice } from './helpers/board';
 import { laneHousehold, laneInvoice } from './helpers/seed';
 import { chooseFile, chooseFromBoard, commitLines, confirmSuggestion, expectFilters, expectGolden, laneStatement, line, openPreview, preview, PROPERTY, secondAccount, statementHousehold, statementPayments, upload } from './helpers/statements';
-import { setClock } from './helpers/test-clock';
+import { setClock, globalClock } from './helpers/test-clock';
 import { DESKTOP, noSidewaysScroll, open, openNewHousehold, PHONE, recordForPr, seriousAxeViolations, shot, START, toast, vnd } from './helpers/wizard';
 
 const holdForRecording = recordForPr();
@@ -18,7 +18,7 @@ const workdir = slotWorkdir(join(import.meta.dirname, '..'), parseSlot(process.e
 // Bills issue on activation and a line may post only on or before the database clock's date, so the spec runs in the
 // `clock` project at 07/10/2026. Each rule signs up a household of its own and fills it through the member's API.
 test.beforeEach(async ({ request }) => {
-  await setClock(request, START);
+  await setClock(request, globalClock, START);
 });
 
 test('rule 1: Ryan imports the October statement, three memo matches post on Ghi sổ, he confirms the suggestion, and a re-import posts nothing (LSE-8)', async ({ page }) => {

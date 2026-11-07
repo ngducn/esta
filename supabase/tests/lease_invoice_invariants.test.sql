@@ -17,8 +17,8 @@ insert into public.units (id, household_id, property_id, label, kind) values
 insert into public.parties (id, household_id, kind, full_name, tags) values
   ('00000000-0000-4000-8000-00000000a0a1', :'a', 'individual', 'Lê Văn Demo', array['tenant']);
 insert into private.local_stack default values on conflict do nothing;
-insert into public.test_clock (id, frozen_now) values (true, '2026-10-07T09:00:00+07:00')
-  on conflict (id) do update set frozen_now = excluded.frozen_now;
+delete from public.test_clock where for_household is null;
+insert into public.test_clock (frozen_now) values ('2026-10-07T09:00:00+07:00');
 
 insert into public.leases (id, household_id, property_id, unit_id, tenant_party_id, start_date, end_date, rent_vnd, status) values
   ('00000000-0000-4000-8000-00000000e001', :'a', '00000000-0000-4000-8000-0000000000a1', '00000000-0000-4000-8000-000000000a11',

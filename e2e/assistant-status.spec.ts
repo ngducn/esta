@@ -1,4 +1,4 @@
-import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { hostname, tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -6,6 +6,7 @@ import { parseSlot } from '../scripts/slot.ts';
 import { slotEnv } from '../scripts/slot-env.ts';
 import { seedId } from '../supabase/seed/generator/ids.ts';
 import { startAgentWorker, stopAndForget, type AgentWorker } from './helpers/agent-worker';
+import { globalClock, setClock } from './helpers/test-clock';
 import { signIn } from './helpers/inbucket';
 import { readReportTable } from './helpers/report-table';
 import { accessToken } from './helpers/session';
@@ -17,7 +18,6 @@ test.describe.configure({ mode: 'serial' });
 const env = slotEnv(join(import.meta.dirname, '..'), parseSlot(process.env.ESTA_SLOT), { withKeys: false });
 const rest = `${env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1`;
 const anonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '';
-const cron = { authorization: `Bearer ${env.CRON_SECRET}` };
 
 const pingDir = join(import.meta.dirname, '..', 'fixtures', 'agent-replay', 'ping');
 const [recordingFile] = readdirSync(pingDir).filter((name) => name.endsWith('.json'));
@@ -27,23 +27,19 @@ const ONLINE_0900 = 'Trợ lý đang hoạt động. Cập nhật lúc 09:00.';
 
 let worker: AgentWorker | undefined;
 
-async function setClock(request: APIRequestContext, frozenNow: string) {
-  expect((await request.post('/api/test/clock', { headers: cron, data: { frozen_now: frozenNow } })).status()).toBe(200);
-}
-
 async function restartWorker(replayDir?: string) {
   await worker?.stop();
   worker = await startAgentWorker(replayDir === undefined ? {} : { replayDir });
 }
 
 test.beforeEach(async ({ request }) => {
-  await setClock(request, '2026-10-07T09:00:00+07:00');
+  await setClock(request, globalClock, '2026-10-07T09:00:00+07:00');
   await restartWorker();
 });
 
 test.afterAll(async ({ request }) => {
   await stopAndForget(worker);
-  await request.delete('/api/test/clock', { headers: cron });
+  await setClock(request, globalClock, null);
 });
 
 async function openAssistant(page: Page, email: string, { viewport, theme }: { viewport: [number, number]; theme: 'light' | 'dark' }) {
@@ -90,13 +86,13 @@ test('rule 2: the line goes offline six minutes after the worker stops and onlin
   await openAssistant(page, 'me.lane2@demo.esta.test', { viewport: [390, 844], theme: 'dark' });
   await expectStatusLine(page, ONLINE_0900);
   await worker?.stop();
-  await setClock(request, '2026-10-07T09:06:00+07:00');
+  await setClock(request, globalClock, '2026-10-07T09:06:00+07:00');
   await page.reload();
   await expect(statusLine(page)).toHaveText('Trợ lý nghỉ từ 09:00. Việc mới sẽ được làm khi Trợ lý chạy lại; mọi thứ khác vẫn dùng bình thường.');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   // Each worker process writes its own row, so the restart uses a later minute than the offline check above:
   // a row left by an earlier run's restart then stays in that check's future, which the page does not read.
-  await setClock(request, '2026-10-07T09:07:00+07:00');
+  await setClock(request, globalClock, '2026-10-07T09:07:00+07:00');
   await restartWorker();
   await expectStatusLine(page, 'Trợ lý đang hoạt động. Cập nhật lúc 09:07.');
 });
