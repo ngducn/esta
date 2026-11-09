@@ -20,19 +20,19 @@
     "@pdf-lib/fontkit": "1.1.1",
     "@resvg/resvg-js": "2.6.2",
     "@supabase/ssr": "^0.12.7",
-    "@supabase/supabase-js": "^2.118.0",
-    "@tanstack/react-virtual": "^3.14.25",
+    "@supabase/supabase-js": "^2.119.0",
+    "@tanstack/react-virtual": "^3.14.26",
     "@turf/area": "^7.4.0",
     "@turf/kinks": "^7.4.0",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.5.2",
     "ipaddr.js": "^2.5.0",
     "jsqr": "1.4.0",
-    "lucide-react": "1.66.0",
+    "lucide-react": "1.70.0",
     "maplibre-gl": "^6.16.0",
-    "mdast-util-gfm-table": "^2.0.0",
+    "mdast-util-gfm-table": "^2.0.1",
     "micromark-extension-gfm-table": "^2.1.2",
-    "next": "16.4.4",
+    "next": "16.4.5",
     "next-intl": "^4.14.9",
     "pdf-lib": "1.17.1",
     "pdfjs-dist": "6.5.438",
@@ -45,12 +45,12 @@
     "server-only": "^0.0.1",
     "terra-draw": "^1.39.0",
     "terra-draw-maplibre-gl-adapter": "^1.5.0",
-    "undici": "^8.12.3",
+    "undici": "^8.12.4",
     "write-excel-file": "4.1.1",
     "zod": "^4.6.6"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.3.4",
+    "@tailwindcss/postcss": "^4.3.5",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.8",
@@ -59,6 +59,6 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "jsdom": "^30.1.3",
-    "tailwindcss": "^4.3.4"
+    "tailwindcss": "^4.3.5"
   }
 }

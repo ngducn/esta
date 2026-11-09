@@ -15,7 +15,7 @@
     "@esta/ops": "workspace:*",
     "@modelcontextprotocol/sdk": "1.32.2",
     "@napi-rs/canvas": "1.1.0",
-    "@supabase/supabase-js": "^2.118.0",
+    "@supabase/supabase-js": "^2.119.0",
     "pdfjs-dist": "6.5.438",
     "read-excel-file": "9.3.14",
     "sharp": "0.35.5",
