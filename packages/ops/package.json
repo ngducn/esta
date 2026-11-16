@@ -15,7 +15,7 @@
   "dependencies": {
     "@esta/core": "workspace:*",
     "@esta/db": "workspace:*",
-    "@supabase/supabase-js": "^2.118.0",
+    "@supabase/supabase-js": "^2.119.0",
     "fflate": "^0.8.3",
     "zod": "^4.6.6"
   }
